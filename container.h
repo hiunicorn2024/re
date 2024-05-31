@@ -778,12 +778,8 @@ public:
     reallocate(size());
   }
 
-  void double_reserve() {
-    const auto cp = capacity();
-    if (max_size() - cp < cp)
-      throw_or_abort<length_error>
-        ("re::basic_string: size overflow in double_reserve()\n");
-    reallocate(cp == 0u ? 1u : cp + cp);
+  void reserve_more(size_type n) {
+    reserve_space_at_least(n);
   }
 
   template <class R>
@@ -1671,12 +1667,8 @@ public:
     reallocate(size());
   }
 
-  void double_reserve() {
-    const auto cap = capacity();
-    if (max_size() - cap < cap)
-      throw_or_abort<length_error>
-        ("re::sso_string: size overflow in double_reserve()\n");
-    reallocate(cap == 0u ? 1u : (cap + cap));
+  void reserve_more(size_type n) {
+    reserve_space_at_least(n);
   }
 
   template <class R>
@@ -1833,8 +1825,8 @@ strong_ordering operator <=>(const sso_string<char, N, AL> &x,
 
 template <class T>
 class string_reference : range_fns {
-  T *p;
-  size_t n;
+  T *p = nullptr;
+  size_t n = 0u;
 
   using range_fns::begin;
   using range_fns::end;
@@ -3555,12 +3547,8 @@ public:
     reallocate(size());
   }
 
-  void double_reserve() {
-    const auto cp = capacity();
-    if (max_size() - cp < cp)
-      throw_or_abort<length_error>
-        ("re::vector: size overflow in double_reserve()\n");
-    reallocate(cp == 0u ? 1u : cp + cp);
+  void reserve_more(size_type n) {
+    reserve_raw_space_at_least(n);
   }
 
   template <class R>
@@ -4467,12 +4455,14 @@ public:
     v.reallocate(v.size());
   }
 
-  void double_reserve() {
-    const auto cp = capacity();
-    if (max_size() - cp < cp)
+  void reserve_more(size_type w) {
+    const size_type z = size();
+    if (max_size() - z < w)
       throw_or_abort<length_error>
-        ("re::vector<bool>: size overflow in double_reserve()\n");
-    reallocate(cp == 0u ? 1u : cp + cp);
+        ("re::vector<bool>: size overflow in reserve_more(n)\n");
+    const size_type zz = w + z;
+    if (zz != 0u)
+      v.reallocate(v_n(zz));
   }
 
   template <class R>
@@ -6091,12 +6081,8 @@ public:
     reallocate(sz);
   }
 
-  void double_reserve() {
-    const auto cap = capacity();
-    if (max_size() - cap < cap)
-      throw_or_abort<length_error>
-        ("re::small_vector: size overflow in double_reserve()\n");
-    reallocate(cap == 0u ? 1u : cap + cap);
+  void reserve_more(size_type n) {
+    reserve_raw_space_at_least(n);
   }
 
   template <class R>
@@ -7010,6 +6996,10 @@ public:
 
   bool full() const noexcept {
     return base().full();
+  }
+
+  void reserve_more(size_type n) {
+    base().reserve_more(n);
   }
 
   void reallocate(size_type n) {
@@ -8387,12 +8377,8 @@ public:
     reallocate_impl(size());
   }
 
-  void double_reserve() {
-    const auto cp = capacity();
-    if (cp > max_size() - cp)
-      throw_or_abort<length_error>
-        ("re::circular_vector: size overflow in double_reserve()\n");
-    reallocate(cp == 0u ? 1u : cp + cp);
+  void reserve_more(size_type n) {
+    reserve_raw_space_at_least(n);
   }
 
   template <class R>
@@ -9930,12 +9916,8 @@ public:
     reallocate(size());
   }
 
-  void double_reserve() {
-    const auto cp = lower_capacity();
-    if (max_size() - cp < cp)
-      throw_or_abort<length_error>
-        ("re::deque: size overflow in double_reserve()\n");
-    reallocate(cp == 0u ? 1u : cp + cp);
+  void reserve_more(size_type n) {
+    reserve_raw_space_back_at_least(n);
   }
 
   template <class UF>
@@ -34284,6 +34266,10 @@ public:
     reallocate(size());
   }
 
+  void reserve_more(size_type nn) {
+    reserve_raw_space_at_least(nn);
+  }
+
   template <class R>
   iterator replace(const_iterator i1, const_iterator i2, R &&r) {
     return inner::fns::seq_container_replace_impl
@@ -36578,6 +36564,9 @@ public:
   size_type capacity(const_iterator i) const {
     return i.to_mutable()->v.capacity();
   }
+  bool full(const_iterator i) const {
+    return i.to_mutable()->v.full();
+  }
 
   void reserve(const_iterator i, size_type n) {
     i.to_mutable()->v.reserve(n);
@@ -36585,6 +36574,14 @@ public:
   void first_order_reserve(const_iterator i, size_type n) {
     for (auto &x : i.to_mutable().first_order())
       x.v.reserve(n);
+  }
+
+  void reserve_more(const_iterator i, size_type n) {
+    i.to_mutable()->v.reserve_more(n);
+  }
+  void first_order_reserve_more(const_iterator i, size_type n) {
+    for (auto &x : i.to_mutable().first_order())
+      x.v.reserve_more(n);
   }
 
   void resize(const_iterator i, size_type n) {
@@ -37213,6 +37210,20 @@ public:
   }
 
   template <class R>
+  explicit tree_vector_adaptor(R &&r,
+                               const allocator_type &a = allocator_type{})
+    requires (is_rng<R> && is_constructible_v<key_type, rng_ref<R>>)
+    : v(a) {
+    append_range(r);
+  }
+  template <class R>
+  tree_vector_adaptor(from_range_t, R &&r,
+                      const allocator_type &a = allocator_type{})
+    requires (is_rng<R> && is_constructible_v<key_type, rng_ref<R>>)
+    : v(a) {
+    append_range(r);
+  }
+  template <class R>
   void assign(R &&r) {
     assign_range(r);
   }
@@ -37811,6 +37822,13 @@ public:
     const vec_t &vv = ((i == nullptr) ? v : i->v);
     return vv.capacity();
   }
+  bool full() const {
+    return v.full();
+  }
+  bool full(const_iterator i) const {
+    const vec_t &vv = ((i == nullptr) ? v : i->v);
+    return vv.full();
+  }
 
   void reserve(size_type n) {
     v.reserve(n);
@@ -37828,6 +37846,24 @@ public:
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
         x.v.reserve(n);
+  }
+
+  void reserve_more(size_type n) {
+    v.reserve_more(n);
+  }
+  void reserve_more(const_iterator i, size_type n) {
+    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vv.reserve_more(n);
+  }
+  void first_order_reserve_more(size_type n) {
+    first_order_reserve_more(const_iterator{}, n);
+  }
+  void first_order_reserve_more(const_iterator i, size_type n) {
+    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vv.reserve_more(n);
+    for (auto &it : iters(vv))
+      for (auto &x : iterator(it).first_order())
+        x.v.reserve_more(n);
   }
 
   void resize(size_type n) {

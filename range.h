@@ -938,8 +938,8 @@ struct fo_advance {
   constexpr itr_dft<I> operator ()(I &i, itr_dft<I> n, T j) const {
     if constexpr (itr_is_counted<I>) {
       auto n2 = j - i;
-      auto nn = n >= 0 ? n : -n;
-      auto nn2 = n2 >= 0 ? n2 : -n2;
+      auto nn = ((n >= 0) ? n : -n);
+      auto nn2 = ((n2 >= 0) ? n2 : -n2);
       if (nn >= nn2) {
         operator ()(i, j);
         return n - n2;

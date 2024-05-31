@@ -415,8 +415,8 @@ struct fo_initialize_plus {
       f(to_address(it));
     return it;
   }
-  template <class IR, class OI, class F>
-  constexpr pair<rng_itr<IR>, OI> operator ()(IR &&r, OI o, F f) const {
+  template <class IR, class FI, class F>
+  constexpr pair<rng_itr<IR>, FI> operator ()(IR &&r, FI o, F f) const {
     const auto ed = end(r);
     auto it = begin(r);
     for (; it != ed; ++it) {
@@ -432,8 +432,8 @@ struct fo_initialize {
   constexpr void operator ()(IR &&r, F f) const {
     initialize_plus(r, f);
   }
-  template <class IR, class OI, class F>
-  constexpr OI operator ()(IR &&r, OI o, F f) const {
+  template <class IR, class FI, class F>
+  constexpr FI operator ()(IR &&r, FI o, F f) const {
     return initialize_plus(r, o, f).second;
   }
 };
@@ -2026,6 +2026,12 @@ public:
     const size_type len = integral_cast<size_type>(l);
     if (len > capacity())
       reallocate(len);
+  }
+  void reserve_more(size_type n) {
+    const auto z = size();
+    const auto rest = capacity() - z;
+    if (n > rest)
+      increase_capacity(n - rest);
   }
   void clear() noexcept {
     for (auto &x : iters(p, pp))

@@ -103,7 +103,12 @@ public:
     return 0;
   }
   static constexpr result_type max() {
-    return static_cast<result_type>(1) << (W - 1);
+    if constexpr (W == sizeof(result_type) * 8u) {
+      return ~(result_type)0;
+    }
+    else {
+      return (result_type)(((result_type)1u) << W) - (result_type)1;
+    }
   }
   static constexpr result_type default_seed = 5489u;
 
@@ -200,20 +205,26 @@ public:
 
   template <class G>
   result_type operator ()(G &g) {
-    using int_t = typename G::result_type;
-    if (const auto tmp = to_unsigned(y - x);
-        tmp > to_unsigned(g.max() - g.min()))
+    using uint_t = typename G::result_type;
+    const auto g_dif = to_unsigned(g.max() - g.min());
+    const auto dif = to_unsigned(y - x);
+    if (dif > g_dif)
       throw_or_abort<logic_error>
         ("re::uniform_int_distribution::operator (): "
          "distribute small to big\n");
-    const int_t len = g.max() - g.min() + 1;
-    const int_t dis_len = static_cast<int_t>(y - x) + 1;
-    const int_t discard_line = len - len % dis_len;
+
+    const uint_t len_minus_1 = static_cast<uint_t>(g_dif);
+    if (dif == to_unsigned(numeric_limits<uint_t>::max()))
+      return g();
+    const uint_t dis_len = static_cast<uint_t>(dif) + (uint_t)1;
+    const uint_t r = len_minus_1 % dis_len;
+    const uint_t discard_point = ((r == dis_len - (uint_t)1)
+                                  ? len_minus_1 : (len_minus_1 - r));
     for (;;) {
       const auto k = g() - g.min();
-      if (k >= discard_line)
+      if (k > discard_point)
         continue;
-      return static_cast<result_type>(k % dis_len + x);
+      return x + static_cast<result_type>(k % dis_len);
     }
   }
   template <class G>
@@ -295,10 +306,10 @@ public:
     y = p.second;
   }
   result_type min() const {
-    return x;
+    return 0;
   }
   result_type max() const {
-    return y;
+    return 1;
   }
 };
 

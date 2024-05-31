@@ -4,7 +4,51 @@
 #include "range.h"
 #include "container.h"
 
+// fputc_iterator
+// c_file
+// console_c_file
 namespace re {
+
+struct fputc_iterator {
+  using value_type = void;
+  using reference = void;
+  using pointer = void;
+  using difference_type = ptrdiff_t;
+  using iterator_category = output_iterator_tag;
+
+private:
+  FILE *s{};
+
+public:
+  fputc_iterator() = default;
+  ~fputc_iterator() = default;
+  fputc_iterator(const fputc_iterator &) = default;
+  fputc_iterator &operator =(const fputc_iterator &) = default;
+  fputc_iterator(fputc_iterator &&) = default;
+  fputc_iterator &operator =(fputc_iterator &&) = default;
+  friend void swap(fputc_iterator &x, fputc_iterator &y) noexcept {
+    default_swap(x, y);
+  }
+
+  explicit fputc_iterator(FILE *s = stdout) : s(s) {}
+  FILE *base() const {
+    return s;
+  }
+
+  fputc_iterator &operator *() {
+    return *this;
+  }
+  fputc_iterator &operator ++() {
+    return *this;
+  }
+  fputc_iterator &operator ++(int) {
+    return *this;
+  }
+  fputc_iterator &operator =(int c) {
+    fputc(c, s);
+    return *this;
+  }
+};
 
 class c_file {
   using this_t = c_file;
@@ -32,181 +76,155 @@ public:
     x.fp = nullptr;
   }
   c_file &operator =(c_file &&x) noexcept {
-    if (addressof(*this) != addressof(x)) {
+    if (addressof(x) != this) {
       clean_data();
       fp = x.fp;
       x.release_data();
     }
     return *this;
   }
-
-  c_file(const char *filename, const char *mode = "a+b") {
-    fp = fopen(filename, mode);
+  friend void swap(c_file &x, c_file &y) noexcept {
+    default_swap(x, y);
   }
 
-  c_file(nullptr_t) noexcept : fp(nullptr) {}
-  c_file &operator =(nullptr_t) noexcept {
-    fp = nullptr;
-    return *this;
-  }
-  bool empty() const noexcept {
+  bool operator ==(nullptr_t) const noexcept {
     return fp == nullptr;
   }
+
+  explicit c_file(const char *filename, const char *mode = "a+b") {
+    fp = fopen(filename, mode);
+  }
+  explicit c_file(FILE *f) : fp(f) {}
 
   void open(const char *filename, const char *mode = "a+b") {
     if (fp != nullptr)
       close();
     fp = fopen(filename, mode);
   }
-  void close() {
-    fclose(fp);
-    fp = nullptr;
-  }
 
-  operator FILE *() const noexcept {
-    return fp;
+  bool empty() const noexcept {
+    return fp == nullptr;
+  }
+  void close() {
+    if (!empty()) {
+      fclose(fp);
+      fp = nullptr;
+    }
   }
   FILE *base() const noexcept {
     return fp;
   }
-
-  bool error() const noexcept {
-    return ferror(fp);
+  FILE *release() noexcept {
+    return exchange(fp, nullptr);
+  }
+  bool error() const {
+    return empty() || ferror(fp);
   }
 
   int getc() const noexcept {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::getc(): null file pointer\n");
     return fgetc(fp);
   }
+  const this_t &putc(int c) const {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::putc(c): null file pointer\n");
+    fputc(c, fp);
+    return *this;
+  }
+  fputc_iterator putc_iter() const noexcept {
+    return fputc_iterator(base());
+  }
+  const this_t &flush() const {
+    if (!empty())
+      fflush(fp);
+    return *this;
+  }
+
   template <class STR = string>
   STR get() const noexcept {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::get(): null file pointer\n");
     STR s;
     int c;
     while ((c = fgetc(fp)) != EOF)
       s.push_back(c);
     return s;
   }
-
-  this_t &putc(int c) {
-    fputc(c, fp);
-    return *this;
-  }
-  this_t &put(char c) {
-    fputc(c, fp);
-    return *this;
-  }
-  this_t &put(const char *s) {
+  const this_t &put(const char *s) const {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::put(s): null file pointer\n");
     fputs(s, fp);
+    flush();
     return *this;
   }
   template <class R>
   enable_if_t<is_rng<R> && is_citr<rng_itr<R>>
+              && !is_convertible_v<R &&, const char *>
               && (is_same_v<rng_vt<R>, char>
                   || is_same_v<rng_vt<R>, signed char>
                   || is_same_v<rng_vt<R>, unsigned char>),
-              this_t &>
-  put(R &&r) {
+              const this_t &>
+  put(R &&r) const {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::put(sr): null file pointer\n");
     const int result = fwrite((void *)to_address(begin(r)), 1, size(r), fp);
     if (result == EOF)
       throw_or_abort<runtime_error>("fwrite() failed");
+    flush();
     return *this;
   }
   template <class R>
   enable_if_t<is_rng<R> && !is_citr<rng_itr<R>> && is_iitr<rng_itr<R>>
+              && !is_convertible_v<R &&, const char *>
               && (is_same_v<rng_vt<R>, char>
                   || is_same_v<rng_vt<R>, signed char>
                   || is_same_v<rng_vt<R>, unsigned char>),
-              this_t &>
-  put(R &&r) {
+              const this_t &>
+  put(R &&r) const {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::put(sr): null file pointer\n");
     for (auto c : r)
       fputc(c, fp);
+    flush();
     return *this;
   }
-
-  this_t &flush() {
-    fflush(fp);
-    return *this;
-  }
-
-  friend inline bool operator ==(const c_file &x, const c_file &y) noexcept;
 };
-inline bool operator ==(const c_file &x, const c_file &y) noexcept {
-  return x.fp == y.fp;
-}
-inline bool operator !=(const c_file &x, const c_file &y) noexcept {
-  return !(x == y);
-}
-inline bool operator ==(nullptr_t, const c_file &f) noexcept {
-  return f.base() == nullptr;
-}
-inline bool operator ==(const c_file &f, nullptr_t) noexcept {
-  return f.base() == nullptr;
-}
-inline bool operator !=(nullptr_t, const c_file &f) noexcept {
-  return f.base() != nullptr;
-}
-inline bool operator !=(const c_file &f, nullptr_t) noexcept {
-  return f.base() != nullptr;
-}
+
 inline bool file_exists(const char *s) {
   c_file f;
   f.open(s, "rb");
   return f != nullptr;
 }
 
-struct fputc_iterator {
-  using value_type = void;
-  using reference = void;
-  using pointer = void;
-  using difference_type = void;
-  using iterator_category = output_iterator_tag;
-
-  FILE *s;
-
-  fputc_iterator() = default;
-  ~fputc_iterator() = default;
-  fputc_iterator(const fputc_iterator &) = default;
-  fputc_iterator &operator =(const fputc_iterator &) = default;
-  fputc_iterator(fputc_iterator &&) = default;
-  fputc_iterator &operator =(fputc_iterator &&) = default;
-
-  fputc_iterator(FILE *s = stdout) : s(s) {}
-
-  fputc_iterator &operator *() {
-    return *this;
-  }
-  fputc_iterator &operator ++() {
-    return *this;
-  }
-  fputc_iterator &operator ++(int) {
-    return *this;
-  }
-  fputc_iterator &operator =(int c) {
-    fputc(c, s);
-    return *this;
-  }
-};
 class console_c_file : protected c_file {
 public:
-  console_c_file() = default;
+  console_c_file() = delete;
   ~console_c_file() {
     c_file::fp = nullptr;
   }
   console_c_file(const console_c_file &) = delete;
   console_c_file &operator =(const console_c_file &) = delete;
-  console_c_file(console_c_file &&) = default;
+  console_c_file(console_c_file &&) = delete;
   console_c_file &operator =(console_c_file &&) = delete;
 
-  using c_file::operator FILE *;
+  using c_file::base;
   using c_file::error;
-  using c_file::get;
   using c_file::getc;
-  using c_file::put;
   using c_file::putc;
+  using c_file::putc_iter;
   using c_file::flush;
+  using c_file::get;
+  using c_file::put;
 
+private:
   explicit console_c_file(FILE *fp) {
     c_file::fp = fp;
   }
+
+  friend inline console_c_file stdin_f() noexcept;
+  friend inline console_c_file stdout_f() noexcept;
+  friend inline console_c_file stderr_f() noexcept;
 };
 inline console_c_file stdin_f() noexcept {
   return console_c_file(stdin);
@@ -214,6 +232,88 @@ inline console_c_file stdin_f() noexcept {
 inline console_c_file stdout_f() noexcept {
   return console_c_file(stdout);
 }
+inline console_c_file stderr_f() noexcept {
+  return console_c_file(stderr);
+}
+
+}
+
+// print_tag
+namespace re {
+
+struct print_tag_left {};
+inline constexpr print_tag_left left{};
+struct print_tag_right {};
+inline constexpr print_tag_right right{};
+
+struct print_tag_min_width {
+  size_t value{};
+};
+struct fo_setw {
+  print_tag_min_width operator ()(size_t w) const noexcept {
+    return print_tag_min_width{w};
+  }
+};
+inline constexpr fo_setw setw{};
+
+struct print_tag_fill {
+  char value = ' ';
+};
+struct fo_setfill {
+  print_tag_fill operator ()(char c) const noexcept {
+    return print_tag_fill{c};
+  }
+};
+inline constexpr fo_setfill setfill{};
+
+struct print_tag_showpos {};
+inline constexpr print_tag_showpos showpos{};
+struct print_tag_noshowpos {};
+inline constexpr print_tag_noshowpos noshowpos{};
+
+struct print_tag_dec {};
+inline constexpr print_tag_dec dec{};
+struct print_tag_hex {};
+inline constexpr print_tag_hex hex{};
+struct print_tag_oct {};
+inline constexpr print_tag_oct oct{};
+struct print_tag_bin {};
+inline constexpr print_tag_bin bin{};
+
+struct print_tag_separator {
+  size_t value = 0;
+};
+struct fo_setseparator {
+  print_tag_separator operator ()(size_t n) const {
+    return print_tag_separator{n};
+  }
+};
+inline constexpr fo_setseparator setseparator{};
+
+struct print_tag_uppercase {};
+inline constexpr print_tag_uppercase uppercase{};
+struct print_tag_nouppercase {};
+inline constexpr print_tag_nouppercase nouppercase{};
+
+struct print_tag_fixed {};
+inline constexpr print_tag_fixed fixed{};
+struct print_tag_scientific {};
+inline constexpr print_tag_scientific scientific{};
+
+struct print_tag_precision {
+  size_t value{};
+};
+struct fo_setprecision {
+  print_tag_precision operator ()(size_t w) const noexcept {
+    return print_tag_precision(w);
+  }
+};
+inline constexpr fo_setprecision setprecision{};
+
+}
+
+// sscan
+namespace re {
 
 namespace inner {
 
@@ -238,11 +338,12 @@ struct sscan_int_traits_dec {
 
   template <class ITER>
   static bool scan_single_char(ITER it, T &x) {
-    if (isdigit(*it))
+    if (isdigit(*it)) {
       x = *it - '0';
+      return true;
+    }
     else
       return false;
-    return true;
   }
 };
 template <class T>
@@ -251,11 +352,12 @@ struct sscan_int_traits_oct {
 
   template <class ITER>
   static bool scan_single_char(ITER it, T &x) {
-    if (*it <= '7' && *it >= '0')
+    if (*it <= '7' && *it >= '0') {
       x = *it - '0';
+      return true;
+    }
     else
       return false;
-    return true;
   }
 };
 template <class T>
@@ -276,26 +378,47 @@ struct sscan_int_traits_hex {
   }
 };
 
+}
+namespace inner::fns {
+
 template <class TRAITS, class SV, class T>
-bool sscan_uint_impl(SV &v, T &o) {
+bool sscan_int_impl(SV &v, T &o) requires unsigned_integral<T> {
   constexpr auto upper_lim = integral_traits<T>::max();
 
   const auto ed = end(v);
   auto it = begin(v);
   if (it == ed)
     return false;
+  bool neg_sign = false;
   if (*it == '+') {
     ++it;
     if (it == ed)
       return false;
   }
+  else if (*it == '-') {
+    ++it;
+    if (it == ed)
+      return false;
+    neg_sign = true;
+  }
+
   T x;
   if (!TRAITS::scan_single_char(it, x))
     return false;
   for (++it; it != ed; ++it) {
+    if (*it == '\'') {
+      ++it;
+      if (it == ed) {
+        --it;
+        break;
+      }
+    }
     T tmp;
-    if (!TRAITS::scan_single_char(it, tmp))
+    if (!TRAITS::scan_single_char(it, tmp)) {
+      if (*prev(it) == '\'')
+        --it;
       break;
+    }
     if (x > upper_lim / TRAITS::base)
       return false;
     x *= TRAITS::base;
@@ -303,18 +426,18 @@ bool sscan_uint_impl(SV &v, T &o) {
       return false;
     x += tmp;
   }
+  if (neg_sign && x != 0u)
+    return false;
+
   v = {it, ed};
   o = x;
   return true;
 }
 template <class TRAITS, class SV, class T>
-bool sscan_int_impl(SV &v, T &o) {
-  constexpr auto upper_lim = integral_traits<T>::max();
-  constexpr auto lower_lim = integral_traits<T>::min();
-
+bool sscan_int_impl(SV &v, T &o) requires signed_integral<T> {
   const auto ed = end(v);
   auto it = begin(v);
-  bool plus = true;
+  bool neg_sign = false;
   if (it == ed)
     return false;
   if (*it == '+') {
@@ -326,39 +449,57 @@ bool sscan_int_impl(SV &v, T &o) {
     ++it;
     if (it == ed)
       return false;
-    plus = false;
+    neg_sign = true;
   }
 
-  T x;
+  T x{};
   if (!TRAITS::scan_single_char(it, x))
     return false;
-  if (plus) {
-    for (++it; it != ed; ++it) {
-      T tmp;
-      if (!TRAITS::scan_single_char(it, tmp))
-        break;
-      if (x > upper_lim / TRAITS::base)
-        return false;
-      x *= TRAITS::base;
-      if (tmp > upper_lim - x)
-        return false;
-      x += tmp;
-    }
-  }
-  else {
+  if (neg_sign)
     x = -x;
-    for (++it; it != ed; ++it) {
-      T tmp;
-      if (!TRAITS::scan_single_char(it, tmp))
+
+  const auto f_non_neg = [](T &acc, const T &new_number)->bool {
+    constexpr T upper_lim = integral_traits<T>::max();
+    constexpr T lower_lim = integral_traits<T>::min();
+    if (acc > upper_lim / TRAITS::base)
+      return false;
+    acc *= TRAITS::base;
+    if (new_number > upper_lim - acc)
+      return false;
+    acc += new_number;
+    return true;
+  };
+  const auto f_neg = [](T &acc, const T &new_number)->bool {
+    constexpr T upper_lim = integral_traits<T>::max();
+    constexpr T lower_lim = integral_traits<T>::min();
+    if (acc < lower_lim / TRAITS::base)
+      return false;
+    acc *= TRAITS::base;
+    if (-new_number < lower_lim - acc)
+      return false;
+    acc -= new_number;
+    return true;
+  };
+  bool (*const fp)(T &acc, const T &) = neg_sign ? f_neg : f_non_neg;
+
+  for (++it; it != ed; ++it) {
+    if (*it == '\'') {
+      ++it;
+      if (it == ed) {
+        --it;
         break;
-      if (x < lower_lim / TRAITS::base)
-        return false;
-      x *= TRAITS::base;
-      if (tmp > x - lower_lim)
-        return false;
-      x -= tmp;
+      }
     }
+    T tmp;
+    if (!TRAITS::scan_single_char(it, tmp)) {
+      if (*prev(it) == '\'')
+        --it;
+      break;
+    }
+    if (!fp(x, tmp))
+      return false;
   }
+
   v = {it, ed};
   o = x;
   return true;
@@ -366,258 +507,73 @@ bool sscan_int_impl(SV &v, T &o) {
 
 }
 struct fo_sscan {
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_uint_impl<inner::sscan_int_traits_dec<T>>(v, o);
-  }
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && !is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_int_impl<inner::sscan_int_traits_dec<T>>(v, o);
-  }
-
-  template <class SV>
-  bool operator ()(SV &v, sview v2) const {
-    const auto ed = end(v);
-    const auto op = begin(v);
-    const auto ed2 = end(v2);
-
-    auto it = op;
-    auto it2 = begin(v2);
-    if (ed2 - it2 > ed - op)
-      return false;
-    for (;;) {
-      if (it2 == ed2) {
-        v = {it, ed};
-        return true;
-      }
-      if (*it != *it2)
-        return false;
-      ++it;
-      ++it2;
+  bool operator ()(sview &v, sview v2) const {
+    const auto v_sz = ssize(v);
+    const auto v2_sz = ssize(v2);
+    if (v_sz >= v2_sz && !v2.empty() && equal(v2, v.begin())) {
+      v = {v.begin() + v2_sz, v.end()};
+      return true;
     }
+    else
+      return false;
+  }
+
+  template <class T>
+  bool operator ()(sview &v, T &o) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_dec<T>>(v, o);
+  }
+  template <class T>
+  bool operator ()(sview &v, T &o, print_tag_dec) const
+    requires is_integral_v<T> {
+    return operator ()(v, o);
+  }
+  template <class T>
+  bool operator ()(sview &v, T &o, print_tag_bin) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_bin<T>>(v, o);
+  }
+  template <class T>
+  bool operator ()(sview &v, T &o, print_tag_oct) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_oct<T>>(v, o);
+  }
+  template <class T>
+  bool operator ()(sview &v, T &o, print_tag_hex) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_hex<T>>(v, o);
+  }
+
+private:
+  template <class F>
+  static bool impl_for_float(sview &v, F &x);
+public:
+  bool operator ()(sview &v, float &x) const {
+    return impl_for_float(v, x);
+  }
+  bool operator ()(sview &v, double &x) const {
+    return impl_for_float(v, x);
   }
 };
 inline constexpr fo_sscan sscan{};
-struct fo_sscan_bin {
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_uint_impl<inner::sscan_int_traits_bin<T>>(v, o);
-  }
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && !is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_int_impl<inner::sscan_int_traits_bin<T>>(v, o);
-  }
-};
-inline constexpr fo_sscan_bin sscan_bin{};
-struct fo_sscan_oct {
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_uint_impl<inner::sscan_int_traits_oct<T>>(v, o);
-  }
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && !is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_int_impl<inner::sscan_int_traits_oct<T>>(v, o);
-  }
-};
-inline constexpr fo_sscan_oct sscan_oct{};
-struct fo_sscan_hex {
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_uint_impl<inner::sscan_int_traits_hex<T>>(v, o);
-  }
-  template <class SV, class T>
-  enable_if_t<is_integral_v<T> && !is_unsigned_v<T>, bool>
-  operator ()(SV &v, T &o) const {
-    return inner::sscan_int_impl<inner::sscan_int_traits_hex<T>>(v, o);
-  }
-};
-inline constexpr fo_sscan_hex sscan_hex{};
 
-// left
-// right
-// showpos
-// noshowpos
-// setfill(c) 
-// setw(6)
-// dec
-// hex
-// oct
-// bin
+}
+
+// sprint
+// put
+namespace re {
 
 namespace inner {
 
-inline const char from_0_to_1f[]
+inline constexpr char from_0_to_f[]
   = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
      'a', 'b', 'c', 'd', 'e', 'f'};
-inline const char from_0_to_1F[]
+inline constexpr char from_0_to_F[]
   = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
      'A', 'B', 'C', 'D', 'E', 'F'};
 
-namespace noadl {
-
-template <size_t N>
-struct fixed_point_for_fprint {
-  // | reserved_bits | significant_bits | (left high right low)
-  using uint = uint64_t;
-  static const uint base = 10; // 1/base = some binary number with limited bits
-  static const uint uint_bits = 64;
-  static const uint reserved_bits = 4;
-  static const uint significant_bits = 60;
-  static const uint significant_max = ~(uint)0 >> reserved_bits;
-
-  // short endian
-  // dot is at left side of a[N]
-  uint a[N * 2];
-
-  void l_shift(uint64_t n) {
-    const uint d = n / significant_bits;
-    const uint r = n % significant_bits;
-    const auto mid = end(a) - d;
-    if (d != 0) {
-      for (auto &p : iters(begin(a), mid))
-        *p = *(p + d);
-      for (auto &x : rng(mid, end(a)))
-        x = 0;
-    }
-    if (r != 0) {
-      uint tmp = 0;
-      for (auto &x : rrng(begin(a), mid)) {
-        const uint tmp2 = (uint)(x >> (uint)(significant_bits - r));
-        x = (uint)((uint)(x << r) & significant_max) | tmp;
-        tmp = tmp2;
-      }
-    }
-  };
-  void r_shift(uint64_t n) {
-    const uint d = n / significant_bits;
-    const uint r = n % significant_bits;
-    const auto mid = begin(a) + d;
-    if (d != 0) {
-      for (auto &p : iters(mid, end(a)))
-        *p = *(p - d);
-      for (auto &x : rng(begin(a), mid))
-        x = 0;
-    }
-    if (r != 0) {
-      uint tmp = 0;
-      for (auto &x : rng(mid, end(a))) {
-        const uint tmp2
-          = (uint)(x << (uint)(significant_bits - r)) & significant_max;
-        x = (uint)(x >> r) | tmp;
-        tmp = tmp2;
-      }
-    }
-  };
-  void assign(uint64_t x, int64_t k) {
-    // actual value: x * (2 ^ k)
-    a[N - 1] = x;
-    if (k > 0)
-      l_shift(k);
-    else
-      r_shift(-k);
-  }
-
-  bool interger_is0() const {
-    return none_of(rrng(a, N));
-  }
-  bool fraction_is0() const {
-    return none_of(rng(a + N, end(a)));
-  }
-  char interger_div() {
-    uint tmp = 0;
-    for (auto &x : iters(a, a + N)) {
-      x |= (uint)(tmp << significant_bits);
-      const uint q = x / base;
-      const uint r = x % base;
-      x = q;
-      tmp = r;
-    }
-    return tmp - '0';
-  }
-  char fraction_mul() {
-    uint tmp = 0;
-    for (auto &x : r_iters(a + N, end(a))) {
-      x += tmp;
-      x *= 10;
-      tmp = x >> (uint)(uint_bits - reserved_bits);
-      x &= significant_max;
-    }
-    return tmp - '0';
-  }
-  template <class S>
-  void sprint_integer_part(S &&s) {
-    auto n = size(s);
-    do {
-      s.push_back(interger_div());
-    } while (!interger_is0());
-    reverse(rng(begin(s) + n, end(s)));
-  }
-  template <class S>
-  void sprint_fraction_part(S &&s) {
-    s.push_back('.');
-    do {
-      s.push_back(fraction_mul());
-    } while (!fraction_is0());
-  }
-};
-
 }
 
-template <class S>
-S &sprint_floating_point_impl(S &&s, float x) {
-  //todo
-  using uint = uint32_t;
-  const uint uint_bits = 32;
-  const uint n = 8;
-  const uint k = 23;
-  const make_signed_t<uint> bias = 127;
-
-  uint bits = bit_cast<uint>(x);
-
-  const bool minus = (uint)(bits >> (uint)(uint_bits - (uint)1));
-  const uint e = (uint)((uint)(bits << (uint)1)
-                        >> (uint)(k + (uint)1));
-
-  if (e == (uint)~(uint)((uint)~(uint)0 << n)) {
-    // inf or nan
-    const uint f = bits & (uint)~(uint)((uint)~(uint)0 << k);
-    if (f == 0)
-      s.append_range("inf"_sv);
-    else
-      s.append_range("nan"_sv);
-  }
-  else if (e == 0) {
-    // denormalized
-    const uint f = bits & (uint)~(uint)((uint)~(uint)0 << k);
-    inner::noadl::fixed_point_for_fprint<3> fx{};
-    fx.assign(f, (make_signed_t<uint>)1 - bias - (k - 1));
-  }
-  else {
-    // normalized
-    const uint f = (uint)(bits & (uint)~(uint)((uint)~(uint)0 << k))
-      | (uint)((uint)1 << k);
-    const uint ff = (uint)((uint)1 << k) + f;
-    inner::noadl::fixed_point_for_fprint<3> fx{};
-    fx.assign(ff,
-              (make_signed_t<uint>)e - bias - k);
-  }
-  return s;
-}
-template <class S>
-S &sprint_floating_point_impl(S &&s, double x) {
-  return s;
-}
-template <class S>
-S &sprint_floating_point_impl(S &&s, long double x);
-
-}
 struct print_args {
   size_t min_width = 0;
   bool left_padding = true;
@@ -630,27 +586,29 @@ struct print_args {
   print_args(print_args &&) = default;
   print_args &operator =(print_args &&) = default;
 
-  inline print_args &right_align() {
+  print_args &left() {
     left_padding = true;
     return *this;
   }
-  inline print_args &left_align() {
+  print_args &right() {
     left_padding = false;
     return *this;
   }
-  inline print_args &min_wid(size_t n) {
+  print_args &setw(size_t n) {
     min_width = n;
     return *this;
   }
-  inline print_args &pad(char c) {
+  print_args &setfill(char c) {
     padding_char = c;
     return *this;
   }
 };
 struct int_print_args : print_args {
   size_t radix = 10;
-  const char *numbers = inner::from_0_to_1f;
+  const char *numbers = inner::from_0_to_f;
+  bool upper_case = false;
   bool show_positive_symbol = false;
+  size_t separator_n = 0;
 
   int_print_args() = default;
   ~int_print_args() = default;
@@ -659,62 +617,193 @@ struct int_print_args : print_args {
   int_print_args(int_print_args &&) = default;
   int_print_args &operator =(int_print_args &&) = default;
 
-  inline int_print_args &right_align() {
-    print_args::right_align();
+  int_print_args &left() {
+    print_args::left();
     return *this;
   }
-  inline int_print_args &left_align() {
-    print_args::left_align();
+  int_print_args &right() {
+    print_args::right();
     return *this;
   }
-  inline int_print_args &min_wid(size_t n) {
-    print_args::min_wid(n);
+  int_print_args &setw(size_t n) {
+    print_args::setw(n);
     return *this;
   }
-  inline int_print_args &pad(char c) {
-    print_args::pad(c);
+  int_print_args &setfill(char c) {
+    print_args::setfill(c);
     return *this;
   }
 
-  inline int_print_args &bin() {
+  int_print_args &dec() {
+    radix = 10;
+    return *this;
+  }
+  int_print_args &bin() {
     radix = 2;
     return *this;
   }
-  inline int_print_args &oct() {
+  int_print_args &oct() {
     radix = 8;
     return *this;
   }
-  inline int_print_args &hex() {
+  int_print_args &hex() {
     radix = 16;
     return *this;
   }
-  inline int_print_args &HEX() {
-    radix = 16;
-    numbers = inner::from_0_to_1F;
+  int_print_args &uppercase() {
+    upper_case = true;
     return *this;
   }
-  inline int_print_args &show_plus() {
+  int_print_args &nouppercase() {
+    upper_case = false;
+    return *this;
+  }
+  int_print_args &showpos() {
     show_positive_symbol = true;
     return *this;
   }
-  inline int_print_args &hide_plus() {
+  int_print_args &noshowpos() {
     show_positive_symbol = false;
     return *this;
   }
+  int_print_args &setseparator(size_t n) {
+    separator_n = n;
+    return *this;
+  }
 };
-struct float_print_args : print_args {}; // todo
+struct float_print_args : print_args {
+  const char *numbers = inner::from_0_to_f;
+  bool upper_case = false;
+  bool show_positive_symbol = false;
+  size_t separator_n = 0u;
+  bool scientific_notation = false;
+  size_t precision = numeric_limits<size_t>::max();
+
+  float_print_args() = default;
+  ~float_print_args() = default;
+  float_print_args(const float_print_args &) = default;
+  float_print_args &operator =(const float_print_args &) = default;
+  float_print_args(float_print_args &&) = default;
+  float_print_args &operator =(float_print_args &&) = default;
+
+  float_print_args &left() {
+    print_args::left();
+    return *this;
+  }
+  float_print_args &right() {
+    print_args::right();
+    return *this;
+  }
+  float_print_args &setw(size_t n) {
+    print_args::setw(n);
+    return *this;
+  }
+  float_print_args &setfill(char c) {
+    print_args::setfill(c);
+    return *this;
+  }
+
+  float_print_args &uppercase() {
+    upper_case = true;
+    return *this;
+  }
+  float_print_args &nouppercase() {
+    upper_case = false;
+    return *this;
+  }
+
+  float_print_args &showpos() {
+    show_positive_symbol = true;
+    return *this;
+  }
+  float_print_args &noshowpos() {
+    show_positive_symbol = false;
+    return *this;
+  }
+
+  float_print_args &setseparator(size_t n) {
+    separator_n = n;
+    return *this;
+  }
+
+  float_print_args &scientific() {
+    scientific_notation = true;
+    return *this;
+  }
+  float_print_args &fixed() {
+    scientific_notation = false;
+    return *this;
+  }
+
+  float_print_args &setprecision(size_t x) {
+    precision = x;
+    return *this;
+  }
+};
+
 struct fo_sprint {
-  template <class I, class S = string>
-  enable_if_t<is_same_v<bool, decay_t<I>>, S &>
-  operator ()(S &&s, I y, int_print_args pa = {}) const {
-    operator ()(s, (int)y, pa);
+private:
+  template <class S, class...SS>
+  static S &impl_for_string(S &&s, sview sv, print_args &pa) {
+    const auto sz = size(sv);
+    if (sz >= pa.min_width)
+      s.push_back(sv);
+    else {
+      if (pa.left_padding) {
+        s.append_range(rng(pa.min_width - sz, pa.padding_char));
+        s.push_back(sv);
+      }
+      else {
+        s.push_back(sv);
+        s.append_range(rng(pa.min_width - sz, pa.padding_char));
+      }
+    }
     return s;
   }
-  template <class I, class S = string>
-  enable_if_t<!is_same_v<bool, decay_t<I>> && is_integral_v<I>, S &>
-  operator ()(S &&s, I i, int_print_args pa = {}) const {
-    bool sign_symbol_is_shown = false;
+  template <class S, class...SS>
+  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+                            print_tag_left, SS &&...ss) {
+    pa.left();
+    return impl_for_string(s, sv, pa, forward<SS>(ss)...);
+  }
+  template <class S, class...SS>
+  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+                            print_tag_right, SS &&...ss) {
+    pa.right();
+    return impl_for_string(s, sv, pa, forward<SS>(ss)...);
+  }
+  template <class S, class...SS>
+  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+                            print_tag_min_width x, SS &&...ss) {
+    pa.setw(x.value);
+    return impl_for_string(s, sv, pa, forward<SS>(ss)...);
+  }
+  template <class S, class...SS>
+  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+                            print_tag_fill x, SS &&...ss) {
+    pa.setfill(x.value);
+    return impl_for_string(s, sv, pa, forward<SS>(ss)...);
+  }
+public:
+  template <class S>
+  S &operator ()(S &&s, sview sv, print_args pa = {}) const {
+    return impl_for_string(s, sv, pa);
+  }
+  template <class S, class...SS>
+  S &operator ()(S &&s, sview sv, SS &&...ss) const
+    requires (!(sizeof...(SS) == 1u
+                && is_convertible_v<nth_type_t<0, SS &&...>, print_args>)) {
+    print_args pa{};
+    return impl_for_string(s, sv, pa, forward<SS>(ss)...);
+  }
+
+private:
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa) {
     typename decay_t<S>::size_type n = s.size();
+    auto guard = exit_fn([&]() {s.resize(n);}, true);
+
+    bool sign_symbol_is_shown = false;
     make_unsigned_t<I> u{};
     if (i < 0) {
       s.push_back('-');
@@ -732,7 +821,9 @@ struct fo_sprint {
     try {
 #endif
       for (;;) {
-        s.push_back(pa.numbers[u % pa.radix]);
+        const char *num_a = (pa.upper_case  && pa.numbers == inner::from_0_to_f)
+          ? inner::from_0_to_F : inner::from_0_to_f;
+        s.push_back(num_a[u % pa.radix]);
         u /= pa.radix;
         if (u == 0)
           break;
@@ -744,36 +835,245 @@ struct fo_sprint {
       throw;
     }
 #endif
-    reverse(rng(s.begin() + n + sign_symbol_is_shown, s.end()));
-
+    const auto r = rng(s.begin() + n + (sign_symbol_is_shown ? 1u : 0u),
+                       s.end());
+    reverse(r);
+    if (pa.separator_n != 0) {
+      const rng_szt<S> digit_len = size(r);
+      rng_szt<S> sep_count = digit_len / pa.separator_n;
+      const rng_szt<S> rem = digit_len % pa.separator_n;
+      if (sep_count != 0) {
+        if (rem == 0)
+          --sep_count;
+        const auto r_len = ssize(r);
+        s.reserve_more(sep_count);
+        s.resize(s.size() + sep_count);
+        const auto r_op = s.end() - to_signed(sep_count) - r_len;
+        auto it = s.end() - to_signed(sep_count);
+        auto it2 = s.end();
+        for (rng_szt<S> k = 0u; r_op != it && it != it2;) {
+          *--it2 = *--it;
+          ++k;
+          if (k == pa.separator_n) {
+            k = 0u;
+            *--it2 = '\'';
+          }
+        }
+      }
+    }
     if (s.size() - n < pa.min_width)
       s.insert(pa.left_padding ? (s.begin() + n) : s.end(),
                rng(pa.min_width - (s.size() - n), pa.padding_char));
+    guard.unset();
     return s;
   }
-
-  template <class S = string>
-  S &operator ()(S &&s, sview sv, print_args pa = {}) const {
-    const auto sz = size(sv);
-    if (sz >= pa.min_width)
-      s.push_back(sv);
-    else {
-      if (pa.left_padding) {
-        s.append_range(rng(pa.min_width - sz, pa.padding_char));
-        s.push_back(sv);
-      }
-      else {
-        s.push_back(sv);
-        s.append_range(rng(pa.min_width - sz, pa.padding_char));
-      }
-    }
-    return s;
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_left, SS &&...ss) {
+    pa.left();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_right, SS &&...ss) {
+    pa.right();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_min_width x, SS &&...ss) {
+    pa.setw(x.value);
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_fill x, SS &&...ss) {
+    pa.setfill(x.value);
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_showpos x, SS &&...ss) {
+    pa.showpos();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_noshowpos x, SS &&...ss) {
+    pa.noshowpos();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_dec x, SS &&...ss) {
+    pa.dec();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_hex x, SS &&...ss) {
+    pa.hex();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_uppercase, SS &&...ss) {
+    pa.uppercase();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_nouppercase, SS &&...ss) {
+    pa.nouppercase();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_oct x, SS &&...ss) {
+    pa.oct();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_bin x, SS &&...ss) {
+    pa.bin();
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+  template <class I, class S, class...SS>
+  static S &impl_for_int(S &&s, I i, int_print_args &pa,
+                         print_tag_separator x, SS &&...ss) {
+    pa.setseparator(x.value);
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
   }
 
-  template <class X, class S = string>
-  enable_if_t<is_floating_point_v<X>, S &>
-  operator ()(S &&s, X x, float_print_args pa = {}) const {
-    return inner::sprint_floating_point_impl(s, x);
+public:
+  template <class I, class S>
+  enable_if_t<is_same_v<bool, decay_t<I>>, S &>
+  operator ()(S &&s, I y, int_print_args pa = {}) const {
+    return impl_for_int(s, (int)y, pa);
+  }
+  template <class I, class S, class...SS>
+  enable_if_t<is_same_v<bool, decay_t<I>>, S &>
+  operator ()(S &&s, I y, SS &&...ss) const {
+    int_print_args pa{};
+    return impl_for_int(s, (int)y, pa, forward<SS>(ss)...);
+  }
+
+  template <class I, class S>
+  enable_if_t<!is_same_v<bool, decay_t<I>> && is_integral_v<I>, S &>
+  operator ()(S &&s, I i, int_print_args pa = {}) const {
+    return impl_for_int(s, i, pa);
+  }
+  template <class I, class S, class...SS>
+  enable_if_t<!is_same_v<bool, decay_t<I>> && is_integral_v<I>
+              && !(sizeof...(SS) == 1u
+                   && is_convertible_v
+                   <nth_type_t<0, SS &&...>, int_print_args>),
+              S &>
+  operator ()(S &&s, I i, SS &&...ss) const {
+    int_print_args pa{};
+    return impl_for_int(s, i, pa, forward<SS>(ss)...);
+  }
+
+private:
+  template <class F, class S>
+  static S &impl_for_float(S &&, F, const float_print_args &);
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_left, SS &&...ss) {
+    pa.left();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_right, SS &&...ss) {
+    pa.right();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_min_width u, SS &&...ss) {
+    pa.setw(u.value);
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_fill f, SS &&...ss) {
+    pa.setfill(f.value);
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_showpos, SS &&...ss) {
+    pa.showpos();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_noshowpos, SS &&...ss) {
+    pa.noshowpos();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_separator u, SS &&...ss) {
+    pa.setseparator(u.value);
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_uppercase, SS &&...ss) {
+    pa.uppercase();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_nouppercase, SS &&...ss) {
+    pa.nouppercase();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_fixed, SS &&...ss) {
+    pa.fixed();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_scientific, SS &&...ss) {
+    pa.scientific();
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_precision u, SS &&...ss) {
+    pa.setprecision(u.value);
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
+public:
+  template <class S>
+  inline S &operator ()(S &&s, float x, float_print_args pa = {}) const {
+    return impl_for_float<float>(s, x, pa);
+  }
+  template <class S>
+  inline S &operator ()(S &&s, double x, float_print_args pa = {}) const {
+    return impl_for_float<double>(s, x, pa);
+  }
+  template <class S, class...SS>
+  S &operator ()(S &&s, float x, SS &&...ss) const
+    requires (!(sizeof...(SS) == 1u
+                && is_convertible_v
+                <nth_type_t<0, SS &&...>, float_print_args>)) {
+    float_print_args pa{};
+    return impl_for_float<float>(s, x, pa, forward<SS>(ss)...);
+  }
+  template <class S, class...SS>
+  S &operator ()(S &&s, double x, SS &&...ss) const
+    requires (!(sizeof...(SS) == 1u
+                && is_convertible_v
+                <nth_type_t<0, SS &&...>, float_print_args>)) {
+    float_print_args pa{};
+    return impl_for_float<double>(s, x, pa, forward<SS>(ss)...);
   }
 };
 inline constexpr fo_sprint sprint{};
@@ -800,6 +1100,1678 @@ inline constexpr fo_putln putln{};
 
 }
 
+// big_int
+namespace re {
+
+namespace inner::fns {
+
+template <class S>
+void no_sign_fixed_fraction_string_apply_separator_arg(S &s,
+                                                       ptrdiff_t i,
+                                                       size_t sep_n) {
+  // sv has valid format and is not empty
+  // sv has no leading zero except "0."
+  if (sep_n == 0u)
+    return;
+
+  const ptrdiff_t j = ssize(s);
+  const ptrdiff_t k = find(sview(nth(s, i), nth(s, j)), '.') - s.begin();
+  if (k == j) {
+    // sep_n > 0
+    // [nth(s, i), nth(s, j))
+
+    const ptrdiff_t len = k - i;
+    if (sep_n >= to_unsigned(len))
+      return;
+    ptrdiff_t q = len / to_signed(sep_n);
+    const ptrdiff_t rem = len % to_signed(sep_n);
+    if (rem == 0)
+      --q;
+
+    ptrdiff_t c = to_signed(sep_n);
+    s.reserve_more(to_unsigned(q));
+    s.resize(s.size() + to_unsigned(q));
+
+    auto it2 = s.end();
+    auto it = nth(s, j);
+    for (;;) {
+      *--it2 = *--it;
+      --c;
+      if (c == 0) {
+        c = to_signed(sep_n);
+        *--it2 = '\'';
+        if (it2 == it)
+          break;
+      }
+    }
+  }
+  else {
+    // sep_n > 0
+    // [nth(s, i), nth(s, k)) // non-empty
+    // [nth(s, k + 1), nth(s, j)) // non-empty
+
+    const ptrdiff_t r1_len = k - i;
+    const ptrdiff_t r2_len = j - (k + 1);
+
+    ptrdiff_t q1 = r1_len / to_signed(sep_n);
+    const ptrdiff_t rem1 = r1_len % to_signed(sep_n);
+    ptrdiff_t q2 = r2_len / to_signed(sep_n);
+    const ptrdiff_t rem2 = r2_len % to_signed(sep_n);
+    if (q1 > 0 && rem1 == 0)
+      --q1;
+    if (q2 > 0 && rem2 == 0)
+      --q2;
+
+    s.reserve_more(to_unsigned(q1 + q2));
+    s.resize(s.size() + to_unsigned(q1 + q2));
+
+    auto it2 = s.end();
+    // right part of dot
+    {
+      auto it = nth(s, j);
+      const auto stop_point = nth(s, k + 1);
+      ptrdiff_t c = (rem2 == 0 ? to_signed(sep_n) : rem2);
+      for (;;) {
+        *--it2 = *--it;
+        if (it == stop_point)
+          break;
+        --c;
+        if (c == 0) {
+          c = to_signed(sep_n);
+          *--it2 = '\'';
+        }
+      }
+      *--it2 = '.';
+    }
+    // left part of dot
+    {
+      auto it = nth(s, k);
+      ptrdiff_t c = to_signed(sep_n);
+      for (;;) {
+        if (it == it2)
+          break;
+        *--it2 = *--it;
+        --c;
+        if (c == 0) {
+          c = to_signed(sep_n);
+          *--it2 = '\'';
+        }
+      }
+    }
+  }
+}
+template <class S>
+S fixed_fraction_string_to_scientific(sview sv,
+                                      size_t precision, size_t sep_n,
+                                      bool upper_case,
+                                      bool show_pos) {
+  // sv has valid format and is not empty
+  // sv has no leading zero except "0."
+  S s2;
+  if (front(sv) == '+') {
+    sv = {next(sv.begin()), sv.end()};
+    if (show_pos)
+      s2.append('+');
+  }
+  else if (front(sv) == '-') {
+    sv = {next(sv.begin()), sv.end()};
+    s2.append('-');
+  }
+  else {
+    if (show_pos)
+      s2.append('+');
+  }
+
+  const auto s2_old_ssz = ssize(s2);
+  const auto dot_pos = find(sv, '.');
+  sview sv_l = sview(sv.begin(), dot_pos);
+  sview sv_r = sview(dot_pos != sv.end() ? next(dot_pos) : sv.end(), sv.end());
+  rng_dft<sview> e = 0;
+  if (equal(sv_l, seq('0')) && all_of_equal(sv_r, '0')) {
+    if (precision == numeric_limits<size_t>::max() || precision == 0u)
+      s2.append('0');
+    else {
+      s2.append("0.");
+      s2.append(rng(precision, '0'));
+    }
+  }
+  else {
+    if (equal(sv_l, seq('0'))) {
+      const auto i = find_not(sv_r, '0'); // i is dereferenceable
+      e = -1 + (sv_r.begin() - i);
+      sview v(i, sv_r.end());
+      const sview v2(next(i), sv_r.end()); // v2 may be empty
+      if (precision == numeric_limits<size_t>::max()) {
+        s2.append(front(v));
+        if (!all_of_equal(v2, '0')) {
+          s2.append('.');
+          auto j = v2.end();
+          while (*--j == '0')
+            ;
+          ++j;
+          s2.append(sview(v2.begin(), j));
+        }
+      }
+      else if (precision == 0u) {
+        if (empty(v2))
+          s2.append(front(v));
+        else {
+          if (front(v2) < '5')
+            s2.append(front(v));
+          else {
+            if (front(v) != '9')
+              s2.append((char)(front(v) + 1));
+            else {
+              s2.append('1');
+              ++e;
+            }
+          }
+        }
+      }
+      else if (size(v2) <= precision) {
+        s2.append(front(v));
+        s2.append('.');
+        s2.append(v2);
+        s2.append(rng(precision - size(v2), '0'));
+      }
+      else {
+        const auto j = nth(v2, to_signed(precision)); // j is dereferenceable
+        if (*j < '5') {
+          s2.append(front(v));
+          s2.append('.');
+          s2.append(sview(v2.begin(), j));
+        }
+        else {
+          if (all_of_equal(sview(v.begin(), j), '9')) {
+            s2.append('1');
+            s2.append('.');
+            s2.append(rng(precision, '0'));
+            ++e;
+          }
+          else {
+            s2.append(front(v));
+            s2.append('.');
+            s2.append(rng(v2.begin(), j));
+            for (auto &c : rrng(s2.begin() + s2_old_ssz, s2.end())) {
+              if (c != '.') {
+                if (c != '9') {
+                  ++c;
+                  break;
+                }
+                else
+                  c = '0';
+              }
+            }
+          }
+        }
+      }
+    }
+    else {
+      e = ssize(sv_l);
+      --e;
+      if (precision == numeric_limits<size_t>::max()) {
+        s2.append(front(sv_l));
+        s2.append('.');
+        s2.append(sview(next(sv_l.begin()), sv_l.end()));
+        s2.append(sv_r);
+        while (back(s2) == '0')
+          s2.pop_back();
+        if (s2.back() == '.')
+          s2.pop_back();
+      }
+      else if (precision == 0u) {
+        if (e == 0) {
+          if (sv_r.empty())
+            s2.append(front(sv_l));
+          else {
+            if (front(sv_r) < '5')
+              s2.append(front(sv_l));
+            else {
+              if (front(sv_l) < '9')
+                s2.append((char)(front(sv_l) + 1));
+              else {
+                s2.append('1');
+                ++e;
+              }
+            }
+          }
+        }
+        else {
+          // sv_l has two or more elements
+          if (*next(sv_l.begin()) < '5')
+            s2.append(front(sv_l));
+          else {
+            if (front(sv_l) < '9')
+              s2.append((char)(front(sv_l) + 1));
+            else {
+              s2.append('1');
+              ++e;
+            }
+          }
+        }
+      }
+      else {
+        const ptrdiff_t l_numbers = ssize(sv_l) - 1;
+        const ptrdiff_t numbers = l_numbers + ssize(sv_r);
+        if (numbers <= to_signed(precision)) {
+          s2.append(front(sv_l));
+          s2.append('.');
+          s2.append(sview(next(sv_l.begin()), sv_l.end()));
+          s2.append(sv_r);
+          s2.append(rng(to_signed(precision) - numbers, '0'));
+        }
+        else {
+          if (to_signed(precision) < l_numbers) {
+            const auto j = next(sv_l.begin()) + precision;
+            // j is dereferenceable
+            if (*j < '5') {
+              s2.append(front(sv_l));
+              s2.append('.');
+              s2.append(sview(next(sv_l.begin()), j));
+            }
+            else {
+              if (all_of_equal(sview(sv_l.begin(), j), '9')) {
+                s2.append("1.");
+                s2.append(rng(precision, '0'));
+                ++e;
+              }
+              else {
+                s2.append(front(sv_l));
+                s2.append('.');
+                s2.append(sview(next(sv_l.begin()), j));
+                for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
+                  if (c != '.') {
+                    if (c != '9') {
+                      ++c;
+                      break;
+                    }
+                    else
+                      c = '0';
+                  }
+                }
+              }
+            }
+          }
+          else {
+            const auto j = next(sv_r.begin(), (precision - l_numbers));
+            // j is dereferenceable
+            if (*j < '5') {
+              s2.append(front(sv_l));
+              s2.append('.');
+              s2.append(sview(next(sv_l.begin()), sv_l.end()));
+              s2.append(sview(sv_r.begin(), j));
+            }
+            else {
+              if (all_of_equal(sv_l, '9')
+                  && all_of_equal(sview(sv_r.begin(), j), '9')) {
+                s2.append("1.");
+                s2.append(rng(precision, '0'));
+                ++e;
+              }
+              else {
+                s2.append(front(sv_l));
+                s2.append('.');
+                s2.append(sview(next(sv_l.begin()), sv_l.end()));
+                s2.append(sview(sv_r.begin(), j));
+                for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
+                  if (c != '.') {
+                    if (c != '9') {
+                      ++c;
+                      break;
+                    }
+                    else
+                      c = '0';
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  no_sign_fixed_fraction_string_apply_separator_arg(s2, s2_old_ssz, sep_n);
+  s2.append(upper_case ? 'E' : 'e');
+  sprint(s2, e, showpos, setseparator(sep_n));
+  return s2;
+}
+
+}
+class big_int {
+  using this_t = big_int;
+  using vec_t = small_vector<uint32_t, 8>;
+  using vec_dif_t = vec_t::difference_type;
+  using vec_iter_t = vec_t::iterator;
+
+  bool sign = true;
+  vec_t v;
+
+  friend struct inner::fo_good;
+  bool good() const noexcept {
+    return v.empty() ? sign == true : back(v) != 0u;
+  }
+
+  void clear_tail_zero() {
+    vec_iter_t i = v.end();
+    for (vec_iter_t x : take_while_rng(rrng(irng(v)),
+                                       [](auto i) {return *i == 0u;}))
+      i = x;
+    v.erase(i, v.end());
+    if (v.empty()) {
+      sign = true;
+      return;
+    }
+  }
+
+public:
+  big_int() = default;
+  ~big_int() = default;
+  big_int(const big_int &) = default;
+  big_int &operator =(const big_int &) = default;
+  big_int(big_int &&x) noexcept : sign(x.sign), v(move(x.v)) {
+    x.sign = true;
+  }
+  big_int &operator =(big_int &&x) noexcept {
+    if (this != addressof(x)) {
+      sign = x.sign;
+      v = move(x.v);
+      x.sign = true;
+    }
+    return *this;
+  }
+  friend void swap(this_t &x, this_t &y) noexcept {
+    adl_swap(x.sign, y.sign);
+    adl_swap(x.v, y.v);
+  }
+
+private:
+  static strong_ordering abs_cmp(const vec_t &v1, const vec_t &v2) {
+    const auto v1_sz = v1.size();
+    const auto v2_sz = v2.size();
+    if (v1_sz > v2_sz)
+      return strong_gt;
+    else if (v1_sz < v2_sz)
+      return strong_lt;
+    else
+      return lexicographical_synth_3way(rrng(v1), rrng(v2));
+  }
+public:
+  friend bool operator ==(const this_t &x, const this_t &y) noexcept = default;
+  friend strong_ordering operator <=>(const this_t &x,
+                                      const this_t &y) noexcept {
+    if (x.sign) {
+      if (y.sign)
+        return abs_cmp(x.v, y.v);
+      else
+        return strong_gt;
+    }
+    else {
+      if (y.sign)
+        return strong_lt;
+      else
+        return reverse_ordering(abs_cmp(x.v, y.v));
+    }
+  }
+
+private:
+  void set_int64_impl(int64_t x) {
+    uint64_t tmp;
+    if (x < 0) {
+      sign = false;
+      tmp = static_cast<uint64_t>(-x);
+    }
+    else {
+      sign = true;
+      tmp = static_cast<uint64_t>(x);
+    }
+    uint32_t tmp2(tmp);
+    uint32_t tmp3 = static_cast<uint32_t>((uint64_t)(tmp >> (uint64_t)32u));
+    v.push_back(tmp2);
+    v.push_back(tmp3);
+    clear_tail_zero();
+  }
+  void set_int32_impl(int32_t x) {
+    uint32_t xx{};
+    if (x == 0) {
+      sign = true;
+      return;
+    }
+    else if (x < 0) {
+      xx = to_unsigned(-x);
+      sign = false;
+    }
+    else {
+      xx = to_unsigned(x);
+      sign = true;
+    }
+    v.push_back(xx);
+  }
+public:
+  explicit big_int(int64_t x) {
+    set_int64_impl(x);
+  }
+  explicit big_int(int32_t x) {
+    set_int32_impl(x);
+  }
+  this_t &operator =(int64_t x) {
+    v.clear();
+    set_int64_impl(x);
+    return *this;
+  }
+  this_t &operator =(int32_t x) {
+    v.clear();
+    set_int32_impl(x);
+    return *this;
+  }
+  optional<int64_t> to_int64() const {
+    if (v.empty())
+      return optional<int64_t>(0);
+    if (v.size() > 2u)
+      return {};
+    if (v.size() == 1u)
+      return sign ? (int64_t)v[0] : -(int64_t)v[0];
+    uint64_t x = (uint64_t)v[0] | (uint64_t)((uint64_t)v[1] << (uint64_t)32u);
+    if (sign) {
+      if (x > (uint64_t)numeric_limits<int64_t>::max())
+        return {};
+      return (int64_t)x;
+    }
+    else {
+      if (x > (uint64_t)numeric_limits<int64_t>::max() + 1u)
+        return {};
+      return -(int64_t)x;
+    }
+  }
+  optional<int32_t> to_int32() const {
+    if (v.size() >= 2u)
+      return {};
+    else if (v.size() == 1u) {
+      if (sign) {
+        if (v.front() > to_unsigned(numeric_limits<int32_t>::max()))
+          return {};
+        return to_signed(v.front());
+      }
+      else {
+        if (v.front() > to_unsigned(numeric_limits<int32_t>::max()) + 1u)
+          return {};
+        return -to_signed(v.front());
+      }
+    }
+    else
+      return optional<int32_t>(0);
+  }
+
+  bool is_non_negative() const noexcept {
+    return sign;
+  }
+  void neg() noexcept {
+    if (sign == true) {
+      if (!v.empty())
+        sign = false;
+    }
+    else
+      sign = true;
+  }
+
+  bool is_zero() const noexcept {
+    return v.empty();
+  }
+
+  using container_type = vec_t;
+  const vec_t &data() const & noexcept {
+    return v;
+  }
+  vec_t data() && noexcept {
+    auto guard = exit_fn([&]() {sign = true;});
+    return move(v);
+  }
+  void data(vec_t &&x) noexcept {
+    v = move(x);
+    if (v.empty())
+      sign = true;
+  }
+
+  this_t &mul_pow_of_2(int32_t i) {
+    if (v.empty())
+      return *this;
+    auto guard = exit_fn([&]() {clear_tail_zero();}, true);
+    if (i > 0) {
+      uint32_t n = i;
+      const uint32_t q = n / 32u;
+      const uint32_t r = n % 32u;
+      uint32_t tmp = 0u;
+      if (r != 0u)
+        for (uint32_t &x : v) {
+          const uint32_t tmp2 = (x >> (uint32_t)(32u - r));
+          x = (uint32_t)(x << (uint32_t)r) | tmp;
+          tmp = tmp2;
+        }
+      if (tmp != 0u)
+        v.push_back(tmp);
+      if (!v.empty())
+        v.insert(v.begin(), rng(q, (uint32_t)0u));
+    }
+    else if (i < 0) {
+      uint32_t n;
+      n = -i;
+      const uint32_t q = n / 32u;
+      const uint32_t r = n % 32u;
+      v.erase(v.begin(), next(v.begin(), q, v.end()));
+      if (r != 0u) {
+        uint32_t tmp = 0;
+        for (uint32_t &x : rrng(v)) {
+          const uint32_t tmp2 = (uint32_t)(x << (uint32_t)(32u - r));
+          x = (uint32_t)(x >> (uint32_t)r) | tmp;
+          tmp = tmp2;
+        }
+      }
+      clear_tail_zero();
+    }
+    guard.unset();
+    return *this;
+  }
+  this_t &mul_pow_of_10(int32_t i) {
+    auto guard = exit_fn([&]() {clear_tail_zero();}, true);
+    static const uint32_t a[] = {
+      10u, 100u, 1000u, 10000u, 100000u, 1000000u, 10000000u, 100000000u,
+      1000000000u
+    };
+    if (i > 0) {
+      const uint32_t ui = i;
+      const uint32_t k = size(a);
+      const uint32_t q = ui / k;
+      const uint32_t r = ui % k;
+      for (auto c = q; c != 0; --c)
+        mul(back(a));
+      if (r != 0u)
+        mul(a[(size_t)r - 1u]);
+    }
+    else if (i < 0) {
+      const uint32_t ui = -i;
+      const uint32_t k = size(a);
+      const uint32_t q = ui / k;
+      const uint32_t r = ui % k;
+      for (auto c = q; c != 0; --c)
+        div(back(a));
+      if (r != 0u)
+        div(a[(size_t)r - 1u]);
+    }
+    guard.unset();
+    return *this;
+  }
+  this_t &mul(uint32_t x) {
+    if (x == 0u) {
+      v.clear();
+      sign = true;
+      return *this;
+    }
+    v.reserve_more(1u);
+    const uint64_t xx = static_cast<uint64_t>(x);
+    uint32_t pad = 0u;
+    for (auto &it : iters(v)) {
+      const uint64_t u = ((uint64_t)*it) * xx + pad;
+      const uint32_t u_l = (u >> (uint64_t)32u);
+      const uint32_t u_r = u;
+      pad = u_l;
+      *it = u_r;
+    }
+    if (pad != 0u)
+      v.push_back(pad);
+    return *this;
+  }
+  uint32_t div(uint32_t x) {
+    if (x == 0u)
+      throw_or_abort<logic_error>("re::big_int: div by 0\n");
+    uint64_t left = 0u;
+    for (uint32_t &u : rrng(v)) {
+      const uint64_t z = left | (uint64_t)u;
+      u = z / x;
+      left = z % x;
+      left <<= (uint64_t)32u;
+    }
+    clear_tail_zero();
+    left >>= 32u;
+    return left;
+  }
+
+private:
+  void abs_add_impl(const uint32_t &x, vec_dif_t dif) {
+    uint64_t xx = x;
+    for (auto &it : iters(nth(v, dif), v.end())) {
+      const uint64_t tmp = static_cast<uint64_t>(*it) + xx;
+      *it = tmp;
+      xx = (tmp >> (uint64_t)32u);
+      if (xx == 0u)
+        break;
+    }
+  }
+  void abs_add(const vec_t &vv) {
+    v.resize((v.size() > vv.size()) ? (v.size() + 1u) : (vv.size() + 1u), 0u);
+    vec_dif_t dif = 0;
+    for (const uint32_t &x : vv) {
+      abs_add_impl(x, dif);
+      ++dif;
+    }
+    clear_tail_zero();
+  }
+  void abs_sub_smaller_impl(const uint32_t &x, vec_dif_t dif) {
+    uint32_t xx = x;
+    for (auto &it : iters(nth(v, dif), v.end())) {
+      if (*it >= xx) {
+        *it -= xx;
+        break;
+      }
+      else {
+        const uint64_t tmp = (uint64_t)*it
+          + (uint64_t)((uint64_t)1u << (uint64_t)32u);
+        *it = (uint32_t)(tmp - xx);
+        xx = 1u;
+      }
+    }
+  }
+  void abs_sub_smaller(const vec_t &vv) {
+    vec_dif_t dif = 0;
+    for (const uint32_t &x : vv) {
+      abs_sub_smaller_impl(x, dif);
+      ++dif;
+    }
+    clear_tail_zero();
+  }
+public:
+  this_t &operator +=(const this_t &x) {
+    if (sign) {
+      if (x.sign)
+        abs_add(x.v);
+      else {
+        if (abs_cmp(v, x.v) >= 0)
+          abs_sub_smaller(x.v);
+        else {
+          this_t tmp = x;
+          tmp.abs_sub_smaller(v);
+          *this = move(tmp);
+        }
+      }
+    }
+    else {
+      if (x.sign) {
+        if (abs_cmp(x.v, v) >= 0) {
+          this_t tmp = x;
+          tmp.abs_sub_smaller(v);
+          *this = move(tmp);
+        }
+        else
+          abs_sub_smaller(x.v);
+      }
+      else
+        abs_add(x.v);
+    }
+    return *this;
+  }
+  this_t &operator -=(const this_t &x) {
+    if (sign) {
+      if (x.sign) {
+        if (abs_cmp(v, x.v) >= 0)
+          abs_sub_smaller(x.v);
+        else {
+          this_t tmp = x;
+          tmp.abs_sub_smaller(v);
+          tmp.sign = false;
+          *this = move(tmp);
+        }
+      }
+      else
+        abs_add(x.v);
+    }
+    else {
+      if (x.sign)
+        abs_add(x.v);
+      else {
+        if (abs_cmp(x.v, v) >= 0) {
+          this_t tmp = x;
+          tmp.abs_sub_smaller(v);
+          tmp.sign = true;
+          *this = move(tmp);
+        }
+        else
+          abs_sub_smaller(x.v);
+      }
+    }
+    return *this;
+  }
+  this_t operator -(const this_t &x) const {
+    this_t ret = *this;
+    ret -= x;
+    return ret;
+  }
+  this_t operator +(const this_t &x) const {
+    this_t ret = *this;
+    ret += x;
+    return ret;
+  }
+
+private:
+  // (optional sign)
+  //
+  // one((single number)
+  //     + zero_or_more((optional '\'') + (single number))
+  //
+  // zero_or_one(('.' + (single number))
+  //             + zero_or_more((optional '\') + (single number)))
+  //
+  // zero_or_one(('e' or 'E') + integer string)
+
+  bool sscan_sign(const char *&it, const char *ed, bool &s) {
+    if (it == ed)
+      return false;
+    if (*it == '+') {
+      ++it;
+      s = true;
+    }
+    else if (*it == '-') {
+      ++it;
+      s = false;
+    }
+    else
+      s = true;
+    return true;
+  }
+
+  bool sscan_single_number(const char *&it, const char *ed, int32_t &x) {
+    if (it == ed)
+      return false;
+    if (isdigit(*it)) {
+      x = *it - '0';
+      ++it;
+      return true;
+    }
+    else
+      return false;
+  }
+  bool sscan_single_number_with_separator_prefix(const char *&it,
+                                                 const char *ed,
+                                                 int32_t &x) {
+    if (it == ed)
+      return false;
+    if (*it == '\'') {
+      ++it;
+      if (!sscan_single_number(it, ed, x)) {
+        --it;
+        return false;
+      }
+      else
+        return true;
+    }
+    else
+      return sscan_single_number(it, ed, x);
+  }
+  bool sscan_dot_and_single_number(const char *&it, const char *ed,
+                                   int32_t &x) {
+    if (it == ed)
+      return false;
+    if (*it == '.') {
+      ++it;
+      if (!sscan_single_number(it, ed, x)) {
+        --it;
+        return false;
+      }
+      else
+        return true;
+    }
+    else
+      return false;
+  }
+
+  bool sscan_single_hex_number(const char *&it, const char *ed,
+                               int32_t &x) {
+    if (it == ed)
+      return false;
+    if (isdigit(*it)) {
+      x = *it - '0';
+      ++it;
+      return true;
+    }
+    else if ('a' <= *it && *it <= 'f') {
+      x = 10 + (*it - 'a');
+      ++it;
+      return true;
+    }
+    else if ('A' <= *it && *it <= 'F') {
+      x = 10 + (*it - 'A');
+      ++it;
+      return true;
+    }
+    else
+      return false;
+  }
+  bool sscan_single_hex_number_with_separator_prefix(const char *&it,
+                                                     const char *ed,
+                                                     int32_t &x) {
+    if (it == ed)
+      return false;
+    if (*it == '\'') {
+      ++it;
+      if (!sscan_single_hex_number(it, ed, x)) {
+        --it;
+        return false;
+      }
+      else
+        return true;
+    }
+    else
+      return sscan_single_hex_number(it, ed, x);
+  }
+  bool sscan_dot_and_single_hex_number(const char *&it, const char *ed,
+                                       int32_t &x) {
+    if (it == ed)
+      return false;
+    if (*it == '.') {
+      ++it;
+      if (!sscan_single_hex_number(it, ed, x)) {
+        --it;
+        return false;
+      }
+      else
+        return true;
+    }
+    else
+      return false;
+  }
+
+  bool sscan_e_and_int32(const char *&it, const char *ed, int32_t &x) {
+    if (it == ed)
+      return false;
+    if (*it == 'e' || *it == 'E') {
+      ++it;
+      sview sv(it, ed);
+      if (re::sscan(sv, x)) {
+        it = sv.begin();
+        return true;
+      }
+      else {
+        --it;
+        return false;
+      }
+    }
+    else
+      return false;
+  }
+
+  string sprint_impl(size_t sep_n, const char *num, uint32_t base) const {
+    string s;
+    if (!sign)
+      s.push_back('-');
+    if (v.empty()) {
+      s.push_back('0');
+      return s;
+    }
+    const ptrdiff_t num_pos_dif = ssize(s);
+    auto cp = *this;
+    for (;;) {
+      uint32_t rem = cp.div(base);
+      s.push_back(num[rem]);
+      if (cp.v.empty())
+        break;
+    }
+    const auto r = rng(s.begin() + num_pos_dif, s.end());
+    reverse(r);
+    if (sep_n != 0u) {
+      const size_t digit_len = size(r);
+      size_t sep_count = digit_len / sep_n;
+      const size_t rem = digit_len % sep_n;
+      if (sep_count != 0) {
+        if (rem == 0)
+          --sep_count;
+        const auto r_len = ssize(r);
+        s.reserve_more(sep_count);
+        s.resize(s.size() + sep_count);
+        const auto r_op = s.end() - to_signed(sep_count) - r_len;
+        auto it = s.end() - to_signed(sep_count);
+        auto it2 = s.end();
+        for (size_t k = 0u; r_op != it && it != it2;) {
+          *--it2 = *--it;
+          ++k;
+          if (k == sep_n) {
+            k = 0u;
+            *--it2 = '\'';
+          }
+        }
+      }
+    }
+    return s;
+  }
+
+public:
+  bool sscan(sview &sv) {
+    auto guard = exit_fn([&]() {operator =(0);}, true);
+    auto it = sv.begin();
+    bool sign_is_positive = false;
+    {
+      if (!sscan_sign(it, sv.end(), sign_is_positive))
+        return false;
+      int32_t x{};
+      if (!sscan_single_number(it, sv.end(), x))
+        return false;
+      *this = x;
+      while (sscan_single_number_with_separator_prefix(it, sv.end(), x))
+        mul(10u) += this_t(x);
+    }
+    sign = sign_is_positive;
+    if (v.empty())
+      sign = true;
+    sv = {it, sv.end()};
+    guard.unset();
+    return true;
+  }
+  string sprint(size_t sep_n = 0u) const {
+    return sprint_impl(sep_n, inner::from_0_to_f, 10u);
+  }
+
+  bool sscan_hex(sview &sv) {
+    auto guard = exit_fn([&]() {operator =(0);}, true);
+    auto it = sv.begin();
+    bool sign_is_positive = false;
+    {
+      if (!sscan_sign(it, sv.end(), sign_is_positive))
+        return false;
+      int32_t x{};
+      if (!sscan_single_hex_number(it, sv.end(), x))
+        return false;
+      *this = x;
+      while (sscan_single_hex_number_with_separator_prefix(it, sv.end(), x))
+        mul(16u) += this_t(x);
+    }
+    sign = sign_is_positive;
+    if (v.empty())
+      sign = true;
+    sv = {it, sv.end()};
+    guard.unset();
+    return true;
+  }
+  string sprint_hex(size_t sep_n = 0u, bool upper_case = false) const {
+    return sprint_impl(sep_n,
+                       upper_case ? inner::from_0_to_F : inner::from_0_to_f,
+                       16u);
+  }
+
+  bool sscan_scientific(sview &sv) {
+    auto guard = exit_fn([&]() {operator =(0);}, true);
+    {
+      sview sv2 = sv;
+      if (!sscan(sv2))
+        return false;
+
+      int32_t e = 0;
+      auto it = sv2.begin();
+      int32_t x{};
+      if (sscan_dot_and_single_number(it, sv2.end(), x)) {
+        mul(10u) += this_t(x);
+        --e;
+        while (sscan_single_number_with_separator_prefix(it, sv2.end(), x)) {
+          mul(10u) += this_t(x);
+          --e;
+          if (e == numeric_limits<int32_t>::min())
+            return false;
+        }
+      }
+
+      if (sscan_e_and_int32(it, sv2.end(), x)) {
+        const int64_t tmp = (int64_t)e + (int64_t)x;
+        if (tmp > numeric_limits<int32_t>::max()
+            || tmp < -numeric_limits<int32_t>::max())
+          return false;
+        e = (int32_t)tmp;
+      }
+      else
+        return false;
+
+      if (e >= 0)
+        mul_pow_of_10(e);
+      else {
+        mul_pow_of_10(e + 1);
+        if (div(10u) >= 5) {
+          if (is_non_negative())
+            *this += this_t(1);
+          else
+            *this -= this_t(1);
+        }
+      }
+
+      sv = {it, sv.end()};
+    }
+    guard.unset();
+    return true;
+  }
+  string sprint_scientific(size_t precision = 6u,
+                           size_t sep_n = 0u,
+                           bool upper_case = false,
+                           bool show_pos = false) const {
+    const string s = sprint();
+    return inner::fns::fixed_fraction_string_to_scientific<string>
+      (s, precision, sep_n, upper_case, show_pos);
+  }
+};
+
+}
+
+// sprint float
+// sscan float
+namespace re {
+
+namespace inner::fns {
+
+template <class S>
+S fixed_fraction_string_apply_print_args(sview sv,
+                                         size_t precision, size_t sep_n,
+                                         bool show_pos) {
+  // sv has valid format and is not empty
+  // sv has no leading zero except "0."
+
+  S s2;
+  if (front(sv) == '+') {
+    sv = {next(sv.begin()), sv.end()};
+    if (show_pos)
+      s2.append('+');
+  }
+  else if (front(sv) == '-') {
+    sv = {next(sv.begin()), sv.end()};
+    s2.append('-');
+  }
+  else {
+    if (show_pos)
+      s2.append('+');
+  }
+
+  const auto s2_old_ssz = ssize(s2);
+  const auto dot_pos = find(sv, '.');
+  sview r1 = sview(sv.begin(), dot_pos); // r1 is not empty
+  sview r2 = sview((dot_pos != sv.end() ? next(dot_pos) : sv.end()), sv.end());
+  if (r2.empty()) {
+    s2.append(r1);
+    if (precision != numeric_limits<size_t>::max() && precision != 0u) {
+      s2.append('.');
+      s2.append(rng(precision, '0'));
+    }
+  }
+  else {
+    if (precision == numeric_limits<size_t>::max()) {
+      s2.append(r1);
+      s2.append('.');
+      s2.append(r2);
+      while (s2.back() == '0')
+        s2.pop_back();
+      if (s2.back() == '.')
+        s2.pop_back();
+    }
+    else if (precision == 0u) {
+      if (r2.front() < '5')
+        s2.append(r1);
+      else {
+        if (all_of_equal(r1, '9')) {
+          s2.append('1');
+          s2.append(rng(size(r1), '0'));
+        }
+        else {
+          const auto old_ssz = ssize(s2);
+          s2.append(r1);
+          for (auto &c : rrng(sref(nth(s2, old_ssz), s2.end()))) {
+            if (c != '9') {
+              ++c;
+              break;
+            }
+            else
+              c = '0';
+          }
+        }
+      }
+    }
+    else {
+      if (precision >= r2.size()) {
+        s2.append(r1);
+        s2.append('.');
+        s2.append(r2);
+        s2.append(rng(precision - size(r2), '0'));
+      }
+      else {
+        const sview v(r2.begin(), nth(r2, precision));
+        if (ref(r2, precision) < '5') {
+          s2.append(r1);
+          s2.append('.');
+          s2.append(v);
+        }
+        else {
+          if (all_of_equal(r1, '9') && all_of_equal(v, '9')) {
+            s2.append('1');
+            s2.append(rng(size(r1), '0'));
+            s2.append('.');
+            s2.append(rng(size(v), '0'));
+          }
+          else {
+            s2.append(r1);
+            s2.append('.');
+            s2.append(v);
+            auto it = s2.end();
+            for (;;) {
+              --it;
+              if (*it != '.') {
+                if (*it != '9') {
+                  ++*it;
+                  break;
+                }
+                else
+                  *it = '0';
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  inner::fns::no_sign_fixed_fraction_string_apply_separator_arg
+    (s2, (s2.front() == '+' || s2.front() == '-') ? 1 : 0, sep_n);
+  return s2;
+}
+
+template <class F, class FN>
+F sscan_float_final_step(int32_t e2, FN take_n_bits, bool non_neg) {
+  // first 1 is reached
+  // may approzimately get zero, but the original string is not zero
+
+  using traits = floating_point_traits<F>;
+  using float_t = F;
+  using uint_t = typename traits::uint_t;
+  using int_t = typename traits::int_t;
+
+  const int32_t e2_max = traits::e_max - 1 - to_signed(traits::bias);
+  const int32_t e2_min = 1 - to_signed(traits::bias);
+
+  if (e2 > e2_max)
+    return non_neg ? traits::positive_inf() : traits::negative_inf();
+  else if (e2 >= e2_min) {
+    uint64_t f = 0u;
+    take_n_bits(traits::k + 1u, f);
+    if (f == (uint64_t)(numeric_limits<uint64_t>::max()
+                        >> (uint64_t)(64u - (traits::k + 1u)))) {
+      f = 0u;
+      ++e2;
+      if (e2 > e2_max)
+        return non_neg ? traits::positive_inf() : traits::negative_inf();
+    }
+    else {
+      if ((uint64_t)(f << (uint64_t)63u) != 0u) {
+        f >>= (uint64_t)1u;
+        ++f;
+      }
+      else
+        f >>= (uint64_t)1u;
+    }
+
+    uint_t z = 0u;
+    if (!non_neg)
+      z = (uint_t)((uint_t)1u << (uint_t)(traits::n + traits::k));
+    z += (uint_t)((uint_t)(e2 + to_signed(traits::bias)) << traits::k);
+    z += (uint_t)f;
+    return bit_cast<float_t>(z);
+  }
+  else {
+    // 0.XXXXXXXXX      e2_min
+    //   |<- k ->|
+    // 0 XXXX1.XXX      e2
+    //       XXXXX.X    e2_lim = e2_min - k
+
+    const int32_t e2_lim = e2_min - to_signed(traits::k);
+    if (e2 >= e2_lim) {
+      const size_t bits = to_unsigned(e2 - e2_lim) + 1u;
+
+      uint64_t f = 1u;
+      take_n_bits(bits, f);
+
+      if (f == (uint64_t)(numeric_limits<uint64_t>::max()
+                          >> (uint64_t)(64u - (bits + 1u))))
+        return non_neg ? traits::min() : -traits::min();
+
+      if ((uint64_t)(f << (uint64_t)63u) != 0u) {
+        f >>= (uint64_t)1u;
+        ++f;
+      }
+      else
+        f >>= (uint64_t)1u;
+      uint_t z = 0u;
+      if (!non_neg)
+        z = (uint_t)((uint_t)1u << (uint_t)(traits::n + traits::k));
+      z += (uint_t)f;
+      return bit_cast<float_t>(z);
+    }
+    else if (e2 == e2_lim - 1)
+      return non_neg
+        ? numeric_limits<float_t>::denorm_min()
+        : -numeric_limits<float_t>::denorm_min();
+    else
+      return non_neg ? +0.0f : -0.0f;
+  }
+}
+
+}
+template <class F, class S>
+S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
+  typename decay_t<S>::size_type old_sz = s.size();
+  auto guard = exit_fn([&]() {s.resize(old_sz);}, true);
+
+  using traits = floating_point_traits<F>;
+
+  if (traits::is_nan(x))
+    sprint(s, (pa.upper_case ? "NAN"_sv : "nan"_sv),
+           static_cast<const print_args &>(pa));
+  else if (traits::is_infinity(x)) {
+    if (traits::is_positive(x))
+      sprint(s,
+             (pa.upper_case
+              ? (pa.show_positive_symbol ? "+INF"_sv : "INF"_sv)
+              : (pa.show_positive_symbol ? "+inf"_sv : "inf"_sv)),
+             static_cast<const print_args &>(pa));
+    else
+      sprint(s,
+             (pa.upper_case ? "-INF"_sv : "-inf"_sv),
+             static_cast<const print_args &>(pa));
+  }
+  else {
+    if (x == (F)0.0f) {
+      if (floating_point_traits<F>::is_positive(x)) {
+        if (pa.show_positive_symbol)
+          s.push_back('+');
+      }
+      else
+        s.push_back('-');
+      s.push_back('0');
+    }
+    else {
+      const auto f = traits::is_normalized(x)
+        ? traits::normalized_final_f(x) : traits::denormalized_final_f(x);
+      const auto e = traits::is_normalized(x)
+        ? traits::normalized_final_e(x) : traits::denormalized_final_e(x);
+
+      big_int dot_left(to_signed(f));
+      dot_left.mul_pow_of_2((int32_t)e);
+
+      big_int dot_right(to_signed(f));
+      big_int tmp = dot_left;
+      tmp.mul_pow_of_2((int32_t)-e);
+      dot_right -= tmp;
+
+      if (x >= 0.0) {
+        if (pa.show_positive_symbol)
+          s.push_back('+');
+      }
+      else
+        s.push_back('-');
+      sprint(s, dot_left.sprint());
+
+      size_t k = 0;
+      if (dot_right.is_zero() == false) {
+        s.push_back('.');
+
+        big_int &num = dot_right;
+        big_int den(1);
+        den.mul_pow_of_2((int32_t)-e);
+
+        for (;;) {
+          num.mul(10u);
+
+          big_int n = num;
+          n.mul_pow_of_2(e);
+          ++k;
+          const int64_t number_0_9 = *n.to_int64();
+          s.push_back(inner::from_0_to_f[number_0_9]);
+
+          if (number_0_9 != 0) {
+            big_int z = den;
+            z.mul((uint32_t)number_0_9);
+            num -= z;
+            if (num.is_zero())
+              break;
+          }
+        }
+      }
+    }
+
+    const sview r(nth(as_const(s), old_sz), s.cend());
+    decay_t<S> s2
+      = !pa.scientific_notation
+      ? (inner::fns::fixed_fraction_string_apply_print_args<decay_t<S>>
+         (r, pa.precision, pa.separator_n,
+          pa.show_positive_symbol))
+      : (inner::fns::fixed_fraction_string_to_scientific<decay_t<S>>
+         (r, pa.precision, pa.separator_n, pa.upper_case,
+          pa.show_positive_symbol));
+    s.replace(r.begin(), r.end(), s2);
+
+    const auto new_sz = s.size() - old_sz;
+    if (new_sz < pa.min_width) {
+      const auto tmp_r = rng(pa.min_width - new_sz, pa.padding_char);
+      if (pa.left_padding)
+        s.insert(nth(s, to_signed(old_sz)), tmp_r);
+      else
+        s.append_range(tmp_r);
+    }
+  }
+
+  guard.unset();
+  return s;
+}
+
+namespace inner::fns {
+
+inline bool f_sscan_sign(sview &v, bool &s) {
+  if (v.empty())
+    return false;
+  if (v.front() == '+') {
+    v = {next(v.begin()), v.end()};
+    s = true;
+  }
+  else if (v.front() == '-') {
+    v = {next(v.begin()), v.end()};
+    s = false;
+  }
+  else
+    s = true;
+  return true;
+}
+inline bool f_sscan_single_number(sview &v, int32_t &x) {
+  if (v.empty())
+    return false;
+  if (isdigit(v.front())) {
+    x = v.front() - '0';
+    v = {next(v.begin()), v.end()};
+    return true;
+  }
+  else
+    return false;
+}
+inline bool f_sscan_single_number_with_separator_prefix(sview &v,
+                                                        int32_t &x) {
+  if (v.empty())
+    return false;
+  if (v.front() == '\'') {
+    v = {next(v.begin()), v.end()};
+    if (!inner::fns::f_sscan_single_number(v, x)) {
+      v = {prev(v.begin()), v.end()};
+      return false;
+    }
+    else
+      return true;
+  }
+  else
+    return inner::fns::f_sscan_single_number(v, x);
+}
+inline bool f_sscan_dot_and_single_number(sview &v, int32_t &x) {
+  if (v.empty())
+    return false;
+  if (v.front() == '.') {
+    v = {next(v.begin()), v.end()};
+    if (!f_sscan_single_number(v, x)) {
+      v = {prev(v.begin()), v.end()};
+      return false;
+    }
+    else
+      return true;
+  }
+  else
+    return false;
+}
+inline bool f_sscan_e_and_big_int(sview &v, big_int &x) {
+  if (v.empty())
+    return false;
+  if (v.front() == 'e' || v.front() == 'E') {
+    sview v2(next(v.begin()), v.end());
+    if (x.sscan(v2)) {
+      v = v2;
+      return true;
+    }
+    else
+      return false;
+  }
+  else
+    return false;
+}
+
+}
+template <class F>
+bool fo_sscan::impl_for_float(sview &v, F &o) {
+  using traits = floating_point_traits<F>;
+  using float_t = F;
+  using uint_t = typename traits::uint_t;
+  using int_t = typename traits::int_t;
+
+  const auto char_eq = [](char a, char b) {return tolower(a) == b;};
+  if (starts_with(v, "nan"_sv, char_eq)) {
+    o = traits::positive_nan();
+    v = {v.begin() + 3, v.end()};
+    return true;
+  }
+  else if (starts_with(v, "+nan"_sv, char_eq)) {
+    o = traits::positive_nan();
+    v = {v.begin() + 4, v.end()};
+    return true;
+  }
+  else if (starts_with(v, "-nan"_sv, char_eq)) {
+    o = traits::negative_nan();
+    v = {v.begin() + 4, v.end()};
+    return true;
+  }
+
+  if (starts_with(v, "inf"_sv, char_eq)) {
+    o = traits::positive_inf();
+    v = {v.begin() + 3, v.end()};
+    return true;
+  }
+  else if (starts_with(v, "+inf"_sv, char_eq)) {
+    o = traits::positive_inf();
+    v = {v.begin() + 4, v.end()};
+    return true;
+  }
+  else if (starts_with(v, "-inf"_sv, char_eq)) {
+    o = traits::negative_inf();
+    v = {v.begin() + 4, v.end()};
+    return true;
+  }
+
+  bool non_neg = false;
+  big_int x{};
+  int32_t e = 0;
+  sview v2 = v;
+  int32_t tmp{};
+
+  make_signed_t<size_t> order = 0;
+  bool touched_1st_non0 = false;
+  const auto update_order = [&]() {
+    if (touched_1st_non0)
+      ++order;
+    else if (tmp != 0) {
+      touched_1st_non0 = true;
+      ++order;
+    }
+  };
+
+  if (!inner::fns::f_sscan_sign(v2, non_neg))
+    return false;
+
+  if (!inner::fns::f_sscan_single_number(v2, tmp))
+    return false;
+  update_order();
+  x = tmp;
+
+  while (inner::fns::f_sscan_single_number_with_separator_prefix(v2, tmp)) {
+    update_order();
+    x.mul(10u) += big_int(tmp);
+  }
+
+  if (inner::fns::f_sscan_dot_and_single_number(v2, tmp)) {
+    --e;
+    update_order();
+    x.mul(10u) += big_int(tmp);
+    while (inner::fns
+           ::f_sscan_single_number_with_separator_prefix(v2, tmp)) {
+      update_order();
+      x.mul(10u) += big_int(tmp);
+      --e;
+      if (e == numeric_limits<int32_t>::min())
+        return false;
+    }
+  }
+
+  if (big_int tmp_e; inner::fns::f_sscan_e_and_big_int(v2, tmp_e)) {
+    tmp_e += big_int(e);
+
+    big_int order_final = tmp_e;
+    order_final -= big_int(1);
+    order_final += big_int(order);
+    if (order_final > big_int(308)) {
+      o = non_neg ? traits::positive_inf() : traits::negative_inf();
+      v = v2;      
+      return true;
+    }
+    else if (order_final < big_int(-324)) {
+      o = non_neg ? (float_t)+0.0f : (float_t)-0.0f;
+      v = v2;
+      return true;
+    }
+
+    const auto z = tmp_e.to_int32();
+    if (z.empty() || *z == numeric_limits<int32_t>::min())
+      return false;
+    e = *z;
+  }
+  else {
+    order += (e - 1);
+    if (!x.is_zero()) {
+      if (order > 308) {
+        o = non_neg ? traits::positive_inf() : traits::negative_inf();
+        v = v2;      
+        return true;
+      }
+      else if (order < -324) {
+        o = non_neg ? (float_t)+0.0f : (float_t)-0.0f;
+        v = v2;
+        return true;
+      }
+    }
+  }
+
+  big_int w = x;
+  w.mul_pow_of_10(e);
+  x -= big_int(w).mul_pow_of_10(-e);
+  // left part of dot: w
+  // right part of dot: x * 10^e
+
+  if (w.is_zero()) {
+    if (x.is_zero())
+      o = non_neg ? (float_t)+0.0f : (float_t)-0.0f;
+    else {
+      big_int den(1);
+      den.mul_pow_of_10(-e);
+      // x / den
+
+      int32_t e2 = 0;
+      for (;;) {
+        --e2;
+        if (x.mul_pow_of_2(1) >= den) {
+          x -= den;
+          break;
+        }
+      }
+      // (1 + x / den) * 2^e2   (x < den)
+
+      const auto take_n_bits = [&](size_t bits, uint64_t &f) {
+        // f == 0u for normalized
+        // f == 1u for denormalized
+        for (size_t c = 0; c != bits; ++c) {
+          if (x.is_zero()) {
+            f <<= (uint64_t)(bits - c);
+            break;
+          }
+          else {
+            x.mul_pow_of_2(1);
+            f <<= (uint64_t)1u;
+            if (x >= den) {
+              ++f;
+              x -= den;
+            }
+          }
+        }
+      };
+      o = inner::fns::sscan_float_final_step<float_t>
+        (e2, take_n_bits, non_neg);
+    }
+  }
+  else {
+    // left part of dot: w
+    // right part of dot: x * 10^e
+    //
+    // w != 0
+
+    int32_t e2 = 0;
+    if (w.data().size() > 3u) {
+      const int32_t k = to_signed((w.data().size() - 3u) * 32u);
+      w.mul_pow_of_2(-k);
+      e2 += k;
+      // note: at this point, the right part of dot is no more possible to
+      //   reach because the left part is big enough
+    }
+
+    vector<bool> s;
+    for (;;) {
+      s.push_back((uint32_t)(w.data().front() << (uint32_t)31u) != 0u);
+      w.mul_pow_of_2(-1);
+      ++e2;
+      if (w.is_zero())
+        break;
+    }
+    s.pop_back();
+    --e2;
+
+    const auto take_n_bits = [&](size_t bits, uint64_t &f) {
+      // f == 0u for normalized
+      // f == 1u for denormalized
+      for (size_t c = 0; c != bits; ++c) {
+        if (s.empty()) {
+          for (size_t cc = bits - c; cc != 0; --cc) {
+            // right part of dot: x * 10^e
+            big_int den(1);
+            den.mul_pow_of_10(-e);
+
+            if (x.is_zero()) {
+              f <<= (uint64_t)cc;
+              return;
+            }
+            else {
+              f <<= (uint64_t)1u;
+              if (x.mul_pow_of_2(1) >= den) {
+                ++f;
+                x -= den;
+              }
+            }
+          }
+          return;
+        }
+        else {
+          f <<= (uint64_t)1u;
+          if (s.back())
+            ++f;
+          s.pop_back();
+        }
+      }
+    };
+    o = inner::fns::sscan_float_final_step<float_t>(e2, take_n_bits, non_neg);
+  }
+
+  v = v2;
+  return true;
+}
+
+}
+
+// ssplitter
 namespace re {
 
 template <class STR = sview>
@@ -824,7 +2796,7 @@ public:
   ssplitter(view_t s, view_t x) {
     const auto ed = re::end(s);
     const auto x_sz = re::size(x);
-    if (x_sz == 1) {
+    if (x_sz == 1u) {
       const auto c = front(x);
       if (auto it = re::begin(s); it != ed)
         for (;;) {
@@ -836,14 +2808,19 @@ public:
         }
     }
     else {
-      if (auto it = re::begin(s); it != ed)
-        for (;;) {
-          const auto it2 = search(rng(it, ed), x);
-          ss.append(STR(it, it2));
-          if (it2 == ed)
-            break;
-          it = it2 + x_sz;
+      if (auto it = re::begin(s); it != ed) {
+        if (x.empty())
+          ss.append(STR(s));
+        else {
+          for (;;) {
+            const auto it2 = search(rng(it, ed), x);
+            ss.append(STR(it, it2));
+            if (it2 == ed)
+              break;
+            it = it2 + x_sz;
+          }
         }
+      }
     }
   }
   ssplitter(view_t s, char_t c) {
@@ -860,61 +2837,6 @@ public:
   // template <class SEARCHER>
   // ssplitter(view_t s, view_t x, SEARCHER f); // todo
 
-  bool empty() const {
-    return re::empty(ss);
-  }
-  void clear() {
-    ss.clear();
-    ss.shrink_to_fit();
-  }
-
-  template <class OI>
-  enable_if_t<!is_rng<OI> && !is_rng<OI>, OI>
-  operator ()(view_t v, OI o) const {
-    const auto ed = re::end(ss);
-    const auto ed_pr = prev(ed);
-    auto it = re::begin(ss);
-    for (; it != ed_pr; ++it) {
-      *o++ = *it;
-      *o++ = v;
-    }
-    *o++ = *it;
-    return o;
-  }
-  template <class S>
-  enable_if_t<is_rng<S> && is_rng<S>> operator ()(view_t v, S &o) const {
-    operator ()(v, to_back(o));
-  }
-
-  template <class IT, class OIT>
-  enable_if_t<!is_rng<IT> && !is_convertible_v<IT, view_t>
-              && !is_rng<OIT>, pair<IT, OIT>>
-  operator ()(IT iter, OIT o) const {
-    const auto ed = re::end(ss);
-    const auto ed_pr = prev(ed);
-    auto it = re::begin(ss);
-    for (; it != ed_pr; ++it) {
-      *o++ = *it;
-      *o++ = *iter;
-      ++iter;
-    }
-    *o++ = *it;
-    return {iter, o};
-  }
-
-  template <class IT, class S>
-  enable_if_t<!is_rng<IT> && !is_convertible_v<IT, view_t>
-              && is_rng<S>, IT>
-  operator ()(IT iter, S &o) const {
-    return operator ()(iter, to_back(o)).first;
-  }
-  template <class R, class S>
-  enable_if_t<is_rng<R> && !is_convertible_v<R &&, view_t>
-              && is_rng<S>>
-  operator ()(R &&r, S &o) const {
-    operator ()(re::begin(r), o);
-  }
-
   auto begin() {
     return ss.begin();
   }
@@ -927,27 +2849,105 @@ public:
   auto end() const {
     return ss.end();
   }
-
-  template <class R = vec_t>
-  auto size() const->decltype(declval<R &>().size()) {
+  bool empty() const {
+    return re::empty(ss);
+  }
+  vec_t::size_type size() const {
     return ss.size();
+  }
+  void clear() {
+    ss.clear();
+    ss.shrink_to_fit();
+  }
+
+  template <class OI>
+  enable_if_t<!is_rng<OI>, OI> operator ()(view_t v, OI o) const {
+    if (!empty()) {
+      const auto ed = re::end(ss);
+      const auto ed_pr = prev(ed);
+      auto it = re::begin(ss);
+      for (; it != ed_pr; ++it) {
+        *o++ = *it;
+        *o++ = v;
+      }
+      *o++ = *it;
+    }
+    return o;
+  }
+  template <class IT, class OI>
+  enable_if_t<!is_rng<IT> && !is_convertible_v<IT, view_t>, pair<IT, OI>>
+  operator ()(IT iter, OI o) const {
+    if (!empty()) {
+      const auto ed = re::end(ss);
+      const auto ed_pr = prev(ed);
+      auto it = re::begin(ss);
+      for (; it != ed_pr; ++it) {
+        *o++ = *it;
+        *o++ = *iter;
+        ++iter;
+      }
+      *o++ = *it;
+    }
+    return {iter, o};
+  }
+  template <class R, class OI>
+  enable_if_t<is_rng<R> && !is_convertible_v<R, view_t>, pair<rng_itr<R>, OI>>
+  operator ()(R &&r, OI o) const {
+    if (!re::empty(r)) {
+      bool used_out = false;
+      if (!empty()) {
+        auto p = rng(r);
+        const auto r_ed = re::end(r);
+        const auto ed = re::end(ss);
+        const auto ed_pr = prev(ed);
+        auto it = re::begin(ss);
+        for (; it != ed_pr; ++it) {
+          *o = *it;
+          ++o;
+          *o = *p.first;
+          ++o;
+          if (next(p.first) != r_ed)
+            ++p.first;
+          else
+            used_out = true;
+        }
+        *o = *it;
+        ++o;
+        return {(used_out ? r_ed : p.first), o};
+      }
+    }
+    return {re::begin(r), o};
   }
 };
 
 struct fo_ssplit {
-  template <class S>
-  remove_reference_t<S>
-  operator ()(S &&s, string_reference
-              <add_const_t<rng_vt<remove_reference_t<S>>>>
-              first_shared_portion) const {
+  template <class S, class OI>
+  OI operator ()(S &&s, string_reference<add_const_t<rng_vt<S>>> delimiter,
+                 OI o) const {
     using str_t = remove_reference_t<S>;
-    const auto n = size(first_shared_portion);
-    const auto it = search(s, first_shared_portion);
+    using sv_t = string_reference<add_const_t<rng_vt<S>>>;
 
-    str_t ret(begin(s), n == 0 ? end(s) : it);
-    str_t new_s((n == 0 || it == end(s)) ? end(s) : next(it, n), end(s));
-    s = move(new_s);
-    return ret;
+    if (s.empty())
+      return o;
+    if (delimiter.empty()) {
+      *o = sv_t(begin(s), end(s));
+      ++o;
+      return o;
+    }
+
+    const auto d_sz = ssize(delimiter);
+    const auto s_ed = end(s);
+    auto s_it = begin(s);
+    for (;;) {
+      const auto it = search(rng(s_it, s_ed), delimiter);
+      *o = sv_t(s_it, it);
+      ++o;
+      if (it == s_ed)
+        break;
+      s_it = it;
+      advance(s_it, d_sz);
+    }
+    return o;
   }
 };
 inline constexpr fo_ssplit ssplit{};

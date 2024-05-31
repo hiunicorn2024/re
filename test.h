@@ -2714,6 +2714,9 @@ public:
     }
     destroy_node(const_cast<node_t *>(n));
   }
+  void erase(const K &key) {
+    remove(key);
+  }
   bool remove(const K &key) {
     const auto i = find(key);
     if (i != end()) {

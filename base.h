@@ -16,8 +16,8 @@
 #include <cfloat>
 #include <cwchar>
 #include <cstdint>
-#include <cstring>
 #include <cctype>
+#include <cstring>
 #include <ctime>
 #include <cmath>
 
@@ -162,6 +162,7 @@ using fpos_t = std::fpos_t;
 using std::fopen;
 using std::freopen;
 using std::fclose;
+using std::rename;
 using std::fflush;
 using std::setbuf;
 using std::setvbuf;
@@ -179,17 +180,10 @@ using std::ungetc;
 using std::scanf;
 using std::fscanf;
 using std::sscanf;
-using std::vscanf;
-using std::vfscanf;
-using std::vsscanf;
 using std::printf;
 using std::fprintf;
 using std::sprintf;
 using std::snprintf;
-using std::vprintf;
-using std::vfprintf;
-using std::vsprintf;
-using std::vsnprintf;
 using std::ftell;
 using std::fgetpos;
 using std::fseek;
@@ -233,16 +227,14 @@ using std::strcspn;
 using std::strpbrk;
 using std::strstr;
 using std::strtok;
+
 using std::memchr;
 using std::memcmp;
 using std::memset;
 using std::memcpy;
 using std::memmove;
-using std::strerror;
 
 using std::is_constant_evaluated;
-
-using std::isnan;
 
 using std::source_location;
 
@@ -1094,10 +1086,10 @@ template <class A, class B,
 struct type_pack_recursive_eql {
 private:
   template <size_t...I,
-            bool y = (... && type_pack_recursive_eql
+            bool Y = (... && type_pack_recursive_eql
                       <type_pack_element_t<I, A>, type_pack_element_t<I, B>>
                       ::value)>
-  static bool_constant<y> helper_f(index_sequence<I...>);
+  static bool_constant<Y> helper_f(index_sequence<I...>);
 public:
   static constexpr bool value
     = (type_pack_size_v<A> == type_pack_size_v<B>)
@@ -1152,12 +1144,6 @@ struct type_pack_element<N, type_pack_mul<A, B>> {
                          <size_constant<N>, typename type_pack_size<B>::type>,
                          B>>;
 };
-template <class A, class B,
-          class = enable_if_t<is_base_of_v<type_pack_tag, A>
-                              && is_base_of_v<type_pack_tag, B>>>
-type_pack_mul<A, B> operator *(A, B) {
-  return type_pack_mul<A, B>{};
-}
 
 template <size_t N, class P>
 struct type_pack_first_part : type_pack_tag {};
@@ -4565,7 +4551,7 @@ struct integral_traits
                                  , uintptr_t
 #endif
                                  >,
-             inner::intt_useless_tag<23>, uint16_t>> {
+               inner::intt_useless_tag<23>, uint16_t>> {
   using change_signedness = int16_t;
 
   static constexpr bool is_specialized = true;
@@ -4694,35 +4680,25 @@ struct integral_traits<char32_t> : integral_traits<uint_least32_t> {};
 
 }
 
-// floating_point_traits //todo
+// numeric_limits for integer
 namespace re {
 
 template <class T>
-struct floating_point_traits {};
-
-template <class T>
-struct floating_point_traits<const T> : floating_point_traits<T> {};
-template <class T>
-struct floating_point_traits<volatile T> : floating_point_traits<T> {};
-template <class T>
-struct floating_point_traits<const volatile T> : floating_point_traits<T> {};
-
-template <>
-struct floating_point_traits<float> {};
-template <>
-struct floating_point_traits<double> {};
-
-}
-
-// numeric_limits
-namespace re {
+struct floating_point_traits;
 
 template <class T>
 struct numeric_limits {};
 template <integral T>
-struct numeric_limits<T> : integral_traits<T> {};
-template <floating_point T>
-struct numeric_limits<T> : floating_point_traits<T> {};
+struct numeric_limits<T> : private integral_traits<T> {
+  using integral_traits<T>::is_specialized;
+  using integral_traits<T>::is_signed;
+  using integral_traits<T>::min;
+  using integral_traits<T>::max;
+  static constexpr T lowest() {
+    return min();
+  }
+  static constexpr bool is_integer = true;
+};
 
 }
 
@@ -4783,6 +4759,35 @@ inline constexpr weak_ordering weak_eq = weak_ordering::equivalent;
 inline constexpr strong_ordering strong_lt = strong_ordering::less;
 inline constexpr strong_ordering strong_gt = strong_ordering::greater;
 inline constexpr strong_ordering strong_eq = strong_ordering::equivalent;
+
+struct fo_reverse_ordering {
+  constexpr strong_ordering operator ()(strong_ordering x) const noexcept {
+    if (x == strong_lt)
+      return strong_gt;
+    else if (x == strong_gt)
+      return strong_lt;
+    else
+      return x;
+  }
+  constexpr weak_ordering operator ()(weak_ordering x) const noexcept {
+    if (x == weak_lt)
+      return weak_gt;
+    else if (x == weak_gt)
+      return weak_lt;
+    else
+      return x;
+  }
+  constexpr partial_ordering
+  operator ()(partial_ordering x) const noexcept {
+    if (x == partial_lt)
+      return partial_gt;
+    else if (x == partial_gt)
+      return partial_lt;
+    else
+      return x;
+  }
+};
+inline constexpr fo_reverse_ordering reverse_ordering{};
 
 namespace inner {
 
@@ -5573,18 +5578,18 @@ namespace std {
 
 template <class...S>
 struct tuple_size<re::tuple<S...>> {
-  static constexpr std::size_t value = sizeof...(S);
+  static constexpr size_t value = sizeof...(S);
 };
-template <std::size_t I, class...S>
+template <size_t I, class...S>
 struct tuple_element<I, re::tuple<S...>> {
   using type = re::nth_type_t<I, S...>;
 };
 
-template <class T, std::size_t N>
+template <class T, size_t N>
 struct tuple_size<re::array<T, N>> {
-  static constexpr std::size_t value = N;
+  static constexpr size_t value = N;
 };
-template <std::size_t I, class T, std::size_t N>
+template <size_t I, class T, size_t N>
 struct tuple_element<I, re::array<T, N>> {
   using type = T;
 };
@@ -8514,9 +8519,6 @@ struct hash<bool> {
   }
 };
 
-// hash<float> // todo
-// hash<double> // todo
-
 template <class T>
 struct hash<T *> {
   using argument_type = T *;
@@ -9281,6 +9283,236 @@ struct fo_function_return_false {
   }
 };
 inline constexpr fo_function_return_false function_return_false{};
+
+}
+
+// numeric_limits for floating point
+// floating_point_traits
+// hash for floating_point
+namespace re {
+
+namespace inner {
+
+struct float_base {
+  using float_t = float;
+  using uint_t = uint32_t;
+  using int_t = int32_t;
+  static constexpr uint_t n = 8u;
+  static constexpr uint_t k = 23u;
+  static constexpr uint_t bias = 0b11'11111u;
+  static constexpr uint_t e_max = 0b111'11111u;
+  static constexpr uint_t f_max = 0b111'11111'11111'11111'11111u;
+
+  static float positive_inf() {
+    return bit_cast<float>((uint32_t)((uint32_t)0b111'11111u << k));
+  }
+  static float negative_inf() {
+    return bit_cast<float>((uint32_t)((uint32_t)0b1111'11111u << k));
+  }
+  static float positive_nan() {
+    return bit_cast<float>((uint32_t)((uint32_t)0b0'111'11111'1u
+                                      << (uint32_t)(k - 1u))
+                           | (uint32_t)1u);
+  }
+  static float negative_nan() {
+    return bit_cast<float>((uint32_t)((uint32_t)0b1'111'11111'1u
+                                      << (uint32_t)(k - 1u))
+                           | (uint32_t)1u);
+  }
+};
+struct double_base {
+  using float_t = double;
+  using uint_t = uint64_t;
+  using int_t = int64_t;
+  static constexpr uint_t n = 11u;
+  static constexpr uint_t k = 52u;
+  static constexpr uint_t bias = 0b11111'11111u;
+  static constexpr uint_t e_max = 0b1'11111'11111u;
+  static constexpr uint_t f_max
+    = 0b11'1111111111'1111111111'1111111111'1111111111'1111111111u;
+
+  static double positive_inf() {
+    return bit_cast<double>((uint64_t)((uint64_t)0b01'11111'11111u << k));
+  }
+  static double negative_inf() {
+    return bit_cast<double>((uint64_t)((uint64_t)0b11'11111'11111u << k));
+  }
+  static double positive_nan() {
+    return bit_cast<double>((uint64_t)((uint64_t)0b0'1'11111'11111'1u
+                                       << (uint64_t)(k - 1u))
+                            | (uint64_t)1u);
+  }
+  static double negative_nan() {
+    return bit_cast<double>((uint64_t)((uint64_t)0b1'1'11111'11111'1u
+                                       << (uint64_t)(k - 1u))
+                            | (uint64_t)1u);
+  }
+};
+
+template <class BASE>
+struct floating_point_min_traits : BASE {
+  using float_t = typename BASE::float_t;
+  using uint_t = typename BASE::uint_t;
+  using int_t = typename BASE::int_t;
+  using BASE::n;
+  using BASE::k;
+  using BASE::bias;
+  using BASE::e_max;
+  using BASE::f_max;
+  using BASE::positive_inf;
+  using BASE::negative_inf;
+  using BASE::positive_nan;
+  using BASE::negative_nan;
+
+  static bool is_positive(float_t x) {
+    return (uint_t)(bit_cast<uint_t>(x) >> (uint_t)(n + k)) == 0u;
+  }
+  static bool is_negative(float_t x) {
+    return !is_positive(x);
+  }
+  static uint_t e(float_t x) {
+    return (uint_t)((uint_t)(bit_cast<uint_t>(x) << (uint_t)1u)
+                    >> (uint_t)(k + 1u));
+  }
+  static uint_t f(float_t x) {
+    const uint_t z = n + 1u;
+    return (uint_t)((uint_t)(bit_cast<uint_t>(x) << z) >> z);
+  }
+
+  static bool is_normalized(float_t x) {
+    return e(x) != 0u && e(x) != e_max;
+  }
+  static bool is_denormalized(float_t x) {
+    return e(x) == 0u;
+  }
+  static bool is_infinity(float_t x) {
+    return e(x) == e_max && f(x) == 0u;
+  }
+  static bool is_nan(float_t x) {
+    return e(x) == e_max && f(x) != 0u;
+  }
+
+  static uint_t normalized_final_f(float_t x) {
+    return (uint_t)((uint_t)1u << k) | f(x);
+  }
+  static int_t normalized_final_e(float_t x) {
+    return to_signed(e(x)) - to_signed(bias) - to_signed(k);
+  }
+
+  static uint_t denormalized_final_f(float_t x) {
+    return f(x);
+  }
+  static int_t denormalized_final_e(float_t x) {
+    return 1 - to_signed(bias) - to_signed(k);
+  }
+};
+using float_min_traits = floating_point_min_traits<float_base>;
+using double_min_traits = floating_point_min_traits<double_base>;
+
+}
+
+template <>
+struct numeric_limits<float> {
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = true;
+  static constexpr bool is_integer = false;
+  static constexpr float lowest() {
+    return -FLT_MAX;
+  }
+  static constexpr float denorm_min() {
+    return FLT_TRUE_MIN;
+  }
+  static constexpr float min() {
+    return FLT_MIN;
+  }
+  static constexpr float max() {
+    return FLT_MAX;
+  }
+  static float infinity() {
+    return inner::float_min_traits::positive_inf();
+  }
+  static float nan() {
+    return inner::float_min_traits::positive_nan();
+  }
+  static bool has_infinity(float f) {
+    return inner::float_min_traits::is_infinity(f);
+  }
+  static bool has_denorm(float f) {
+    return inner::float_min_traits::is_denormalized(f);
+  }
+  static bool has_nan(float f) {
+    return inner::float_min_traits::is_nan(f);
+  }
+};
+template <>
+struct numeric_limits<double> {
+  static constexpr bool is_specialized = true;
+  static constexpr bool is_signed = true;
+  static constexpr bool is_integer = false;
+  static constexpr double lowest() {
+    return -DBL_MAX;
+  }
+  static constexpr double denorm_min() {
+    return DBL_TRUE_MIN;
+  }
+  static constexpr double min() {
+    return DBL_MIN;
+  }
+  static constexpr double max() {
+    return DBL_MAX;
+  }
+  static double infinity() {
+    return inner::double_min_traits::positive_inf();
+  }
+  static double nan() {
+    return inner::double_min_traits::positive_nan();
+  }
+  static bool has_infinity(double f) {
+    return inner::double_min_traits::is_infinity(f);
+  }
+  static bool has_denorm(double f) {
+    return inner::double_min_traits::is_denormalized(f);
+  }
+  static bool has_nan(double f) {
+    return inner::double_min_traits::is_nan(f);
+  }
+};
+
+template <class T>
+struct floating_point_traits;
+template <>
+struct floating_point_traits<float>
+  : inner::float_min_traits, numeric_limits<float> {};
+template <>
+struct floating_point_traits<double>
+  : inner::double_min_traits, numeric_limits<double> {};
+
+template <class T>
+struct floating_point_traits<const T> : floating_point_traits<T> {};
+template <class T>
+struct floating_point_traits<volatile T> : floating_point_traits<T> {};
+template <class T>
+struct floating_point_traits<const volatile T> : floating_point_traits<T> {};
+
+using float_traits = floating_point_traits<float>;
+using double_traits = floating_point_traits<double>;
+
+template <>
+struct hash<float> {
+  using argument_type = float;
+  using result_type = size_t;
+  size_t operator ()(float x) const noexcept {
+    return hash<uint32_t>{}(bit_cast<uint32_t>(x == 0.0f ? 0.0f : x));
+  }
+};
+template <>
+struct hash<double> {
+  using argument_type = double;
+  using result_type = size_t;
+  size_t operator ()(double x) const noexcept {
+    return hash<uint64_t>{}(bit_cast<uint64_t>(x == 0.0 ? 0.0 : x));
+  }
+};
 
 }
 

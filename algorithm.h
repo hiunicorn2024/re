@@ -3689,7 +3689,7 @@ struct fo_midpoint {
       uint_t dif = y - x;
       return x + divides<uint_t>{}(dif, 2);
     }
-   }
+  }
   template <class T>
   constexpr T operator ()(T x, T y) const
     requires (signed_integral<T> && !is_same_v<remove_cvref_t<T>, bool>) {
