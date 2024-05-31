@@ -1,11 +1,10 @@
 cc = g++ -O3 -std=c++20 -fexceptions -I../.. \
-  -Wall -Wno-unused-but-set-variable -Wno-unused-local-typedefs \
-  -Wno-sign-compare -Wno-unused-variable -Wno-maybe-uninitialized \
-  -Wno-uninitialized
+  -Wall -Werror -Wno-unused-but-set-variable -Wno-unused-local-typedefs \
+  -Wno-unused-variable
 
 cl = cl /O2 /std:c++20 /EHsc /utf-8 /bigobj /I../.. \
-  /W4 /wd4018 /wd4100 /wd4101 /wd4127 /wd4189 /wd4146 /wd4244 /wd4267 \
-  /wd4389 /wd4456 /wd4458 /wd4459 /wd4702 /wd4723 /wd4996
+  /W4 /wd4100 /wd4127 /wd4189 /wd4244 /wd4267 /wd4459 /wd4702 /wd4996 /wd4324 \
+  /WX
 
 vc:
 	$(cl) /Fea.exe main.cpp

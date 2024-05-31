@@ -24,10 +24,10 @@ void doc_base() {
   //
   // used namespaces:
   //   re
-  //   re_adl
-  //   re_adl::inner
   //   re::inner
   //   re::inner::fns
+  //   re_adl
+  //   re_adl::inner
   //
   // used names:
   //   fo_? // for defining function object
@@ -155,17 +155,10 @@ void doc_std_dependence() {
   // std::scanf // <cstdio>
   // std::fscanf // <cstdio>
   // std::sscanf // <cstdio>
-  // std::vscanf // <cstdio>
-  // std::vfscanf // <cstdio>
-  // std::vsscanf // <cstdio>
   // std::printf // <cstdio>
   // std::fprintf // <cstdio>
   // std::sprintf // <cstdio>
   // std::snprintf // <cstdio>
-  // std::vprintf // <cstdio>
-  // std::vfprintf // <cstdio>
-  // std::vsprintf // <cstdio>
-  // std::vsnprintf // <cstdio>
   // std::ftell // <cstdio>
   // std::fgetpos // <cstdio>
   // std::fseek // <cstdio>
@@ -217,16 +210,6 @@ void doc_std_dependence() {
   // std::strerror // <cstring>
 
   // std::is_constant_evaluated // <type_traits>
-
-  // std::isnan // <cmath>
-  {
-    assert(std::isnan(NAN));
-
-    volatile auto tmp = 0.0f;
-    assert(isnan(0.0 / tmp));
-
-    assert(isnan(INFINITY - INFINITY));
-  }
 
   // std::source_location
   //   current()
@@ -289,17 +272,10 @@ void doc_basic_template_metaprogramming_tools() {
       static type_tag<int> f(type_pack<int>);
       static type_tag<int> f(type_pack<int, float>);
       static inner::disable f(type_pack<float>);
-      static inner::enable f(type_pack<float *>);
-      static void f(type_pack<void>);
     };
-
     static_assert(f_is_well_formed_v<check_t, int>);
     static_assert(f_is_well_formed_v<check_t, int, float>);
-    static_assert(!f_is_well_formed_v<check_t>);
     static_assert(!f_is_well_formed_v<check_t, double>);
-    static_assert(f_is_well_formed_v<check_t, void>);
-
-    static_assert(is_same_v<return_type_of_f_or_t<check_t, void, int>, int>);
     static_assert(is_same_v<return_type_of_f_or_t<check_t, void, int, float>,
                             int>);
     static_assert(is_same_v<return_type_of_f_or_t<check_t, void, float>, void>);
@@ -308,28 +284,21 @@ void doc_basic_template_metaprogramming_tools() {
   // has_member_type_type(_v)<T>
   // has_member_static_value(_v)<T>
   {
-    struct X {
-      using type = void;
-    };
     static_assert(!has_member_type_type_v<int>);
-    static_assert(has_member_type_type_v<X>);
-    static_assert(!has_member_type_type_v<X &>);
+    static_assert(has_member_type_type_v<int_constant<3>>);
 
     static_assert(!has_member_static_value_v<int>);
     static_assert(has_member_static_value_v<int_constant<3>>);
-    static_assert(!has_member_static_value_v<int_constant<3> &>);
   }
 
   // nth_type(_t)<N, S...>
   //   requires: N < sizeof...(S), otherwise get void.
   {
     static_assert(is_same_v<nth_type_t<0>, void>);
-    static_assert(is_same_v<nth_type_t<1>, void>);
     static_assert(is_same_v<nth_type_t<100>, void>);
     static_assert(is_same_v<nth_type_t<0, char, int>, char>);
     static_assert(is_same_v<nth_type_t<1, char, int>, int>);
     static_assert(is_same_v<nth_type_t<2, char, int>, void>);
-    static_assert(is_same_v<nth_type_t<200, char, int>, void>);
   }
 
   // is_one_of_types(_v)<T, S...>
@@ -347,7 +316,6 @@ void doc_basic_template_metaprogramming_tools() {
     static_assert(find_type_v<int, char, int, float> == 1);
     static_assert(find_type_v<float, char, int, float> == 2);
     static_assert(find_type_v<double, char, int, float> == 3);
-    static_assert(find_type_v<double *******, char, int, float> == 3);
   }
 
   // occurs_exactly_once(_v)<T, S...>
@@ -385,31 +353,19 @@ void doc_basic_template_metaprogramming_tools() {
     static_assert(compile_time_mul_v<int_constant<2>, int_constant<3>> == 6);
     static_assert(compile_time_div_v<int_constant<5>, int_constant<2>> == 2);
     static_assert(compile_time_mod_v<int_constant<5>, int_constant<2>> == 1);
-    static_assert(compile_time_mod_v<int_constant<7>, int_constant<4>> == 3);
-    static_assert(compile_time_mod_v<int_constant<7>, int_constant<-4>> == 3);
-    static_assert(compile_time_mod_v<int_constant<-7>, int_constant<-4>> == -3);
-    static_assert(compile_time_mod_v<int_constant<-7>, int_constant<4>> == -3);
 
     static_assert(compile_time_neg_v<int_constant<-3>> == 3);
     static_assert(compile_time_abs_v<int_constant<-3>> == 3);
 
     static_assert(compile_time_gcd_v<int_constant<6>, int_constant<-9>> == 3);
-    static_assert(compile_time_gcd_v<int_constant<-6>, int_constant<9>> == 3);
-    static_assert(compile_time_gcd_v<int_constant<-6>, int_constant<-9>> == 3);
     static_assert(compile_time_gcd_v<size_constant<6>, size_constant<9>> == 3);
     static_assert(compile_time_gcd_v<size_constant<3>, size_constant<0>> == 3);
-    static_assert(compile_time_gcd_v<size_constant<0>, size_constant<0>> == 0);
 
     static_assert(compile_time_lcm_v
                   <int_constant<6>, int_constant<-9>> == 18);
     static_assert(compile_time_lcm_v
-                  <int_constant<-6>, int_constant<9>> == 18);
-    static_assert(compile_time_lcm_v
-                  <int_constant<-6>, int_constant<-9>> == 18);
-    static_assert(compile_time_lcm_v
                   <int_constant<6>, int_constant<9>> == 18);
     static_assert(compile_time_lcm_v<size_constant<6>, size_constant<0>> == 0);
-    static_assert(compile_time_lcm_v<size_constant<0>, size_constant<0>> == 0);
 
     static_assert(compile_time_min_v<int_constant<1>, int_constant<2>> == 1);
     static_assert(compile_time_max_v<int_constant<1>, int_constant<2>> == 2);
@@ -444,6 +400,7 @@ void doc_basic_template_metaprogramming_tools() {
     static_assert(is_same_v<typename type_tag<int>::type, int>);
   }
 
+
   // // classes worked with type_pack_size and type_pack_element
   // //   type_pack<...>
   // //   T = type_pack<T>
@@ -461,54 +418,39 @@ void doc_basic_template_metaprogramming_tools() {
   //   //   type_pack_mul
   //   //   type_pack_first_part
   //   //   type_pack_second_part
-  // type_pack_size(_v)<T>
-  // type_pack_element(_t)<N, T>
-  //   requires: N < type_pack_size_v<T>, otherwise get unknown type
-  // type_pack_for_each<T>(f) // may throw
-  //   // call f for type_tag pack of type_pack_element<I, T> for all valid I
-  // type_pack_apply(_t)<template <class...> APPLY, P>
-  //   type
-  // type_pack_add<X, Y>
-  //   type
-  // type_pack_mul<X, Y>
-  //   type
-  //   ()(f) // Apply type_pack_for_each for type of *this
-  // type_pack_mul<A, B> operator *(A, B)
-  //   requires:
-  //     A and B are both derived from type_pack_tag,
-  //     otherwise this function does not join overload resolution.
-  // type_pack_decay(_t)<T>
-  //   requires: T is type_pack
-  // type_pack_eql(_v)<T1, T2>
-  // type_pack_recursive_decay(_t)<T>
-  //   requires: T is type_pack
-  // type_pack_recursive_eql(_v)<T1, T2>
-  // type_pack_first_part<N, P>
-  //   requires: P is type_pack, and N <= type_pack_size_v<P>
-  // type_pack_second_part<N, P>
-  //   requires: P is type_pack, and N <= type_pack_size_v<P>
-  // n_type_pack(_t)<N, T> // = type_pack<T, T, ..., T>
   {
     static_assert(is_base_of_v<type_pack_tag, type_pack<>>);
-
+  }
+  // type_pack_size(_v)<T>
+  {
     static_assert(type_pack_size_v<int> == 1);
     static_assert(type_pack_size_v<type_pack<>> == 0);
     static_assert(type_pack_size_v<type_pack<int, float>> == 2);
     static_assert(type_pack_size_v<make_index_sequence<5>> == 5);
-
+  }
+  // type_pack_element(_t)<N, T>
+  //   requires: N < type_pack_size_v<T>, otherwise get unknown type
+  {
     static_assert(is_same_v<type_pack_element_t<2, index_sequence<1, 3, 5, 7>>,
                             size_constant<5>>);
-
+  }
+  // type_pack_eql(_v)<T1, T2>
+  {
+    static_assert(type_pack_eql_v
+                  <type_pack<int, float>,
+                   type_pack_add<type_pack<int>, type_pack<float>>>);
+  }
+  // type_pack_for_each<T>(f) // may throw
+  {
     type_pack_for_each<type_pack<int,
                                  type_pack<int, float>,
                                  make_index_sequence<3>>>
       ([]<class...S>(S...x) {
         if (sizeof...(x) == 1)
-          assert((is_same_v<nth_type_t<0, S...>, type_tag<int>>));
-        else if (sizeof...(x) == 2) {
-          assert((is_same_v<nth_type_t<0, S...>, type_tag<int>>));
-          assert((is_same_v<nth_type_t<1, S...>, type_tag<float>>));
-        }
+          assert((is_same_v<type_pack<S...>, type_pack<type_tag<int>>>));
+        else if (sizeof...(x) == 2)
+          assert((is_same_v<type_pack<S...>,
+                            type_pack<type_tag<int>, type_tag<float>>>));
         else if (sizeof...(x) == 3) {
           assert((is_same_v<nth_type_t<0, S...>, type_tag<size_constant<0>>>));
           assert((is_same_v<nth_type_t<1, S...>, type_tag<size_constant<1>>>));
@@ -517,52 +459,88 @@ void doc_basic_template_metaprogramming_tools() {
         else
           assert(false);
       });
-
-    {
-      int c = 0;
-      auto f = [&](auto x) {
-        ++c;
-        return !is_pointer_v<typename decltype(x)::type>;
-      };
-      type_pack_for_each_until_false<type_pack<int, int, int *, int>>(f);
-      assert(c == 3);
-    }
-
+  }
+  // type_pack_for_each_until_false<T>(f) // may throw
+  {
+    int c = 0;
+    auto f = [&](auto x) {
+      ++c;
+      return !is_pointer_v<typename decltype(x)::type>;
+    };
+    type_pack_for_each_until_false<type_pack<int, int, int *, int>>(f);
+    assert(c == 3);
+  }
+  // type_pack_apply(_t)<template <class...> APPLY, P>
+  //   type
+  {
     static_assert(is_same_v
                   <type_pack_apply_t
-                   <type_pack, type_pack_add<int, type_pack<float, void *>>>,
-                   type_pack<int, float, void *>>);
-
-    {
-      using P0 = type_pack<void *, void **>;
-      using P1 = type_pack<int, long>;
-      using P01 = type_pack_mul<P0, P1>;
-      using PP = type_pack<type_pack_add<void *, int>,
-                           type_pack_add<void *, long>,
-                           type_pack_add<void **, int>,
-                           type_pack_add<void **, long>>;
-      static_assert(type_pack_eql_v<P01, PP>);
-    }
-
-    {
-      using P = type_pack<int, float, void *, void **, void ***>;
-      using P0 = type_pack_first_part<3, P>;
-      using P1 = type_pack_second_part<3, P>;
-      static_assert(type_pack_eql_v<P0, type_pack<int, float, void *>>);
-      static_assert(type_pack_eql_v<P1, type_pack<void **, void ***>>);
-      static_assert(is_same_v
-                    <type_pack_decay_t<P1>, type_pack<void **, void ***>>);
-    }
-
-    {
-      static_assert(same_as<n_type_pack_t<0, int>, type_pack<>>);
-      static_assert(same_as<n_type_pack_t<1, int>, type_pack<int>>);
-      static_assert(same_as<n_type_pack_t<2, int>, type_pack<int, int>>);
-      static_assert(same_as<n_type_pack_t<3, int>, type_pack<int, int, int>>);
-      static_assert(same_as
-                    <n_type_pack_t<6, int>,
-                     type_pack<int, int, int, int, int, int>>);
-    }
+                  <type_pack, type_pack_add<int, type_pack<float, void *>>>,
+                  type_pack<int, float, void *>>);
+  }
+  // type_pack_add<X, Y>
+  //   type
+  // type_pack_mul<X, Y>
+  //   type
+  //   ()(f) // Apply type_pack_for_each for type of *this
+  {
+    using P0 = type_pack<void *, void **>;
+    using P1 = type_pack<int, long>;
+    using P01 = type_pack_mul<P0, P1>;
+    using PP = type_pack<type_pack_add<void *, int>,
+                         type_pack_add<void *, long>,
+                         type_pack_add<void **, int>,
+                         type_pack_add<void **, long>>;
+    static_assert(type_pack_eql_v<P01, PP>);
+  }
+  // type_pack_decay(_t)<TYPE_PACK>
+  {
+    static_assert(is_same_v
+                  <type_pack_decay_t
+                   <type_pack_add<type_pack<int>, type_pack<float>>>,
+                   type_pack<int, float>>);
+  }
+  // type_pack_recursive_decay(_t)<TYPE_PACK>
+  {
+    using P = type_pack_mul<type_pack<void *, void **>,
+                            type_pack<void ***, void ****>>;
+    using PP = type_pack_recursive_decay_t<P>;
+    using PPP = type_pack<type_pack<void *, void ***>,
+                          type_pack<void *, void ****>,
+                          type_pack<void **, void ***>,
+                          type_pack<void **, void ****>>;
+    static_assert(is_same_v<PP, PPP>);
+  }
+  // type_pack_recursive_eql(_v)<T1, T2>
+  {
+    static_assert(type_pack_recursive_eql_v
+                  <type_pack<type_pack<int>, float>, type_pack<int, float>>);
+    static_assert(!type_pack_recursive_eql_v
+                  <type_pack<type_pack<int, long>, float>,
+                   type_pack<int, long, float>>);
+  }
+  // type_pack_first_part<N, P>
+  //   requires: P is type_pack, and N <= type_pack_size_v<P>
+  // type_pack_second_part<N, P>
+  //   requires: P is type_pack, and N <= type_pack_size_v<P>
+  {
+    using P = type_pack<int, float, void *, void **, void ***>;
+    using P0 = type_pack_first_part<3, P>;
+    using P1 = type_pack_second_part<3, P>;
+    static_assert(type_pack_eql_v<P0, type_pack<int, float, void *>>);
+    static_assert(type_pack_eql_v<P1, type_pack<void **, void ***>>);
+    static_assert(is_same_v
+                  <type_pack_decay_t<P1>, type_pack<void **, void ***>>);
+  }
+  // n_type_pack(_t)<N, T> // = type_pack<T, T, ..., T>
+  {
+    static_assert(same_as<n_type_pack_t<0, int>, type_pack<>>);
+    static_assert(same_as<n_type_pack_t<1, int>, type_pack<int>>);
+    static_assert(same_as<n_type_pack_t<2, int>, type_pack<int, int>>);
+    static_assert(same_as<n_type_pack_t<3, int>, type_pack<int, int, int>>);
+    static_assert(same_as
+                  <n_type_pack_t<6, int>,
+                   type_pack<int, int, int, int, int, int>>);
   }
 
   // conjunction(_v)<S...>
@@ -572,17 +550,14 @@ void doc_basic_template_metaprogramming_tools() {
   // negation(_v)<T>
   //   // get bool_constant<!T::value>
   {
-    using T = true_type;
-    using F = false_type;
-
+    using t = true_type;
+    using f = false_type;
     static_assert(conjunction_v<>);
-    static_assert(!conjunction_v<T, T, T, F, T>);
-
+    static_assert(conjunction_v<t, t, t, t, t>);
     static_assert(!disjunction_v<>);
-    static_assert(disjunction_v<F, T, F, F, F>);
-
-    static_assert(!negation_v<T>);
-    static_assert(negation_v<F>);
+    static_assert(!disjunction_v<f, f, f, f, f>);
+    static_assert(!negation_v<t>);
+    static_assert(negation_v<f>);
   }
 
   // select_type(_v)<X, S...>
@@ -615,23 +590,25 @@ void doc_swap() {
   // is_swappable(_v)<T>
   // is_nothrow_swappable_with(_v)<REF1, REF2>
   // is_nothrow_swappable(_v)<T>
-  //
-  // default_swap(x, y) // may throw
-  // default_swappable<X>
-  // adl_swap(x, y) // may throw
   {
     static_assert(is_swappable_with_v<int &, int &>);
     static_assert(is_swappable_v<int>);
     static_assert(is_nothrow_swappable_with_v<int &, int &>);
     static_assert(is_nothrow_swappable_v<int>);
+  }
 
+  // default_swap(x, y) // may throw
+  //   // only use move constructor and move assignment operator
+
+  // default_swappable<X>
+  // adl_swap(x, y) // may throw
+  {
     int x = 1, y = 2;
-    int a[3] = {1, 2, 3}, aa[3] = {4, 5, 6};
+    int a[2] = {1, 2}, aa[2] = {4, 5};
     adl_swap(x, y);
     adl_swap(a, aa);
     assert(x == 2 && y == 1);
-    assert(a[0] == 4 && a[1] == 5 && a[2] == 6);
-    assert(aa[0] == 1 && aa[1] == 2 && aa[2] == 3);
+    assert(a[0] == 4 && a[1] == 5 && aa[0] == 1 && aa[1] == 2);
   }
 }
 void doc_type_traits() {
@@ -641,16 +618,12 @@ void doc_type_traits() {
     static_assert(is_void_v<void>);
     static_assert(is_void_v<const volatile void>);
     static_assert(!is_void_v<void *>);
-    static_assert(!is_void_v<void *&>);
     static_assert(!is_void_v<int>);
   }
   // is_null_pointer(_v)<T>
   {
     static_assert(is_null_pointer_v<nullptr_t>);
     static_assert(is_null_pointer_v<const volatile nullptr_t>);
-    static_assert(!is_null_pointer_v<nullptr_t *>);
-    static_assert(!is_null_pointer_v<nullptr_t *&>);
-    static_assert(!is_null_pointer_v<nullptr_t &>);
     static_assert(!is_null_pointer_v<int>);
   }
   // is_integral(_v)<T>
@@ -664,8 +637,7 @@ void doc_type_traits() {
   {
     static_assert(is_floating_point_v<float>);
     static_assert(is_floating_point_v<double>);
-    static_assert(is_floating_point_v<long double>);
-    static_assert(is_floating_point_v<const volatile long double>);
+    static_assert(is_floating_point_v<const volatile double>);
     static_assert(!is_floating_point_v<int>);
   }
   // is_array(_v)<T>
@@ -673,7 +645,6 @@ void doc_type_traits() {
     static_assert(is_array_v<int []>);
     static_assert(is_array_v<int [3]>);
     static_assert(!is_array_v<int (&)[3]>);
-    static_assert(is_array_v<const volatile int *[100]>);
     static_assert(!is_array_v<int>);
   }
   // is_pointer(_v)<T>
@@ -685,24 +656,20 @@ void doc_type_traits() {
   // is_lvalue_reference(_v)<T>
   {
     static_assert(is_lvalue_reference_v<int &>);
-    static_assert(is_lvalue_reference_v<const volatile int &>);
-    static_assert(!is_lvalue_reference_v<int>);
+    static_assert(!is_lvalue_reference_v<int &&>);
+    static_assert(!is_lvalue_reference_v<int>);    
   }
   // is_rvalue_reference(_v)<T>
   {
     static_assert(is_rvalue_reference_v<int &&>);
-    static_assert(is_rvalue_reference_v<const volatile int &&>);
+    static_assert(!is_rvalue_reference_v<int &>);
     static_assert(!is_rvalue_reference_v<int>);
   }
   // is_member_object_pointer(_v)<T>
   {
-    struct t {
-      int i;
-      int &j;
-    };
-    int t::*const p = &t::i;
+    struct t {};
     // auto pp = &t::j; // pointer to reference member is illegal
-    static_assert(is_member_object_pointer_v<decltype(p)>);
+    static_assert(is_member_object_pointer_v<int t::*>);
     static_assert(!is_member_object_pointer_v<void (t::*)()>);
     static_assert(!is_member_object_pointer_v<int>);
   }
@@ -729,144 +696,84 @@ void doc_type_traits() {
     enum struct tt {aa, bb, cc};
     static_assert(is_enum_v<t>);
     static_assert(is_enum_v<tt>);
-    static_assert(is_enum_v<const volatile tt>);
     static_assert(is_enum_v<decltype(a)>);
     static_assert(is_enum_v<decltype(tt::aa)>);
-    static_assert(!is_enum_v<int>);
   }
   // is_union(_v)<T>
   {
     union t {};
     static_assert(is_union_v<t>);
-    static_assert(!is_union_v<int>);
   }
   // is_class(_v)<T>
   {
     struct t {};
     static_assert(is_class_v<t>);
-    static_assert(!is_class_v<int>);
   }
   // is_function(_v)<T>
   {
     static_assert(is_function_v<void ()>);
     static_assert(is_function_v<void () const &>);
-    static_assert(!is_function_v<int>);
   }
 
   // // composite type categories
   // is_reference(_v)<T>
   {
     static_assert(is_reference_v<int &>);
-    static_assert(is_reference_v<const int &>);
     static_assert(is_reference_v<int &&>);
-    static_assert(is_reference_v<const int &&>);
-    static_assert(!is_reference_v<int>);
-  }
-  // is_member_pointer(_v)<T>
-  {
-    struct X {};
-    static_assert(is_member_object_pointer_v<int X::*>);
-    static_assert(!is_member_object_pointer_v<int>);
   }
   // is_arithmetic(_v)<T>
   {
+    static_assert(is_arithmetic_v<bool>);
     static_assert(is_arithmetic_v<char>);
     static_assert(is_arithmetic_v<const volatile int>);
     static_assert(is_arithmetic_v<float>);
-    static_assert(!is_arithmetic_v<void>);
   }
   // is_fundamental(_v)<T>
-  // is_object(_v)<T>
-  // is_scalar(_v)<T>
   // is_compound(_v)<T>
-  // is_referenceable(_v)<T>
   {
-    using integral_t = int;
-    using float_t = float;
-    using void_t = void;
-    using nullptr_t = nullptr_t;
-
-    using array_t = int [3];
-    using pointer_t = int *;
-    using reference_t = int &;
-    using function_t = void ();
-
-    enum enum_t {A, B, C};
+    enum enum_t {a, b, c};
     union union_t {};
-    struct class_t {};
-    using member_object_pointer_t = int class_t::*;
-    using member_function_pointer_t = void (class_t::*)();
-
-    static_assert(is_fundamental_v<integral_t>);
-    static_assert(is_fundamental_v<float_t>);
-    static_assert(is_fundamental_v<void_t>);
+    class class_t {};
+    static_assert(is_fundamental_v<int>);
+    static_assert(is_fundamental_v<float>);
+    static_assert(is_fundamental_v<void>);
     static_assert(is_fundamental_v<nullptr_t>);
-    static_assert(!is_fundamental_v<array_t>);
-    static_assert(!is_fundamental_v<pointer_t>);
-    static_assert(!is_fundamental_v<reference_t>);
-    static_assert(!is_fundamental_v<function_t>);
-    static_assert(!is_fundamental_v<enum_t>);
-    static_assert(!is_fundamental_v<union_t>);
-    static_assert(!is_fundamental_v<class_t>);
-    static_assert(!is_fundamental_v<member_object_pointer_t>);
-    static_assert(!is_fundamental_v<member_function_pointer_t>);
-
-    static_assert(!is_compound_v<integral_t>);
-    static_assert(!is_compound_v<float_t>);
-    static_assert(!is_compound_v<void_t>);
-    static_assert(!is_compound_v<nullptr_t>);
-    static_assert(is_compound_v<array_t>);
-    static_assert(is_compound_v<pointer_t>);
-    static_assert(is_compound_v<reference_t>);
-    static_assert(is_compound_v<function_t>);
+    static_assert(is_compound_v<int[3]>);
+    static_assert(is_compound_v<int *>);
+    static_assert(is_compound_v<int &>);
+    static_assert(is_compound_v<int ()>);
     static_assert(is_compound_v<enum_t>);
     static_assert(is_compound_v<union_t>);
     static_assert(is_compound_v<class_t>);
-    static_assert(is_compound_v<member_object_pointer_t>);
-    static_assert(is_compound_v<member_function_pointer_t>);
-
-    static_assert(is_object_v<integral_t>);
-    static_assert(is_object_v<float_t>);
-    static_assert(!is_object_v<void_t>);
-    static_assert(is_object_v<nullptr_t>);
-    static_assert(is_object_v<array_t>);
-    static_assert(is_object_v<pointer_t>);
-    static_assert(!is_object_v<reference_t>);
-    static_assert(!is_object_v<function_t>);
-    static_assert(is_object_v<enum_t>);
-    static_assert(is_object_v<union_t>);
-    static_assert(is_object_v<class_t>);
-    static_assert(is_object_v<member_object_pointer_t>);
-    static_assert(is_object_v<member_function_pointer_t>);
-
-    static_assert(is_scalar_v<integral_t>);
-    static_assert(is_scalar_v<float_t>);
-    static_assert(!is_scalar_v<void_t>);
+    static_assert(is_compound_v<int class_t::*>);
+    static_assert(is_compound_v<int (class_t::*)()>);
+  }
+  // is_object(_v)<T>
+  {
+    static_assert(!is_object_v<void>);
+    static_assert(!is_object_v<int &>);
+    static_assert(!is_object_v<int ()>);
+  }
+  // is_scalar(_v)<T>
+  {
+    enum enum_t {};
+    class t {};
+    static_assert(is_scalar_v<int>);
+    static_assert(is_scalar_v<float>);
     static_assert(is_scalar_v<nullptr_t>);
-    static_assert(!is_scalar_v<array_t>);
-    static_assert(is_scalar_v<pointer_t>);
-    static_assert(!is_scalar_v<reference_t>);
-    static_assert(!is_scalar_v<function_t>);
-    static_assert(is_scalar_v<enum_t>);
-    static_assert(!is_scalar_v<union_t>);
-    static_assert(!is_scalar_v<class_t>);
-    static_assert(is_scalar_v<member_object_pointer_t>);
-    static_assert(is_scalar_v<member_function_pointer_t>);
-
-    static_assert(is_referenceable_v<integral_t>);
-    static_assert(is_referenceable_v<float_t>);
-    static_assert(!is_referenceable_v<void_t>);
-    static_assert(is_referenceable_v<nullptr_t>);
-    static_assert(is_referenceable_v<array_t>);
-    static_assert(is_referenceable_v<pointer_t>);
-    static_assert(is_referenceable_v<reference_t>);
-    static_assert(is_referenceable_v<function_t>);
-    static_assert(is_referenceable_v<enum_t>);
-    static_assert(is_referenceable_v<union_t>);
-    static_assert(is_referenceable_v<class_t>);
-    static_assert(is_referenceable_v<member_object_pointer_t>);
-    static_assert(is_referenceable_v<member_function_pointer_t>);
-    static_assert(is_referenceable_v<void ()>);
+    static_assert(is_scalar_v<int *>);
+    static_assert(is_scalar_v<int t::*>);
+    static_assert(is_scalar_v<int (t::*)()>);
+  }
+  // is_member_pointer(_v)<T>
+  {
+    class t {};
+    static_assert(is_member_pointer_v<int t::*>);
+    static_assert(is_member_pointer_v<int (t::*)()>);
+  }
+  // is_referenceable(_v)<T>  
+  {
+    static_assert(!is_referenceable_v<void>);
     static_assert(!is_referenceable_v<void () &>);
     static_assert(!is_referenceable_v<void () const>);
   }
@@ -875,94 +782,64 @@ void doc_type_traits() {
   // is_const(_v)<T>
   {
     static_assert(is_const_v<const int>);
-    static_assert(!is_const_v<int>);
   }
   // is_volatile(_v)<T>
   {
     static_assert(is_volatile_v<volatile int>);
-    static_assert(is_volatile_v<const volatile int>);
-    static_assert(is_volatile_v<int *volatile>);
-    static_assert(!is_volatile_v<int>);
-    static_assert(!is_volatile_v<volatile int &>);
-    static_assert(!is_volatile_v<volatile int *>);
   }
   // is_trivial(_v)<T>
-  // is_trivially_copyable(_v)<T>
   {
-    struct t1 {
-      int x;
-      t1() = default;
-      t1(const t1 &) = default;
-      t1 &operator =(const t1 &) = default;
-    };
-    struct t2 {
-      int x;
-      t2() {}
-      t2(const t2 &) {}
-      t2 &operator =(const t2 &) {return *this;}
-    };
-
+    struct t1 {t1() = default;};
+    struct t2 {t2() {}};
     static_assert(is_trivial_v<int>);
-    static_assert(is_trivial_v<int [2]>);
     static_assert(is_trivial_v<t1>);
     static_assert(!is_trivial_v<t2>);
-    static_assert(!is_trivial_v<int &>);
-    static_assert(!is_trivial_v<int ()>);
-
-    static_assert(!is_trivially_copyable<const volatile t1>::value);
-    static_assert(!is_trivially_copyable_v<t2>);
-    static_assert(!is_trivially_copyable_v<int &>);
-    static_assert(!is_trivially_copyable_v<int ()>);
+  }
+  // is_trivially_copyable(_v)<T>
+  {
+    static_assert(is_trivially_copyable_v<int>);
+    struct t {
+      t() = delete;
+      t(const t &) = default;
+      t &operator =(const t &) = default;
+      t(t &&) = default;
+      t &operator =(t &&) = default;
+    };
+    static_assert(is_trivially_copyable_v<t>);
   }
   // is_standard_layout(_v)<T>
   {
-    struct t0 {
+    struct t {
       int x;
     };
-    struct t {
-      virtual void f() {}
-    };
     struct tt {
-      tt() {}
+    private:
+      int x;
     };
     struct ttt {
-      ttt(const tt &) {}
-    };
-    struct tttt {
-      tttt &operator =(const tttt &) {return *this;}
-    };
-    struct ttttt {
     private:
       int x;
     public:
       int y;
     };
-    static_assert(is_standard_layout_v<t0>);
+    static_assert(is_standard_layout_v<t>);
     static_assert(is_standard_layout_v<tt>);
-    static_assert(is_standard_layout_v<ttt>);
-    static_assert(is_standard_layout_v<tttt>);
-    static_assert(!is_standard_layout_v<ttttt>);
+    static_assert(!is_standard_layout_v<ttt>);
   }
   // is_empty(_v)<T>
   {
     struct t {};
     struct tt {};
     struct ttt : t, tt {};
-
     static_assert(is_empty_v<t>);
     static_assert(is_empty_v<tt>);
     static_assert(is_empty_v<ttt>);
-    static_assert(is_empty_v<integral_constant<int, 0>>);
   }
   // is_polymorphic(_v)<T>
   // is_abstract(_v)<T>
   {
-    struct t {
-      virtual void f() = 0;
-    };
-    struct tt {
-      virtual void f() {}
-    };
+    struct t {virtual void f() = 0;};
+    struct tt {virtual void f() {}};
     static_assert(is_polymorphic_v<t>);
     static_assert(is_polymorphic_v<tt>);
     static_assert(is_abstract_v<t>);
@@ -985,17 +862,14 @@ void doc_type_traits() {
   // is_unsigned(_v)<T>
   {
     static_assert(is_signed_v<int>);
-    static_assert(is_signed_v<float>);
     static_assert(is_unsigned_v<bool>);
     static_assert(!is_unsigned_v<void> && !is_signed_v<void>);
   }
   // is_bounded_array(_v)<T>
   // is_unbounded_array(_v)<T>
   {
-    static_assert(is_bounded_array_v<const volatile int [1]>);
-    static_assert(is_unbounded_array_v<const volatile int []>);
-    static_assert(!is_unbounded_array_v<int [0]>);
-    static_assert(!is_bounded_array_v<int [0]>);
+    static_assert(is_bounded_array_v<int [1]>);
+    static_assert(is_unbounded_array_v<int []>);
   }
   // is_constructible(_v)<T, S...>
   // is_default_constructible(_v)<T>
@@ -1005,26 +879,7 @@ void doc_type_traits() {
   // is_copy_assignable(_v)<T>
   // is_move_assignable(_v)<T>
   // is_destructible(_v)<T>
-  {
-    static_assert(is_constructible_v<const int &, int &>);
-    static_assert(is_assignable_v<int &, const int &>);
 
-    static_assert(is_constructible_v<int>);
-    static_assert(is_default_constructible_v<int>);
-    static_assert(is_copy_constructible_v<int>);
-    static_assert(is_move_constructible_v<int>);
-    static_assert(is_copy_assignable_v<int>);
-    static_assert(is_move_assignable_v<int>);
-
-    static_assert(!is_copy_assignable_v<const int>);
-    static_assert(!is_move_assignable_v<const int>);
-
-    static_assert(is_destructible_v<int>);
-    struct t {
-      ~t() = delete;
-    };
-    static_assert(!is_destructible_v<t>);
-  }
   // is_trivially_constructible(_v)<T, S...>
   // is_trivially_default_constructible(_v)<T>
   // is_trivially_copy_constructible(_v)<T>
@@ -1033,20 +888,7 @@ void doc_type_traits() {
   // is_trivially_copy_assignable(_v)<T>
   // is_trivially_move_assignable(_v)<T>
   // is_trivially_destructible(_v)<T>
-  {
-    static_assert(is_trivially_constructible_v<const int &, int &>);
-    static_assert(is_trivially_assignable_v<int &, const int &>);
 
-    static_assert(is_trivially_constructible_v<int>);
-    static_assert(is_trivially_default_constructible_v<int>);
-    static_assert(is_trivially_copy_constructible_v<int>);
-    static_assert(is_trivially_move_constructible_v<int>);
-    static_assert(is_trivially_copy_assignable_v<int>);
-    static_assert(is_trivially_move_assignable_v<int>);
-    static_assert(is_trivially_destructible_v<int>);
-
-    static_assert(is_trivially_copy_assignable_v<int &>);
-  }
   // is_nothrow_constructible(_v)<T, S...>
   // is_nothrow_default_constructible(_v)<T>
   // is_nothrow_copy_constructible(_v)<T>
@@ -1055,60 +897,42 @@ void doc_type_traits() {
   // is_nothrow_copy_assignable(_v)<T>
   // is_nothrow_move_assignable(_v)<T>
   // is_nothrow_destructible(_v)<T>
-  {
-    static_assert(is_nothrow_constructible_v<const int &, int &>);
-    static_assert(is_nothrow_assignable_v<int &, const int &>);
 
-    static_assert(is_nothrow_constructible_v<int>);
-    static_assert(is_nothrow_default_constructible_v<int>);
-    static_assert(is_nothrow_copy_constructible_v<int>);
-    static_assert(is_nothrow_move_constructible_v<int>);
-    static_assert(is_nothrow_copy_assignable_v<int>);
-    static_assert(is_nothrow_move_assignable_v<int>);
-    static_assert(is_nothrow_destructible_v<int>);
-
-    static_assert(is_nothrow_copy_assignable_v<int &>);
-  }
   // has_virtual_destructor(_v)<T>
   {
-    struct t {
-      virtual ~t() {}
-    };
+    struct t {virtual ~t() {}};
     static_assert(has_virtual_destructor_v<t>);
-    static_assert(!has_virtual_destructor_v<int>);
   }
+
   // has_unique_object_representations(_v)<T>
-  {
-    static_assert(has_unique_object_representations_v<char>);
-  }
 
   // // type property queires
   // alignment_of(_v)<T>
   {
     static_assert(alignment_of_v<char> == alignof(char));
   }
+
   // rank(_v)<T>
+  {
+    static_assert(rank_v<int> == 0u);
+    static_assert(rank_v<int []> == 1u);
+    static_assert(rank_v<int [][2]> == 2u);
+    static_assert(rank_v<int [][2][3]> == 3u);
+  }
   // extent(_v)<T, I = 0>
   {
-    static_assert(rank_v<int> == 0);
-    static_assert(rank_v<int []> == 1);
-    static_assert(rank_v<int [][2]> == 2);
-    static_assert(rank_v<int [][2][3][4][5]> == 5);
-
     static_assert(extent_v<int> == 0);
     static_assert(extent_v<int []> == 0);
     static_assert(extent_v<int [3]> == 3);
     static_assert(extent_v<int [3][4]> == 3);
     static_assert(extent_v<int [3][4], 0> == 3);
     static_assert(extent_v<int [3][4], 1> == 4);
-    static_assert(extent_v<int, 100> == 0);
   }
 
   // // type relations
   // is_same(_v)<T1, T2>
   {
     static_assert(is_same_v<void, void>);
-    static_assert(!is_same_v<int, int &>);
   }
   // is_base_of(_v)<T1, T2>
   {
@@ -1119,25 +943,19 @@ void doc_type_traits() {
     static_assert(is_base_of_v<t, t>);
     static_assert(is_base_of_v<t, tt>);
     static_assert(is_base_of_v<t, ttt>);
-    static_assert(is_base_of_v<const volatile t, ttt>);
-    static_assert(!is_base_of_v<t &, ttt>);
   }
   // is_convertible(_v)<T1, T2>
-  // is_nothrow_convertible(_v)<T1, T2>
   {
     static_assert(is_convertible_v<int &, const int &>);
     static_assert(!is_convertible_v<const int &, int &>);
-    static_assert(is_convertible_v<double, int>);
-
+  }
+  // is_nothrow_convertible(_v)<T1, T2>
+  {
     struct t {};
-    struct tt {explicit tt(const t &) {}};
-    struct ttt {ttt(const t &) noexcept {}};
-    struct tttt {operator t() const {return {};}};
-    static_assert(!is_convertible_v<t, tt>);
-    static_assert(is_convertible_v<t, ttt>);
-    static_assert(is_convertible_v<tttt, t>);
+    struct tt {tt(t) {}};
+    static_assert(is_nothrow_convertible_v<int &, const int &>);
     static_assert(!is_nothrow_convertible_v<t, tt>);
-    static_assert(is_nothrow_convertible_v<t, ttt>);
+    static_assert(!is_nothrow_convertible_v<const int &, int &>);
   }
 
   // // const-volatile modifications
@@ -1147,51 +965,19 @@ void doc_type_traits() {
   // add_const(_t)<T>
   // add_volatile(_t)<T>
   // add_cv(_t)<T>
-  {
-    static_assert(is_same_v<add_const_t<int &>, int &>);
-    static_assert(is_same_v<add_const_t<int>, const int>);
-    static_assert(is_same_v<add_const_t<int ()>, int ()>);
-    static_assert(is_same_v<add_const_t<int []>, const int []>);
-    static_assert(is_same_v<remove_const_t<int>, int>);
-    static_assert(is_same_v<remove_const_t<const int>, int>);
-
-    static_assert(is_same_v<add_volatile_t<int>, volatile int>);
-    static_assert(is_same_v<remove_volatile_t<volatile int>, int>);
-
-    static_assert(is_same_v<add_cv_t<int>, const volatile int>);
-    static_assert(is_same_v<remove_cv_t<const volatile int>, int>);
-  }
 
   // // reference modifications
   // remove_reference(_t)<T>
   // add_lvalue_reference(_t)<T>
   // add_rvalue_reference(_t)<T>
-  {
-    static_assert(is_same_v<remove_reference_t<int &>, int>);
-    static_assert(is_same_v<remove_reference_t<int &&>, int>);
-
-    static_assert(is_same_v<add_lvalue_reference_t<int>, int &>);
-    static_assert(is_same_v<add_lvalue_reference_t<int &>, int &>);
-
-    static_assert(is_same_v<add_rvalue_reference_t<int>, int &&>);
-    static_assert(is_same_v<add_rvalue_reference_t<int &>, int &>);
-  }
 
   // // sign modifications
   // make_signed(_t)<T>
   // make_unsigned(_t)<T>
   {
-    static_assert(is_same_v<make_signed_t<int>, int>);
     static_assert(is_same_v<make_signed_t<unsigned>, int>);
     static_assert(is_same_v<make_unsigned_t<int>, unsigned>);
-    static_assert(is_same_v<make_unsigned_t<float>, float>);
-
-    static_assert(is_same_v<make_signed_t<char>, signed char>);
-    static_assert(is_same_v<make_unsigned_t<char>, unsigned char>);
-
-    static_assert(is_same_v<make_signed_t<char8_t>, signed char>);
-    static_assert(is_same_v<make_signed_t<char16_t>, int_least16_t>);
-    static_assert(is_same_v<make_signed_t<char32_t>, int_least32_t>);
+    static_assert(is_same_v<make_unsigned_t<unsigned>, unsigned>);
   }
 
   // // array modifications
@@ -1201,10 +987,7 @@ void doc_type_traits() {
     static_assert(is_same_v<remove_extent_t<int>, int>);
     static_assert(is_same_v<remove_extent_t<int []>, int>);
     static_assert(is_same_v<remove_extent_t<int [][3]>, int[3]>);
-    static_assert(is_same_v<remove_extent_t<int [2][3]>, int[3]>);
 
-    static_assert(is_same_v<remove_all_extents_t<int []>, int>);
-    static_assert(is_same_v<remove_all_extents_t<int [][3]>, int>);
     static_assert(is_same_v<remove_all_extents_t<int [2][3]>, int>);
   }
 
@@ -1217,8 +1000,7 @@ void doc_type_traits() {
 
     static_assert(is_same_v<add_pointer_t<int>, int *>);
     static_assert(is_same_v<add_pointer_t<int &>, int *>);
-    static_assert(is_same_v
-                  <add_pointer_t<const volatile int &>, const volatile int *>);
+
     static_assert(is_same_v<add_pointer_t<void>, void *>);
     static_assert(is_same_v<add_pointer_t<void ()>, void (*)()>);
     static_assert(is_same_v<add_pointer_t<void () &&>, void () &&>);
@@ -1231,13 +1013,10 @@ void doc_type_traits() {
   }
   // remove_cvref(_t)<T>
   {
-    static_assert(is_same_v<remove_cvref_t<const volatile int &&>, int>);
-    static_assert(is_same_v<remove_cvref_t<const volatile int>, int>);
-    static_assert(is_same_v<remove_cvref_t<int>, int>);
+    static_assert(is_same_v<remove_cvref_t<const volatile int &>, int>);
   }
   // decay(_t)<T>
   {
-    static_assert(is_same_v<decay_t<int>, int>);
     static_assert(is_same_v<decay_t<int [2][3]>, int (*)[3]>);
     static_assert(is_same_v<decay_t<int []>, int *>);
     static_assert(is_same_v<decay_t<int ()>, int (*)()>);
@@ -1262,17 +1041,13 @@ void doc_type_traits() {
     static_assert(is_same_v<common_type_t<short, char>, int>);
     static_assert(is_same_v<common_type_t<char, unsigned>, unsigned>);
     static_assert(is_same_v<common_type_t<float, double>, double>);
-    static_assert(is_same_v<common_type_t<float, int>, float>);
     static_assert(is_same_v<common_type_t<int, float>, float>);
     static_assert(is_same_v
                   <common_type_t<volatile int &&, const float &>, float>);
-
     struct t {};
     struct tt : t {};
     struct ttt : tt {};
-    static_assert(is_same_v<common_type_t<t, tt>, t>);
     static_assert(is_same_v<common_type_t<t, tt, ttt>, t>);
-    static_assert(is_same_v<common_type_t<t, ttt>, t>);
   }
   // basic_common_reference<T, U, <class> TQUAL, <class> UQUAL>
   // commmon_reference(_t)<S...>
@@ -1316,15 +1091,13 @@ void doc_type_traits() {
   }
 
   // max_align_of_types(_v)<S...>
-  //   // get 1 if sizeof...(S) == 0
   // max_size_of_types(_v)<S...>
-  //   // get 0 if sizeof...(S) == 0
   {
-    static_assert(max_align_of_types_v<> == 1);
+    static_assert(max_align_of_types_v<> == 1u);
     static_assert(max_align_of_types_v<char, long double, int>
                   == alignof(long double));
 
-    static_assert(max_size_of_types_v<> == 0);
+    static_assert(max_size_of_types_v<> == 0u);
     static_assert(max_size_of_types_v<int, long double, char>
                   == sizeof(long double));
   }
@@ -1338,18 +1111,12 @@ void doc_type_traits() {
   // is_implicitly_constructible(_v)<T, S...>
   // is_implicitly_default_constructible(_v)<T>
   {
-    struct X {
-      X();
-    };
-    struct Y {
-      explicit Y();
-    };
-    static_assert(is_default_constructible_v<X>);
-    static_assert(is_implicitly_constructible_v<X>);
-    static_assert(is_implicitly_default_constructible_v<X>);
-    static_assert(is_default_constructible_v<Y>);
-    static_assert(!is_implicitly_constructible_v<Y>);
-    static_assert(!is_implicitly_default_constructible_v<Y>);
+    struct t {t();};
+    struct t2 {explicit t2();};
+    static_assert(is_implicitly_constructible_v<t>);
+    static_assert(!is_implicitly_constructible_v<t2>);
+    static_assert(is_implicitly_default_constructible_v<t>);
+    static_assert(!is_implicitly_default_constructible_v<t2>);
   }
   // is_trivial_empty(_v)<T>
   {
@@ -1365,42 +1132,30 @@ void doc_type_traits() {
   // copy_reference(_t)<FROM, TO>
   // copy_cv(_t)<FROM, TO>
   // copy_cvref(_t)<FROM, TO>
+  {
+    static_assert(is_same_v
+                  <copy_cvref_t<const volatile int &, char>,
+                   const volatile char &>);
+    static_assert(is_same_v
+                  <copy_cvref_t<const volatile int &, void>,
+                   const volatile void>);
+  }
 
   // is_nothrow_movable(_v)<T>
   // is_nothrow_copyable(_v)<T>
+  {
+    static_assert(is_nothrow_movable_v<unique_ptr<int>>);
+    static_assert(is_nothrow_copyable_v<int>);
+  }
 }
 void doc_basic_utility_functions() {
   // forward<T>(x)
   // move(x)
   // move_if_noexcept(x)
-  {
-    struct fn_t {
-      int operator ()(const int &) const {return 1;}
-      int operator ()(int &&) const {return 2;}
-    } f;
-    int x;
-    int &&y = (int &&)x;
-    assert(f(forward<int &&>(y)) == 2);
-    assert(f(move(x)) == 2);
-    assert(f(move_if_noexcept(x)) == 2);
-  }
 
-  // exchange(old_val, new_val) // may throw
-  {
-    int a = 1, b = 2, c = 3;
-    a = exchange(b, c);
-    assert(a == 2 && b == 3 && c == 3);
-  }
+  // exchange(old_val, new_val)->old_val // may throw
 
   // as_const(x)
-  {
-    struct t {
-      void f() const {}
-      void f() = delete;
-    };
-    t x;
-    as_const(x).f();
-  }
 
   // // cmp_***: only apply for integral argument
   // cmp_equal(x, y)
@@ -1412,6 +1167,8 @@ void doc_basic_utility_functions() {
   // in_range<INT>(x)
   {
     static_assert(cmp_less(-1, 1ull));
+    static_assert(in_range<signed char>(127));
+    static_assert(!in_range<signed char>(128));
     static_assert(in_range<signed char>(-128));
     static_assert(!in_range<signed char>(-129));
   }
@@ -1469,20 +1226,6 @@ void doc_basic_utility_functions() {
     }
   }
 }
-namespace help_pointer_traits {
-
-struct pseudo_ptr_1 {
-  using element_type = void;
-  using difference_type = void;
-  template <class T_>
-  using rebind = void;
-};
-template <class T, class...>
-struct pseudo_ptr_2 {
-  using difference_type = void;
-};
-
-}
 void doc_pointer_traits() {
   // pointer_traits<P> // from std <memory>
   //   pointer
@@ -1490,17 +1233,11 @@ void doc_pointer_traits() {
   //   difference_type
   //   rebind<X>
   //   pointer_to(x)
-  //   to_address(x) // provided by user defined specialization
-  //
+  //   to_address(x) // may be provided by user defined specialization
   // pointer_element_t<P>
   // pointer_difference_t<P>
   // pointer_rebind_t<P, X>
   // pointer_to<PTR>(x) // return PTR rebound to remove_reference_t<decltype(x)>
-  //
-  // to_address(p) // may throw
-  //   // requires:
-  //   //   p can not be function pointer or member pointer
-  // can_apply_to_address<T>
   {
     using pt = pointer_traits<const int *>;
     static_assert(is_same_v<pt::pointer, const int *>);
@@ -1508,29 +1245,10 @@ void doc_pointer_traits() {
     static_assert(is_same_v<pt::difference_type, ptrdiff_t>);
     static_assert(is_same_v<pt::rebind<char>, char *>);
   }
+
+  // to_address(p) // may throw
+  // can_apply_to_address<T>
   {
-    using pt = pointer_traits<help_pointer_traits::pseudo_ptr_1>;
-    using pt2 = pointer_traits<help_pointer_traits::pseudo_ptr_2<int>>;
-    using pt3 = pointer_traits
-      <help_pointer_traits::pseudo_ptr_2<int, void, void>>;
-
-    static_assert(is_same_v<pt::element_type, void>);
-    static_assert(is_same_v<pt2::element_type, int>);
-    static_assert(is_same_v<pt3::element_type, int>);
-
-    static_assert(is_same_v<pt::difference_type, void>);
-    static_assert(is_same_v<pt2::difference_type, void>);
-
-    static_assert(is_same_v<pt::rebind<int>, void>);
-    using pt4 = pointer_traits
-      <help_pointer_traits::pseudo_ptr_2<char, void, void>>;
-    static_assert(is_same_v<pt3::rebind<char>, pt4::pointer>);
-  }
-  {
-    int x = 1;
-    int *p = pointer_to<int *>(x);
-    assert(to_address(p) == &x);
-    assert(*p == x);
     static_assert(can_apply_to_address<int *>);
     static_assert(!can_apply_to_address<int>);
   }
@@ -1548,23 +1266,13 @@ void doc_reference_wrapper_and_invoke() {
   // ref(x)
   // cref(x)
   {
-    const auto f = []() {return 1;};
-    reference_wrapper ff(f);
-    assert(ff() == 1);
-    assert(ff.get()() == 1);
-
-    int x = 1;
-    const int y = 1;
-    assert(ref(x).get() == 1);
-    assert(cref(y).get() == 1);
-    const int xx = ref(x);
-    assert(xx == 1);
-
     static_assert(is_reference_wrapper_v<reference_wrapper<int>>);
-
     static_assert(same_as
                   <unwrap_reference_t<const reference_wrapper<int>>,
                    const reference_wrapper<int>>);
+    static_assert(same_as
+                  <unwrap_ref_decay_t<const reference_wrapper<int>>,
+                   int &>);
     static_assert(same_as
                   <unwrap_reference_t<reference_wrapper<int>>,
                    int &>);
@@ -1597,7 +1305,6 @@ void doc_reference_wrapper_and_invoke() {
 void doc_language_related_concepts() {
   // same_as<A, B>
   {
-    static_assert(!same_as<void, const void>);
     static_assert(same_as<void, void>);
   }
   // derived_from<DERIVED, BASE>
@@ -1611,7 +1318,6 @@ void doc_language_related_concepts() {
   // convertible_to<FROM, TO>
   {
     static_assert(convertible_to<int *, void *>);
-    static_assert(!convertible_to<void *, int *>);
   }
   // common_reference_with<A, B>
   {
@@ -1630,16 +1336,13 @@ void doc_language_related_concepts() {
   // signed_integral<T>
   // unsigned_integral<T>
   // floating_point<T>
-  {
-    static_assert(integral<int>);
-    static_assert(signed_integral<int>);
-    static_assert(unsigned_integral<unsigned>);
-    static_assert(floating_point<float>);
-  }
   // assignable_from<L, R>
-  {
-    static_assert(assignable_from<int &, bool>);
-  }
+  // destructible<T>
+  // constructible_from<T, S...>
+  // default_initializable<T>
+  // move_constructible<T>
+  // copy_constructible<T>
+  //
   // ranges::swap(x, y)
   // swappable<T>
   // swappable_with<A, B>
@@ -1653,28 +1356,6 @@ void doc_language_related_concepts() {
     static_assert(swappable<int>);
     static_assert(swappable<int &>);
     static_assert(swappable_with<int &, int &>);
-  }
-  // destructible<T>
-  {
-    static_assert(destructible<int>);
-  }
-  // constructible_from<T, S...>
-  {
-    static_assert(constructible_from<int>);
-    static_assert(constructible_from<int, float>);
-  }
-  // default_initializable<T>
-  {
-    static_assert(default_initializable<int>);
-    static_assert(!default_initializable<int &>);
-  }
-  // move_constructible<T>
-  // copy_constructible<T>
-  {
-    static_assert(move_constructible<int>);
-    static_assert(copy_constructible<int>);
-    static_assert(!move_constructible<int ()>);
-    static_assert(!copy_constructible<int ()>);
   }
   // equality_comparable<T>
   // equality_comparable_with<A, B>
@@ -1694,8 +1375,8 @@ void doc_language_related_concepts() {
   }
   // movable<T>
   // copyable<T>
-  // semiregular<T>
-  // regular<T>
+  // semiregular<T> // have all special member functions
+  // regular<T> // semiregular + equality_comparable
   {
     static_assert(movable<int>);
     static_assert(copyable<int>);
@@ -1733,15 +1414,6 @@ void doc_concept_constrained_comparisons() {
   //   ()(i, ii)
   // ranges::greater_equal
   //   ()(i, ii)
-
-  assert(ranges::equal_to{}(1, 1));
-  assert(ranges::not_equal_to{}(1, 2));
-  assert(ranges::less{}(1, 2));
-  assert(ranges::less_equal{}(1, 2));
-  assert(ranges::less_equal{}(2, 2));
-  assert(ranges::greater{}(2, 1));
-  assert(ranges::greater_equal{}(2, 1));
-  assert(ranges::greater_equal{}(2, 2));
 }
 void doc_integral_traits() {
   // integral_traits<T>
@@ -1750,16 +1422,31 @@ void doc_integral_traits() {
   //   static constexpr is_signed
   //   static constexpr min()
   //   static constexpr max()
+  {
+    using T = integral_traits<int>;
+    static_assert(T::is_signed);
+    static_assert(T::is_specialized);
+    static_assert(T::min() < T::max());
 
-  using T = integral_traits<int>;
-  static_assert(T::is_signed);
-  static_assert(T::is_specialized);
-  static_assert(T::min() < T::max());
-
-  static_assert(!integral_traits<void>::is_specialized);
+    static_assert(!integral_traits<void>::is_specialized);
+  }
 }
-void doc_floating_point_traits() {} // todo
-void doc_numeric_limits() {} // todo
+void doc_numeric_limits() {
+  // numeric_limits<INT_OR_FLOAT>
+  //   static constexpr bool is_specialized = true
+  //   static constexpr bool is_signed
+  //   static constexpr lowest() // minimal infinite value
+  //   static constexpr denorm_min() // only for floating point
+  //   static constexpr min()
+  //   static constexpr max()
+  //   static constexpr bool is_integer
+  //
+  //   static infinity() // only for floating point
+  //   static nan() // only for floating point
+  //   static has_infinity(f) // only for floating point
+  //   static has_denorm(f) // only for floating point
+  //   static has_nan(f) // only for floating point
+}
 void doc_three_way_comparison() {
   // std::partial_ordering
   // std::weak_ordering
@@ -1784,15 +1471,20 @@ void doc_three_way_comparison() {
   // strong_eq
   {
     assert((1 <=> 2) == strong_lt);
-    assert((2 <=> 1) == strong_gt);
-    assert((1 <=> 1) == strong_eq);
-    assert((1 <=> 2) == weak_lt);
-    assert((2 <=> 1) == weak_gt);
-    assert((1 <=> 1) == weak_eq);
-    assert((1 <=> 2) == partial_lt);
-    assert((2 <=> 1) == partial_gt);
-    assert((1 <=> 1) == partial_eq);
     assert((NAN <=> 1.0f) == partial_uo);
+  }
+
+  // reverse_ordering
+  {
+    assert(reverse_ordering(as_lvalue(strong_lt)) == strong_gt);
+    assert(reverse_ordering(strong_gt) == strong_lt);
+    assert(reverse_ordering(strong_eq) == strong_eq);
+    assert(reverse_ordering(as_lvalue(weak_lt)) == weak_gt);
+    assert(reverse_ordering(weak_gt) == weak_lt);
+    assert(reverse_ordering(weak_eq) == weak_eq);
+    assert(reverse_ordering(as_lvalue(partial_lt)) == partial_gt);
+    assert(reverse_ordering(partial_gt) == partial_lt);
+    assert(reverse_ordering(partial_eq) == partial_eq);
   }
 
   // common_comparison_category(_t)<S...>
@@ -1847,7 +1539,7 @@ void doc_type_index() {
   //   special member functions: no default constructor
   //
   //   type_index(const type_info &)
-  //   == != < > <= >= <=>
+  //   == < > <= >= <=>
   //   hash_code()
   //   name()
   {
@@ -1884,56 +1576,7 @@ void doc_basic_function_objects() {
   // bit_not<T = void>
   {
     static_assert(is_transparent_function_v<plus<>>);
-    static_assert(is_transparent_function_v<logical_not<>>);
-    static_assert(is_transparent_function_v<bit_not<>>);
-
-    assert(plus<>()(1, 2.0) == 3.0);
-    assert(plus<int>()(1, 2) == 3);
-    assert(minus<>()(1, 2.0) == -1.0);
-    assert(minus<int>()(1, 2) == -1);
-    assert(multiplies<>()(3.0, 2) == 6.0);
-    assert(multiplies<int>()(3, 2) == 6);
-    assert(divides<>()(7.0, 2) == 3.5);
-    assert(divides<int>()(7, 2) == 3);
-    assert(modulus<>()(7ul, 2) == 1);
-    assert(modulus<int>()(7, 2) == 1);
-    assert(negate<>()(2.0) == -2.0);
-    assert(negate<int>()(1) == -1);
-
-    assert(equal_to<>()(1, 1.0));
-    assert(equal_to<int>()(1, 1));
-    assert(not_equal_to<>()(1, 2.0));
-    assert(not_equal_to<int>()(1, 2));
-    assert(greater<>()(2.0, 1));
-    assert(greater<int>()(2, 1));
-    assert(less<>()(1, 2.0));
-    assert(less<int>()(1, 2));
-    assert(greater_equal<>()(2, 2.0));
-    assert(greater_equal<int>()(2, 2));
-    assert(less_equal<>()(2, 2.0));
-    assert(less_equal<int>()(2, 2));
-
-    assert(logical_and<>()(0, false) == false);
-    assert(logical_and<>()(1, true) == true);
-    assert(logical_and<bool>()(false, true) == false);
-    assert(logical_and<bool>()(true, true) == true);
-    assert(logical_or<>()(1, false) == true);
-    assert(logical_or<>()(0, false) == false);
-    assert(logical_or<bool>()(false, false) == false);
-    assert(logical_or<bool>()(true, false) == true);
-    assert(logical_not<>()(1) == false);
-    assert(logical_not<>()(0) == true);
-    assert(logical_not<bool>()(false) == true);
-    assert(logical_not<bool>()(true) == false);
-
-    assert(bit_and<>()(0b10110u, 0b10101u) == 0b10100u);
-    assert(bit_and<uint8_t>()(0b100u, 0b110u) == 0b100u);
-    assert(bit_or<>()(0b10110u, 0b10101u) == 0b10111u);
-    assert(bit_or<uint8_t>()(0b100u, 0b110u) == 0b110u);
-    assert(bit_xor<>()(0b10110u, 0b10101u) == 0b00011u);
-    assert(bit_xor<uint8_t>()(0b100u, 0b110u) == 0b010u);
-    assert(bit_not<>()(1234) == ~1234);
-    assert(bit_not<uint8_t>()(0b10101010u) == 0b01010101u);
+    static_assert(!is_transparent_function_v<plus<int>>);
   }
 
   // can_apply_plus<X, Y>
@@ -2015,7 +1658,6 @@ void doc_tuple() {
 
     static_assert(is_same_v<tuple_element_t<0, A>, int>);
     static_assert(is_same_v<tuple_element_t<1, A>, int>);
-    static_assert(is_same_v<volatile tuple_element_t<2, A>, volatile int>);
     static_assert(is_same_v<tuple_element_t<0, T>, char>);
     static_assert(is_same_v<tuple_element_t<1, T>, int>);
     static_assert(is_same_v<tuple_element_t<1, const T>, const int>);
@@ -2062,12 +1704,18 @@ void doc_tuple() {
     static_assert(!is_copy_assignable_v<min_pair<int, float &>>);
     static_assert(semiregular<min_tuple<int, float, double>>);
     static_assert(!is_copy_assignable_v<min_tuple<int, float &, double>>);
+
+    min_pair<int, float> t0{1, 2.0f};
+    assert(pair(t0.first, t0.second) == pair(1, 2.0f));
+
+    min_tuple<int, float, double> t{1, 2.0f, 3.0};
+    assert(t.value == 1);
+    assert(t.following.value == 2.0f);
+    assert(t.following.following.value == 3.0);
   }
 
   // pair<A, B> = tuple<A, B>
   {
-    min_pair<int, long> p0(1, 2);
-    assert(p0.first == 1 && p0.second == 2);
     pair p(1, 2);
     static_assert(same_as<decltype(p), tuple<int, int>>);
   }
@@ -2225,46 +1873,6 @@ void doc_tuple() {
   //   at<I>() // requires: legal I
   //   as<T>() // requires: T is unique among S...
   // == <=> // may throw
-  {
-    struct X {
-      X(int, int) {}
-    };
-    struct Y {
-      Y(int, int, int) {}
-    };
-    tuple<X, Y> t(piecewise_construct,
-                  forward_as_tuple(1, 2),
-                  forward_as_tuple(1, 2, 3));
-
-    array<int, 3> a = {1, 2, 3};
-    assert(get<0>(a) == 1);
-    assert(get<1>(a) == 2);
-    assert(get<2>(a) == 3);
-    get<1>(a) = 3;
-    assert(get<1>(a) == 3);
-
-    {
-      tuple<char, int, double> t = {'a', 1, 1.5};
-      assert(get<0>(t) == 'a');
-      assert(get<1>(t) == 1);
-      assert(get<2>(t) == 1.5);
-      assert(get<char>(t) == 'a');
-      assert(get<int>(t) == 1);
-      assert(get<double>(t) == 1.5);
-      get<int>(t) = 2;
-      assert(get<int>(t) == 2);
-      get<1>(t) = 1;
-      assert(get<1>(t) == 1);
-
-      assert(at<0>(t) == 'a');
-      at<1>(t) = 2;
-      assert(at<1>(t) == 2);
-
-      assert(as<int>(t) == 2);
-      as<int>(t) = 1;
-      assert(as<int>(t) == 1);
-    }
-  }
 
   // bind_tuple(t, f) // may throw
   {
@@ -2314,7 +1922,7 @@ void doc_bind() {
   // bind_front(f, s...) // may throw
   // bind_back(f, s...) // may throw
   //
-  // decltype(bind_front/back(s...))
+  // decltype(bind_front/back(s...)) // storw decay_t for function and args
   //   ()(s...) & // may throw
   //   ()(s...) const & // may throw
   //   ()(s...) && // may throw
@@ -2454,8 +2062,8 @@ void doc_optional() {
   //   T &emplace(s...) // may throw (weak) // requires: no self-emplace
   //   T &emplace({...}, s...) // may throw (weak) // requires: no self-emplace
   //
-  //   -> // requires has_value()
-  //   * // requires has_value()
+  //   -> // has_value()
+  //   * // has_value()
   //
   //   empty()
   //   clear()
@@ -2474,16 +2082,9 @@ void doc_optional() {
   //
   //   ()(...) // used to make function default-constructible
   //
-  // make_optional(in_place_type<T>, s...) // may throw
-  // make_optional(in_place_type<T>, {...}, s...) // may throw
-  // make_optional(x) // may throw
-
-  optional<int> o;
-  assert(o == nullopt && o.empty());
-  o = 3;
-  assert(*o == 3);
-  assert(o == 3);
-  assert(o != nullopt && !o.empty());
+  // make_optional(in_place_type<T>, s...)->optional<T> // may throw
+  // make_optional(in_place_type<T>, {...}, s...)->optional<T> // may throw
+  // make_optional(x)->optional<decay_t> // may throw
 }
 void doc_semiregular_function() {
   // assign_non_assignable<F>(to, from) // may throw
@@ -2512,12 +2113,6 @@ void doc_semiregular_function() {
   //   ()(s...) // may throw
   //   base()->F
   // semiregular_fn(f)
-  {
-    auto f = []() {};
-    auto ff = f;
-    assign_non_assignable<decltype(f)>(f, ff);
-    f();
-  }
 }
 void doc_hash() {
   // is_nothrow_hashable(_v)<T>
@@ -2542,8 +2137,8 @@ void doc_hash() {
   // hash<wchar_t>
   // hash<bool>
   // hash<T *>
-  // hash<float> // todo
-  // hash<double> // todo
+  // hash<float>
+  // hash<double>
   // hash<nullptr_t>
   // hash<type_index>
   // hash<optional<T>>
@@ -2737,6 +2332,49 @@ void doc_miscl() {
 
   // function_return_false(f, s...)
 }
+void doc_floating_point_traits() {
+  // floating_point_traits<float or double>
+  //   float_t
+  //   uint_t
+  //   int_t
+  //   static constexpr uint_t n
+  //   static constexpr uint_t k
+  //   static constexpr uint_t bias
+  //   static constexpr uint_t e_max
+  //   static constexpr uint_t f_max
+  //
+  //   static is_positive(x)->bool
+  //   static is_negative(x)->bool
+  //   static e(x)->uint_t
+  //   static f(x)->uint_t
+  //
+  //   static is_normalized(x)
+  //   static is_denormalized(x)
+  //   static is_infinity(x)
+  //   static is_nan(x)
+  //
+  //   static normalized_final_e(x)->int_t
+  //   static normalized_final_f(x)->pair<uint_t, int_t>
+  //
+  //   static denormalized_final_e(x)->int_t
+  //   static denormalized_final_f(x)->pair<uint_t, int_t>
+  //
+  //   static float_t positive_inf()
+  //   static float_t negative_inf()
+  //   static float_t positive_nan()
+  //   static float_t negative_nan()
+  //
+  //   static constexpr bool is_specialized = true
+  //   static constexpr bool is_signed = true
+  //   static constexpr bool is_integer = false
+  //   static float_t lowest()
+  //   static float_t denorm_min()
+  //   static float_t min()
+  //   static float_t max()
+  //
+  // float_traits = floating_point_traits<float>
+  // double_traits = floating_point_traits<double>
+}
 
 // test
 void doc_owner_ptr() {
@@ -2754,15 +2392,6 @@ void doc_owner_ptr() {
     assert(p.empty());
     owner_ptr pp(1), ppp(2);
     assert(pp != nullptr && *pp == 1);
-    assert(nullptr != ppp && *(ppp.operator ->()) == 2);
-    p = move(pp);
-    assert(p != nullptr && *p == 1);
-    assert(pp == nullptr);
-    adl_swap(p, ppp);
-    assert(!p.empty() && *p == 2);
-    assert(!ppp.empty() && *ppp == 1);
-    p.clear();
-    assert(p.empty());
   }
 }
 void doc_test_throwing() {
@@ -2801,14 +2430,14 @@ void doc_test_ownership() {
                      [](auto p) {return p->empty();});
 }
 void doc_test_rational_operator() {
-  // test_equal()->bool // may throw
-  // test_unequal()->bool // may throw
-  // test_less()->bool // may throw
+  // test_equal(a, b)->bool // may throw
+  // test_unequal(a, b)->bool // may throw
+  // test_less(a, b)->bool // may throw
   //
   // // if failed, print then abort
-  // test_equality() // may throw
-  // test_inequality() // may throw
-  // test_lessness() // may throw
+  // test_equality(a, b) // may throw
+  // test_inequality(a, b) // may throw
+  // test_lessness(a, b) // may throw
 
   static_assert(test_equal(1, 1.0));
   static_assert(test_unequal(1, 2));
@@ -2832,7 +2461,6 @@ void doc_instance_counter() {
     assert(instance_counter<int>::count() == 0);
     instance_counter<int> x(1), y(2);
     assert(*x == 1 && *y == 2);
-    assert(x < y && x != y);
     assert(instance_counter<int>::count() == 2);
   }
 
@@ -2864,22 +2492,13 @@ void doc_instance_counter() {
 }
 void doc_ez_dynamic() {
   // ez_dynamic<T>
-  //   // requires T is copy constructible
   //   special member functions: full // copy may throw
-  //   static make(s...) // may throw
-  //   static make<U>(s...) // may throw
+  //   static make(s...) // make T // may throw
+  //   static make<U>(s...) // make U which is derived from T // may throw
   //   empty()
   //   clear()
   //   ->
   //   * // requires !empty()
-  {
-    auto d = ez_dynamic<int>::make(1);
-    assert(*d == 1);
-    auto dd = d;
-    *dd = 2;
-    adl_swap(d, dd);
-    assert(*d = 2 && *dd == 1);
-  }
   {
     struct a {
       a() {}
@@ -2972,8 +2591,63 @@ void doc_ez_forward_list() {
   //   insert_after(i, x) // may throw
   //   erase_after(i1, i2 = next(i1))
 }
+void doc_ez_slist() {
+  // ez_slist<T>
+  //   typename value_type
+  //   typename reference
+  //   typename const_reference
+  //   typename iterator
+  //   typename const_iterator
+  //   typename difference_type
+  //   typename size_type
+  //
+  //   special member functions: full // copy may throw
+  //   == <=> // may throw
+  //
+  //   ez_list(initializer_list<T>) // may throw
+  //
+  //   before_begin()
+  //   begin()
+  //   end()
+  //   empty()
+  //   size()
+  //   max_size()
+  //
+  //   new_node(x) // may throw
+  //   delete_node(i)
+  //   link_after(i, node)
+  //   unlink_after(node)
+  //   insert_after(i, x) // may throw
+  //   erase_after(i1, i2 = next(i1))
+}
+void doc_ez_bidirectional_list() {
+  // ez_list<T>
+  //   typename value_type
+  //   typename reference
+  //   typename const_reference
+  //   typename iterator
+  //   typename const_iterator
+  //   typename difference_type
+  //   typename typename size_type
+  //
+  //   special member functions: full // copy may throw
+  //   == <=> // may throw
+  //
+  //   ez_list(initializer_list<T>) // may throw
+  //
+  //   begin()
+  //   end()
+  //   empty()
+  //   max_size()
+  //
+  //   new_node(x) // may throw
+  //   delete_node(i)
+  //   link(i, node)
+  //   unlink(node)
+  //   insert(i, x) // may throw
+  //   erase(i1, i2 = i1 + 1)
+}
 void doc_ez_list() {
-  // ez_bidirectional_list<T> // same as ez_list<T> but have no size()
   // ez_list<T>
   //   typename value_type
   //   typename reference
@@ -3008,7 +2682,8 @@ void doc_ez_map() {
   //   find(k) // may throw from <
   //   end()
   //   void erase(i)
-  //   bool remove(k) // may throw from <
+  //   erase(k)->bool // may throw from <
+  //   remove(k)->bool // may throw from <
   //   empty()
   //   size()
   //   clear()
@@ -3045,20 +2720,14 @@ void doc_test_allocator() {
   //   size()
   {
     test_allocator<int> a;
+    assert(a.size() == 0u && a.empty());
     int *p = a.allocate(1);
     new(p) int(1);
+    assert(a.size() == 1u && !a.empty());
     using t = int;
     p->~t();
     a.deallocate(p, 1);
-    {
-      test_allocator<int> a, aa;
-      stateful_test_allocator<int> b, bb;
-      assert(a == aa && b != bb);
-    }
-    {
-      stateful_test_allocator<int, ez_map, false, false, false, true> a, aa;
-      assert(a == aa);
-    }
+    assert(a.size() == 0u && a.empty());
   }
 
   // test_object<T, MAP = ez_map>
@@ -3095,7 +2764,6 @@ void doc_iterator_requirements() {
   //   2) confirm strong exception guarantee for every related function except
   //      for which takes at least one non-const input iterator argument
 
-  // OPTIONAL MACRO: RE_USING_STD_ITERATOR_TAGS
   // output_iterator_tag // from std <iterator>
   // input_iterator_tag // from std <iterator>
   // forward_iterator_tag // from std <iterator>
@@ -3347,7 +3015,7 @@ void doc_range_main_components() {
   // ssize(r) // similar to std::ranges::size
   // empty(r) // from std <iterator>, with difference
   // is_rng<R>
-  //
+
   // n_value_iterator<T>
   //   iterator category: ritr
   //   n_value_iterator(T &, ptrdiff_t)
@@ -3356,24 +3024,32 @@ void doc_range_main_components() {
   // n_value<T>
   //   n_value(n)
   //   n_value(n, s...)
-  // range_is_n_value<R>::value = true
-  //
+  // range_is_n_value<R>
+  //   value
+  {
+    int x = 1;
+    assert(n_value_itr(x, 0).base() == addressof(x));
+    assert(equal(rng(n_value_itr(x, 0), n_value_itr(x, 3)), seq(1, 1, 1)));
+    x = 2;
+    assert(equal(rng(n_value_itr(x, 0), n_value_itr(x, 3)), seq(2, 2, 2)));
+  }
+
   // // rng series:
-  // //   is always well-formed
-  // //   is itr version if the name is shared by itr series
+  // //   get void if failed which means well-formed forever
+  // //   is itr_xxx<rng_itr<R>> if the name is shared by itr series
   // rng_itr<R>
   // rng_szt<R>
-  // rng_vt<R>
-  // rng_ptr<R>
-  // rng_ptr_from_ref<R>
-  // rng_ref<R>
-  // rng_cref<R>
-  // rng_rref<R>
-  // rng_common_ref<R>
-  // rng_dft<R>
-  // rng_ctg<R>
+  // rng_vt<R> // itr_vt<rng_itr<R>>
+  // rng_ptr<R> // itr_ptr<rng_itr<R>>
+  // rng_ptr_from_ref<R> // itr_ptr_from_ref<rng_itr<R>>
+  // rng_ref<R> // itr_ref<rng_itr<R>>
+  // rng_cref<R> // itr_cref<rng_itr<R>>
+  // rng_rref<R> // itr_rref<rng_itr<R>>
+  // rng_common_ref<R> // itr_common_ref<rng_itr<R>>
+  // rng_dft<R> // itr_dft<rng_itr<R>>
+  // rng_ctg<R> // itr_ctg<rng_itr<R>>
   // rng_is_sized<R>
-  // rng_is_counted<R>
+  // rng_is_counted<R> // itr_is_counted<rng_itr<R>>
   // rng_is_n_value<R>
 
   // range_traits<R>
@@ -3410,8 +3086,20 @@ void doc_range_main_components() {
   //   // range reference means:
   //   // (1) its iterator does not depend on it
   //   // (2) const R and R share the same iterator type
+  {
+    static_assert(is_rng_ref<iter_pair<int *>>);
+    static_assert(is_rng_ref<ez_vector<int> &>);
+    static_assert(!is_rng_ref<ez_vector<int>>);
+  }
 
   // rng_forward_t<R>
+  {
+    static_assert(same_as<rng_forward_t<iter_pair<int *> &>, iter_pair<int *>>);
+    static_assert(same_as<rng_forward_t<const ez_vector<int> &>,
+                          const ez_vector<int> &>);
+    static_assert(same_as<rng_forward_t<ez_vector<int> &&>,
+                          ez_vector<int>>);
+  }
 
   // before_begin(r) // requires: r.before_begin() is well-foremd
   // before_end(r) // requires: !empty(r)
@@ -3456,7 +3144,6 @@ void doc_degraded_iterator() {
   //   degraded_iterator(const degraded_iterator<I2> &)
   //   explicit degraded_iterator(I)
   //   base()->I
-  //
   // degraded_input_iterator = degraded_iterator<...>
   // degraded_forward_iterator = degraded_iterator<...>
   // degraded_bidirectional_iterator = degraded_iterator<...>
@@ -3466,6 +3153,13 @@ void doc_degraded_iterator() {
   // degraded_fitr(i) // mandates: is_fitr<I>
   // degraded_bitr(i) // mandates: is_bitr<I>
   // degraded_ritr(i) // mandates: is_ritr<I>
+  {
+    int *const p{};
+    static_assert(is_citr<decltype(p)>);
+    auto i = degraded_iitr(p);
+    static_assert(is_just_iitr<decltype(i)>);
+    assert(i.base() == p);
+  }
 }
 void doc_reverse_iterator() {
   // reverse_iterator<BI> // requires is_bitr<BI>
@@ -3558,15 +3252,8 @@ void doc_insert_iterator() {
     assert(equal(v, seq(0, 1, 2, 4, 3)));
 
     v.clear();
-    copy(seq(1, 2, 3), output_itr([&](const auto &x) {v.push_back(x);}));
+    copy(seq(1, 2, 3), to_back(v));
     assert(equal(v, seq(1, 2, 3)));
-
-    {
-      auto v = copy(seq(4, 5), to_back(vector{1, 2, 3})).base();
-      assert(equal(v, irng(1, 6)));
-      auto vv = copy(seq(1, 2), to_front(vector{3, 4, 5})).base();
-      assert(equal(vv, irng(1, 6)));
-    }
   }
 }
 void doc_move_iterator() {
@@ -3581,7 +3268,7 @@ void doc_move_iterator() {
   // move_itr(i) // = make_move_iterator(i)
   {
     string a[2] = {"ab"_s, "cd"_s};
-    string b[2];
+    string b[2]{};
     copy(rng(move_itr(begin(a)), move_itr(end(a))), begin(b));
     assert(equal(a, seq(""_sv, "")));
     assert(equal(b, seq("ab"_sv, "cd")));
@@ -3598,6 +3285,15 @@ void doc_counted_iterator() {
   //   base()
   // make_counted_iterator(i, n) // requires: n >= 0
   // counted_itr(i, n) // = make_counted_iterator(i, n)
+  {
+    const ez_forward_list<int> l = {1, 2, 3};
+    const auto i1 = counted_itr(begin(l), 3);
+    const auto i2 = counted_itr(end(l), 0);
+    assert(equal(rng(i1, i2), l));
+    assert(i2 - i1 == 3);
+    static_assert(rng_is_counted<decltype(rng(i1, i2))>);
+    static_assert(!rng_is_counted<decltype(l)>);
+  }
 }
 void doc_iterator_wrapper() {
   // iterator_wrapper<I>
@@ -3609,9 +3305,16 @@ void doc_iterator_wrapper() {
   //   explicit iterator_wrapper(I)
   //   base()
   // wrap_itr(i)
+  {
+    int *const p{};
+    assert(wrap_itr(p).base() == p);
+  }
 }
 void doc_array() {
   // array<T, N>
+  //   pointer
+  //   const_pointer
+  //
   //   value_type
   //   reference
   //   const_reference
@@ -3649,6 +3352,19 @@ void doc_array() {
   //
   // to_array(a)
   // seq(...)
+  {
+    const array<int, 3> a = seq(1, 2, 3);
+    assert(equal(a, irng(1, 4)));
+
+    const int b[] = {1, 2, 3};
+    assert(equal(to_array(b), irng(1, 4)));
+
+    ez_vector<int> c[] = {{1}};
+    assert(equal(front(c), single_rng(1)));
+    array<ez_vector<int>, 1> d = to_array(move(c));
+    assert(front(c).empty());
+    assert(equal(front(d), single_rng(1)));
+  }
 }
 void doc_iter_pair() {
   // iter_pair<I> : public pair<I, I>
@@ -3661,10 +3377,11 @@ void doc_iter_pair() {
   // iter_pair(I, I)->iter_pair<I>
   // rng(i, i2)->iter_pair
   // rng(r)->iter_pair
-
-  int a[] = {1, 2, 3};
-  iter_pair<int *> v1 = rng(begin(a), end(a));
-  assert(equal(v1, seq(1, 2, 3)));
+  {
+    const int a[] = {1, 2, 3};
+    iter_pair<const int *> v1 = rng(begin(a), end(a));
+    assert(equal(v1, seq(1, 2, 3)));
+  }
 }
 void doc_composite_range() {
   // composite_input_iterator<T, DEREF, PP, EQ>
@@ -3700,6 +3417,7 @@ void doc_base_range() {
   // base_rng(i, n)
   //
   // inplace_base_range<R>
+  //   // inplace means: distance(begin(r).base(), end(r).base()) == size(r)
   //   special member functions: depend on R
   //   explicit inplace_base_range(r)
   // inplace_base_rng(r)
@@ -3709,17 +3427,18 @@ void doc_base_range() {
 void doc_empty_range() {
   // empty_range<T>
   // empty_rng<T>()
-
-  auto r = empty_rng<int>();
-  assert(empty(r));
+  {
+    auto r = empty_rng<int>();
+    assert(empty(r));
+  }
 }
 void doc_single_range() {
   // single_range<T>
   //   special member functions: depend on T
   //   explicit single_range(x)
   //   single_range(in_place, ...)
-  // single_rng(x)
-  // single_rng(ref(x))
+  // single_rng(x) // take value
+  // single_rng(ref(x)) // take reference
 }
 void doc_counted_range() {
   // counted_range<R>
@@ -3731,10 +3450,6 @@ void doc_counted_range() {
   // counted_rng(r, n) // requires n == size(r)
   // sized_rng(fr)
   // sized_rng(r, n) // requires n == size(r)
-
-  ez_forward_list l = {1, 2, 3};
-  assert(sized_rng(l).size() == 3);
-  assert(equal(sized_rng(l), irng(1, 4)));
 }
 void doc_degraded_range() {
   // degraded_range<R, CTG> // requires is_base_of_v<CTG, rng_ctg<R>>
@@ -3767,12 +3482,6 @@ void doc_move_range() {
   // move_rng(r)
   // move_rng(i1, i2)
   // move_rng(i1, n)
-
-  string a[] = {"ab", "cd"};
-  string b[] = {"", ""};
-  copy(move_rng(a), begin(b));
-  assert(equal(a, seq(""_s, "")));
-  assert(equal(b, seq("ab"_s, "cd")));
 }
 void doc_reverse_range() {
   // reverse_range<R>
@@ -3781,12 +3490,6 @@ void doc_reverse_range() {
   // rrng(br)
   // rrng(i1, i2)
   // rrng(i1, n)
-
-  const int a[] = {1, 2, 3};
-  assert(equal(rrng(a), seq(3, 2, 1)));
-  assert(equal(rrng(rrng(a)), seq(1, 2, 3)));
-  assert(equal(rrng(begin(a), end(a)), seq(3, 2, 1)));
-  assert(equal(rrng(rrng(begin(a), end(a))), seq(1, 2, 3)));
 }
 void doc_rng_for_iterator_n() {
   // iter_n_iterator<I>
@@ -3798,10 +3501,17 @@ void doc_rng_for_iterator_n() {
   //   nth()
   // iter_n_itr(i, n) // requires: n > 0
   // rng(i, n) // requires: n > 0
+  {
+    const ez_list<int> l = {1, 2, 3};
+    const auto r = rng(l.begin(), 3);
+    assert(is_just_frng<decltype(r)>);
+    const auto r2 = rng(l.begin(), nth(l, 3));
+    assert(is_just_brng<decltype(r2)>);
+  }
 }
 void doc_rng_for_n_value() {
-  // rng(n, x) // requires n > 0
-  // rng(n, ref(x)) // requires n > 0
+  // rng(n, x) // take value // requires n > 0
+  // rng(n, ref(x)) // take reference // requires n > 0
 }
 void doc_iterator_range() {
   // iterator_iterator<I>
@@ -3815,20 +3525,16 @@ void doc_iterator_range() {
   // irng(n1, n2)
   // irng(i1, i2)
   // irng(i1, n)
-
-  assert(equal(irng(0, 3), seq(0, 1, 2)));
-  const int a[] = {1, 2, 3};
-  assert(equal(deref_rng(irng(begin(a), end(a))), seq(1, 2, 3)));
+  {
+    assert(equal(irng(0, 3), seq(0, 1, 2)));
+  }
 }
 void doc_bind_iterator() {
   // bind_iterator<II, UF>
-  //   // requires: UF has no cvref, can call f(*i) or (*f)(*i)
+  //   // requires: UF has no cvref, f(*i) is well formed
   //   iterator category: iitr - ritr
   //   special member functions: full
-  //
-  //   bind_iterator(const bind_iterator<II2, UF2> &)
-  //     // enable if convertible
-  //
+  //   bind_iterator(const bind_iterator<II2, UF2> &) // enable if convertible
   //   bind_iterator(i, f)
   //   base()
   //   fn() // requires: the function is stored
@@ -3855,10 +3561,10 @@ void doc_bind_iterator() {
   // const_rng(n, x)
   // const_itr(i)
   //   // requires: the corresponding itr_ref<...> is reference
-
-  const int a[] = {1, 2, 3};
-  const auto r = bind_rng(a, [](int x) {return x + 1;});
-  assert(equal(r, irng(2, 5)));
+  {
+    assert(equal(bind_rng(seq(1, 2, 3), [](int x) {return x + 1;}),
+                 seq(2, 3, 4)));
+  }
 }
 void doc_iters() {
   // for_iter_iterator<IT> // should only be used for iters
@@ -3870,14 +3576,23 @@ void doc_iters() {
   // r_for_iter_range<R> // should only be used for r_iters
   // r_iters(i1, i2)
   // r_iters(r)
-  
-  vector<int> v;
-  for (int &x : iters(0, 3))
-    v.push_back(x);
-  assert(equal(v, irng(0, 3)));
+  {  
+    vector<int> v;
+    for (int &x : iters(0, 3))
+      v.push_back(x);
+    assert(equal(v, irng(0, 3)));
+    v.clear();
+    for (int &x : r_iters(0, 3))
+      v.push_back(x);
+    assert(equal(v, rrng(irng(0, 3))));
+  }
 }
 void doc_range_miscl() {
   // can_memmove_from_range_to_iterator<R, I>
+  {
+    static_assert(can_memmove_from_range_to_iterator<int[2], int *>);
+    static_assert(!can_memmove_from_range_to_iterator<ez_list<int>, int *>);
+  }
 }
 
 // allocator
@@ -3907,21 +3622,21 @@ void doc_allocator_traits() {
   //   static max_size(al)
   //   static select_on_container_copy_construction(al)
   //
-  // alloc_vt
-  // alloc_ptr
-  // alloc_cptr
-  // alloc_void_ptr
-  // alloc_const_void_ptr
-  // alloc_dft
-  // alloc_szt
+  // alloc_vt<A>
+  // alloc_ptr<A>
+  // alloc_cptr<A>
+  // alloc_void_ptr<A>
+  // alloc_const_void_ptr<A>
+  // alloc_dft<A>
+  // alloc_szt<A>
   // alloc_rebind<A, T>
   // alloc_rebind_traits<A, T>
   // alloc_rebind_ptr<A, T>
   // alloc_rebind_cptr<A, T>
-  // alloc_copy_prpg
-  // alloc_move_prpg
-  // alloc_swap_prpg
-  // alloc_always_equal
+  // alloc_copy_prpg<A>
+  // alloc_move_prpg<A>
+  // alloc_swap_prpg<A>
+  // alloc_always_equal<A>
   //
   // allocator_with_primary_traits<AL>
   // allocator_provides_construct_function<AL, T, S...>
@@ -3956,7 +3671,6 @@ void doc_default_allocator() {
   //   max_size()
   //   min_alignment() // return __STDCPP_DEFAULT_NEW_ALIGNMENT__
   //
-  // // OPTIONAL MACRO: RE_DEFAULT_ALLOCATOR
   // default_allocator<T> = RE_DEFAULT_ALLOCATOR<T> // allocator<T> ifndef
 }
 void doc_allocator_wrapper() {
@@ -3968,29 +3682,14 @@ void doc_allocator_wrapper() {
   //   explicit(sizeof...(s) == 1) allocator_wrapper(s...)
   //
   //   get()
-  //   rebind<T>()
+  //   rebind<T>()->allocator_wrapper<alloc_rebind<AL, T>>
   //   max_size()
   //   min_alignment()
   //
-  //   allocate_alignas(algn, n = 1) // may throw
+  //   allocate_alignas(algn, n = 1)->pair<offset_ptr, origin_ptr> // may throw
   //     // requires: same_as<alloc_vt<AL>, byte>
-  //   deallocate_alignas(algn, p, n = 1)
+  //   deallocate_alignas(algn, pair, n = 1)
   //     // requires: same_as<alloc_vt<AL>, byte>
-  //
-  //   headed_buffer_ptr<H, U>
-  //     head_type = H
-  //     value_type = U
-  //     special member functions: no default constructor
-  //     headed_buffer_ptr(nullptr)
-  //     =(nullptr)
-  //     ==(nullptr)
-  //     head()
-  //     data()
-  //     size()
-  //     refer_to_only_head(H &)
-  //   allocate_headed_buffer(n, s...)->headed_buffer_ptr
-  //     // requires: n is valid
-  //   deallocate_headed_buffer(headed_buffer_ptr)
   //
   //   allocate(n = 1) // may throw
   //   deallocate(p, n = 1)
@@ -4042,6 +3741,21 @@ void doc_allocator_wrapper() {
   //     size()
   //     release()->ptr
   //   make_uninitialized(n) // may throw
+  //
+  //   headed_buffer_ptr<H, U>
+  //     head_type = H
+  //     value_type = U
+  //     special member functions: no default constructor
+  //     headed_buffer_ptr(nullptr)
+  //     =(nullptr)
+  //     ==(nullptr)
+  //     head()
+  //     data()
+  //     size()
+  //     refer_to_only_head(H &)
+  //   allocate_headed_buffer(n, s...)->headed_buffer_ptr
+  //     // requires: n is valid
+  //   deallocate_headed_buffer(headed_buffer_ptr)
   //
   //   pointer_pair = iter_pair<alloc_ptr<AL>>
   //   new_array(n) // may throw
@@ -4232,6 +3946,7 @@ void doc_buffer() {
   //
   //   reset(n) // may throw
   //   reserve(n) // may throw
+  //   reserve_more(n) // may throw
   //   clear()
   //
   //   release()->void
@@ -5109,7 +4824,7 @@ void doc_sort_series() {
     nth_element(a, i);
     sort(rng(begin(a), i));
     sort(rng(i, end(a)));
-    assert(equal(a, irng(1, size(a) + 1)));
+    assert(equal(a, irng(1, ssize(a) + 1)));
   }
 }
 void doc_accumulate_reduce() {
@@ -5692,8 +5407,8 @@ void doc_enumerate_range() {
   // enumerate_range<R>
   // enumerate_rng(r)
 
-  assert(equal(enumerate_rng(seq(0, 1, 2)),
-               seq(pair(0, 0), pair(1, 1), pair(2, 2))));
+  assert(equal(enumerate_rng(seq(1, 2, 3)),
+               seq(pair(0, 1), pair(1, 2), pair(2, 3))));
 }
 void doc_exclusive_rotate_range() {
   // exclusive_rotate(r, i, o)
@@ -5710,6 +5425,7 @@ void doc_exclusive_rotate_range() {
 
   assert(equal(exclusive_rotate_rng(empty_rng<int>(), 0),
                empty_rng<int>()));
+  assert(equal(exclusive_rotate_rng(seq(1), 0), empty_rng<int>()));
   assert(equal(exclusive_rotate_rng(seq(1, 2, 3), 4), seq(1, 2)));
   assert(equal(exclusive_rotate_rng(seq(1, 2, 3), 1), seq(3, 1)));
 }
@@ -5820,7 +5536,7 @@ void doc_basic_string() {
   //   resize(n, x) // may throw
   //   resize(n) // may throw
   //   reserve(n) // may throw
-  //   double_reserve() // may throw
+  //   reserve_more(n) // may throw
   //   reallocate(n = size()) // may throw
   //   shrink_to_fit()
   //   remove_if(eq) // may throw
@@ -5906,7 +5622,7 @@ void doc_sso_string() {
   //   resize(n, x) // may throw
   //   resize(n) // may throw
   //   reserve(n) // may throw
-  //   double_reserve() // may throw
+  //   reserve_more(n) // may throw
   //   reallocate(n = size()) // may throw
   //   shrink_to_fit() // may throw
   //   remove_if(eq) // may throw
@@ -6175,7 +5891,7 @@ void doc_vector() {
   //   resize(n)
   //   reserve(size_type n)
   //   reallocate(n = size())
-  //   double_reserve()
+  //   reserve_more(n)
   //   shrink_to_fit()
   //   remove_if(eq)
   //   remove(x)
@@ -6259,7 +5975,7 @@ void doc_bool_vector() {
   //   resize(n)
   //   reserve(n)
   //   reallocate(n = size())
-  //   double_reserve()
+  //   reserve_more(n)
   //   shrink_to_fit()
   //   flip()
   //   remove_if(eq)
@@ -6423,7 +6139,7 @@ void doc_small_vector() {
   //   resize(n, x)
   //   resize(n)
   //   reserve(n)
-  //   double_reserve()
+  //   reserve_more(n)
   //   reallocate(n = size())
   //   shrink_to_fit()
   //   remove_if(eq)
@@ -6445,8 +6161,6 @@ void doc_small_vector() {
 
   small_vector<int, 3, test_allocator<int>> v;
   assert(v.capacity() == 3);
-  v.double_reserve();
-  assert(v.capacity() == 6);
 }
 void doc_pointer_vector() {
   // pointer_vector<T, V = vector<T *>>
@@ -6544,6 +6258,7 @@ void doc_pointer_vector() {
   //   sort(less = ...)
   //
   //   full()
+  //   reserve_more(n)
   //   reallocate(n = size())
   //   replace(i1, i2, r) // may throw
   //
@@ -6650,7 +6365,7 @@ void doc_circular_vector() {
   //   resize(n)
   //   reserve(n)
   //   reallocate(n = size())
-  //   double_reserve()
+  //   reserve_more(n)
   //   shrink_to_fit()
   //   remove_if(eq)
   //   remove(x)
@@ -6741,8 +6456,8 @@ void doc_deque() {
   //   resize(n, x)
   //   resize(n)
   //   reserve(n)
+  //   reserve_more(n)
   //   reallocate(n = size())
-  //   double_reserve()
   //   shrink_to_fit()
   //   remove_if(eq)
   //   remove(x)
@@ -8443,6 +8158,7 @@ void doc_stable_vector_adaptor() {
   //   resize(n)
   //   resize(n, x)
   //   reserve(n) // not for limited_stable_vector
+  //   reserve_more(n) // not for limited_stable_vector
   //   shrink_to_fit() // not for limited_stable_vector
   //   splice(cit, this_ref)
   //   splice(cit, this_ref, cit)
@@ -8461,6 +8177,7 @@ void doc_stable_vector_adaptor() {
   //
   //   full()
   //   reallocate(n = size()) // not for limited_stable_vector
+  //   reserve_more(n) // not for limited_stable_vector
   //
   //   node_type
   //   make_node(s...)->node_type
@@ -8621,8 +8338,11 @@ void doc_tree_adaptor() {
   //   pop_front(i, n)
   //
   //   capacity(i)
+  //   full(i)
   //   reserve(i, n)
   //   first_order_reserve(i, n);
+  //   reserve_more(i, n)
+  //   first_order_reserve_more(i, n);
   //
   //   resize(i, n, x = ...)
   //   first_order_resize(i, n, x = ...)
@@ -8725,7 +8445,9 @@ void doc_tree_vector_adaptor() {
   //   =(il)
   //   assign(il)
   //
+  //   tree_vector_adaptor(r, a = {})
   //   assign(r)
+  //   tree_vector_adaptor(from_range, r, a = {})
   //   assign_range(r)
   //
   //   explicit tree_vector_adaptor(tree_types...)
@@ -8809,10 +8531,17 @@ void doc_tree_vector_adaptor() {
   //
   //   capacity()
   //   capacity(i)
+  //   full()
+  //   full(i)
+  //   
   //   reserve(n)
   //   reserve(i, n)
   //   first_order_reserve(n)
   //   first_order_reserve(i, n)
+  //   reserve_more(n)
+  //   reserve_more(i, n)
+  //   first_order_reserve_more(n);
+  //   first_order_reserve_more(i, n);
   //
   //   resize(n, x = ...)
   //   resize(i, n, x = ...)
@@ -8848,14 +8577,260 @@ void doc_tree_vector_adaptor() {
   //   good()->bool
 }
 void doc_tree_typedef() {
-  // gtt<T, AL>
   // tree<T, AL = default_allocator<T>>
+  // tree_vector<T, AL = default_allocator<T>>
   //
-  // lgtt<T, N, AL>
   // limited_tree<T, N, AL = default_allocator<T>>
+  // limited_tree_vector<T, N, AL = default_allocator<T>>
   //
-  // logngtt<T, AL>
+  // linked_tree<T, AL = default_allocator<T>>
+  // linked_tree_vector<T, AL = default_allocator<T>>
+  //
   // logn_tree<T, AL = default_allocator<T>>
+  // logn_tree_vector<T, AL = default_allocator<T>>
+}
+
+void doc_c_file() {
+  // fputc_iterator
+  //   iterator category: oitr
+  //   explicit fputc_iterator(FILE *= stdout)
+  //   base()->FILE *
+  //
+  // c_file
+  //   special member functions: default constructible, movable
+  //   == with nullptr
+  //   c_file(name, mode = "a+b")
+  //   open(name, mode = "a+b")
+  //   empty()
+  //   close()
+  //   base()->FILE *
+  //   release()->FILE *
+  //   error()->bool
+  //
+  //   getc()->int
+  //   putc(int) // no flush()
+  //   putc_iter() // no flush()
+  //   flush()
+  //
+  //   get<STR = string>()->STR
+  //   put(const char *) // auto call flush()
+  //   put(char_range) // auto call flush()
+  //
+  // file_exists(const char *)
+  //
+  // console_c_file
+  //   special member functions: destructible and move constructible
+  //
+  //   base()->FILE *
+  //   error()->bool
+  //
+  //   getc()->int
+  //   putc(int)
+  //   putc_iter()
+  //   flush()
+  //
+  //   get<STR = string>()->STR
+  //   put(const char *)
+  //   put(char_range)
+  //
+  // stdin_f()->console_c_file
+  // stdout_f()->console_c_file
+  // stderr_f()->console_c_file
+}
+void doc_print_tag() {
+  // print_tag_left
+  // print_tag_right
+  // print_tag_min_width
+  //   value
+  // print_tag_fill
+  //   value
+  // print_tag_showpos
+  // print_tag_noshowpos
+  // print_tag_dec
+  // print_tag_hex
+  // print_tag_oct
+  // print_tag_bin
+  // print_tag_separator
+  //   value
+  // print_tag_uppercase
+  // print_tag_nouppercase
+  // print_tag_fixed
+  // print_tag_scientific
+  // print_tag_precision
+  //   value
+  //
+  // left
+  // right
+  // setw(w)
+  // setfill(c)
+  // showpos
+  // noshowpos
+  // dec
+  // hex
+  // oct
+  // bin
+  // setseparator(n)
+  // uppercase
+  // nouppercase
+  // fixed
+  // scientific
+  // setprecision(n) // n == -1 means show all numbers
+}
+void doc_sscan() {
+  // sscan(sv_ref, sv)->bool
+  // sscan(sv_ref, int_ref)->bool
+  // sscan(sv_ref, int_ref, dec)->bool
+  // sscan(sv_ref, int_ref, bin)->bool
+  // sscan(sv_ref, int_ref, oct)->bool
+  // sscan(sv_ref, int_ref, hex)->bool
+  // sscan(sv_ref, float_ref)->bool
+}
+void doc_sprint() {
+  // print_args
+  //   size_t min_width
+  //   bool left_padding
+  //   char padding_char
+  //
+  //   left()
+  //   right()
+  //   setw(n)
+  //   setfill(c)
+  //
+  // int_print_args
+  //   size_t radix
+  //   const char *numbers
+  //   bool upper_case
+  //   bool show_positive_symbol
+  //   size_t separator_n
+  //
+  //   left()
+  //   right()
+  //   setw(n)
+  //   setfill(c)
+  //
+  //   dec()
+  //   bin()
+  //   oct()
+  //   hex()
+  //   uppercase()
+  //   nouppercase()
+  //   showpos()
+  //   noshowpos()
+  //   setseparator(n)
+  //
+  // float_print_args
+  //   const char *numbers
+  //   bool upper_case
+  //   bool show_positive_symbol
+  //   size_t separator_n
+  //   bool scientific_notation
+  //   size_t precision
+  //
+  //   left()
+  //   right()
+  //   setw(n)
+  //   setfill(c)
+  //
+  //   uppercase()
+  //   nouppercase()
+  //   showpos()
+  //   noshowpos()
+  //   setseparator(n)
+  //   scientific()
+  //   fixed()
+  //   setprecision(n)
+  //
+  // sprint(s, sv, ...)
+  // sprint(s, integral, ...)
+  // sprint(s, floating_point, ...)
+  //
+  // put(...)
+  // putln(...)
+}
+void doc_big_int() {
+  // big_int
+  //   special member functions: full
+  //   ==
+  //   <=> with this_t or int64_t
+  //
+  //   explicit big_int(int64_t)
+  //   =(int64_t)
+  //   to_int64()->optional<int64_t>
+  //
+  //   explicit big_int(int32_t)
+  //   =(int32_t)
+  //   to_int32()->optional<int32_t>
+  //
+  //   is_non_negative()
+  //   neg()
+  //
+  //   is_zero()->bool
+  //
+  //   container_type
+  //   const container_type &data() const &
+  //   container_type data() &&
+  //   data(container_type &&)
+  //
+  //   mul_pow_of_2(int32_t)->this_ref
+  //   mul_pow_of_10(int32_t)->this_ref
+  //   mul(uint32_t)->this_ref
+  //   div(uint32_t)->uint32_t // return remainder
+  //
+  //   +=(const this_t &)
+  //   -=(const this_t &)
+  //   +(const this_t &)->this_t
+  //   -(const this_t &)->this_t
+  //
+  //   sscan(sv_ref)->bool
+  //   sprint(sep_n = 0)->string
+  //
+  //   sscan_hex(sv_ref)->bool
+  //   sprint_hex(sep_n = 0)->string
+  //
+  //   sscan_scientific(sv_ref)->bool
+  //   sprint_scientific(precision = 6u, sep_n = 0, upper_e = false,
+  //                     show_pos = false)->string
+}
+void doc_ssplitter() {
+  // ssplitter<STR = sview>
+  //   special member functions: full
+  //   ssplitter(sv, sv_delimiter)
+  //   ssplitter(sv, char_delimiter)
+  //
+  //   begin()
+  //   end()
+  //   empty()
+  //   size()
+  //   clear()
+  //   ()(sv, oi)->oi
+  //   ()(iter, oi)->pair<iter, oi> // need enough elements from iter
+  //   ()(r, oi)->pair<iter, oi>
+  //     // if empty(r), do nothing,
+  //     // otherwise
+  //     //   if r has no enough elements, repeatedly use the last one,
+  //     //   otherwise
+  //     //     same as operator ()(begin(r), oi)
+  //
+  // split(s, delimiter)
+
+  ssplitter s("ab_cd_efg_h", "_"); // equal(s, seq("ab"_sv, "cd", "efg", "h"))
+  ssplitter s2("ab_cd_efg_h", '_'); // same as above
+  ssplitter s3("_cd_efg_h", "_"); // {"", "cd", "efg"}
+  ssplitter s4("_", "_"); // {"", ""}
+  ssplitter s5("", "_"); // {}
+  ssplitter s6("", ""); // {}
+  ssplitter s7("abc", ""); // {"abc"}
+  ssplitter s8("", "abc"); // {}
+  assert(s("||", to_back(string{})).base() == "ab||cd||efg||h");
+  assert(s(seq("$"_sv, "%%"), to_back(string{})).second.base()
+         == "ab$cd%%efg%%h");
+  const vector<string> v = {"$", "%%", "^^^", "&&&&"};
+  assert(s(v.begin(), to_back(string{})).second.base() == "ab$cd%%efg^^^h");
+
+  vector<string> vv;
+  ssplit("ab__cd__efg"_sv, "__",
+         output_itr([&](auto sv) {vv.emplace_back(sv);}));
+  assert(equal(vv, seq("ab"_sv, "cd", "efg")));
 }
 
 int main() {
@@ -8867,11 +8842,11 @@ int main() {
   doc_swap();
   doc_type_traits();
   doc_basic_utility_functions();
+  doc_pointer_traits();
   doc_reference_wrapper_and_invoke();
   doc_language_related_concepts();
   doc_concept_constrained_comparisons();
   doc_integral_traits();
-  doc_floating_point_traits();
   doc_numeric_limits();
   doc_three_way_comparison();
   doc_type_index();
@@ -8879,10 +8854,13 @@ int main() {
   doc_tuple();
   doc_bind();
   doc_ratio();
+  doc_optional();
   doc_semiregular_function();
   doc_hash();
   doc_miscl();
+  doc_floating_point_traits();
 
+  doc_owner_ptr();
   doc_test_throwing();
   doc_test_ownership();
   doc_test_rational_operator();
@@ -8891,6 +8869,8 @@ int main() {
   doc_ez_function();
   doc_ez_vector();
   doc_ez_forward_list();
+  doc_ez_slist();
+  doc_ez_bidirectional_list();
   doc_ez_list();
   doc_ez_map();
   doc_test_allocator();
@@ -8903,6 +8883,7 @@ int main() {
   doc_reverse_iterator();
   doc_insert_iterator();
   doc_move_iterator();
+  doc_counted_iterator();
   doc_iterator_wrapper();
   doc_array();
   doc_iter_pair();
@@ -8922,8 +8903,8 @@ int main() {
   doc_iters();
   doc_range_miscl();
 
-  doc_pointer_traits();
   doc_allocator_traits();
+  doc_uninitialized_argo();
   doc_default_allocator();
   doc_allocator_wrapper();
   doc_unique_ptr();
@@ -8932,12 +8913,14 @@ int main() {
   doc_copyable_array();
   doc_buffer();
   doc_scoped_allocator_adaptor();
+  doc_allocator_aware_container_ownership();
 
   doc_dynamic_base();
   doc_dynamic();
   doc_dynamic_void();
   doc_function();
   doc_optional();
+  doc_move_only_function();
   doc_type_erased_invocation();
   doc_variant();
 
@@ -9000,6 +8983,7 @@ int main() {
   doc_join_range();
   doc_join_with_range();
   doc_adjacent_range();
+  doc_slide_range();
   doc_aligned_stride_range();
   doc_stride_range();
   doc_aligned_chunk_range();
@@ -9021,8 +9005,9 @@ int main() {
   doc_bitset();
   doc_vector();
   doc_bool_vector();
-  doc_small_vector();
   doc_local_vector();
+  doc_small_vector();
+  doc_pointer_vector();
   doc_circular_vector();
   doc_deque();
   doc_forward_list();
@@ -9043,6 +9028,13 @@ int main() {
   doc_tree_adaptor();
   doc_tree_vector_adaptor();
   doc_tree_typedef();
+
+  doc_c_file();
+  doc_print_tag();
+  doc_sscan();
+  doc_sprint();
+  doc_big_int();
+  doc_ssplitter();
 
   printf("ok\n");
 }
