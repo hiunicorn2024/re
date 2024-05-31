@@ -290,6 +290,17 @@ void test_pointer_vector_briefly() {
 
     {
       V v;
+      v.reserve_more(30u);
+      assert(v.capacity() == 30u);
+      const auto u = rng(3, typename V::value_type{});
+      v = u;
+      v.shrink_to_fit();
+      v.reserve_more(30u);
+      assert(equal(v, u) && v.capacity() == 33u);
+    }
+
+    {
+      V v;
       assert(v.empty());
       assert(v.capacity() == 0);
 

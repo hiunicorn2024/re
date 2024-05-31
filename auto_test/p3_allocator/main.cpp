@@ -2386,6 +2386,7 @@ void test_buffer() {
     assert(empty(buf) && buf.capacity() == 0);
   }
   // reserve(n)
+  // reserve_more(n)
   {
     buffer<int> buf;
     buf.reserve(0);
@@ -2404,6 +2405,9 @@ void test_buffer() {
     assert(buf.capacity() == 2 && ref(buf, 0) == 0 && buf.size() == 1u);
     buf.reserve(3);
     assert(buf.capacity() == 3 && ref(buf, 0) == 0 && buf.size() == 1u);
+
+    buf.reserve_more(3u);
+    assert(buf.capacity() == 4u && ref(buf, 0) == 0 && buf.size() == 1u);
   }
   // clear
   {

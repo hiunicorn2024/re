@@ -201,6 +201,16 @@ void test_string_briefly() {
 
     {
       V v;
+      v.reserve_more(30u);
+      assert(v.capacity() == 30u);
+      v = rng(3, typename V::value_type{});
+      v.shrink_to_fit();
+      v.reserve_more(30u);
+      assert(v.capacity() == 33u);
+    }
+
+    {
+      V v;
       v.reserve(20);
       assert(v.capacity() == 20);
       v.shrink_to_fit();

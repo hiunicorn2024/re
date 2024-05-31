@@ -283,6 +283,17 @@ void test_deque_briefly() {
 
     {
       v_t v;
+      v.reserve_more(30u);
+      assert(v.lower_capacity() >= 30u);
+      const auto u = rng(3, typename v_t::value_type{});
+      v = u;
+      v.shrink_to_fit();
+      v.reserve_more(30u);
+      assert(equal(v, u) && v.lower_capacity() >= 33u);
+    }
+
+    {
+      v_t v;
       v.reserve(20);
       assert(v.lower_capacity() >= 20);
       v.shrink_to_fit();

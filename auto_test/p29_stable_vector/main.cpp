@@ -734,6 +734,8 @@ void test_stable_vector_assign_range() {
         assert(v.capacity() == to_unsigned(i));
         v.reserve(j);
         assert(v.capacity() == to_unsigned(j));
+        v.reserve_more(j + j);
+        assert(v.capacity() == to_unsigned(v.size() + j + j));
         assert(equal(v, rrng(irng(0, i))));
 
         for (int k : irng(0, 20))

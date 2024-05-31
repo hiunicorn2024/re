@@ -1430,14 +1430,25 @@ void test_tree_vector_construct_assign() {
            && equal(deref_rng(v), seq(1, 2)));
   }
 
+  // vec_t(r, a = {})
+  // vec_t(from_range, r, a = {})
   // assign(r)
   // assign_range(r)
   {
-    vec_t v(t(1, t(2)), t(3), t(4));
-    v.assign(seq(1, 2));
-    assert(inner::good(v) && v == vec_t(t(1), t(2)));
-    v.assign_range(rng(3, 6));
-    assert(inner::good(v) && v == vec_t(t(6), t(6), t(6)));
+    {
+      vec_t v(seq(1, 2, 3));
+      vec_t vv(from_range, seq(1, 2, 3));
+      assert(inner::good(v) && equal(deref_rng(v), seq(1, 2, 3)));
+      assert(inner::good(vv) && equal(deref_rng(vv), seq(1, 2, 3)));
+      assert(v == vv);
+    }
+    {
+      vec_t v(t(1, t(2)), t(3), t(4));
+      v.assign(seq(1, 2));
+      assert(inner::good(v) && v == vec_t(t(1), t(2)));
+      v.assign_range(rng(3, 6));
+      assert(inner::good(v) && v == vec_t(t(6), t(6), t(6)));
+    }
   }
 
   // vec_t(trees...)

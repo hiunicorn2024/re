@@ -394,7 +394,17 @@ void test_bool_vector_2() {
     v = {1, 0, 1, 0, 1};
     assert(v.remove_if(bind(equal_to<bool>(), _1, 1)) == 3);
     assert(equal(v, rng(2, false)));
-  } 
+  }
+  {
+    V v;
+    v.reserve_more(256u);
+    assert(v.capacity() == 256u);
+    const auto u = rng(3, typename V::value_type{});
+    v = u;
+    v.shrink_to_fit();
+    v.reserve_more(256u);
+    assert(equal(v, u) && v.capacity() == (256u + 64u));
+  }
 }
 
 void test_vector_bool() {

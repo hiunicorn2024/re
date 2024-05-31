@@ -7093,8 +7093,31 @@ void test_integral_traits() {
   static_assert(noexcept(integral_traits<uint64_t>::max()));
   static_assert(noexcept(integral_traits<uint64_t>::min()));
 }
-void test_floating_point_traits() {} //todo
-void test_numeric_limits() {} //todo
+void test_numeric_limits() {
+  static_assert(numeric_limits<uint32_t>::max() == 0xffffffffu);
+  static_assert(numeric_limits<uint32_t>::min() == 0u);
+  static_assert(numeric_limits<uint32_t>::lowest() == 0u);
+  static_assert(numeric_limits<uint32_t>::is_signed == false);
+  static_assert(numeric_limits<uint32_t>::is_specialized == true);
+
+  assert(numeric_limits<float>::max()
+         == bit_cast<float>
+         ((uint32_t)0b0'11111110'111'11111'11111'11111'11111u));
+  assert(numeric_limits<float>::min()
+         == bit_cast<float>
+         ((uint32_t)0b0'00000001'000'00000'00000'00000'00000u));
+  assert(numeric_limits<float>::denorm_min()
+         == bit_cast<float>
+         ((uint32_t)0b0'00000000'000'00000'00000'00000'00001u));
+  assert(numeric_limits<float>::lowest()
+         == bit_cast<float>
+         ((uint32_t)0b1'11111110'111'11111'11111'11111'11111u));
+  static_assert(numeric_limits<float>::is_signed == true);
+  static_assert(numeric_limits<float>::is_specialized == true);
+
+  static_assert(numeric_limits<double>::is_signed == true);
+  static_assert(numeric_limits<double>::is_specialized == true);
+}
 
 namespace help_three_way {
 
@@ -7151,6 +7174,19 @@ void test_three_way_comparison() {
     static_assert((2 <=> 1) == partial_gt);
     static_assert((1 <=> 1) == partial_eq);
     assert((NAN <=> 1.0f) == partial_uo);
+  }
+
+  // reverse_ordering
+  {
+    assert(reverse_ordering(as_lvalue(strong_lt)) == strong_gt);
+    assert(reverse_ordering(strong_gt) == strong_lt);
+    assert(reverse_ordering(strong_eq) == strong_eq);
+    assert(reverse_ordering(as_lvalue(weak_lt)) == weak_gt);
+    assert(reverse_ordering(weak_gt) == weak_lt);
+    assert(reverse_ordering(weak_eq) == weak_eq);
+    assert(reverse_ordering(as_lvalue(partial_lt)) == partial_gt);
+    assert(reverse_ordering(partial_gt) == partial_lt);
+    assert(reverse_ordering(partial_eq) == partial_eq);
   }
 
   // is_eq/neq/lt/gt/lteq/gteq
@@ -13065,6 +13101,133 @@ void test_miscl() {
   }
 }
 
+void test_floating_point_traits() {
+  // float_traits
+  {
+    using t = float_traits;
+    static_assert(is_same_v<t::float_t, float>);
+    static_assert(is_same_v<t::uint_t, uint32_t>);
+    static_assert(is_same_v<t::int_t, int32_t>);
+    static_assert(t::n == 8u);
+    static_assert(t::k == 23u);
+    static_assert(t::bias == 127u);
+
+    assert(!t::is_positive(-1.0f));
+    assert(t::is_positive(+1.0f));
+    assert(t::is_negative(-1.0f));
+    assert(!t::is_negative(+1.0f));
+
+    static_assert(t::e_max == 255u);
+    static_assert(1 - to_signed(t::bias) == -126);
+    static_assert(to_signed(t::e_max) - 1 - to_signed(t::bias) == 127);
+    assert(t::f_max == t::f(t::max()));
+    assert(t::e_max - 1u == t::e(t::max()));
+
+    assert(t::e(-1.0f) - to_signed(t::bias) == 0u);
+
+    assert(t::f(-1.0f) == 0u);
+
+    assert(t::is_normalized(-1.0f));
+    assert(!t::is_denormalized(-1.0f));
+    assert(!t::is_infinity(-1.0f));
+
+    static_assert(t::is_specialized);
+    static_assert(t::is_signed);
+    static_assert(!t::is_integer);
+    assert(t::lowest() < 0.0f);
+    assert(t::denorm_min() > 0.0f);
+    assert(t::min() > 0.0f);
+    assert(t::max() > 0.0f);
+
+    assert(t::is_infinity(t::positive_inf()));
+    assert(t::is_positive(t::positive_inf()));
+    assert(t::f(t::positive_inf()) == 0);
+    assert(t::e(t::positive_inf()) == t::e_max);
+    assert(t::is_infinity(numeric_limits<float>::infinity()));
+    assert(t::is_positive(numeric_limits<float>::infinity()));
+    assert(t::f(numeric_limits<float>::infinity()) == 0);
+    assert(t::e(numeric_limits<float>::infinity()) == t::e_max);
+
+    assert(t::is_infinity(t::negative_inf()));
+    assert(t::is_negative(t::negative_inf()));
+    assert(t::f(t::negative_inf()) == 0);
+    assert(t::e(t::negative_inf()) == t::e_max);
+
+    assert(t::is_nan(t::positive_nan()));
+    assert(t::e(t::positive_nan()) == t::e_max);
+    assert(t::is_positive(t::positive_nan()));
+    assert(t::is_nan(numeric_limits<float>::nan()));
+    assert(t::e(numeric_limits<float>::nan()) == t::e_max);
+    assert(t::is_positive(numeric_limits<float>::nan()));
+  }
+  // double_traits
+  {
+    using t = double_traits;
+    static_assert(is_same_v<t::float_t, double>);
+    static_assert(is_same_v<t::uint_t, uint64_t>);
+    static_assert(is_same_v<t::int_t, int64_t>);
+    static_assert(t::n == 11u);
+    static_assert(t::k == 52u);
+    static_assert(t::bias == 1023u);
+
+    assert(!t::is_positive(-1.0));
+    assert(t::is_positive(+1.0));
+    assert(t::is_negative(-1.0));
+    assert(!t::is_negative(+1.0));
+
+    static_assert(t::e_max == 2047u);
+    assert(1 - to_signed(t::bias) == -1022);
+    assert(to_signed(t::e_max) - 1 - to_signed(t::bias) == 1023);
+    assert(t::f_max == t::f(t::max()));
+    assert(t::e_max - 1u == t::e(t::max()));
+
+    assert(t::e(-1.0) - to_signed(t::bias) == 0u);
+
+    assert(t::f(-1.0) == 0u);
+
+    assert(t::is_normalized(-1.0));
+    assert(!t::is_denormalized(-1.0));
+    assert(!t::is_infinity(-1.0));
+
+    static_assert(t::is_specialized);
+    static_assert(t::is_signed);
+    static_assert(!t::is_integer);
+    assert(t::lowest() < 0.0);
+    assert(t::denorm_min() > 0.0);
+    assert(t::min() > 0.0);
+    assert(t::max() > 0.0);
+
+    assert(t::is_infinity(t::positive_inf()));
+    assert(t::is_positive(t::positive_inf()));
+    assert(t::f(t::positive_inf()) == 0);
+    assert(t::e(t::positive_inf()) == t::e_max);
+    assert(t::is_infinity(numeric_limits<double>::infinity()));
+    assert(t::is_positive(numeric_limits<double>::infinity()));
+    assert(t::f(numeric_limits<double>::infinity()) == 0);
+    assert(t::e(numeric_limits<double>::infinity()) == t::e_max);
+
+    assert(t::is_infinity(t::negative_inf()));
+    assert(t::is_negative(t::negative_inf()));
+    assert(t::f(t::negative_inf()) == 0);
+    assert(t::e(t::negative_inf()) == t::e_max);
+
+    assert(t::is_nan(t::positive_nan()));
+    assert(t::e(t::positive_nan()) == t::e_max);
+    assert(t::is_positive(t::positive_nan()));
+    assert(t::is_nan(numeric_limits<double>::nan()));
+    assert(t::e(numeric_limits<double>::nan()) == t::e_max);
+    assert(t::is_positive(numeric_limits<double>::nan()));
+  }
+
+  // hash
+  {
+    assert(hash{}(+0.0) == hash{}(-0.0));
+    assert(hash{}(+0.0f) == hash{}(-0.0f));
+    assert(bit_cast<uint32_t>(+0.0f) != bit_cast<uint32_t>(-0.0f));
+    assert(bit_cast<uint64_t>(+0.0) != bit_cast<uint64_t>(-0.0));
+  }
+}
+
 void test_base() {
   printf("base: ");
 
@@ -13076,7 +13239,6 @@ void test_base() {
   test_language_related_concepts();
   test_concept_constrained_comparisons();
   test_integral_traits();
-  test_floating_point_traits();
   test_numeric_limits();
   test_three_way_comparison();
   test_type_index();
@@ -13088,6 +13250,7 @@ void test_base() {
   test_optional();
   test_semiregular_function();
   test_miscl();
+  test_floating_point_traits();
 
   printf("ok\n");
 }

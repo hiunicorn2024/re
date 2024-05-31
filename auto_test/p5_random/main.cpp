@@ -11,7 +11,22 @@ using namespace re;
 
 void test_random_engine_distribution() {
   const auto f = [](auto tag) {
-    typename decltype(tag)::type r;
+    {
+      using r_t = typename decltype(tag)::type;
+      using uint_t = typename r_t::result_type;
+      using d_t = uniform_int_distribution<uint_t>;
+      r_t r1, r2;
+      d_t d(r_t::min(), r_t::max());
+      ez_vector<uint_t> v1, v2;
+      for (int c = 1000; c != 0; --c) {
+        v1.insert(v1.end(), d(r1));
+        v2.insert(v2.end(), r2());
+      }
+      assert(v1 == v2);
+    }
+
+    using r_t = typename decltype(tag)::type;
+    r_t r;
     using d_t = uniform_int_distribution<int>;
     {
       int a[10] = {};
