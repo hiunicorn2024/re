@@ -1047,6 +1047,26 @@ public:
   class headed_buffer_ptr {
     friend class allocator_wrapper;
 
+    friend struct inner::fo_good;
+    bool good() const {
+      const size_t sz_1 = sizeof(H);
+      const size_t sz_2 = sizeof(U);
+      const size_t align_1 = alignof(H);
+      const size_t align_2 = alignof(U);
+      const size_t align_max = max_value(align_1, align_2);
+
+      const auto ptr_is_aligned_as = [](void *pp, size_t k) {
+        return to_unsigned(static_cast<char *>(pp)
+                           - static_cast<char *>(static_cast<void *>(nullptr)))
+          % k == 0u;
+      };
+
+      return ptr_is_aligned_as(p.first, align_1)
+        && ptr_is_aligned_as(op, align_2)
+        && op >= p.first + to_signed(sz_1)
+        && to_unsigned(p.first + to_signed(n) - op) >= sz;
+    }
+
     pair<alloc_ptr<AL>, alloc_ptr<AL>> p{};
     alloc_szt<AL> n{};
     alloc_ptr<AL> op{};
@@ -1103,16 +1123,23 @@ public:
   headed_buffer_ptr<H, U> allocate_headed_buffer(alloc_szt<AL> n, S &&...s)
     requires is_same_v<alloc_vt<AL>, byte> {
     const size_t max_align = max_value(alignof(H), alignof(U));
-    const size_t b = sizeof(H) + max_align;
+    if (numeric_limits<alloc_szt<AL>>::max() - max_align < sizeof(H))
+      throw_or_abort<length_error>
+        ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...): "
+         "too big size\n");
+    const alloc_szt<AL> tmp = sizeof(H) + max_align;
+
     const alloc_szt<AL> k = sizeof(U) * max_value(1u, n);
-    const alloc_szt<AL> nn = b + k;
+    if (numeric_limits<alloc_szt<AL>>::max() - tmp < k)
+      throw_or_abort<length_error>
+        ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...): "
+         "too big size\n");
+    const alloc_szt<AL> nn = tmp + k;
     const auto p = allocate_alignas(alignof(H), nn);
 
-    void *data_p = static_cast<void *>(to_address(p.first));
-    if (alignof(H) >= alignof(U))
-      data_p = static_cast<void *>(static_cast<byte *>(data_p) + sizeof(H));
-    else {
-      size_t holder = k + max_align;
+    void *data_p = reinterpret_cast<char *>(to_address(p.first)) + sizeof(H);
+    if (alignof(U) > alignof(H)) {
+      size_t holder = max_align + k;
       align(alignof(U), n, data_p, holder);
     }
 #ifndef RE_NOEXCEPT
