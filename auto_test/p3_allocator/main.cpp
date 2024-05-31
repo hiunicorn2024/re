@@ -615,6 +615,66 @@ void test_allocator_wrapper() {
       a.rebind<align256_t>().destroy(p3.data() + i);
     a.deallocate_headed_buffer(p3);
   }
+  // more test for allocate_headed_buffer 
+  {
+    using alloc_t = test_allocator<byte>;
+    using alw_t = allocator_wrapper<alloc_t>;
+    alw_t aw;
+
+    // first_align == second_align
+    {
+      using ptr_t = typename alw_t::template headed_buffer_ptr<intmax_t,
+                                                               intmax_t>;
+      ez_vector<ptr_t> v;
+      for (int i : irng(1, 10000)) {
+        const auto p = aw.allocate_headed_buffer<intmax_t, intmax_t>(i, 1);
+        assert(inner::good(p));
+        assert(p.head() == 1);
+        assert(p.size() == to_unsigned(i));
+        v.insert(v.end(), p);
+      }
+      for (auto &p : v)
+        aw.deallocate_headed_buffer(p);
+    }
+    // first_align > second_align
+    {
+      struct alignas(16u) t {
+        int x;
+        int y;
+      };
+      assert(alignof(t) == 16u);
+      using ptr_t = typename alw_t::template headed_buffer_ptr<t, intmax_t>;
+      ez_vector<ptr_t> v;
+      for (int i : irng(1, 10000)) {
+        const auto p = aw.allocate_headed_buffer<t, intmax_t>(i);
+        assert(inner::good(p));
+        assert(p.head().x == 0 && p.head().y == 0);
+        assert(p.size() == to_unsigned(i));
+        v.insert(v.end(), p);
+      }
+      for (auto &p : v)
+        aw.deallocate_headed_buffer(p);
+    }
+    // first_align < second_align
+    {
+      struct alignas(64u) t {
+        int x;
+        int y;
+      };
+      assert(alignof(t) == 64u);
+      using ptr_t = typename alw_t::template headed_buffer_ptr<intmax_t, t>;
+      ez_vector<ptr_t> v;
+      for (int i : irng(1, 10000)) {
+        const auto p = aw.allocate_headed_buffer<intmax_t, t>(i, 1);
+        assert(inner::good(p));
+        assert(p.head() == 1);
+        assert(p.size() == to_unsigned(i));
+        v.insert(v.end(), p);
+      }
+      for (auto &p : v)
+        aw.deallocate_headed_buffer(p);
+    }
+  }
 
   // allocate
   // construct_at
