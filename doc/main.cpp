@@ -3679,9 +3679,11 @@ void doc_allocator_wrapper() {
   //   traits = allocator_traits<AL>
   //
   //   special member functions: full
+  //
+  //   explicit allocator_wrapper(a)
   //   explicit(sizeof...(s) == 1) allocator_wrapper(s...)
   //
-  //   get()
+  //   get()->al_ref
   //   rebind<T>()->allocator_wrapper<alloc_rebind<AL, T>>
   //   max_size()
   //   min_alignment()
@@ -3754,6 +3756,7 @@ void doc_allocator_wrapper() {
   //     size()
   //     refer_to_only_head(H &)
   //   allocate_headed_buffer(n, s...)->headed_buffer_ptr
+  //     // construct head by s...
   //     // requires: n is valid
   //   deallocate_headed_buffer(headed_buffer_ptr)
   //
@@ -3950,19 +3953,20 @@ void doc_buffer() {
   //   clear()
   //
   //   release()->void
-
-  buffer<int> v(3);
-  v.push_back(1);
-  v.push_back(2);
-  v.push_back(3);
-  v.pop_front();
-  assert(equal(v, seq(2, 3)));
-  assert(v.front_raw_space() == 1);
-  assert(v.back_raw_space() == 0);
-  v.reallocate(3);
-  assert(equal(v, seq(2, 3)));
-  assert(v.front_raw_space() == 0);
-  assert(v.back_raw_space() == 1);
+  {
+    buffer<int> v(3);
+    v.push_back(1);
+    v.push_back(2);
+    v.push_back(3);
+    v.pop_front();
+    assert(equal(v, seq(2, 3)));
+    assert(v.front_raw_space() == 1);
+    assert(v.back_raw_space() == 0);
+    v.reallocate(3);
+    assert(equal(v, seq(2, 3)));
+    assert(v.front_raw_space() == 0);
+    assert(v.back_raw_space() == 1);
+  }
 }
 void doc_scoped_allocator_adaptor() {
   // scoped_allocator_adaptor<OUTER_ALLOC, INNER_ALLOCS...>
@@ -4105,12 +4109,13 @@ void doc_dynamic() {
   //   align()
   //   wrapper_size()
   //   wrapper_align()
-
-  struct A : dynamic_object {virtual int f() {return 0;}};
-  struct B : A {virtual int f() override {return 1;}};
-  struct C : A {virtual int f() override {return 2;}};
-  dynamic<A> a = A(), b = B(), c = C();
-  assert(a->f() == 0 && b->f() == 1 && c->f() == 2);
+  {
+    struct A : dynamic_object {virtual int f() {return 0;}};
+    struct B : A {virtual int f() override {return 1;}};
+    struct C : A {virtual int f() override {return 2;}};
+    dynamic<A> a = A(), b = B(), c = C();
+    assert(a->f() == 0 && b->f() == 1 && c->f() == 2);
+  }
 }
 void doc_dynamic_void() {
   // dynamic_default_buffer_traits<void>
@@ -4160,14 +4165,15 @@ void doc_dynamic_void() {
   //   what()
   // any_cast<T>(any REF) // may throw bad_any_cast
   // any_cast<T>(any PTR) // may throw bad_any_cast
-
-  any x = make_any<int>(3);
-  any y = make_any<float>(1.5);
-  assert(as<int>(x) == 3);
-  assert(as<float>(y) == 1.5);
-  adl_swap(x, y);
-  assert(as<int>(y) == 3);
-  assert(as<float>(x) == 1.5);
+  {
+    any x = make_any<int>(3);
+    any y = make_any<float>(1.5);
+    assert(as<int>(x) == 3);
+    assert(as<float>(y) == 1.5);
+    adl_swap(x, y);
+    assert(as<int>(y) == 3);
+    assert(as<float>(x) == 1.5);
+  }
 }
 void doc_function() {
   // bad_function_call : exception
@@ -4215,9 +4221,10 @@ void doc_function() {
   //
   //   target_type()
   //   target<X>()->pointer
-
-  function<int ()> f = []() {return 1;};
-  assert(f() == 1);
+  {
+    function<int ()> f = []() {return 1;};
+    assert(f() == 1);
+  }
 }
 void doc_move_only_function() {
   // move_only_function<...>
@@ -4370,15 +4377,16 @@ void doc_variant() {
   //
   // hash<monostate>
   // hash<variant<S...>>
-
-  variant<int, float, void *> v(in_place_type<void>);
-  assert(v.valueless_by_exception());
-  v = 3;
-  assert(!v.valueless_by_exception());
-  assert(v.is<int>() && is<int>(v));
-  assert(v.as<int>() == 3 && as<int>(v) == 3);
-  v = 3.0f;
-  assert(v.index() == 1 && v.at<1>() == 3.0f);
+  {
+    variant<int, float, void *> v(in_place_type<void>);
+    assert(v.valueless_by_exception());
+    v = 3;
+    assert(!v.valueless_by_exception());
+    assert(v.is<int>() && is<int>(v));
+    assert(v.as<int>() == 3 && as<int>(v) == 3);
+    v = 3.0f;
+    assert(v.index() == 1 && v.at<1>() == 3.0f);
+  }
 }
 
 // random
@@ -4406,19 +4414,14 @@ void doc_random() {
 void doc_equal() {
   // equal(ir, ir2, eq = ...) // may throw
   // equal(ir, ii, eq = ...) // may throw
-
-  const int a[] = {1, 2, 3};
-  const int b[] = {1, 2, 3};
-  assert(equal(a, b));
-  assert(equal(a, begin(b)));
 }
 void doc_allanynone_of() {
   // all/any/none_of(ir, eq) // may throw
   // all/any/none_of_equal(ir, x, eq = ...) // may throw
 
-  const int a[] = {1, 2, 3};
-  assert(!any_of_equal(a, 0));
-  assert(any_of_equal(a, 2));
+  assert(all_of_equal(empty_rng<int>(), 0));
+  assert(!any_of_equal(empty_rng<int>(), 0));
+  assert(none_of_equal(empty_rng<int>(), 0));
 }
 void doc_for_each() {
   // for_each(ir, f) // may throw (weak)
@@ -4428,19 +4431,12 @@ void doc_for_each() {
   //
   // for_each_excluding_first(ir, f, f_for_first = empty_function{})
   // for_each_excluding_last(fr, f, f_for_last = empty_function{})
-
-  int a[] = {1, 2, 3};
-  assert(for_each(a, [](int &x) {x *= 2;}) == end(a));
-  assert(equal(a, seq(2, 4, 6)));
 }
 void doc_find() {
   // find(ir, x, eq = ...) // may throw
   // find_not(ir, x, eq = ...) // may throw
   // find_if(ir, eq) // may throw
   // find_if_not(ir, eq) // may throw
-
-  const int a[] = {1, 1, 2, 3};
-  assert(find_not(a, 1) == nth(a, 2));
 }
 void doc_find_last() {
   // find_last(fr, x, eq = ...) // may throw
@@ -4456,17 +4452,14 @@ void doc_find_first_last_of() {
   // find_last_of(fr, fr, eq = ...) // may throw
 
   const int a[] = {1, 2, 3, 4};
-  assert(find_first_of(a, seq(0, 2, 3)) == begin(a) + 1);
-  assert(find_first_of(a, seq(0, 2, 3), equal_to<>()) == begin(a) + 1);
-  assert(find_last_of(a, seq(0, 2, 3)) == begin(a) + 2);
-  assert(find_last_of(a, seq(0, 2, 3), equal_to<>()) == begin(a) + 2);
+  assert(find_first_of(a, seq(0, 2, 3)) == nth(a, 1));
+  assert(find_last_of(a, seq(0, 2, 3)) == nth(a, 2));
 }
 void doc_adjacent_find() {
   // adjacent_find(fr, eq = ...) // may throw
 
   const int a[] = {1, 2, 2, 3};
   assert(adjacent_find(a) == begin(a) + 1);
-  assert(adjacent_find(a, equal_to<>()) == begin(a) + 1);
 }
 void doc_count() {
   // count_if(ir, eq) // may throw
@@ -4483,13 +4476,7 @@ void doc_mismatch() {
   const int a[] = {1, 2, 3};
   const int b[] = {1, 3, 3};
   auto [it1, it2] = mismatch(a, b);
-  assert(it1 == begin(a) + 1 && it2 == begin(b) + 1);
-  tie(it1, it2) = mismatch(a, b, equal_to<>());
-  assert(it1 == begin(a) + 1 && it2 == begin(b) + 1);
-  tie(it1, it2) = mismatch(a, begin(b));
-  assert(it1 == begin(a) + 1 && it2 == begin(b) + 1);
-  tie(it1, it2) = mismatch(a, begin(b), equal_to<>());
-  assert(it1 == begin(a) + 1 && it2 == begin(b) + 1);
+  assert(it1 == nth(a, 1) && it2 == nth(b, 1));
 }
 void doc_is_permutation() {
   // is_permutation(fr, fr_2, eq = ...) // may throw
@@ -4498,25 +4485,27 @@ void doc_is_permutation() {
   const int a[] = {1, 2, 3};
   const int b[] = {2, 3, 1};
   assert(is_permutation(a, b));
-  assert(is_permutation(a, b, equal_to<>()));
-  assert(is_permutation(a, begin(b)));
-  assert(is_permutation(a, begin(b), equal_to<>()));
 }
 void doc_find_subrange() {
   // find_subrange(fr, fr_2, eq = ...)->iter_pair
   // find_last_subrange(fr, fr_2, eq = ...)->iter_pair
+
+  const auto a = seq(1, 2, 3, 4);
+  const auto p = find_subrange(a, seq(2, 3));
+  assert(p == rng(nth(a, 1), 2));
 }
 void doc_search() {
   // search(fr, fr_2, eq = ...) // may throw
 
   const int a[] = {1, 2, 2, 2, 3};
-  assert(search(a, rng(3, 2)) == begin(a) + 1);
-  assert(search(a, seq(2, 2, 2)) == begin(a) + 1);
+  assert(search(a, rng(3, 2)) == nth(a, 1));
+  assert(search(a, seq(2, 2)) == nth(a, 1));
+  assert(search(a, empty_rng<int>()) == begin(a));
 }
 void doc_find_end() {
   // find_end(fr, fr_2, eq = ...) // may throw
 
-  const int a[] = {1, 2, 3, 2, 3};
+  const int a[] = {1, 2, 3, 2, 3, 4};
   assert(find_end(a, seq(2, 3)) == nth(a, 3));
 }
 void doc_contains() {
@@ -4555,44 +4544,26 @@ void doc_copy_move_if_backward_from() {
   // move_backward(br, bi) // may throw (weak)
   // copy_from(_plus)(fr, ii) // may throw (weak)
   // move_from(_plus)(fr, ii) // may throw (weak)
-
+  //
   // for overlap case:
   //   to left: copy/move
   //   to right: [copy/move]_backward
-
-  const int a[] = {1, 2, 3};
-  int b[3];
-  int *it;
-  it = copy_if(a, begin(b), bind(equal_to<>(), _1, 2));
-  assert(it == begin(b) + 1 && *begin(b) == 2);
-  it = copy(rng(begin(a), 3), begin(b));
-  assert(it == end(b));
-  assert(equal(a, b));
-  fill(b, 0);
-  assert(all_of_equal(b, 0));
-  it = copy_backward(a, end(b));
-  assert(it == begin(b) && equal(a, b));
 }
 void doc_swap_ranges() {
   // swap_ranges(_plus)(fr, fi) // may throw (weak)
   // swap_ranges(fr, fr) // may throw (weak)
-
-  int a[] = {1, 2, 3};
-  int b[] = {3, 2, 1};
-  swap_ranges(a, begin(b));
-  assert(equal(a, seq(3, 2, 1)) && equal(b, seq(1, 2, 3)));
 }
 void doc_transform() {
   // transform(_plus)(ir, oi, ufn) // may throw (weak)
   // transform(_plus)(ir, ii, oi, bfn) // may throw (weak)
   // transform(_plus)(ir, ir2, oi, bfn) // may throw (weak)
-  
+
   const int a[] = {1, 2, 3};
   const int b[] = {2, 4, 6};
   int c[3];
-  transform(a, begin(c), negate<>());
+  transform(a, begin(c), negate{});
   assert(equal(c, vector<int>{-1, -2, -3}));
-  transform(a, begin(b), begin(c), plus<>());
+  transform(a, begin(b), begin(c), plus{});
   assert(equal(c, vector<int>{3, 6, 9}));
 }
 void doc_replace_if_copy_if() {
@@ -4656,8 +4627,10 @@ void doc_rotate_copy() {
   // rotate_copy(fr, i, oi) // may throw (weak)
 
   int a[] = {1, 2, 3, 4, 5};
-  rotate(a, begin(a) + 2);
+  int *it = rotate(a, begin(a) + 2);
   assert(equal(a, seq(3, 4, 5, 1, 2)));
+  assert(equal(rng(begin(a), it), seq(3, 4, 5)));
+  assert(equal(rng(it, end(a)), seq(1, 2)));
 }
 void doc_shift() {
   // shift_left(fr, mid) // may throw (weak)
@@ -4687,9 +4660,9 @@ void doc_binary_search_series() {
   // bs_find(fr, x, less = ...) // may throw
 
   const int a[] = {1, 2, 3, 3, 5};
+  assert(partition_point(a, bind(less{}, _1, 3)) == nth(a, 2));
   const auto it = lower_bound(a, 3);
   const auto it2 = upper_bound(a, 3);
-  assert(partition_point(a, bind(less{}, _1, 3)) == nth(a, 2));
   assert(equal(rng(it, it2), seq(3, 3))
          && equal(rng(it, it2), equal_range(a, 3)));
   assert(!binary_search(a, 4));
@@ -4716,7 +4689,6 @@ void doc_merge_series() {
   // inplace_merge_with_buffer(br, bi, buf, less = ...) // may throw (weak)
   // inplace_merge(br, bi, less = ...) // may throw (weak)
 
-  buffer<int> buf(5);
   int d[] = {1, 3, 5, 2, 4};
   inplace_merge(d, begin(d) + 3);
   assert(equal(d, irng(1, 6)));
@@ -4730,11 +4702,11 @@ void doc_set_series() {
 
   int a[] = {1, 3, 5, 7};
   int b[] = {5, 7, 9, 10};
-  vector<int> c, d, e, f;
-  set_union(a, b, back_inserter(c));
-  set_intersection(a, b, back_inserter(d));
-  set_difference(a, b, back_inserter(e));
-  set_symmetric_difference(a, b, back_inserter(f));
+  ez_vector<int> c, d, e, f;
+  set_union(a, b, to_back(c));
+  set_intersection(a, b, to_back(d));
+  set_difference(a, b, to_back(e));
+  set_symmetric_difference(a, b, to_back(f));
 
   assert(includes(c, a) && includes(c, b));
   assert(equal(c, seq(1, 3, 5, 7, 9, 10)));
@@ -4749,13 +4721,13 @@ void doc_heap_series() {
   // sort_heap(rr, less = ...) // may throw (weak)
   // is_heap(rr, less = ...) // may throw
   // is_heap_until(rr, less = ...) // may throw
-  // heap_sort(rr, less = ...) // may throw (weak)
+  // heap_sort(rr, less = ...) // make_heap then sort_heap // may throw (weak)
 }
 void doc_min_max() {
   // min_element(fr, less = ...) // may throw
   //   // get the first element than which no one is smaller
   // max_element(fr, less = ...) // may throw
-  //   // get the first element than which no one is smaller
+  //   // get the first element than which no one is greater
   // minmax_element(fr, less = ...) // may throw
   //   // the min element is min_element(fr, less)
   //   // the max element is the rightmost one among equal values
@@ -4766,6 +4738,11 @@ void doc_min_max() {
   // max(x, y, less = ...) // may throw
   // minmax({...}, less = ...) // may throw
   // minmax(x, y, less = ...) // may throw
+
+  int x = 2;
+  int y = 1;
+  const auto [a, b] = minmax(x, y);
+  assert(&a == &y && &b == &x);
 }
 void doc_clamp() {
   // clamp(x, lower, upper, less) // may throw
@@ -4966,20 +4943,63 @@ void doc_combination_range() {
   // combination_count(n, k) // may throw
   //   // requires: k <= n, {n, k} >= 0, the result can not overflow 
   //   // if k == 0 or k == n, return 1
-  //
+  {
+    assert(permutation_count(9, 0) == 1);
+    assert(combination_count(9, 0) == 1);
+    assert(combination_count(9, 4)
+           == permutation_count(9, 4) / permutation_count(4));
+  }
+
   // combination_iterator<BR_ITER, BUF_T>
   //   // requires:
   //   //   value_type of BUF_T is BR_ITER
   //   //   BUF_T can not throw from iterator-related operations
   //   iterator category: iitr
   //   combination_iterator(buf_p, r_ed)
-  // combination_itr(bufp, ed)
-  //
-  // combination_range<BR> // requires: is_rng_ref<R>
+  // combination_itr(bufp, r_ed) // size of *bufp is among (0, size(r)]
+  {
+    auto a = seq(1, 2, 3);
+    ez_vector<int *> v{addressof(a[0]), addressof(a[1])};
+    auto i = combination_itr(addressof(v), end(a));
+    auto j = combination_itr(static_cast<ez_vector<int *> *>(nullptr), end(a));
+    assert(equal(rng(i, j), seq(seq(1, 2), seq(1, 3), seq(2, 3)), equal));
+  }
+
+  // combination_range<BR>
   //   combination_range(r, n) // requires: 0 <= n <= size(br)
   // combination_rng(r, n) // requires: 0 <= n <= size(br)
-  //
+  {
+    assert(equal(combination_rng(seq(1, 2, 3), 1u),
+               seq(seq(1), seq(2), seq(3)), equal));
+
+    auto r = combination_rng(seq(1, 2, 3), 0u);
+    assert(empty(r));
+
+    assert(equal(combination_rng(seq(1, 2, 3), 0u),
+                 empty_rng<empty_range<int>>(), equal));
+  }
+
   // combination(br, n, o) // requires: 0 <= n <= size(br)
+  {
+    const ez_vector<int> v = {1, 2, 3};
+    ez_vector<ez_vector<int>> vv;
+
+    combination(v, 0u, output_itr([&vv](auto &&r) {
+      ez_vector<int> tmp;
+      for (int x : r)
+        tmp.insert(tmp.end(), x);
+      vv.insert(vv.end(), move(tmp));
+    }));
+    assert(vv.empty());
+
+    combination(v, 2u, output_itr([&vv](auto &&r) {
+      ez_vector<int> tmp;
+      for (int x : r)
+        tmp.insert(tmp.end(), x);
+      vv.insert(vv.end(), move(tmp));
+    }));
+    assert(equal(vv, seq(seq(1, 2), seq(1, 3), seq(2, 3)), equal));
+  }
 }
 void doc_filter_range() {
   // filter(_plus)(ir, oi, eq)
@@ -4995,17 +5015,13 @@ void doc_filter_range() {
   //   filter_range(r, f)
   // filter_rng(r, f)
 
-  {
-    int a[] = {0, 0, 1, 0, 1, 1, 0};
-    int b[3];
-    assert(end(b) == filter(a, begin(b), bind(equal_to<>(), _1, 1)));
-    assert(equal(b, rng(3, 1)));
-  }
-  {
-    int a[] = {0, 0, 0, 1, 0, 2, 0, 0, 3, 0};
-    const auto r = filter_rng(a, not_fn(bind(equal_to<>(), _1, 0)));
-    assert(equal(r, irng(1, 4)));
-  }
+  int a[] = {0, 0, 1, 0, 1, 1, 0};
+  int b[3];
+  assert(end(b) == filter(a, begin(b), bind(equal_to<>(), _1, 1)));
+  assert(equal(b, rng(3, 1)));
+
+  assert(equal(filter_rng(seq(0, 1, 0, 1), bind(equal_to{}, _1, 1)),
+               rng(2, 1)));
 }
 void doc_take_range() {
   // take(_plus)(r, n, o)
@@ -5033,6 +5049,9 @@ void doc_drop_range() {
   // drop_rng(r, n)
 
   const auto r = seq(1, 2, 3);
+  assert(equal(drop(r, 4, to_back(ez_vector<int>{})).base(), empty_rng<int>()));
+  assert(equal(drop(r, 2, to_back(ez_vector<int>{})).base(), seq(3)));
+  assert(equal(drop(r, 1, to_back(ez_vector<int>{})).base(), seq(2, 3)));
   assert(equal(drop_rng(r, 0), irng(1, 4)));
   assert(equal(drop_rng(r, 2), seq(3)));
   assert(equal(drop_rng(r, 4), empty_rng<int>()));
@@ -5073,12 +5092,15 @@ void doc_join_range() {
   // join_rng(it, it2)
   // join_rng(it, n)
 
-  assert(equal(join_rng(seq("ab"_sv, "cd")), "abcd"_sv));
+  assert(equal(join(seq("ab"_sv, "cd"), to_back(ez_vector<int>{})).base(),
+               "abcd"_sv));
 
   ez_vector<ez_vector<int>> a = {{1, 2}, {3, 4}, {5}};
   assert(equal(rng(join_itr(begin(a), begin(*begin(a)), end(a)),
                    join_itr(end(a), decltype(begin(*begin(a))){}, end(a))),
                irng(1, 6)));
+
+  assert(equal(join_rng(seq("ab"_sv, "cd")), "abcd"_sv));
 }
 void doc_join_with_range() {
   // join_with(r, r2, o)
@@ -5091,9 +5113,9 @@ void doc_join_with_range() {
   // join_with_range<R, R2>
   // join_with_rng(r, r2)
 
-  assert(equal(join_with_rng(seq(seq(1, 2), seq(4, 5)),
-                             seq(3)),
-               seq(1, 2, 3, 4, 5)));
+  assert(equal(join_with(seq("ab"_sv, "cd"_sv, "e"_sv), "|"_sv,
+                         to_back(ez_vector<int>{})).base(),
+               "ab|cd|e"_sv));
 
   ez_vector<ez_vector<int>> v = {{1}, {2}, {3, 4}};
   ez_vector<int> v2 = {0};
@@ -5102,6 +5124,10 @@ void doc_join_with_range() {
                    join_with_itr(end(v), decltype(begin(*begin(v))){}, end(v),
                                  begin(v2), end(v2), end(v2))),
                seq(1, 0, 2, 0, 3, 4)));
+
+  assert(equal(join_with_rng(seq(seq(1, 2), seq(4, 5)),
+                             seq(3)),
+               seq(1, 2, 3, 4, 5)));
 }
 void doc_adjacent_range() {
   // adjacent(_plus)<N>(fr, o) // requires: N > 0
@@ -5116,12 +5142,16 @@ void doc_adjacent_range() {
   // adjacent_rng<N>(fr) // requires: N > 0
   // bind_adjacent_rng<N>(fr, f) // requires: N > 0
 
-  assert(equal(adjacent_rng<2>(seq(1, 2, 3, 4)),
-               seq(pair(1, 2), pair(2, 3), pair(3, 4))));
+  assert(equal(adjacent<3>(seq(1, 2, 3, 4, 5),
+                           to_back(ez_vector<tuple<int, int, int>>{})).base(),
+               seq(tuple(1, 2, 3), tuple(2, 3, 4), tuple(3, 4, 5))));
 
-  int a[] = {1, 2, 3, 4};
+  const int a[] = {1, 2, 3, 4};
   assert(equal(rng(adjacent_itr(nth(a, 0), nth(a, 1)),
                    adjacent_itr(nth(a, 3), nth(a, 4))),
+               seq(pair(1, 2), pair(2, 3), pair(3, 4))));
+
+  assert(equal(adjacent_rng<2>(seq(1, 2, 3, 4)),
                seq(pair(1, 2), pair(2, 3), pair(3, 4))));
 }
 void doc_slide_range() {
@@ -5137,15 +5167,23 @@ void doc_slide_range() {
   // slide_range<FR>
   // slide_rng(fr, n) // requires: n > 0
 
-  assert(equal(slide_rng(seq(1, 2, 3, 4), 2),
-               seq(seq(1, 2), seq(2, 3), seq(3, 4)), equal));
+  ez_vector<ez_vector<int>> v;
+  slide(seq(1, 2, 3, 4), 3, output_itr([&v](auto view) {
+    v.insert(v.end(), {});
+    for (int x : view)
+      back(v).insert(back(v).end(), x);
+  }));
+  assert(equal(v, seq(seq(1, 2, 3), seq(2, 3, 4)), equal));
 
   int a[] = {1, 2, 3, 4};
-  assert(equal(rng(slide_itr(nth(a, 0), nth(a, 1)),
-                   slide_itr(nth(a, 3), nth(a, 4))),
-               seq(seq(1, 2), seq(2, 3), seq(3, 4)), equal));
+  assert(equal(rng(slide_itr(nth(a, 0), nth(a, 0)),
+                   slide_itr(nth(a, 3), nth(a, 3))),
+               seq(seq(1), seq(2), seq(3)), equal));
   ez_forward_list<int> l = {1, 2, 3, 4};
   assert(equal(rng(slide_itr(nth(l, 0), nth(l, 1)), slide_itr(end(l), end(l))),
+               seq(seq(1, 2), seq(2, 3), seq(3, 4)), equal));
+
+  assert(equal(slide_rng(seq(1, 2, 3, 4), 2),
                seq(seq(1, 2), seq(2, 3), seq(3, 4)), equal));
 }
 void doc_aligned_stride_range() {
@@ -5162,12 +5200,16 @@ void doc_aligned_stride_range() {
   //   aligned_stride_range(r, n) // requires: n > 0 && size(r) % n == 0
   // aligned_stride_rng(r, n) // requires: n > 0 && size(r) % n == 0
 
-  assert(equal(aligned_stride_rng(seq(1, 2, 3, 4, 5, 6), 3), seq(1, 4)));
+  assert(equal(aligned_stride(seq(1, 2, 3, 4), 2,
+                              to_back(ez_vector<int>{})).base(),
+               seq(1, 3)));
 
   int a[] = {1, 2, 3, 4, 5, 6};
   assert(equal(rng(aligned_stride_itr(begin(a), 3),
                    aligned_stride_itr(end(a), 3)),
                seq(1, 4)));
+
+  assert(equal(aligned_stride_rng(seq(1, 2, 3, 4, 5, 6), 3), seq(1, 4)));
 }
 void doc_stride_range() {
   // stride(r, s, o) // requires: s > 0
@@ -5183,20 +5225,18 @@ void doc_stride_range() {
   //   stride_range(r, s) // requires: s > 0
   // stride_rng(r, s) // requires: s > 0
 
-  assert(equal(stride_rng(seq(1, 2, 3, 4, 5), 2), seq(1, 3, 5)));
+  assert(equal(stride(seq(1, 2, 3, 4), 3, to_back(ez_vector<int>{})).base(),
+               seq(1, 4)));
 
   int a[] = {1, 2, 3, 4, 5};
   test_ritr(rng(stride_itr(begin(a), end(a), 2, 0),
                 stride_itr(end(a), end(a), 2, 1)),
             seq(1, 3, 5));
 
-  ez_forward_list<int> l = {1, 2, 3, 4, 5};
-  test_fitr(rng(stride_itr(begin(a), end(a), 2, 0),
-                stride_itr(end(a), end(a), 2, 0)),
-            seq(1, 3, 5));
+  assert(equal(stride_rng(seq(1, 2, 3, 4, 5), 2), seq(1, 3, 5)));
 }
 void doc_aligned_chunk_range() {
-  // aligned_chunk(r, s, o) // requires: s > 0
+  // aligned_chunk(r, s, o) // requires: s > 0 && size(r) % s == 0
   //
   // aligned_chunk_iterator<FI>
   //   iterator category: fitr - ritr
@@ -5206,15 +5246,15 @@ void doc_aligned_chunk_range() {
   // aligned_chunk_itr(i, s) // requires: s > 0
   //
   // aligned_chunk_range<FR>
-  //   aligned_chunk_range(r, s) // requires: s > 0
-  // aligned_chunk_rng(r, s) // requires: s > 0
-
-  assert(equal(aligned_chunk_rng(seq(1, 2, 3, 4), 2),
-               seq(seq(1, 2), seq(3, 4)), equal));
+  //   aligned_chunk_range(r, s) // requires: s > 0 && size(r) % s == 0
+  // aligned_chunk_rng(r, s) // requires: s > 0 && size(r) % s == 0
 
   ez_forward_list<int> l = {1, 2, 3, 4};
   assert(equal(rng(aligned_chunk_itr(begin(l), 2),
                    aligned_chunk_itr(end(l), 2)),
+               seq(seq(1, 2), seq(3, 4)), equal));
+
+  assert(equal(aligned_chunk_rng(seq(1, 2, 3, 4), 2),
                seq(seq(1, 2), seq(3, 4)), equal));
 }
 void doc_chunk_range() {
@@ -5259,16 +5299,16 @@ void doc_chunk_by_range() {
   // chunk_by_range<FR, EQ>
   // chunk_by_rng(fr, f)
 
-  assert(equal(chunk_by_rng(seq(1, 2, 2, 3), less{}),
-               seq(seq(1, 2), seq(2, 3)), equal));
-
   int a[] = {1, 2, 2, 3};
   test_bitr(chunk_by_itr(nth(a, 0), nth(a, 2), begin(a), end(a), less{}),
             chunk_by_itr(end(a), end(a), begin(a), end(a), less{}),
             seq(seq(1, 2), seq(2, 3)), equal);
+
+  assert(equal(chunk_by_rng(seq(1, 2, 2, 3), less{}),
+               seq(seq(1, 2), seq(2, 3)), equal));
 }
 void doc_inner_cartesian_product_range() {
-  // inner_cartesian_product(_plus)(fr, o)
+  // inner_cartesian_product(_plus)(fr, o) // *o = tmp_range_of_refs
   //
   // inner_cartesian_product_range<FR>
   // inner_cartesian_product_rng(r)
@@ -5283,7 +5323,7 @@ void doc_inner_cartesian_product_range() {
                equal));
 }
 void doc_cartesian_product_range() {
-  // cartesian_product(r, s..., o)
+  // cartesian_product(r, s..., o) // *o = tmp_range_of_refs
   //
   // cartesian_product_iterator<IT, S...>
   //   iterator category: fitr - ritr
@@ -5309,7 +5349,6 @@ void doc_cartesian_product_range() {
                    (tuple(seq(end(l1), begin(l1), end(l1)),
                           seq(end(l2), begin(l2), end(l2))))),
                seq(tuple(1, 3), tuple(1, 4), tuple(2, 3), tuple(2, 4))));
-
   int a[] = {1, 2};
   int b[] = {3, 4};
   assert(equal(rng(cartesian_product_itr
@@ -5321,7 +5360,7 @@ void doc_cartesian_product_range() {
                seq(tuple(1, 3), tuple(1, 4), tuple(2, 3), tuple(2, 4))));
 }
 void doc_split_range() {
-  // split(_plus)(fr, f, o)
+  // split(_plus)(fr, f, o) // *o = iter_pair
   //
   // split_iterator
   //   iterator category: fitr
@@ -5351,7 +5390,18 @@ void doc_split_range() {
 void doc_zip_range() {
   // zip_top(x, s...)
   // zip(x, s..., o)
-  //
+  {
+    int a[] = {1, 2};
+    int b[] = {3, 4, 5};
+    int c[] = {6};
+    assert(zip_top(a, b, c) == tuple(nth(a, 1), nth(b, 1), nth(c, 1)));
+    assert(zip_top(begin(a), begin(b), c)
+           == tuple(nth(a, 1), nth(b, 1), nth(c, 1)));
+    assert(equal(zip(a, b, c,
+                     to_back(ez_vector<tuple<int, int, int>>{})).base(),
+                 seq(tuple(1, 3, 6))));
+  }
+
   // zip_iterator<I, S...>
   //   iterator category: iitr - fitr // note: iitr only for single dimension
   //   explicit zip_iterator(tuple<I, S...>)
@@ -5368,7 +5418,7 @@ void doc_zip_range() {
   assert(zip_top(begin(a), b) == tuple(nth(a, 2), end(b)));
   assert(zip_top(a, b) == tuple(nth(a, 2), end(b)));
   assert(equal(zip_rng(a, b), seq(tuple(1, 4), tuple(2, 5))));
-  assert(equal(zip_rng(begin(a), b), seq(tuple(1, 4), tuple(2, 5))));
+  assert(equal(zip_rng(b, begin(a)), seq(tuple(4, 1), tuple(5, 2))));
 }
 void doc_aligned_zip_range() {
   // aligned_zip_iterator<I, S...>
@@ -5395,7 +5445,7 @@ void doc_aligned_zip_range() {
                seq(tuple(1, 1, 1), tuple(2, 2, 2))));
 }
 void doc_enumerate_range() {
-  // enumerate(_plus)(r, o)
+  // enumerate(_plus)(r, o) // *o = pair<int_t, ref>
   //
   // enumerate_iterator<I>
   //   iterator category: iitr - ritr
@@ -5412,7 +5462,30 @@ void doc_enumerate_range() {
 }
 void doc_exclusive_rotate_range() {
   // exclusive_rotate(r, i, o)
-  //
+  //   // exclusive the last valid element than rotate_copy
+  {
+    const auto r0 = empty_rng<int>();
+    assert(equal(exclusive_rotate(r0, end(r0),
+                                  to_back(ez_vector<int>{})).base(),
+                 empty_rng<int>()));
+    const auto r1 = seq(1);
+    assert(equal(exclusive_rotate(r1, r1.begin(),
+                                  to_back(ez_vector<int>{})).base(),
+                 empty_rng<int>()));
+    const auto r = seq(1, 2, 3, 4);
+    assert(equal(exclusive_rotate(r, r.end(), to_back(ez_vector<int>{})).base(),
+                 seq(1, 2, 3)));
+    assert(equal(exclusive_rotate(r, nth(r, 3),
+                                  to_back(ez_vector<int>{})).base(),
+                 seq(1, 2, 3)));
+    assert(equal(exclusive_rotate(r, nth(r, 2),
+                                  to_back(ez_vector<int>{})).base(),
+                 seq(4, 1, 2)));
+    assert(equal(exclusive_rotate(r, nth(r, 0),
+                                  to_back(ez_vector<int>{})).base(),
+                 seq(2, 3, 4)));
+  }
+
   // exclusive_rotate_iterator<FI>
   //   iterator category: fitr - ritr
   //   exclusive_rotate_iterator(op, wall, ed, it)
@@ -5440,8 +5513,7 @@ void doc_rotate_range() {
   // rotate_rng(r, it)
   // rotate_rng(r, d)
 
-  assert(equal(rotate_rng(empty_rng<int>(), 0),
-               empty_rng<int>()));
+  assert(equal(rotate_rng(empty_rng<int>(), 0), empty_rng<int>()));
   assert(equal(rotate_rng(seq(1, 2, 3), 4), seq(1, 2, 3)));
   assert(equal(rotate_rng(seq(1, 2, 3), 1), seq(2, 3, 1)));
 }
@@ -5460,6 +5532,7 @@ void doc_loop_range() {
   // loop_rng(fr, n0, n)
   // loop_rng(fr, n)
 
+  assert(loop_rng(empty_rng<int>(), 3).empty());
   assert(equal(loop_rng(seq(1, 2), 3), seq(1, 2, 1)));
   assert(equal(loop_rng(seq(1, 2), 1, 3), seq(2, 1, 2)));
 }
@@ -5681,9 +5754,8 @@ void doc_string_reference() {
   //   string_reference(char_ref)
   //   string_reference(r)
   //   string_reference(from, to)
-  //   string_reference(r, iter, n)
-  //
-  //   string_reference(const string_reference<const T> &)
+  //   string_reference(r, n, len)
+  //   string_reference(const string_reference<const T> &) // ref cast to view
   //
   //   string_reference(ptr) // from c string
   //
@@ -5795,9 +5867,9 @@ void doc_bitset() {
   //   flip()
   //   flip(i) // may throw out_of_range
   //   test(i) // may throw out_of_range
-  //   all()
-  //   any()
-  //   none()
+  //   all()->bool
+  //   any()->bool
+  //   none()->bool
   //
   //   &=(const this_t &)
   //   |=(const this_t &)
@@ -6574,7 +6646,6 @@ void doc_forward_list() {
   //   extract_after(ci, ci2)
   //   insert_after(ci, this_t &&)
   //   push_front(this_t &&)
-  //   exchange_after(ci, ci2, this_t &)->this_t
   //   exchange_after(ci, ci2, this_t &&)->this_t
   //   replace_after(ci, ci2, this_t &&)->it
   //
@@ -6781,7 +6852,7 @@ void doc_list() {
   //   resize(n)
   //   resize(n, x)
   //   splice(next, l)           // l is not *this
-  //   splice(next, l, i)        // no overlap
+  //   splice(next, l, i)
   //   splice(next, l, from, to) // no overlap
   //   swap(i, j)
   //   swap(i, l, j)
@@ -6813,6 +6884,75 @@ void doc_list() {
   //   append(s...)
   //   prepend(s...)
 }
+void doc_queue() {
+  // queue<T, C = deque<T>>
+  //   value_type
+  //   reference
+  //   const_reference
+  //   size_type
+  //   container_type
+  //
+  //   special member functions: dependent
+  //   ==, <=>
+  //
+  //   explicit this_t(alloc)
+  //   explicit this_t(const this_t &, alloc)
+  //   this_t(this_t &&, alloc)
+  //
+  //   explicit this_t(c)
+  //   this_t(c, alloc)
+  //
+  //   this_t(from, to)
+  //   this_t(from, to, alloc)
+  //
+  //   this_t(from_range, r)
+  //   this_t(from_range, r, alloc)
+  //
+  //   empty()
+  //   size()
+  //   front()
+  //   back()
+  //   push(x)
+  //   push_range(r)
+  //   emplace(s...)
+  //   pop()
+  //
+  // uses_allocator<queue<T, C>, AL> : uses_allocator<C, AL> {}
+}
+void doc_stack() {
+  // stack<T, C = deque<T>>
+  //   value_type
+  //   reference
+  //   const_reference
+  //   size_type
+  //   container_type
+  //
+  //   special member functions: dependent
+  //   ==, <=>
+  //
+  //   explicit this_t(alloc)
+  //   explicit this_t(const this_t &, alloc)
+  //   this_t(this_t &&, alloc)
+  //
+  //   explicit this_t(c)
+  //   this_t(c, alloc)
+  //
+  //   this_t(from, to)
+  //   this_t(from, to, alloc)
+  //
+  //   this_t(from_range, r)
+  //   this_t(from_range, r, alloc)
+  //
+  //   empty()
+  //   size()
+  //   top()
+  //   push(x)
+  //   push_range(r)
+  //   emplace(s...)
+  //   pop()
+  //
+  // uses_allocator<stack<T, C>, AL> : uses_allocator<C, AL> {}
+}
 void doc_priority_queue() {
   // priority_queue<T, C = vector<T>, CMP = less<typename C::value_type>>
   //   value_type
@@ -6829,27 +6969,25 @@ void doc_priority_queue() {
   //   this_t(this_t &&, alloc)
   //
   //   this_t(cmp)
+  //   this_t(cmp, alloc)
   //   this_t(cmp, c)
+  //   this_t(cmp, c, alloc)
+  //
   //   this_t(from, to)
+  //   this_t(from, to, alloc)
   //   this_t(from, to, cmp)
+  //   this_t(from, to, cmp, alloc)
   //   this_t(from, to, cmp, c)
+  //   this_t(from, to, cmp, c, alloc)
+  //
   //   this_t(from_range, r)
   //   this_t(from_range, r, cmp)
-  //
-  //   explicit this_t(alloc)
-  //   this_t(cons this_t &, alloc)
-  //   this_t(this_t &&, alloc)
-  //   this_t(cmp, alloc)
-  //   this_t(cmp, c, alloc)
-  //   this_t(from, to, alloc)
-  //   this_t(from, to, cmp, alloc)
-  //   this_t(from, to, cmp, c, alloc)
   //   this_t(from_range, r, alloc)
   //   this_t(from_range, r, cmp, alloc)
   //
   //   empty()
   //   size()
-  //   top()
+  //   top()->const_reference
   //   push(x)
   //   push_range(r)
   //   emplace(s...)
@@ -6857,44 +6995,6 @@ void doc_priority_queue() {
   //
   // uses_allocator<priority_queue<T, C, CMP>, AL>
   //   : uses_allocator<C, AL> {}
-}
-void doc_queue_and_stack() {
-  // queue/stack<T, C = deque<T>>
-  //   value_type
-  //   reference
-  //   const_reference
-  //   size_type
-  //   container_type
-  //   value_compare
-  //
-  //   special member functions: dependent
-  //
-  //   this_t(c)
-  //   this_t(from, to)
-  //   this_t(from_range, r)
-  //
-  //   explicit this_t(alloc)
-  //   explicit this_t(const this_t &, alloc)
-  //   this_t(this_t &&, alloc)
-  //   this_t(c, alloc)
-  //   this_t(from, to, alloc)
-  //   this_t(from_range, r, alloc)
-  //
-  //   special member functions: full
-  //   ==, <=>
-  //
-  //   empty()
-  //   size()
-  //   front() // queue only
-  //   back()  // queue only
-  //   top()   // stack only
-  //   push(x)
-  //   push_range(r)
-  //   emplace(s...)
-  //   pop()
-  //
-  // uses_allocator<queue<T, C>, AL> : uses_allocator<C, AL> {}
-  // uses_allocator<stack<T, C>, AL> : uses_allocator<C, AL> {}
 }
 void doc_flat_map() {
   // flat_set/multiset<T, LESS = less<T>, C = vector<T>>
@@ -6937,8 +7037,8 @@ void doc_flat_map() {
   //   mapped_type // only for map and multimap
   //   key_compare
   //   value_compare
-  //   key_comp()
-  //   value_comp()
+  //   key_comp()->key_compare
+  //   value_comp()->value_compare
   //
   //   explicit this_t(cmp)
   //   this_t(cmp, alloc)
@@ -6952,10 +7052,10 @@ void doc_flat_map() {
   //   operator =(il)
   //   assign(il)
   //
-  //   emplace(s...)->pair<iterator, bool> // only for unique version
-  //   insert(x)->pair<iterator, bool> // only for unique version
-  //   emplace(s...)->iterator // only for multi version
-  //   insert(x)->iterator // only for multi version
+  //   emplace(s...)->pair<iterator, bool> // unique only
+  //   insert(x)->pair<iterator, bool> // unique only
+  //   emplace(s...)->iterator // multi only
+  //   insert(x)->iterator // multi only
   //   emplace_hint(hint, s...)->iterator
   //   insert(hint, x)->iterator
   //   insert(from, to)
@@ -6976,13 +7076,13 @@ void doc_flat_map() {
   //   at(key)
   //   ///
   //
-  //   find(x)
-  //   contains(x)
-  //   count(x)
-  //   lower_bound(x)
-  //   upper_bound(x)
-  //   equal_range(x)
-  //   find_range(min, max)
+  //   find(key)
+  //   contains(key)
+  //   count(key)
+  //   lower_bound(key)
+  //   upper_bound(key)
+  //   equal_range(key)
+  //   find_range(key_min, key_max)
   //
   //   front()
   //   back()
@@ -6993,21 +7093,24 @@ void doc_flat_map() {
   //
   //   this_t(from_range, r)
   //   this_t(from_range, r, cmp)
-  //   this_t(from_range, r, cmp, alloc)
   //   this_t(from_range, r, alloc)
+  //   this_t(from_range, r, cmp, alloc)
   //   explicit this_t(r)
   //   this_t(r, cmp)
   //   this_t(r, alloc)
   //   this_t(r, cmp, alloc)
   //   operator =(r)
   //   assign_range(r)
+  //   assign(r)
   //   void insert(r)
   //   void insert_range(r)
   //   append(s...)
 }
 void doc_binary_search_tree_adaptor() {
   // rbt_node_base<ID = 0, VOID_PTR = void *>
-  //   three pointers
+  //   left_child
+  //   right_child
+  //   parent
   // join_rbtree<ID = 0, VOID_PTR = void *>
   //   : rbt_node_base<ID, VOID_PTR>
   //   red
@@ -7038,7 +7141,7 @@ void doc_binary_search_tree_adaptor() {
   //   difference_type
   //   size_type
   //   id = size_constant<ID>
-  //   store_size = bool_constant<STORE_SIZE> // not for ranked_rbtree
+  //   store_size = bool_constant<STORE_SIZE>
   //   store_node_allocator = bool_constant<STORE_ALLOCATOR>
   //   store_allocator = bool_constant<STORE_ALLOCATOR>
   //
@@ -7340,7 +7443,7 @@ void doc_map_adaptor() {
   //     mapped()      // only for map/multimap
   //     get()->node_pointer
   //     release()->node_pointer
-  //   insert_return_type // only for unique version
+  //   insert_return_type // unique only
   //     position
   //     inserted
   //     node
@@ -7359,18 +7462,18 @@ void doc_map_adaptor() {
   //   operator =(il)
   //   assign(il)
   //
-  //   emplace(s...)->pair<iterator, bool> // only for unique version
-  //   insert(x)->pair<iterator, bool> // only for unique version
-  //   emplace(s...)->iterator // only for multi version
-  //   insert(x)->iterator // only for multi version
+  //   emplace(s...)->pair<iterator, bool> // unique only
+  //   insert(x)->pair<iterator, bool> // unique only
+  //   emplace(s...)->iterator // multi only
+  //   insert(x)->iterator // multi only
   //   emplace_hint(hint, s...)->iterator
   //   insert(hint, x)->iterator
   //   insert(from, to)
   //   insert(il)
   //
-  //   insert(node_type &&)->iterator // only for unique version
-  //   insert(node_type &&)->iterator
-  //   insert(hint, node_type &&)
+  //   insert(node_type &&)->insert_return_type // unique only
+  //   insert(node_type &&)->iterator // multi only
+  //   insert(hint, node_type &&)->iterator
   //   extract(cit)->node_type
   //   extract(key)->node_type
   //
@@ -7390,7 +7493,7 @@ void doc_map_adaptor() {
   //   remove_if(eq)
   //   clear()
   //
-  //   merge(multi_or_non_multi_version)
+  //   merge(multi_or_non_multi_ref)
   //
   //   find(key) // get the first among equal elements
   //   contains(key)
@@ -7404,22 +7507,22 @@ void doc_map_adaptor() {
   //   new_node(...)->iterator
   //   delete_node(cit)
   //
-  //   unlink(cit)
-  //   unlink(cit, cit)
+  //   unlink(cit)->iterator
+  //   unlink(cit, cit)->iterator
   //   unlink()
-  //   unlink_key(key)
-  //   link(cit)->pair<iterator, bool> // only for unique version
-  //   link(cit)->iterator // only for multi version
-  //   link(hint, cit)
+  //   unlink_key(key)->size_type
+  //   link(cit)->pair<iterator, bool> // unique only
+  //   link(cit)->iterator // multi only
+  //   link(hint, cit)->iterator
   //
-  //   try_link(key, get_node, do_when_eq = ...)->pair
-  //     // only for unique version
+  //   try_link(key, get_node, do_when_eq = ...)->pair<iterator, bool>
+  //     // unique only
   //   try_link_hint(hint, key, get_node, do_when_eq = ...)->iterator
-  //     // only for unique version
+  //     // unique only
   //   try_link(key, get_node)->iterator
-  //     // only for multi version
+  //     // multi only
   //   try_link_hint(hint, key, get_node)->iterator
-  //     // only for multi version
+  //     // multi only
   //
   //   front()
   //   back()
@@ -7647,9 +7750,7 @@ void doc_unordered_map_adaptor() {
   // unordered_map_adaptor<TABLE, HASH, EQ>
   // unordered_multimap_adaptor<TABLE, HASH, EQ>
   //   traits
-  //   node_pointer
-  //   base_type
-  //   base()
+  //   node_pointer = traits::node_base_pointer
   //
   //   pointer
   //   const_pointer
@@ -7700,7 +7801,7 @@ void doc_unordered_map_adaptor() {
   //     mapped()      // only for map/multimap
   //     get()->node_pointer
   //     release()->node_pointer
-  //   insert_return_type // only for unique version
+  //   insert_return_type // unique only
   //     position
   //     inserted
   //     node
@@ -7726,16 +7827,16 @@ void doc_unordered_map_adaptor() {
   //   operator =(il)
   //   assign(il)
   //
-  //   emplace(s...)->pair<iterator, bool> // only for unique version
-  //   insert(x)->pair<iterator, bool> // only for unique version
-  //   emplace(s...)->iterator // only for multi version
-  //   insert(x)->iterator // only for multi version
+  //   emplace(s...)->pair<iterator, bool> // unique only
+  //   insert(x)->pair<iterator, bool> // unique only
+  //   emplace(s...)->iterator // multi only
+  //   insert(x)->iterator // multi only
   //   emplace_hint(hint, s...)->iterator
   //   insert(hint, x)->iterator
   //   insert(from, to)
   //   insert(il)
   //
-  //   insert(node_type &&)->insert_return_type // only for unique version
+  //   insert(node_type &&)->insert_return_type // unique only
   //   insert(node_type &&)->iterator
   //   insert(hint, node_type &&)
   //   extract(cit)->node_type
@@ -7776,7 +7877,7 @@ void doc_unordered_map_adaptor() {
   //   end(n)
   //   cbegin(n)
   //   cend(n)
-  //   bucket_range(n)
+  //   bucket_range(n)->iter_pair<(const_)local_iterator>
   //
   //   load_factor()
   //   max_load_factor()
@@ -7787,22 +7888,22 @@ void doc_unordered_map_adaptor() {
   //   new_node(...)->iterator
   //   delete_node(cit)
   //
-  //   unlink(cit)
-  //   unlink(cit, cit)
+  //   unlink(cit)->iterator
+  //   unlink(cit, cit)->iterator
   //   unlink()
-  //   unlink_key(key)
-  //   link(cit)->pair<iterator, bool> // only for unique version
-  //   link(cit)->iterator // only for multi version
-  //   link(hint, cit)
+  //   unlink_key(key)->size_type
+  //   link(cit)->pair<iterator, bool> // unique only
+  //   link(cit)->iterator // multi only
+  //   link(hint, cit)->iterator
   //
   //   try_link(key, get_node, do_when_eq = ...)->pair
-  //     // only for unique version
+  //     // unique only
   //   try_link_hint(hint, key, get_node, do_when_eq = ...)->iterator
-  //     // only for unique version
+  //     // unique only
   //   try_link(key, get_node)->iterator
-  //     // only for multi version
+  //     // multi only
   //   try_link_hint(hint, key, get_node)->iterator
-  //     // only for multi version
+  //     // multi only
   //
   //   erase_or_unlink(cit)
   //
@@ -7857,19 +7958,15 @@ void doc_mixed_map_adaptor() {
   // mixed_map_adaptor<TRAITS, HASH, EQ, LESS>
   // mixed_multiset_adaptor<TRAITS, HASH, EQ, LESS>
   // mixed_multimap_adaptor<TRAITS, HASH, EQ, LESS>
-  // mixed_ranked_set_adaptor<TRAITS, HASH, EQ, LESS>
-  // mixed_ranked_map_adaptor<TRAITS, HASH, EQ, LESS>
-  // mixed_ranked_multiset_adaptor<TRAITS, HASH, EQ, LESS>
-  // mixed_ranked_multimap_adaptor<TRAITS, HASH, EQ, LESS>
   //   tree_iterator
   //   tree_const_iterator
   //   unordered_iterator
   //   unordered_const_iterator
   //
-  //   no_ed_unordered_iter(two_cit)->unordered_iterator
-  //   no_ed_tree_iter(two_cit)->tree_iterator
-  //   no_ed_unordered_iter(two_cit)->unordered_iterator
-  //   no_ed_tree_iter(two_cit)->tree_iterator
+  //   static no_ed_unordered_iter(two_cit)->unordered_iterator
+  //   static no_ed_tree_iter(two_cit)->tree_iterator
+  //   static no_ed_unordered_iter(two_cit)->unordered_iterator
+  //   static no_ed_tree_iter(two_cit)->tree_iterator
   //
   //   unordered_iter(two_cit)->unordered_iterator
   //   tree_iter(two_cit)->tree_iterator
@@ -7935,16 +8032,16 @@ void doc_mixed_map_adaptor() {
   //   =(il)
   //   assign(il)
   //
-  //   emplace(s...)->pair // only for unique version
-  //   emplace(s...)->iterator // only for multi version
+  //   emplace(s...)->pair<iterator, bool> // unique only
+  //   emplace(s...)->iterator // multi only
   //   emplace_hint(hint, s...)->iterator
-  //   insert(x)->pair // only for unique version
-  //   insert(hint, x)->iterator // only for unique version
+  //   insert(x)->pair<iterator, bool> // unique only
+  //   insert(hint, x)->iterator // unique only
   //   insert(from, to)
   //   insert(il)
   //
   //   node_type = tree_t::node_type;
-  //   insert_return_type // only for unique version
+  //   insert_return_type // unique only
   //     position
   //     inserted
   //     node
@@ -7992,11 +8089,15 @@ void doc_mixed_map_adaptor() {
   //   link(cit)->iterator // multi only
   //   link(hint, cit)->iterator
   //
-  //   try_link(key, get_node, do_when_eq = ...)->pair // unique only
+  //   try_link(key, get_node, do_when_eq = ...)->pair<iterator, bool>
+  //     // unique only
   //   try_link_hint(hint, key, get_node,
-  //                 do_when_eq = ...)->iterator // unique only
-  //   try_link(key, get_node)->iterator // multi only
-  //   try_link_hint(hint, key, get_node)->iterator // multi only
+  //                 do_when_eq = ...)->iterator
+  //     // unique only
+  //   try_link(key, get_node)->iterator
+  //     // multi only
+  //   try_link_hint(hint, key, get_node)->iterator
+  //     // multi only
   //
   //   front()
   //   back()
@@ -8005,7 +8106,6 @@ void doc_mixed_map_adaptor() {
   //   leftmost()
   //   rightmost()
   //
-  //   nth() // ranked_rb_tree only
   //   nth(n) // ranked_rb_tree only
   //   nth(cit) // ranked_rb_tree only
   //
@@ -8178,6 +8278,7 @@ void doc_stable_vector_adaptor() {
   //   full()
   //   reallocate(n = size()) // not for limited_stable_vector
   //   reserve_more(n) // not for limited_stable_vector
+  //   replace(i1, i2, r)->iterator
   //
   //   node_type
   //   make_node(s...)->node_type
@@ -9012,8 +9113,9 @@ int main() {
   doc_deque();
   doc_forward_list();
   doc_list();
+  doc_queue();
+  doc_stack();
   doc_priority_queue();
-  doc_queue_and_stack();
   doc_flat_map();
   doc_binary_search_tree_adaptor();
   doc_map_adaptor();
