@@ -1283,7 +1283,7 @@ public:
 
   template <class AL2>
   alloc_delete(const alloc_delete<AL2> &x) noexcept
-    requires is_convertible_v<const AL2 &, AL>
+    requires (is_convertible_v<const AL2 &, AL> && !is_same_v<AL2, AL>)
     : alw_t(static_cast<const AL2 &>(x)) {}
 
   void operator ()(pointer p) noexcept {
@@ -1467,7 +1467,7 @@ class unique_ptr<T [], D>;
 template <class T, class D>
 struct hash<unique_ptr<T, D>> {
   size_t operator ()(const unique_ptr<T, D> &x) const {
-    return x != nullptr ? hash<>{}(*x) : 0u;
+    return x != nullptr ? hash<T>{}(*x) : 0u;
   }
 };
 

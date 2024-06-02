@@ -1825,6 +1825,8 @@ strong_ordering operator <=>(const sso_string<char, N, AL> &x,
 
 template <class T>
 class string_reference : range_fns {
+  using string_view_t = string_reference<add_const_t<T>>;
+
   T *p = nullptr;
   size_t n = 0u;
 
@@ -1863,35 +1865,45 @@ public:
     *this = nullptr;
   }
 
-  string_reference(T &x) : p(addressof(x)), n(1) {}
+  template <class TT, class = enable_if_t
+            <is_same_v<TT, T>
+             || (is_const_v<T> && is_same_v<TT, remove_const_t<T>>)>>
+  string_reference(TT &x) : p(addressof(x)), n(1) {}
   template <class RANGE, class = enable_if_t
             <!is_same_v<decay_t<RANGE>, string_reference>
              && is_rng<RANGE &&> && !is_array_v<remove_reference_t<RANGE>>
              && is_same_v<rng_vt<RANGE>, value_type>
              && is_citr<rng_itr<RANGE>>
-             && is_convertible_v<rng_ref<RANGE>, T>>>
+             && is_convertible_v<rng_ref<RANGE>, T>
+             && is_convertible_v<rng_ptr<RANGE>, T *>>>
   string_reference(RANGE &&r) : string_reference(begin(r), end(r)) {}
   template <class RANGE, class = enable_if_t
             <!is_same_v<decay_t<RANGE>, string_reference>
-             && is_rng<RANGE &&> && is_array_v<remove_reference_t<RANGE>>>,
+             && is_rng<RANGE &&> && is_array_v<remove_reference_t<RANGE>>
+             && extent_v<remove_reference_t<RANGE>> != 0u
+             && is_convertible_v<rng_ptr<RANGE>, T *>>,
             class = void>
   string_reference(RANGE &&r) noexcept
     : string_reference(begin(r), *(end(r) - 1) != 0 ? end(r) : end(r) - 1) {}
 
   template <class X, class = enable_if_t
             <is_same_v<itr_vt<X>, value_type> && is_citr<X>
-             && is_convertible_v<itr_ref<X>, T>>>
-  string_reference(X x, X y) : p(addressof(*x)), n(y - x) {}
+             && is_convertible_v<itr_ref<X>, T>
+             && is_convertible_v<itr_ptr<X>, T *>>>
+  string_reference(X x, X y) : p(to_address(x)), n(y - x) {}
   template <class X, class Y, class = enable_if_t
             <is_same_v<itr_vt<X>, value_type> && is_citr<X>
-             && is_convertible_v<itr_ref<X>, T> && is_integral_v<Y>>,
+             && is_convertible_v<itr_ref<X>, T>
+             && is_convertible_v<itr_ptr<X>, T *>
+             && is_integral_v<Y>>,
             class = void>
-  string_reference(X x, Y y) : p(addressof(*x)), n(y) {}
+  string_reference(X x, Y y) : p(to_address(x)), n(y) {}
   template <class X, class Y, class Z, class = enable_if_t
             <is_rng<X> && is_same_v<rng_vt<X>, value_type>
              && is_convertible_v<rng_ref<X>, T>
+             && is_convertible_v<rng_ptr<X>, T *>
              && is_integral_v<Y> && is_integral_v<Z>>>
-  string_reference(X &&x, Y y, Z z) : p(addressof(*(begin(x) + y))), n(z) {}
+  string_reference(X &&x, Y y, Z z) : p(to_address(begin(x) + y)), n(z) {}
 
   template <class TT = T, class = enable_if_t<is_const_v<TT>>>
   string_reference(const string_reference<remove_const_t<T>> &x) noexcept {
@@ -6865,7 +6877,7 @@ public:
           copy_backward(rng(next.base(), i.base()), re::next(i).base());
           *next.base() = p;
         }
-        else 
+        else
           *copy(rng(re::next(i).base(), next.base()), i.base()) = p;
       }
     }
@@ -12576,7 +12588,8 @@ public:
   }
 
   template <class R>
-  iterator replace(const_iterator i1, const_iterator i2, R &&r) {
+  iterator replace(const_iterator i1, const_iterator i2, R &&r)
+    requires (!is_convertible_v<R &&, this_t &&>) {
     return inner::fns::seq_container_replace_impl
       (*this, i1.to_mutable(), i2.to_mutable(), r);
   }
@@ -13715,7 +13728,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) {
+  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
     c.insert_range(c.end(), r);
     sort_c();
   }
@@ -14332,7 +14345,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) {
+  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
     this_t tmp(move(*this));
     clear();
     re::merge(move_rng(tmp), r, back_inserter(c), less_fn());
@@ -15142,7 +15155,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) {
+  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
     c.insert_range(c.end(), r);
     sort_c();
   }
@@ -15783,7 +15796,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) {
+  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
     this_t tmp(move(*this));
     clear();
     re::merge(move_rng(tmp), r, back_inserter(c),
@@ -21485,7 +21498,8 @@ public:
   }
 
   template <class R>
-  iterator replace(const_iterator i1, const_iterator i2, R &&r) {
+  iterator replace(const_iterator i1, const_iterator i2, R &&r)
+    requires (!is_convertible_v<R &&, this_t &&>) {
     return inner::fns::seq_container_replace_impl
       (*this, i1.to_mutable(), i2.to_mutable(), r);
   }
@@ -34271,7 +34285,8 @@ public:
   }
 
   template <class R>
-  iterator replace(const_iterator i1, const_iterator i2, R &&r) {
+  iterator replace(const_iterator i1, const_iterator i2, R &&r)
+    requires (!is_convertible_v<R &&, this_t &&>) {
     return inner::fns::seq_container_replace_impl
       (*this, i1.to_mutable(), i2.to_mutable(), r);
   }
@@ -36414,7 +36429,9 @@ public:
   enable_if_t<!is_convertible_v<R &&, key_type &&>
               && !is_convertible_v<R &&, const key_type &>
               && !is_convertible_v<R &&, this_t &&>
-              && !is_convertible_v<R &&, vector_type &&>,
+              && !is_convertible_v<R &&, vector_type &&>
+              && is_rng<R>
+              && is_constructible_v<key_type, rng_ref<R>>,
               iterator>
   insert(const_iterator i, R &&r) {
     return insert_range(i, r);
@@ -37256,12 +37273,15 @@ private:
   }
 public:
   template <class...S>
-  explicit tree_vector_adaptor(tree_type &&x, S &&...s) {
+  explicit tree_vector_adaptor(tree_type &&x, S &&...s)
+    requires (is_convertible_v<S &&, tree_type &&> && ...) {
     cat_impl(move(x), forward<S>(s)...);
   }
   template <class...S>
   explicit tree_vector_adaptor(allocator_arg_t, const allocator_type &a,
-                               tree_type &&x, S &&...s) : v(a) {
+                               tree_type &&x, S &&...s)
+    requires (is_convertible_v<S &&, tree_type &&> && ...)
+    : v(a) {
     cat_impl(move(x), forward<S>(s)...);
   }
   explicit tree_vector_adaptor(allocator_arg_t, const allocator_type &a)
@@ -37278,6 +37298,9 @@ public:
     tree_type ret(get_allocator());
     ret.iter = clone_node(p, get_key);
     return ret;
+  }
+  tree_type copy(const_iterator p) {
+    return copy(p, deref);
   }
   tree_type copy(iterator p) {
     return copy(p, deref);

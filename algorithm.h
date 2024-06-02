@@ -63,9 +63,12 @@ struct fo_equal {
         const auto sz = size(r);
         if (sz != size(r2))
           return false;
-        return memcmp(static_cast<const void *>(to_address(begin(r))),
-                      static_cast<const void *>(to_address(begin(r2))),
-                      sizeof(rng_vt<IR>) * size(r)) == 0;
+        if (to_address(begin(r2)) != nullptr)
+          return memcmp(static_cast<const void *>(to_address(begin(r))),
+                        static_cast<const void *>(to_address(begin(r2))),
+                        sizeof(rng_vt<IR>) * size(r)) == 0;
+        else
+          return true;
       }
       else {
         return operator ()(r, r2, equal_to{});
@@ -94,9 +97,12 @@ struct fo_equal {
                   && is_same_v<rng_vt<IR>, itr_vt<II>>
                   && is_citr<rng_itr<IR>> && is_citr<II>) {
       if (!is_constant_evaluated()) {
-        return memcmp(static_cast<const void *>(to_address(begin(r))),
-                      static_cast<const void *>(to_address(it)),
-                      sizeof(rng_vt<IR>) * size(r)) == 0;
+        if (to_address(it) != nullptr)
+          return memcmp(static_cast<const void *>(to_address(begin(r))),
+                        static_cast<const void *>(to_address(it)),
+                        sizeof(rng_vt<IR>) * size(r)) == 0;
+        else
+          return true;
       }
       else {
         return operator ()(r, it, equal_to{});
