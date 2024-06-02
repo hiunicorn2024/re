@@ -1,21 +1,17 @@
 //#define NOMINMAX
 //#include <windows.h>
 
-#include <re/testing.h>
 #include <re/base.h>
+#include <re/test.h>
 #include <re/range.h>
 #include <re/allocator.h>
 #include <re/dynamic.h>
+#include <re/random.h>
 #include <re/algorithm.h>
 #include <re/container.h>
 #include <re/io.h>
 
 #include <cassert>
-
-#include <iostream>
-#include <sstream>
-
-#include <iterator>
 
 using namespace re;
 
@@ -72,9 +68,9 @@ env_var_set_t env_var_set_load(const char *filename) {
 string env_var_set_to_string(const env_var_set_t &s) {
   string os;
   for (auto [x, y] : s) {
-    os.cat(x).cat('=');
+    os.append(x).append('=');
     for (auto &z : y)
-      os.cat(z).cat(';');
+      os.append(z).append(';');
     os.back() = '\n';
   }
   return os;
@@ -84,7 +80,7 @@ auto env_var_set_difference(const env_var_set_t &l,
                             const env_var_set_t &r) {
   pair<env_var_set_t, env_var_set_t> ret;
   auto &[extra, inter] = ret;
-  set_difference(l, r, hint_inserter(extra, end(extra)),
+  set_difference(l, r, to_back(extra),
                  bind(less<>(), bind(at<0>, _1), bind(at<0>, _2)));
   set_intersection(l, r,
                    output_itr([&inter, &r](const auto &x) {
@@ -118,9 +114,9 @@ int main()
     (const string &name,
      const env_var_set_t &s_extra,
      const env_var_set_t &s_inter) {
-    c_file f_set(copy(name).cat("_SET_COMMAND.txt").data(), "wb");
-    c_file f_unset(copy(name).cat("_UNSET_COMMAND.txt").data(), "wb");
-    c_file f_manual(copy(name).cat("_MANUAL_MODIFICATION.txt").data(), "wb");
+    c_file f_set(copy(name).append("_SET_COMMAND.txt").data(), "wb");
+    c_file f_unset(copy(name).append("_UNSET_COMMAND.txt").data(), "wb");
+    c_file f_manual(copy(name).append("_MANUAL_MODIFICATION.txt").data(), "wb");
 
     f_manual.put(env_var_set_to_string(s_inter));
 
@@ -138,22 +134,22 @@ R"([Environment]::SetEnvironmentVariable("%%%", "", "User");
     for (auto [x, y] : s_extra) {
       s.clear();
       auto i = begin(fmt_set_var);
-      s.cat(*i++);
-      s.cat(x);
-      s.cat(*i++);
+      s.append(*i++);
+      s.append(x);
+      s.append(*i++);
       for (const auto &z : y)
-        s.cat(z).cat(';');
+        s.append(z).append(';');
       s.pop_back();
-      s.cat(*i++);
+      s.append(*i++);
       f_set.put(s);
     }
 
     for (auto [x, y] : s_extra) {
       s.clear();
       auto i = begin(fmt_del_var);
-      s.cat(*i++);
-      s.cat(x);
-      s.cat(*i++);
+      s.append(*i++);
+      s.append(x);
+      s.append(*i++);
       f_unset.put(s);
     }
   };
