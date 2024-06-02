@@ -1084,6 +1084,68 @@ void test_sso_string() {
 }
 
 void test_string_reference() {
+  // compile-time check for sref constructors
+  {
+    static_assert(is_convertible_v<char &, sref>);
+    static_assert(!is_convertible_v<const char &, sref>);
+    static_assert(!is_convertible_v<signed char &, sref>);
+    static_assert(!is_convertible_v<const signed char &, sref>);
+    static_assert(!is_convertible_v<unsigned char &, sref>);
+    static_assert(!is_convertible_v<const unsigned char &, sref>);
+
+    static_assert(is_convertible_v<iter_pair<char *>, sref>);
+    static_assert(!is_convertible_v<iter_pair<const char *>, sref>);
+    static_assert(!is_convertible_v<iter_pair<unsigned char *>, sref>);
+    static_assert(!is_convertible_v<iter_pair<const unsigned char *>, sref>);
+    static_assert(!is_convertible_v<iter_pair<signed char *>, sref>);
+    static_assert(!is_convertible_v<iter_pair<const signed char *>, sref>);
+
+    static_assert(is_convertible_v<ez_vector<char>, sref>);
+    static_assert(!is_convertible_v<ez_vector<const char>, sref>);
+    static_assert(!is_convertible_v<ez_vector<unsigned char>, sref>);
+    static_assert(!is_convertible_v<ez_vector<const unsigned char>, sref>);
+    static_assert(!is_convertible_v<ez_vector<signed char>, sref>);
+    static_assert(!is_convertible_v<ez_vector<const signed char>, sref>);
+
+    static_assert(is_convertible_v<char (&)[2], sref>);
+    static_assert(!is_convertible_v<const char (&)[2], sref>);
+    static_assert(!is_convertible_v<unsigned char (&)[2], sref>);
+
+    static_assert(is_convertible_v<char *, sref>);
+    static_assert(!is_convertible_v<unsigned char *, sref>);
+  }
+  // compile-time check for sview constructors
+  {
+    static_assert(is_convertible_v<char &, sview>);
+    static_assert(is_convertible_v<const char &, sview>);
+    static_assert(!is_convertible_v<signed char &, sview>);
+    static_assert(!is_convertible_v<unsigned char &, char &>);
+    static_assert(!is_convertible_v<const signed char &, sview>);
+    static_assert(!is_convertible_v<unsigned char &, sview>);
+    static_assert(!is_convertible_v<const unsigned char &, sview>);
+
+    static_assert(is_convertible_v<iter_pair<char *>, sview>);
+    static_assert(is_convertible_v<iter_pair<const char *>, sview>);
+    static_assert(!is_convertible_v<iter_pair<unsigned char *>, sview>);
+    static_assert(!is_convertible_v<iter_pair<const unsigned char *>, sview>);
+    static_assert(!is_convertible_v<iter_pair<signed char *>, sview>);
+    static_assert(!is_convertible_v<iter_pair<const signed char *>, sview>);
+
+    static_assert(is_convertible_v<ez_vector<char>, sview>);
+    static_assert(is_convertible_v<ez_vector<const char>, sview>);
+    static_assert(!is_convertible_v<ez_vector<unsigned char>, sview>);
+    static_assert(!is_convertible_v<ez_vector<const unsigned char>, sview>);
+    static_assert(!is_convertible_v<ez_vector<signed char>, sview>);
+    static_assert(!is_convertible_v<ez_vector<const signed char>, sview>);
+
+    static_assert(is_convertible_v<char (&)[2], sview>);
+    static_assert(is_convertible_v<const char (&)[2], sview>);
+    static_assert(!is_convertible_v<unsigned char (&)[2], sview>);
+
+    static_assert(is_convertible_v<char *, sview>);
+    static_assert(!is_convertible_v<unsigned char *, sview>);
+  }
+
   {
     char a[] = {'a', 'b', 'c', 'd', '\0'};
     const char b[] = "abcd";
