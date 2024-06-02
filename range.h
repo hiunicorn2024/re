@@ -377,47 +377,47 @@ namespace re {
 
 namespace inner {
 
-template <class IN>
+template <class T>
 concept indirectly_readable_impl
-  = requires(const IN in) {
-    typename iter_value_t<IN>;
-    typename iter_reference_t<IN>;
-    typename iter_rvalue_reference_t<IN>;
-    {*in}->same_as<iter_reference_t<IN>>;
-    {ranges::iter_move(in)}->same_as<iter_rvalue_reference_t<IN>>;
+  = requires(const T in) {
+    typename iter_value_t<T>;
+    typename iter_reference_t<T>;
+    typename iter_rvalue_reference_t<T>;
+    {*in}->same_as<iter_reference_t<T>>;
+    {ranges::iter_move(in)}->same_as<iter_rvalue_reference_t<T>>;
   }
-  && common_reference_with<iter_reference_t<IN> &&, iter_value_t<IN> &>
-  && common_reference_with<iter_reference_t<IN> &&,
-                           iter_rvalue_reference_t<IN> &&>
-  && common_reference_with<iter_rvalue_reference_t<IN> &&,
-                           const iter_value_t<IN> &>;
+  && common_reference_with<iter_reference_t<T> &&, iter_value_t<T> &>
+  && common_reference_with<iter_reference_t<T> &&,
+                           iter_rvalue_reference_t<T> &&>
+  && common_reference_with<iter_rvalue_reference_t<T> &&,
+                           const iter_value_t<T> &>;
 }
-template <class IN>
+template <class T>
 concept indirectly_readable
-  = inner::indirectly_readable_impl<remove_cvref_t<IN>>;
+  = inner::indirectly_readable_impl<remove_cvref_t<T>>;
 
 template <indirectly_readable T>
 using iter_common_reference_t
   = common_reference_t<iter_reference_t<T>, iter_value_t<T> &>;
 
-template <class OUT, class T>
-concept indirectly_writable = requires(OUT &&o, T &&t) {
+template <class O, class T>
+concept indirectly_writable = requires(O &&o, T &&t) {
   *o = forward<T>(t);
-  *forward<OUT>(o) = forward<T>(t);
-  const_cast<const iter_reference_t<OUT> &&>(*o) = forward<T>(t);
-  const_cast<const iter_reference_t<OUT> &&>(*forward<OUT>(o)) = forward<T>(t);
+  *forward<O>(o) = forward<T>(t);
+  const_cast<const iter_reference_t<O> &&>(*o) = forward<T>(t);
+  const_cast<const iter_reference_t<O> &&>(*forward<O>(o)) = forward<T>(t);
 };
 
-template <class IN, class OUT>
-concept indirectly_movable = indirectly_readable<IN>
-  && indirectly_writable<OUT, iter_rvalue_reference_t<IN>>;
+template <class T, class O>
+concept indirectly_movable = indirectly_readable<T>
+  && indirectly_writable<O, iter_rvalue_reference_t<T>>;
 
-template <class IN, class OUT>
-concept indirectly_movable_storable = indirectly_movable<IN, OUT>
-  && indirectly_writable<OUT, iter_value_t<IN>>
-  && movable<iter_value_t<IN>>
-  && constructible_from<iter_value_t<IN>, iter_rvalue_reference_t<IN>>
-  && assignable_from<iter_value_t<IN> &, iter_rvalue_reference_t<IN>>;
+template <class T, class O>
+concept indirectly_movable_storable = indirectly_movable<T, O>
+  && indirectly_writable<O, iter_value_t<T>>
+  && movable<iter_value_t<T>>
+  && constructible_from<iter_value_t<T>, iter_rvalue_reference_t<T>>
+  && assignable_from<iter_value_t<T> &, iter_rvalue_reference_t<T>>;
 
 namespace inner::fns {
 
@@ -645,20 +645,20 @@ struct incrementable_traits<projected<I, PROJ>> {
   using difference_type = iter_difference_t<I>;
 };
 
-template <class IN, class OUT>
-concept indirectly_copyable = indirectly_readable<IN>
-  && indirectly_writable<OUT, iter_reference_t<IN>>;
+template <class T, class O>
+concept indirectly_copyable = indirectly_readable<T>
+  && indirectly_writable<O, iter_reference_t<T>>;
 
-template <class IN, class OUT>
+template <class T, class O>
 concept indirectly_copyable_storable
-  = indirectly_copyable<IN, OUT>
-  && indirectly_writable<OUT, iter_value_t<IN> &>
-  && indirectly_writable<OUT, const iter_value_t<IN> &>
-  && indirectly_writable<OUT, iter_value_t<IN> &&>
-  && indirectly_writable<OUT, const iter_value_t<IN> &&>
-  && copyable<iter_value_t<IN>>
-  && constructible_from<iter_value_t<IN>, iter_reference_t<IN>>
-  && assignable_from<iter_value_t<IN> &, iter_reference_t<IN>>;
+  = indirectly_copyable<T, O>
+  && indirectly_writable<O, iter_value_t<T> &>
+  && indirectly_writable<O, const iter_value_t<T> &>
+  && indirectly_writable<O, iter_value_t<T> &&>
+  && indirectly_writable<O, const iter_value_t<T> &&>
+  && copyable<iter_value_t<T>>
+  && constructible_from<iter_value_t<T>, iter_reference_t<T>>
+  && assignable_from<iter_value_t<T> &, iter_reference_t<T>>;
 
 template <class I1, class I2 = I1>
 concept indirectly_swappable
@@ -679,12 +679,12 @@ template <class I>
 concept permutable = forward_iterator<I> && indirectly_movable_storable<I, I>
   && indirectly_swappable<I, I>;
 
-template <class I1, class I2, class OUT, class R = ranges::less,
+template <class I1, class I2, class O, class R = ranges::less,
           class P1 = identity, class P2 = identity>
 concept mergeable = input_iterator<I1> && input_iterator<I2>
-  && weakly_incrementable<OUT>
-  && indirectly_copyable<I1, OUT>
-  && indirectly_copyable<I2, OUT>
+  && weakly_incrementable<O>
+  && indirectly_copyable<I1, O>
+  && indirectly_copyable<I2, O>
   && indirect_strict_weak_order<R, projected<I1, P1>, projected<I2, P2>>;
 
 template <class I, class R = ranges::less, class P = identity>
