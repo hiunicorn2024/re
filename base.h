@@ -21,6 +21,9 @@
 #include <ctime>
 #include <cmath>
 
+#include <cwctype>
+#include <cwchar>
+
 #include <type_traits>
 #include <typeinfo>
 #include <initializer_list>
@@ -237,6 +240,17 @@ using std::memmove;
 using std::is_constant_evaluated;
 
 using std::source_location;
+
+using std::fgetwc;
+using std::fgetws;
+using std::fputwc;
+using std::fputws;
+using std::getwchar;
+using std::putwchar;
+using std::ungetwc;
+using wctrans_t = std::wctrans_t;
+using wctype_t = std::wctype_t;
+using wint_t = std::wint_t;
 
 }
 

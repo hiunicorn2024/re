@@ -121,7 +121,7 @@ public:
     return empty() || ferror(fp);
   }
 
-  int getc() const noexcept {
+  int getc() const {
     if (empty())
       throw_or_abort<logic_error>("re::c_file::getc(): null file pointer\n");
     return fgetc(fp);
@@ -130,6 +130,12 @@ public:
     if (empty())
       throw_or_abort<logic_error>("re::c_file::putc(c): null file pointer\n");
     fputc(c, fp);
+    return *this;
+  }
+  const this_t &putwc(wint_t c) const {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::putc(c): null file pointer\n");
+    fputwc(c, fp);
     return *this;
   }
   fputc_iterator putc_iter() const noexcept {
@@ -153,21 +159,22 @@ public:
   }
   const this_t &put(const char *s) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::put(s): null file pointer\n");
+      throw_or_abort<logic_error>
+        ("re::c_file::put(const char *): null file pointer\n");
     fputs(s, fp);
     flush();
     return *this;
   }
   template <class R>
-  enable_if_t<is_rng<R> && is_citr<rng_itr<R>>
-              && !is_convertible_v<R &&, const char *>
+  enable_if_t<!is_convertible_v<R &&, const char *>
+              && is_rng<R> && is_citr<rng_itr<R>>
               && (is_same_v<rng_vt<R>, char>
                   || is_same_v<rng_vt<R>, signed char>
                   || is_same_v<rng_vt<R>, unsigned char>),
               const this_t &>
   put(R &&r) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::put(sr): null file pointer\n");
+      throw_or_abort<logic_error>("re::c_file::put(csr): null file pointer\n");
     const int result = fwrite((void *)to_address(begin(r)), 1, size(r), fp);
     if (result == EOF)
       throw_or_abort<runtime_error>("fwrite() failed");
@@ -175,17 +182,40 @@ public:
     return *this;
   }
   template <class R>
-  enable_if_t<is_rng<R> && !is_citr<rng_itr<R>> && is_iitr<rng_itr<R>>
-              && !is_convertible_v<R &&, const char *>
+  enable_if_t<!is_convertible_v<R &&, const char *>
+              && is_rng<R> && !is_citr<rng_itr<R>>
+              && is_iitr<rng_itr<R>>
               && (is_same_v<rng_vt<R>, char>
                   || is_same_v<rng_vt<R>, signed char>
                   || is_same_v<rng_vt<R>, unsigned char>),
               const this_t &>
   put(R &&r) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::put(sr): null file pointer\n");
+      throw_or_abort<logic_error>("re::c_file::put(rsr): null file pointer\n");
     for (auto c : r)
       fputc(c, fp);
+    flush();
+    return *this;
+  }
+
+  const this_t &putws(const wchar_t *s) const {
+    if (empty())
+      throw_or_abort<logic_error>
+        ("re::c_file::put(const wchar_t *): null file pointer\n");
+    fputws(s, fp);
+    flush();
+    return *this;
+  }
+  template <class R>
+  enable_if_t<!is_convertible_v<R &&, const wchar_t *>
+              && is_rng<R> && is_iitr<rng_itr<R>>
+              && is_same_v<rng_vt<R>, wchar_t>,
+              const this_t &>
+  putws(R &&r) const {
+    if (empty())
+      throw_or_abort<logic_error>("re::c_file::put(wsr): null file pointer\n");
+    for (auto c : r)
+      fputwc(c, fp);
     flush();
     return *this;
   }
@@ -216,6 +246,8 @@ public:
   using c_file::flush;
   using c_file::get;
   using c_file::put;
+  using c_file::putwc;
+  using c_file::putws;
 
 private:
   explicit console_c_file(FILE *fp) {
@@ -257,7 +289,7 @@ struct fo_setw {
 inline constexpr fo_setw setw{};
 
 struct print_tag_fill {
-  char value = ' ';
+  char value = U' ';
 };
 struct fo_setfill {
   print_tag_fill operator ()(char c) const noexcept {
@@ -315,6 +347,14 @@ inline constexpr fo_setprecision setprecision{};
 // sscan
 namespace re {
 
+namespace inner::fns {
+
+template <class C>
+bool is_unicode_digit(C c) {
+  return to_unsigned(c) >= U'0' && to_unsigned(c) <= U'9';
+}
+
+}
 namespace inner {
 
 template <class T>
@@ -323,9 +363,9 @@ struct sscan_int_traits_bin {
 
   template <class ITER>
   static bool scan_single_char(ITER it, T &x) {
-    if (*it == '1')
+    if (to_unsigned(*it) == U'1')
       x = 1;
-    else if (*it == '0')
+    else if (to_unsigned(*it) == U'0')
       x = 0;
     else
       return false;
@@ -338,8 +378,8 @@ struct sscan_int_traits_dec {
 
   template <class ITER>
   static bool scan_single_char(ITER it, T &x) {
-    if (isdigit(*it)) {
-      x = *it - '0';
+    if (inner::fns::is_unicode_digit(*it)) {
+      x = to_unsigned(*it) - U'0';
       return true;
     }
     else
@@ -352,8 +392,8 @@ struct sscan_int_traits_oct {
 
   template <class ITER>
   static bool scan_single_char(ITER it, T &x) {
-    if (*it <= '7' && *it >= '0') {
-      x = *it - '0';
+    if (to_unsigned(*it) <= U'7' && to_unsigned(*it) >= U'0') {
+      x = to_unsigned(*it) - U'0';
       return true;
     }
     else
@@ -366,17 +406,26 @@ struct sscan_int_traits_hex {
 
   template <class ITER>
   static bool scan_single_char(ITER it, T &x) {
-    if (isdigit(*it))
-      x = *it - '0';
-    else if ('a' <= *it && *it <= 'f')
-      x = 10 + (*it - 'a');
-    else if ('A' <= *it && *it <= 'F')
-      x = 10 + (*it - 'A');
+    if (inner::fns::is_unicode_digit(*it))
+      x = to_unsigned(*it) - U'0';
+    else if (U'a' <= to_unsigned(*it) && to_unsigned(*it) <= U'f')
+      x = 10u + (to_unsigned(*it) - U'a');
+    else if (U'A' <= to_unsigned(*it) && to_unsigned(*it) <= U'F')
+      x = 10u + (to_unsigned(*it) - U'A');
     else
       return false;
     return true;
   }
 };
+
+template <>
+struct sscan_int_traits_bin<bool> {};
+template <>
+struct sscan_int_traits_dec<bool> {};
+template <>
+struct sscan_int_traits_oct<bool> {};
+template <>
+struct sscan_int_traits_hex<bool> {};
 
 }
 namespace inner::fns {
@@ -390,12 +439,12 @@ bool sscan_int_impl(SV &v, T &o) requires unsigned_integral<T> {
   if (it == ed)
     return false;
   bool neg_sign = false;
-  if (*it == '+') {
+  if (to_unsigned(*it) == U'+') {
     ++it;
     if (it == ed)
       return false;
   }
-  else if (*it == '-') {
+  else if (to_unsigned(*it) == U'-') {
     ++it;
     if (it == ed)
       return false;
@@ -406,7 +455,7 @@ bool sscan_int_impl(SV &v, T &o) requires unsigned_integral<T> {
   if (!TRAITS::scan_single_char(it, x))
     return false;
   for (++it; it != ed; ++it) {
-    if (*it == '\'') {
+    if (to_unsigned(*it) == U'\'') {
       ++it;
       if (it == ed) {
         --it;
@@ -415,7 +464,7 @@ bool sscan_int_impl(SV &v, T &o) requires unsigned_integral<T> {
     }
     T tmp;
     if (!TRAITS::scan_single_char(it, tmp)) {
-      if (*prev(it) == '\'')
+      if (to_unsigned(*prev(it)) == U'\'')
         --it;
       break;
     }
@@ -440,12 +489,12 @@ bool sscan_int_impl(SV &v, T &o) requires signed_integral<T> {
   bool neg_sign = false;
   if (it == ed)
     return false;
-  if (*it == '+') {
+  if (to_unsigned(*it) == U'+') {
     ++it;
     if (it == ed)
       return false;
   }
-  else if (*it == '-') {
+  else if (to_unsigned(*it) == U'-') {
     ++it;
     if (it == ed)
       return false;
@@ -483,7 +532,7 @@ bool sscan_int_impl(SV &v, T &o) requires signed_integral<T> {
   bool (*const fp)(T &acc, const T &) = neg_sign ? f_neg : f_non_neg;
 
   for (++it; it != ed; ++it) {
-    if (*it == '\'') {
+    if (to_unsigned(*it) == U'\'') {
       ++it;
       if (it == ed) {
         --it;
@@ -492,7 +541,7 @@ bool sscan_int_impl(SV &v, T &o) requires signed_integral<T> {
     }
     T tmp;
     if (!TRAITS::scan_single_char(it, tmp)) {
-      if (*prev(it) == '\'')
+      if (to_unsigned(*prev(it)) == U'\'')
         --it;
       break;
     }
@@ -502,6 +551,51 @@ bool sscan_int_impl(SV &v, T &o) requires signed_integral<T> {
 
   v = {it, ed};
   o = x;
+  return true;
+}
+
+template <class TRAITS, class SV>
+bool sscan_int_impl(SV &v, bool &o) {
+  const auto ed = end(v);
+  auto it = begin(v);
+  if (it == ed)
+    return false;
+  if (to_unsigned(*it) == U'+') {
+    ++it;
+    if (it == ed)
+      return false;
+  }
+  else if (to_unsigned(*it) == U'-') {
+    ++it;
+    if (it == ed)
+      return false;
+  }
+
+  int x = 0;
+  bool y = false;
+  if (!inner::fns::is_unicode_digit(*it))
+    return false;
+  if (to_unsigned(*it) != U'0')
+    y = true;
+  for (++it; it != ed; ++it) {
+    if (to_unsigned(*it) == U'\'') {
+      ++it;
+      if (it == ed) {
+        --it;
+        break;
+      }
+    }
+    if (!inner::fns::is_unicode_digit(*it)) {
+      if (to_unsigned(*prev(it)) == U'\'')
+        --it;
+      break;
+    }
+    if (to_unsigned(*it) != U'0')
+      y = true;
+  }
+
+  o = y;
+  v = {it, ed};
   return true;
 }
 
@@ -517,10 +611,22 @@ struct fo_sscan {
     else
       return false;
   }
+  template <class T>
+  bool operator ()(string_reference<const T> &v,
+                   string_reference<const T> v2) const
+    requires (!is_same_v<remove_cv_t<T>, char>) {
+    const auto v_sz = ssize(v);
+    const auto v2_sz = ssize(v2);
+    if (v_sz >= v2_sz && !v2.empty() && equal(v2, v.begin())) {
+      v = {v.begin() + v2_sz, v.end()};
+      return true;
+    }
+    else
+      return false;
+  }
 
   template <class T>
-  bool operator ()(sview &v, T &o) const
-    requires is_integral_v<T> {
+  bool operator ()(sview &v, T &o) const requires is_integral_v<T> {
     return inner::fns::sscan_int_impl<inner::sscan_int_traits_dec<T>>(v, o);
   }
   template <class T>
@@ -543,15 +649,48 @@ struct fo_sscan {
     requires is_integral_v<T> {
     return inner::fns::sscan_int_impl<inner::sscan_int_traits_hex<T>>(v, o);
   }
+  template <class U, class T>
+  bool operator ()(string_reference<const U> &v, T &o) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_dec<T>>(v, o);
+  }
+  template <class U, class T>
+  bool operator ()(string_reference<const U> &v, T &o, print_tag_dec) const
+    requires is_integral_v<T> {
+    return operator ()(v, o);
+  }
+  template <class U, class T>
+  bool operator ()(string_reference<const U> &v, T &o, print_tag_bin) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_bin<T>>(v, o);
+  }
+  template <class U, class T>
+  bool operator ()(string_reference<const U> &v, T &o, print_tag_oct) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_oct<T>>(v, o);
+  }
+  template <class U, class T>
+  bool operator ()(string_reference<const U> &v, T &o, print_tag_hex) const
+    requires is_integral_v<T> {
+    return inner::fns::sscan_int_impl<inner::sscan_int_traits_hex<T>>(v, o);
+  }
 
 private:
-  template <class F>
-  static bool impl_for_float(sview &v, F &x);
+  template <class T, class F>
+  static bool impl_for_float(string_reference<T> &v, F &x);
 public:
   bool operator ()(sview &v, float &x) const {
     return impl_for_float(v, x);
   }
   bool operator ()(sview &v, double &x) const {
+    return impl_for_float(v, x);
+  }
+  template <class T>
+  bool operator ()(string_reference<const T> &v, float &x) const {
+    return impl_for_float(v, x);
+  }
+  template <class T>
+  bool operator ()(string_reference<const T> &v, double &x) const {
     return impl_for_float(v, x);
   }
 };
@@ -744,53 +883,60 @@ struct float_print_args : print_args {
 struct fo_sprint {
 private:
   template <class S, class...SS>
-  static S &impl_for_string(S &&s, sview sv, print_args &pa) {
+  static S &impl_for_string(S &&s, string_reference<const rng_vt<S>> sv,
+                            print_args &pa) {
     const auto sz = size(sv);
     if (sz >= pa.min_width)
       s.push_back(sv);
     else {
       if (pa.left_padding) {
-        s.append_range(rng(pa.min_width - sz, pa.padding_char));
+        s.append_range(rng(pa.min_width - sz, to_unsigned(pa.padding_char)));
         s.push_back(sv);
       }
       else {
         s.push_back(sv);
-        s.append_range(rng(pa.min_width - sz, pa.padding_char));
+        s.append_range(rng(pa.min_width - sz, to_unsigned(pa.padding_char)));
       }
     }
     return s;
   }
   template <class S, class...SS>
-  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+  static S &impl_for_string(S &&s, string_reference<const rng_vt<S>> sv,
+                            print_args &pa,
                             print_tag_left, SS &&...ss) {
     pa.left();
     return impl_for_string(s, sv, pa, forward<SS>(ss)...);
   }
   template <class S, class...SS>
-  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+  static S &impl_for_string(S &&s, string_reference<const rng_vt<S>> sv,
+                            print_args &pa,
                             print_tag_right, SS &&...ss) {
     pa.right();
     return impl_for_string(s, sv, pa, forward<SS>(ss)...);
   }
   template <class S, class...SS>
-  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+  static S &impl_for_string(S &&s, string_reference<const rng_vt<S>> sv,
+                            print_args &pa,
                             print_tag_min_width x, SS &&...ss) {
     pa.setw(x.value);
     return impl_for_string(s, sv, pa, forward<SS>(ss)...);
   }
   template <class S, class...SS>
-  static S &impl_for_string(S &&s, sview sv, print_args &pa,
+  static S &impl_for_string(S &&s, string_reference<const rng_vt<S>> sv,
+                            print_args &pa,
                             print_tag_fill x, SS &&...ss) {
     pa.setfill(x.value);
     return impl_for_string(s, sv, pa, forward<SS>(ss)...);
   }
 public:
   template <class S>
-  S &operator ()(S &&s, sview sv, print_args pa = {}) const {
+  S &operator ()(S &&s, string_reference<const rng_vt<S>> sv,
+                 print_args pa = {}) const {
     return impl_for_string(s, sv, pa);
   }
   template <class S, class...SS>
-  S &operator ()(S &&s, sview sv, SS &&...ss) const
+  S &operator ()(S &&s, string_reference<const rng_vt<S>> sv,
+                 SS &&...ss) const
     requires (!(sizeof...(SS) == 1u
                 && is_convertible_v<nth_type_t<0, SS &&...>, print_args>)) {
     print_args pa{};
@@ -806,13 +952,13 @@ private:
     bool sign_symbol_is_shown = false;
     make_unsigned_t<I> u{};
     if (i < 0) {
-      s.push_back('-');
+      s.push_back(U'-');
       sign_symbol_is_shown = true;
       u = -to_signed(i);
     }
     else {
       if (pa.show_positive_symbol) {
-        s.push_back('+');
+        s.push_back(U'+');
         sign_symbol_is_shown = true;
       }
       u = i;
@@ -823,7 +969,7 @@ private:
       for (;;) {
         const char *num_a = (pa.upper_case  && pa.numbers == inner::from_0_to_f)
           ? inner::from_0_to_F : inner::from_0_to_f;
-        s.push_back(num_a[u % pa.radix]);
+        s.push_back(to_unsigned(num_a[u % pa.radix]));
         u /= pa.radix;
         if (u == 0)
           break;
@@ -856,14 +1002,15 @@ private:
           ++k;
           if (k == pa.separator_n) {
             k = 0u;
-            *--it2 = '\'';
+            *--it2 = U'\'';
           }
         }
       }
     }
     if (s.size() - n < pa.min_width)
       s.insert(pa.left_padding ? (s.begin() + n) : s.end(),
-               rng(pa.min_width - (s.size() - n), pa.padding_char));
+               rng(pa.min_width - (s.size() - n),
+                   to_unsigned(pa.padding_char)));
     guard.unset();
     return s;
   }
@@ -1098,6 +1245,26 @@ struct fo_putln {
 };
 inline constexpr fo_putln putln{};
 
+struct fo_putws {
+  template <class...S>
+  void operator ()(S &&...s) const {
+    stdout_f().putws(sprint(wstring{}, forward<S>(s)...));
+    stdout_f().flush();
+  }
+};
+inline constexpr fo_putws putws{};
+struct fo_putwsln {
+  void operator ()() const {
+    putws(L"\n");
+  }
+  template <class...S>
+  void operator ()(S &&...s) const {
+    putws(forward<S>(s)...);
+    putws(L"\n");
+  }
+};
+inline constexpr fo_putwsln putwsln{};
+
 }
 
 // big_int
@@ -1115,7 +1282,8 @@ void no_sign_fixed_fraction_string_apply_separator_arg(S &s,
     return;
 
   const ptrdiff_t j = ssize(s);
-  const ptrdiff_t k = find(sview(nth(s, i), nth(s, j)), '.') - s.begin();
+  const auto eq_dot = [](auto c)->bool {return to_unsigned(c) == U'.';};
+  const ptrdiff_t k = find_if(rng(nth(s, i), nth(s, j)), eq_dot) - s.begin();
   if (k == j) {
     // sep_n > 0
     // [nth(s, i), nth(s, j))
@@ -1139,7 +1307,7 @@ void no_sign_fixed_fraction_string_apply_separator_arg(S &s,
       --c;
       if (c == 0) {
         c = to_signed(sep_n);
-        *--it2 = '\'';
+        *--it2 = U'\'';
         if (it2 == it)
           break;
       }
@@ -1178,10 +1346,10 @@ void no_sign_fixed_fraction_string_apply_separator_arg(S &s,
         --c;
         if (c == 0) {
           c = to_signed(sep_n);
-          *--it2 = '\'';
+          *--it2 = U'\'';
         }
       }
-      *--it2 = '.';
+      *--it2 = U'.';
     }
     // left part of dot
     {
@@ -1194,75 +1362,79 @@ void no_sign_fixed_fraction_string_apply_separator_arg(S &s,
         --c;
         if (c == 0) {
           c = to_signed(sep_n);
-          *--it2 = '\'';
+          *--it2 = U'\'';
         }
       }
     }
   }
 }
-template <class S>
-S fixed_fraction_string_to_scientific(sview sv,
+template <class S = string>
+S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
                                       size_t precision, size_t sep_n,
                                       bool upper_case,
                                       bool show_pos) {
   // sv has valid format and is not empty
   // sv has no leading zero except "0."
+  using view_t = string_reference<const rng_vt<S>>;
   S s2;
-  if (front(sv) == '+') {
+  if (to_unsigned(front(sv)) == U'+') {
     sv = {next(sv.begin()), sv.end()};
     if (show_pos)
-      s2.append('+');
+      s2.append(U'+');
   }
-  else if (front(sv) == '-') {
+  else if (to_unsigned(front(sv)) == U'-') {
     sv = {next(sv.begin()), sv.end()};
-    s2.append('-');
+    s2.append(U'-');
   }
   else {
     if (show_pos)
-      s2.append('+');
+      s2.append(U'+');
   }
 
   const auto s2_old_ssz = ssize(s2);
-  const auto dot_pos = find(sv, '.');
-  sview sv_l = sview(sv.begin(), dot_pos);
-  sview sv_r = sview(dot_pos != sv.end() ? next(dot_pos) : sv.end(), sv.end());
-  rng_dft<sview> e = 0;
-  if (equal(sv_l, seq('0')) && all_of_equal(sv_r, '0')) {
-    if (precision == numeric_limits<size_t>::max() || precision == 0u)
-      s2.append('0');
-    else {
-      s2.append("0.");
-      s2.append(rng(precision, '0'));
+  const auto eq_dot = [](auto c)->bool {return to_unsigned(c) == U'.';};
+  const auto dot_pos = find_if(sv, eq_dot);
+  view_t sv_l = view_t(sv.begin(), dot_pos);
+  view_t sv_r = view_t(dot_pos != sv.end() ? next(dot_pos) : sv.end(),
+                       sv.end());
+  rng_dft<view_t> e = 0;
+  const auto eqf = [](auto c, auto c2) {return to_unsigned(c) == c2;};
+  if (equal(sv_l, single_rng(U'0'), eqf)
+      && all_of_equal(sv_r, U'0', eqf)) {
+    s2.append(U'0');
+    if (!(precision == numeric_limits<size_t>::max() || precision == 0u)) {
+      s2.append(U'.');
+      s2.append(rng(precision, U'0'));
     }
   }
   else {
-    if (equal(sv_l, seq('0'))) {
-      const auto i = find_not(sv_r, '0'); // i is dereferenceable
+    if (equal(sv_l, single_rng(U'0'), eqf)) {
+      const auto i = find_if(sv_r, [](auto c) {return to_unsigned(c) != U'0';});
       e = -1 + (sv_r.begin() - i);
-      sview v(i, sv_r.end());
-      const sview v2(next(i), sv_r.end()); // v2 may be empty
+      view_t v(i, sv_r.end());
+      const view_t v2(next(i), sv_r.end()); // v2 may be empty
       if (precision == numeric_limits<size_t>::max()) {
         s2.append(front(v));
-        if (!all_of_equal(v2, '0')) {
-          s2.append('.');
+        if (!all_of_equal(v2, U'0', eqf)) {
+          s2.append(U'.');
           auto j = v2.end();
-          while (*--j == '0')
+          while (to_unsigned(*--j) == U'0')
             ;
           ++j;
-          s2.append(sview(v2.begin(), j));
+          s2.append(view_t(v2.begin(), j));
         }
       }
       else if (precision == 0u) {
         if (empty(v2))
           s2.append(front(v));
         else {
-          if (front(v2) < '5')
+          if (to_unsigned(front(v2)) < U'5')
             s2.append(front(v));
           else {
-            if (front(v) != '9')
-              s2.append((char)(front(v) + 1));
+            if (to_unsigned(front(v)) != U'9')
+              s2.append(to_unsigned(front(v)) + 1u);
             else {
-              s2.append('1');
+              s2.append(U'1');
               ++e;
             }
           }
@@ -1270,36 +1442,36 @@ S fixed_fraction_string_to_scientific(sview sv,
       }
       else if (size(v2) <= precision) {
         s2.append(front(v));
-        s2.append('.');
+        s2.append(U'.');
         s2.append(v2);
-        s2.append(rng(precision - size(v2), '0'));
+        s2.append(rng(precision - size(v2), U'0'));
       }
       else {
         const auto j = nth(v2, to_signed(precision)); // j is dereferenceable
-        if (*j < '5') {
+        if (to_unsigned(*j) < U'5') {
           s2.append(front(v));
-          s2.append('.');
-          s2.append(sview(v2.begin(), j));
+          s2.append(U'.');
+          s2.append(view_t(v2.begin(), j));
         }
         else {
-          if (all_of_equal(sview(v.begin(), j), '9')) {
-            s2.append('1');
-            s2.append('.');
-            s2.append(rng(precision, '0'));
+          if (all_of_equal(view_t(v.begin(), j), U'9', eqf)) {
+            s2.append(U'1');
+            s2.append(U'.');
+            s2.append(rng(precision, U'0'));
             ++e;
           }
           else {
             s2.append(front(v));
-            s2.append('.');
-            s2.append(rng(v2.begin(), j));
+            s2.append(U'.');
+            s2.append(view_t(v2.begin(), j));
             for (auto &c : rrng(s2.begin() + s2_old_ssz, s2.end())) {
-              if (c != '.') {
-                if (c != '9') {
+              if (to_unsigned(c) != U'.') {
+                if (to_unsigned(c) != U'9') {
                   ++c;
                   break;
                 }
                 else
-                  c = '0';
+                  c = U'0';
               }
             }
           }
@@ -1311,12 +1483,12 @@ S fixed_fraction_string_to_scientific(sview sv,
       --e;
       if (precision == numeric_limits<size_t>::max()) {
         s2.append(front(sv_l));
-        s2.append('.');
-        s2.append(sview(next(sv_l.begin()), sv_l.end()));
+        s2.append(U'.');
+        s2.append(view_t(next(sv_l.begin()), sv_l.end()));
         s2.append(sv_r);
-        while (back(s2) == '0')
+        while (to_unsigned(back(s2)) == U'0')
           s2.pop_back();
-        if (s2.back() == '.')
+        if (to_unsigned(s2.back()) == U'.')
           s2.pop_back();
       }
       else if (precision == 0u) {
@@ -1324,13 +1496,13 @@ S fixed_fraction_string_to_scientific(sview sv,
           if (sv_r.empty())
             s2.append(front(sv_l));
           else {
-            if (front(sv_r) < '5')
+            if (to_unsigned(front(sv_r)) < U'5')
               s2.append(front(sv_l));
             else {
-              if (front(sv_l) < '9')
-                s2.append((char)(front(sv_l) + 1));
+              if (to_unsigned(front(sv_l)) < U'9')
+                s2.append(to_unsigned(front(sv_l)) + 1u);
               else {
-                s2.append('1');
+                s2.append(U'1');
                 ++e;
               }
             }
@@ -1338,13 +1510,13 @@ S fixed_fraction_string_to_scientific(sview sv,
         }
         else {
           // sv_l has two or more elements
-          if (*next(sv_l.begin()) < '5')
+          if (to_unsigned(*next(sv_l.begin())) < U'5')
             s2.append(front(sv_l));
           else {
-            if (front(sv_l) < '9')
-              s2.append((char)(front(sv_l) + 1));
+            if (to_unsigned(front(sv_l)) < U'9')
+              s2.append(to_unsigned(front(sv_l)) + 1u);
             else {
-              s2.append('1');
+              s2.append(U'1');
               ++e;
             }
           }
@@ -1355,38 +1527,39 @@ S fixed_fraction_string_to_scientific(sview sv,
         const ptrdiff_t numbers = l_numbers + ssize(sv_r);
         if (numbers <= to_signed(precision)) {
           s2.append(front(sv_l));
-          s2.append('.');
-          s2.append(sview(next(sv_l.begin()), sv_l.end()));
+          s2.append(U'.');
+          s2.append(view_t(next(sv_l.begin()), sv_l.end()));
           s2.append(sv_r);
-          s2.append(rng(to_signed(precision) - numbers, '0'));
+          s2.append(rng(to_signed(precision) - numbers, U'0'));
         }
         else {
           if (to_signed(precision) < l_numbers) {
             const auto j = next(sv_l.begin()) + precision;
             // j is dereferenceable
-            if (*j < '5') {
+            if (to_unsigned(*j) < U'5') {
               s2.append(front(sv_l));
-              s2.append('.');
-              s2.append(sview(next(sv_l.begin()), j));
+              s2.append(U'.');
+              s2.append(view_t(next(sv_l.begin()), j));
             }
             else {
-              if (all_of_equal(sview(sv_l.begin(), j), '9')) {
-                s2.append("1.");
-                s2.append(rng(precision, '0'));
+              if (all_of_equal(view_t(sv_l.begin(), j), U'9', eqf)) {
+                s2.append(U'1');
+                s2.append(U'.');
+                s2.append(rng(precision, U'0'));
                 ++e;
               }
               else {
                 s2.append(front(sv_l));
-                s2.append('.');
-                s2.append(sview(next(sv_l.begin()), j));
+                s2.append(U'.');
+                s2.append(view_t(next(sv_l.begin()), j));
                 for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
-                  if (c != '.') {
-                    if (c != '9') {
+                  if (to_unsigned(c) != U'.') {
+                    if (to_unsigned(c) != U'9') {
                       ++c;
                       break;
                     }
                     else
-                      c = '0';
+                      c = U'0';
                   }
                 }
               }
@@ -1395,32 +1568,33 @@ S fixed_fraction_string_to_scientific(sview sv,
           else {
             const auto j = next(sv_r.begin(), (precision - l_numbers));
             // j is dereferenceable
-            if (*j < '5') {
+            if (to_unsigned(*j) < U'5') {
               s2.append(front(sv_l));
-              s2.append('.');
-              s2.append(sview(next(sv_l.begin()), sv_l.end()));
-              s2.append(sview(sv_r.begin(), j));
+              s2.append(U'.');
+              s2.append(view_t(next(sv_l.begin()), sv_l.end()));
+              s2.append(view_t(sv_r.begin(), j));
             }
             else {
-              if (all_of_equal(sv_l, '9')
-                  && all_of_equal(sview(sv_r.begin(), j), '9')) {
-                s2.append("1.");
-                s2.append(rng(precision, '0'));
+              if (all_of_equal(sv_l, U'9', eqf)
+                  && all_of_equal(view_t(sv_r.begin(), j), U'9', eqf)) {
+                s2.append(U'1');
+                s2.append(U'.');
+                s2.append(rng(precision, U'0'));
                 ++e;
               }
               else {
                 s2.append(front(sv_l));
-                s2.append('.');
-                s2.append(sview(next(sv_l.begin()), sv_l.end()));
-                s2.append(sview(sv_r.begin(), j));
+                s2.append(U'.');
+                s2.append(view_t(next(sv_l.begin()), sv_l.end()));
+                s2.append(view_t(sv_r.begin(), j));
                 for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
-                  if (c != '.') {
-                    if (c != '9') {
+                  if (to_unsigned(c) != U'.') {
+                    if (to_unsigned(c) != U'9') {
                       ++c;
                       break;
                     }
                     else
-                      c = '0';
+                      c = U'0';
                   }
                 }
               }
@@ -1432,7 +1606,7 @@ S fixed_fraction_string_to_scientific(sview sv,
   }
 
   no_sign_fixed_fraction_string_apply_separator_arg(s2, s2_old_ssz, sep_n);
-  s2.append(upper_case ? 'E' : 'e');
+  s2.append(upper_case ? U'E' : U'e');
   sprint(s2, e, showpos, setseparator(sep_n));
   return s2;
 }
@@ -1861,14 +2035,15 @@ private:
   //
   // zero_or_one(('e' or 'E') + integer string)
 
-  bool sscan_sign(const char *&it, const char *ed, bool &s) {
+  template <class C>
+  bool sscan_sign(const C *&it, const C *ed, bool &s) {
     if (it == ed)
       return false;
-    if (*it == '+') {
+    if (to_unsigned(*it) == U'+') {
       ++it;
       s = true;
     }
-    else if (*it == '-') {
+    else if (to_unsigned(*it) == U'-') {
       ++it;
       s = false;
     }
@@ -1876,24 +2051,25 @@ private:
       s = true;
     return true;
   }
-
-  bool sscan_single_number(const char *&it, const char *ed, int32_t &x) {
+  template <class C>
+  bool sscan_single_number(const C *&it, const C *ed, int32_t &x) {
     if (it == ed)
       return false;
-    if (isdigit(*it)) {
-      x = *it - '0';
+    if (inner::fns::is_unicode_digit(*it)) {
+      x = to_unsigned(*it) - U'0';
       ++it;
       return true;
     }
     else
       return false;
   }
-  bool sscan_single_number_with_separator_prefix(const char *&it,
-                                                 const char *ed,
+  template <class C>
+  bool sscan_single_number_with_separator_prefix(const C *&it,
+                                                 const C *ed,
                                                  int32_t &x) {
     if (it == ed)
       return false;
-    if (*it == '\'') {
+    if (to_unsigned(*it) == U'\'') {
       ++it;
       if (!sscan_single_number(it, ed, x)) {
         --it;
@@ -1905,11 +2081,12 @@ private:
     else
       return sscan_single_number(it, ed, x);
   }
-  bool sscan_dot_and_single_number(const char *&it, const char *ed,
+  template <class C>
+  bool sscan_dot_and_single_number(const C *&it, const C *ed,
                                    int32_t &x) {
     if (it == ed)
       return false;
-    if (*it == '.') {
+    if (to_unsigned(*it) == U'.') {
       ++it;
       if (!sscan_single_number(it, ed, x)) {
         --it;
@@ -1922,34 +2099,35 @@ private:
       return false;
   }
 
-  bool sscan_single_hex_number(const char *&it, const char *ed,
-                               int32_t &x) {
+  template <class C>
+  bool sscan_single_hex_number(const C *&it, const C *ed, int32_t &x) {
     if (it == ed)
       return false;
-    if (isdigit(*it)) {
-      x = *it - '0';
+    if (inner::fns::is_unicode_digit(*it)) {
+      x = to_unsigned(*it) - U'0';
       ++it;
       return true;
     }
-    else if ('a' <= *it && *it <= 'f') {
-      x = 10 + (*it - 'a');
+    else if (U'a' <= to_unsigned(*it) && to_unsigned(*it) <= U'f') {
+      x = 10u + (to_unsigned(*it) - U'a');
       ++it;
       return true;
     }
-    else if ('A' <= *it && *it <= 'F') {
-      x = 10 + (*it - 'A');
+    else if (U'A' <= to_unsigned(*it) && to_unsigned(*it) <= U'F') {
+      x = 10u + (to_unsigned(*it) - U'A');
       ++it;
       return true;
     }
     else
       return false;
   }
-  bool sscan_single_hex_number_with_separator_prefix(const char *&it,
-                                                     const char *ed,
+  template <class C>
+  bool sscan_single_hex_number_with_separator_prefix(const C *&it,
+                                                     const C *ed,
                                                      int32_t &x) {
     if (it == ed)
       return false;
-    if (*it == '\'') {
+    if (to_unsigned(*it) == U'\'') {
       ++it;
       if (!sscan_single_hex_number(it, ed, x)) {
         --it;
@@ -1961,11 +2139,12 @@ private:
     else
       return sscan_single_hex_number(it, ed, x);
   }
-  bool sscan_dot_and_single_hex_number(const char *&it, const char *ed,
+  template <class C>
+  bool sscan_dot_and_single_hex_number(const C *&it, const C *ed,
                                        int32_t &x) {
     if (it == ed)
       return false;
-    if (*it == '.') {
+    if (to_unsigned(*it) == U'.') {
       ++it;
       if (!sscan_single_hex_number(it, ed, x)) {
         --it;
@@ -1978,12 +2157,13 @@ private:
       return false;
   }
 
-  bool sscan_e_and_int32(const char *&it, const char *ed, int32_t &x) {
+  template <class C>
+  bool sscan_e_and_int32(const C *&it, const C *ed, int32_t &x) {
     if (it == ed)
       return false;
     if (*it == 'e' || *it == 'E') {
       ++it;
-      sview sv(it, ed);
+      string_reference<const C> sv(it, ed);
       if (re::sscan(sv, x)) {
         it = sv.begin();
         return true;
@@ -1997,19 +2177,20 @@ private:
       return false;
   }
 
-  string sprint_impl(size_t sep_n, const char *num, uint32_t base) const {
-    string s;
+  template <class S>
+  S sprint_impl(size_t sep_n, const char *num, uint32_t base) const {
+    S s;
     if (!sign)
-      s.push_back('-');
+      s.push_back(to_unsigned('-'));
     if (v.empty()) {
-      s.push_back('0');
+      s.push_back(to_unsigned('0'));
       return s;
     }
     const ptrdiff_t num_pos_dif = ssize(s);
     auto cp = *this;
     for (;;) {
       uint32_t rem = cp.div(base);
-      s.push_back(num[rem]);
+      s.push_back(to_unsigned(num[rem]));
       if (cp.v.empty())
         break;
     }
@@ -2042,7 +2223,8 @@ private:
   }
 
 public:
-  bool sscan(sview &sv) {
+  template <class T>
+  bool sscan(string_reference<const T> &sv) {
     auto guard = exit_fn([&]() {operator =(0);}, true);
     auto it = sv.begin();
     bool sign_is_positive = false;
@@ -2063,11 +2245,16 @@ public:
     guard.unset();
     return true;
   }
-  string sprint(size_t sep_n = 0u) const {
-    return sprint_impl(sep_n, inner::from_0_to_f, 10u);
+  bool sscan(sview &sv) {
+    return this->sscan<char>(sv);
+  }
+  template <class S = string>
+  S sprint(size_t sep_n = 0u) const {
+    return sprint_impl<S>(sep_n, inner::from_0_to_f, 10u);
   }
 
-  bool sscan_hex(sview &sv) {
+  template <class T>
+  bool sscan_hex(string_reference<const T> &sv) {
     auto guard = exit_fn([&]() {operator =(0);}, true);
     auto it = sv.begin();
     bool sign_is_positive = false;
@@ -2088,22 +2275,29 @@ public:
     guard.unset();
     return true;
   }
-  string sprint_hex(size_t sep_n = 0u, bool upper_case = false) const {
-    return sprint_impl(sep_n,
-                       upper_case ? inner::from_0_to_F : inner::from_0_to_f,
-                       16u);
+  bool sscan_hex(sview &sv) {
+    return this->sscan_hex<char>(sv);
+  }
+  template <class S = string>
+  S sprint_hex(size_t sep_n = 0u, bool upper_case = false) const {
+    return sprint_impl<S>(sep_n,
+                          upper_case ? inner::from_0_to_F : inner::from_0_to_f,
+                          16u);
   }
 
-  bool sscan_scientific(sview &sv) {
+  template <class T>
+  bool sscan_scientific(string_reference<const T> &sv) {
     auto guard = exit_fn([&]() {operator =(0);}, true);
     {
-      sview sv2 = sv;
+      string_reference<const T> sv2 = sv;
       if (!sscan(sv2))
         return false;
 
       int32_t e = 0;
       auto it = sv2.begin();
       int32_t x{};
+      const bool sign_copy = sign;
+      sign = true;
       if (sscan_dot_and_single_number(it, sv2.end(), x)) {
         mul(10u) += this_t(x);
         --e;
@@ -2114,6 +2308,7 @@ public:
             return false;
         }
       }
+      sign = sign_copy;
 
       if (sscan_e_and_int32(it, sv2.end(), x)) {
         const int64_t tmp = (int64_t)e + (int64_t)x;
@@ -2142,13 +2337,18 @@ public:
     guard.unset();
     return true;
   }
-  string sprint_scientific(size_t precision = 6u,
-                           size_t sep_n = 0u,
-                           bool upper_case = false,
-                           bool show_pos = false) const {
-    const string s = sprint();
-    return inner::fns::fixed_fraction_string_to_scientific<string>
-      (s, precision, sep_n, upper_case, show_pos);
+  bool sscan_scientific(sview &sv) {
+    return this->sscan_scientific<char>(sv);
+  }
+  template <class S = string>
+  S sprint_scientific(size_t precision = 6u,
+                      size_t sep_n = 0u,
+                      bool upper_case = false,
+                      bool show_pos = false) const {
+    const S s = sprint<S>();
+    string_reference<const rng_vt<S>> sv = s;
+    return inner::fns::fixed_fraction_string_to_scientific<S>
+      (sv, precision, sep_n, upper_case, show_pos);
   }
 };
 
@@ -2161,66 +2361,68 @@ namespace re {
 namespace inner::fns {
 
 template <class S>
-S fixed_fraction_string_apply_print_args(sview sv,
+S fixed_fraction_string_apply_print_args(string_reference<const rng_vt<S>> sv,
                                          size_t precision, size_t sep_n,
                                          bool show_pos) {
   // sv has valid format and is not empty
   // sv has no leading zero except "0."
-
+  using view_t = string_reference<const rng_vt<S>>;
+  using ref_t = string_reference<rng_vt<S>>;
   S s2;
-  if (front(sv) == '+') {
+  if (to_unsigned(front(sv)) == U'+') {
     sv = {next(sv.begin()), sv.end()};
     if (show_pos)
-      s2.append('+');
+      s2.append(U'+');
   }
-  else if (front(sv) == '-') {
+  else if (to_unsigned(front(sv)) == U'-') {
     sv = {next(sv.begin()), sv.end()};
-    s2.append('-');
+    s2.append(U'-');
   }
   else {
     if (show_pos)
-      s2.append('+');
+      s2.append(U'+');
   }
 
   const auto s2_old_ssz = ssize(s2);
-  const auto dot_pos = find(sv, '.');
-  sview r1 = sview(sv.begin(), dot_pos); // r1 is not empty
-  sview r2 = sview((dot_pos != sv.end() ? next(dot_pos) : sv.end()), sv.end());
+  const auto dot_pos = find_if(sv, [](auto c) {return to_unsigned(c) == U'.';});
+  view_t r1(sv.begin(), dot_pos); // r1 is not empty
+  view_t r2((dot_pos != sv.end() ? next(dot_pos) : sv.end()), sv.end());
+  const auto eqf = [](auto c1, auto c2) {return to_unsigned(c1) == c2;};
   if (r2.empty()) {
     s2.append(r1);
     if (precision != numeric_limits<size_t>::max() && precision != 0u) {
-      s2.append('.');
-      s2.append(rng(precision, '0'));
+      s2.append(U'.');
+      s2.append(rng(precision, U'0'));
     }
   }
   else {
     if (precision == numeric_limits<size_t>::max()) {
       s2.append(r1);
-      s2.append('.');
+      s2.append(U'.');
       s2.append(r2);
-      while (s2.back() == '0')
+      while (s2.back() == U'0')
         s2.pop_back();
-      if (s2.back() == '.')
+      if (s2.back() == U'.')
         s2.pop_back();
     }
     else if (precision == 0u) {
-      if (r2.front() < '5')
+      if (to_unsigned(r2.front()) < U'5')
         s2.append(r1);
       else {
-        if (all_of_equal(r1, '9')) {
-          s2.append('1');
-          s2.append(rng(size(r1), '0'));
+        if (all_of_equal(r1, U'9', eqf)) {
+          s2.append(U'1');
+          s2.append(rng(size(r1), U'0'));
         }
         else {
           const auto old_ssz = ssize(s2);
           s2.append(r1);
-          for (auto &c : rrng(sref(nth(s2, old_ssz), s2.end()))) {
-            if (c != '9') {
+          for (auto &c : rrng(ref_t(nth(s2, old_ssz), s2.end()))) {
+            if (to_unsigned(c) != U'9') {
               ++c;
               break;
             }
             else
-              c = '0';
+              c = U'0';
           }
         }
       }
@@ -2228,38 +2430,38 @@ S fixed_fraction_string_apply_print_args(sview sv,
     else {
       if (precision >= r2.size()) {
         s2.append(r1);
-        s2.append('.');
+        s2.append(U'.');
         s2.append(r2);
-        s2.append(rng(precision - size(r2), '0'));
+        s2.append(rng(precision - size(r2), U'0'));
       }
       else {
-        const sview v(r2.begin(), nth(r2, precision));
-        if (ref(r2, precision) < '5') {
+        const view_t v(r2.begin(), nth(r2, precision));
+        if (to_unsigned(ref(r2, precision)) < U'5') {
           s2.append(r1);
-          s2.append('.');
+          s2.append(U'.');
           s2.append(v);
         }
         else {
-          if (all_of_equal(r1, '9') && all_of_equal(v, '9')) {
-            s2.append('1');
-            s2.append(rng(size(r1), '0'));
-            s2.append('.');
-            s2.append(rng(size(v), '0'));
+          if (all_of_equal(r1, U'9', eqf) && all_of_equal(v, U'9', eqf)) {
+            s2.append(U'1');
+            s2.append(rng(size(r1), U'0'));
+            s2.append(U'.');
+            s2.append(rng(size(v), U'0'));
           }
           else {
             s2.append(r1);
-            s2.append('.');
+            s2.append(U'.');
             s2.append(v);
             auto it = s2.end();
             for (;;) {
               --it;
-              if (*it != '.') {
-                if (*it != '9') {
+              if (to_unsigned(*it) != U'.') {
+                if (to_unsigned(*it) != U'9') {
                   ++*it;
                   break;
                 }
                 else
-                  *it = '0';
+                  *it = U'0';
               }
             }
           }
@@ -2269,7 +2471,10 @@ S fixed_fraction_string_apply_print_args(sview sv,
   }
 
   inner::fns::no_sign_fixed_fraction_string_apply_separator_arg
-    (s2, (s2.front() == '+' || s2.front() == '-') ? 1 : 0, sep_n);
+    (s2,
+     ((to_unsigned(s2.front()) == U'+' || to_unsigned(s2.front()) == U'-')
+      ? 1 : 0),
+     sep_n);
   return s2;
 }
 
@@ -2360,30 +2565,46 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
 
   using traits = floating_point_traits<F>;
 
+  const auto sprint_sv = [](auto &ss, sview sv, const print_args &pa) {
+    const auto sz = size(sv);
+    const auto v = bind_rng(sv, to_unsigned);
+    if (sz >= pa.min_width)
+      ss.append_range(v);
+    else {
+      const auto padding_r = rng(pa.min_width - sz,
+                                 to_unsigned(pa.padding_char));
+      if (pa.left_padding) {
+        ss.append_range(padding_r);
+        ss.append_range(v);
+      }
+      else {
+        ss.append_range(v);
+        ss.append_range(padding_r);
+      }
+    }
+  };
   if (traits::is_nan(x))
-    sprint(s, (pa.upper_case ? "NAN"_sv : "nan"_sv),
-           static_cast<const print_args &>(pa));
+    sprint_sv(s, (pa.upper_case ? "NAN"_sv : "nan"_sv),
+              static_cast<const print_args &>(pa));
   else if (traits::is_infinity(x)) {
     if (traits::is_positive(x))
-      sprint(s,
-             (pa.upper_case
-              ? (pa.show_positive_symbol ? "+INF"_sv : "INF"_sv)
-              : (pa.show_positive_symbol ? "+inf"_sv : "inf"_sv)),
-             static_cast<const print_args &>(pa));
+      sprint_sv(s,
+                (pa.upper_case
+                 ? (pa.show_positive_symbol ? "+INF"_sv : "INF"_sv)
+                 : (pa.show_positive_symbol ? "+inf"_sv : "inf"_sv)),
+                pa);
     else
-      sprint(s,
-             (pa.upper_case ? "-INF"_sv : "-inf"_sv),
-             static_cast<const print_args &>(pa));
+      sprint_sv(s, (pa.upper_case ? "-INF"_sv : "-inf"_sv), pa);
   }
   else {
     if (x == (F)0.0f) {
       if (floating_point_traits<F>::is_positive(x)) {
         if (pa.show_positive_symbol)
-          s.push_back('+');
+          s.push_back(U'+');
       }
       else
-        s.push_back('-');
-      s.push_back('0');
+        s.push_back(U'-');
+      s.push_back(U'0');
     }
     else {
       const auto f = traits::is_normalized(x)
@@ -2401,15 +2622,15 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
 
       if (x >= 0.0) {
         if (pa.show_positive_symbol)
-          s.push_back('+');
+          s.push_back(U'+');
       }
       else
-        s.push_back('-');
-      sprint(s, dot_left.sprint());
+        s.push_back(U'-');
+      s.append_range(dot_left.sprint<decay_t<S>>());
 
       size_t k = 0;
       if (dot_right.is_zero() == false) {
-        s.push_back('.');
+        s.push_back(U'.');
 
         big_int &num = dot_right;
         big_int den(1);
@@ -2422,7 +2643,7 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
           n.mul_pow_of_2(e);
           ++k;
           const int64_t number_0_9 = *n.to_int64();
-          s.push_back(inner::from_0_to_f[number_0_9]);
+          s.push_back(to_unsigned(inner::from_0_to_f[number_0_9]));
 
           if (number_0_9 != 0) {
             big_int z = den;
@@ -2435,7 +2656,8 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
       }
     }
 
-    const sview r(nth(as_const(s), old_sz), s.cend());
+    const string_reference<const rng_vt<S>> r(nth(as_const(s), old_sz),
+                                              s.cend());
     decay_t<S> s2
       = !pa.scientific_notation
       ? (inner::fns::fixed_fraction_string_apply_print_args<decay_t<S>>
@@ -2448,9 +2670,10 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
 
     const auto new_sz = s.size() - old_sz;
     if (new_sz < pa.min_width) {
-      const auto tmp_r = rng(pa.min_width - new_sz, pa.padding_char);
+      const auto tmp_r = rng(pa.min_width - new_sz,
+                             to_unsigned(pa.padding_char));
       if (pa.left_padding)
-        s.insert(nth(s, to_signed(old_sz)), tmp_r);
+        s.insert_range(nth(s, to_signed(old_sz)), tmp_r);
       else
         s.append_range(tmp_r);
     }
@@ -2462,14 +2685,15 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
 
 namespace inner::fns {
 
-inline bool f_sscan_sign(sview &v, bool &s) {
+template <class T>
+inline bool f_sscan_sign(string_reference<T> &v, bool &s) {
   if (v.empty())
     return false;
-  if (v.front() == '+') {
+  if (to_unsigned(v.front()) == U'+') {
     v = {next(v.begin()), v.end()};
     s = true;
   }
-  else if (v.front() == '-') {
+  else if (to_unsigned(v.front()) == U'-') {
     v = {next(v.begin()), v.end()};
     s = false;
   }
@@ -2477,22 +2701,26 @@ inline bool f_sscan_sign(sview &v, bool &s) {
     s = true;
   return true;
 }
-inline bool f_sscan_single_number(sview &v, int32_t &x) {
+
+template <class T>
+inline bool f_sscan_single_number(string_reference<T> &v, int32_t &x) {
   if (v.empty())
     return false;
-  if (isdigit(v.front())) {
-    x = v.front() - '0';
+  if (inner::fns::is_unicode_digit(v.front())) {
+    x = to_unsigned(v.front()) - U'0';
     v = {next(v.begin()), v.end()};
     return true;
   }
   else
     return false;
 }
-inline bool f_sscan_single_number_with_separator_prefix(sview &v,
-                                                        int32_t &x) {
+
+template <class T>
+inline bool f_sscan_single_number_with_separator_prefix
+(string_reference<T> &v, int32_t &x) {
   if (v.empty())
     return false;
-  if (v.front() == '\'') {
+  if (to_unsigned(v.front()) == U'\'') {
     v = {next(v.begin()), v.end()};
     if (!inner::fns::f_sscan_single_number(v, x)) {
       v = {prev(v.begin()), v.end()};
@@ -2504,12 +2732,15 @@ inline bool f_sscan_single_number_with_separator_prefix(sview &v,
   else
     return inner::fns::f_sscan_single_number(v, x);
 }
-inline bool f_sscan_dot_and_single_number(sview &v, int32_t &x) {
+
+template <class T>
+inline bool f_sscan_dot_and_single_number(string_reference<T> &v,
+                                          int32_t &x) {
   if (v.empty())
     return false;
-  if (v.front() == '.') {
+  if (to_unsigned(v.front()) == U'.') {
     v = {next(v.begin()), v.end()};
-    if (!f_sscan_single_number(v, x)) {
+    if (!inner::fns::f_sscan_single_number(v, x)) {
       v = {prev(v.begin()), v.end()};
       return false;
     }
@@ -2519,11 +2750,13 @@ inline bool f_sscan_dot_and_single_number(sview &v, int32_t &x) {
   else
     return false;
 }
-inline bool f_sscan_e_and_big_int(sview &v, big_int &x) {
+
+template <class T>
+inline bool f_sscan_e_and_big_int(string_reference<T> &v, big_int &x) {
   if (v.empty())
     return false;
-  if (v.front() == 'e' || v.front() == 'E') {
-    sview v2(next(v.begin()), v.end());
+  if (to_unsigned(v.front()) == U'e' || to_unsigned(v.front()) == U'E') {
+    string_reference<T> v2(next(v.begin()), v.end());
     if (x.sscan(v2)) {
       v = v2;
       return true;
@@ -2536,41 +2769,41 @@ inline bool f_sscan_e_and_big_int(sview &v, big_int &x) {
 }
 
 }
-template <class F>
-bool fo_sscan::impl_for_float(sview &v, F &o) {
+template <class T, class F>
+bool fo_sscan::impl_for_float(string_reference<T> &v, F &o) {
   using traits = floating_point_traits<F>;
   using float_t = F;
   using uint_t = typename traits::uint_t;
   using int_t = typename traits::int_t;
 
   const auto char_eq = [](char a, char b) {return tolower(a) == b;};
-  if (starts_with(v, "nan"_sv, char_eq)) {
+  if (starts_with(bind_rng(v, to_unsigned), U"nan"_sv, char_eq)) {
     o = traits::positive_nan();
     v = {v.begin() + 3, v.end()};
     return true;
   }
-  else if (starts_with(v, "+nan"_sv, char_eq)) {
+  else if (starts_with(bind_rng(v, to_unsigned), U"+nan"_sv, char_eq)) {
     o = traits::positive_nan();
     v = {v.begin() + 4, v.end()};
     return true;
   }
-  else if (starts_with(v, "-nan"_sv, char_eq)) {
+  else if (starts_with(bind_rng(v, to_unsigned), U"-nan"_sv, char_eq)) {
     o = traits::negative_nan();
     v = {v.begin() + 4, v.end()};
     return true;
   }
 
-  if (starts_with(v, "inf"_sv, char_eq)) {
+  if (starts_with(bind_rng(v, to_unsigned), U"inf"_sv, char_eq)) {
     o = traits::positive_inf();
     v = {v.begin() + 3, v.end()};
     return true;
   }
-  else if (starts_with(v, "+inf"_sv, char_eq)) {
+  else if (starts_with(bind_rng(v, to_unsigned), U"+inf"_sv, char_eq)) {
     o = traits::positive_inf();
     v = {v.begin() + 4, v.end()};
     return true;
   }
-  else if (starts_with(v, "-inf"_sv, char_eq)) {
+  else if (starts_with(bind_rng(v, to_unsigned), U"-inf"_sv, char_eq)) {
     o = traits::negative_inf();
     v = {v.begin() + 4, v.end()};
     return true;
@@ -2579,7 +2812,7 @@ bool fo_sscan::impl_for_float(sview &v, F &o) {
   bool non_neg = false;
   big_int x{};
   int32_t e = 0;
-  sview v2 = v;
+  string_reference<T> v2 = v;
   int32_t tmp{};
 
   make_signed_t<size_t> order = 0;
@@ -2628,7 +2861,7 @@ bool fo_sscan::impl_for_float(sview &v, F &o) {
     order_final += big_int(order);
     if (order_final > big_int(308)) {
       o = non_neg ? traits::positive_inf() : traits::negative_inf();
-      v = v2;      
+      v = v2;
       return true;
     }
     else if (order_final < big_int(-324)) {

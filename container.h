@@ -51,6 +51,404 @@ using u16sview = string_reference<const char16_t>;
 using u32sref = string_reference<char32_t>;
 using u32sview = string_reference<const char32_t>;
 
+// utf8-utf16-utf32 conversion
+namespace inner::fns {
+
+template <class R>
+auto unicode_sprint_impl_get_iter_pair(R &r) {
+  auto v = rng(r);
+  if (!v.empty() && to_unsigned(back(v)) == 0u)
+    --v.second;
+  return v;
+}
+template <class R>
+auto unicode_sprint_impl_get_iter_pair(R &r)
+  requires is_pointer_v<remove_reference_t<R>> {
+  const auto p = r;
+  auto pp = p;
+  for (; to_unsigned(*pp) != 0u; ++pp)
+    ;
+  return rng(p, pp);
+}
+
+template <class T>
+bool unicode_sprint_impl_utf16_check(T &sv) {
+  const auto ed = sv.end();
+  auto it = sv.begin();
+  while (it != ed) {
+    if (to_unsigned(*it) == 0u)
+      return false;
+    else if (to_unsigned(*it) >= 0xd800u) {
+      if (*it <= 0xdbff) {
+        if (next(it) == ed)
+          return false;
+        else {
+          if (!(to_unsigned(*next(it)) >= 0xdc00u
+                && to_unsigned(*next(it)) <= 0xdfffu))
+            return false;
+          ++it;
+          ++it;
+        }
+      }
+      else if (*it >= 0xe000u)
+        ++it;
+      else
+        return false;
+    }
+    else
+      ++it;
+  }
+  return true;
+}
+template <class T>
+optional<uint32_t> unicode_sprint_impl_utf16_sscan_single(T &sv) {
+  const auto ed = sv.end();
+  auto it = sv.begin();
+  for (;;) {
+    if (it == ed)
+      return optional<uint32_t>(in_place, 0u);
+    else if (to_unsigned(*it) == 0u)
+      return {};
+    else if (to_unsigned(*it) >= 0xd800u) {
+      if (*it <= 0xdbff) {
+        if (next(it) == ed)
+          return {};
+        else {
+          if (!(to_unsigned(*next(it)) >= 0xdc00u
+                && to_unsigned(*next(it)) <= 0xdfffu))
+            return {};
+          const uint32_t h = to_unsigned(*it) - 0xd800u;
+          const uint32_t l = to_unsigned(*next(it)) - 0xdc00u;
+          const uint32_t z = ((uint32_t)(h << (uint32_t)10u) + l) + 0x10000u;
+          sv.first = next(it, 2);
+          return optional<uint32_t>(in_place, z);
+        }
+      }
+      else if (to_unsigned(*it) >= 0xe000u) {
+        sv.first = next(it);
+        return optional<uint32_t>(in_place, to_unsigned(*it));
+      }
+      else
+        return {};
+    }
+    else {
+      sv.first = next(it);
+      return optional<uint32_t>(in_place, to_unsigned(*it));
+    }
+  }
+}
+template <class T>
+optional<uint32_t> unicode_sprint_impl_utf8_sscan_single(T &sv) {
+  using char_t = rng_vt<T>;
+  using uchar_t = make_unsigned_t<rng_vt<T>>;
+  const uchar_t take_7bits = 0b0111'1111u;
+  const uchar_t take_6bits = 0b11'1111u;
+  const uchar_t take_5bits = 0b1'1111u;
+  const uchar_t take_4bits = 0b1111u;
+  const uchar_t take_3bits = 0b111u;
+  const auto ed = sv.end();
+  auto it = sv.begin();
+  const auto take_next_6bits = [&](uint32_t &x)->bool {
+    // pre-condition: the leading byte is loaded
+    ++it;
+    if (it == ed)
+      return false;
+    if ((uchar_t)(to_unsigned(*it) >> (uchar_t)6u) != 0b10u)
+      return false;
+    x <<= (uint32_t)6u;
+    x += (uchar_t)(to_unsigned(*it) & take_6bits);
+    return true;
+  };
+  for (;;) {
+    if (it == ed) {
+      sv.first = it;
+      return optional<uint32_t>(in_place, 0u);
+    }
+    else if (to_unsigned(*it) == 0u)
+      return {};
+    else if ((uchar_t)(to_unsigned(*it) >> (uchar_t)7u) == 0u) {
+      const uint32_t x = to_unsigned(*it) & take_7bits;
+      sv.first = next(it);
+      return optional<uint32_t>(in_place, x);
+    }
+    else if ((uchar_t)(to_unsigned(*it) >> (uchar_t)5u) == 0b110u) {
+      uint32_t x = to_unsigned(*it) & take_5bits;
+      if (!take_next_6bits(x))
+        return {};
+      sv.first = next(it);
+      return optional<uint32_t>(in_place, x);
+    }
+    else if ((uchar_t)(to_unsigned(*it) >> (uchar_t)4u) == 0b1110u) {
+      uint32_t x = to_unsigned(*it) & take_4bits;
+      if (!take_next_6bits(x))
+        return {};
+      if (!take_next_6bits(x))
+        return {};
+      sv.first = next(it);
+      return optional<uint32_t>(in_place, x);
+    }
+    else if ((uchar_t)(to_unsigned(*it) >> (uchar_t)3u) == 0b11110u) {
+      uint32_t x = to_unsigned(*it) & take_3bits;
+      if (!take_next_6bits(x))
+        return {};
+      if (!take_next_6bits(x))
+        return {};
+      if (!take_next_6bits(x))
+        return {};
+      if (x > 0x10ffffu)
+        return {};
+      sv.first = next(it);
+      return optional<uint32_t>(in_place, x);
+    }
+    else
+      return {};
+  }
+}
+
+template <class S>
+bool utf8sprint_single_uint32(S &s, uint32_t c) {
+  // 0___'____                                    7bits
+  // 110_'____  10__'____                        11bits
+  // 1110'____  10__'____  10__'____             16bits
+  // 1111'0___  10__'____  10__'____  10__'____  21bits
+  using char_t = rng_vt<S>;
+  const uint32_t last_6bits = (numeric_limits<uint32_t>::max()
+                               >> (uint32_t)26u);
+  if (c == 0u)
+    return false;
+  else if (c < 0b1000'0000u)
+    s.push_back((char_t)c);
+  else if (c < 0b1000'0000'0000u) {
+    s.push_back((char_t)((uint32_t)(c >> (uint32_t)6u) + 0b110'00000u));
+    s.push_back((char_t)((uint32_t)(c & last_6bits) + 0b1000'0000u));
+  }
+  else if (c < 0b1'0000'0000'0000'0000u) {
+    s.push_back((char_t)((uint32_t)(c >> (uint32_t)12u) + 0b111'00000u));
+    s.push_back((char_t)
+                ((uint32_t)((uint32_t)(c >> (uint32_t)6u) & last_6bits)
+                 + 0b1000'0000u));
+    s.push_back((char_t)((uint32_t)(c & last_6bits) + 0b1000'0000u));
+  }
+  else if (c < 0b10'0000'0000'0000'0000'0000u) {
+    s.push_back((char_t)((uint32_t)(c >> (uint32_t)18u) + 0b111'10000u));
+    s.push_back((char_t)
+                ((uint32_t)((uint32_t)(c >> (uint32_t)12u) & last_6bits)
+                 + 0b1000'0000u));
+    s.push_back((char_t)
+                ((uint32_t)((uint32_t)(c >> (uint32_t)6u) & last_6bits)
+                 + 0b1000'0000u));
+    s.push_back((char_t)((uint32_t)(c & last_6bits) + 0b1000'0000u));
+  }
+  else
+    return false;
+  return true;
+}
+
+template <class S>
+bool utf16sprint_single_uint32(S &s, uint32_t c) {
+  using char_t = rng_vt<S>;
+  if (c <= 0xd7ffu) {
+    s.push_back((char_t)(uint16_t)c);
+    return true;
+  }
+  else if (c <= 0xdfffu)
+    return false;
+  else if (c <= 0xffffu) {
+    s.push_back((char_t)(uint16_t)c);
+    return true;
+  }
+  else if (c <= 0x10ffffu) {
+    const uint32_t j = c - 0x10000u;
+    const uint32_t h = (uint32_t)(j >> (uint32_t)10u);
+    const uint32_t l = (uint32_t)((uint32_t)((uint32_t)(j << (uint32_t)22u))
+                                  >> (uint32_t)22u);
+    const uint16_t word_1 = h + 0xd800u;
+    const uint16_t word_2 = l + 0xdc00u;
+    s.push_back((char_t)word_1);
+    s.push_back((char_t)word_2);
+    return true;
+  }
+  else
+    return false;
+}
+
+template <class S, class R>
+bool utf8sprint_utf8(S &s, R &&r) {
+  const auto v = inner::fns::unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && v.end() != end(r))
+    return false;
+  s.append_range(v);
+  return true;
+}
+template <class S, class R>
+bool utf16sprint_utf8(S &s, R &&r) {
+  auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  for (;;) {
+    const auto x = unicode_sprint_impl_utf8_sscan_single(sv);
+    if (x.empty())
+      return false;
+    else {
+      if (*x == 0u)
+        return sv.empty();
+      else {
+        if (!utf16sprint_single_uint32(s, *x))
+          return false;
+      }
+    }
+  }
+  return true;
+}
+template <class S, class R>
+bool utf32sprint_utf8(S &s, R &&r) {
+  auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  for (;;) {
+    const auto x = unicode_sprint_impl_utf8_sscan_single(sv);
+    if (x.empty())
+      return false;
+    else {
+      if (*x == 0u)
+        return sv.empty();
+      else
+        s.push_back(*x);
+    }
+  }
+  return true;
+}
+
+template <class S, class R>
+bool utf8sprint_utf16(S &s, R &&r) {
+  auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  using char_t = typename S::value_type;
+  for (;;) {
+    const auto x = inner::fns::unicode_sprint_impl_utf16_sscan_single(sv);
+    if (x.empty())
+      return false;
+    else {
+      const uint32_t c = *x;
+      if (c == 0u)
+        return sv.empty();
+      if (!inner::fns::utf8sprint_single_uint32(s, c))
+        return false;
+    }
+  }
+}
+template <class S, class R>
+bool utf16sprint_utf16(S &s, R &&r) {
+  auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  if (!inner::fns::unicode_sprint_impl_utf16_check(sv))
+    return false;
+  s.append_range(bind_rng(sv, to_unsigned));
+  return true;
+}
+template <class S, class R>
+bool utf32sprint_utf16(S &s, R &&r) {
+  auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  using char_t = typename S::value_type;
+  for (;;) {
+    auto x = inner::fns::unicode_sprint_impl_utf16_sscan_single(sv);
+    if (x.empty())
+      return false;
+    else {
+      if (*x == 0u)
+        return sv.empty();
+      else
+        s.push_back(*x);
+    }
+  }
+}
+
+template <class S, class R>
+bool utf8sprint_utf32(S &s, R &&r) {
+  auto sv = unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  using char_t = typename S::value_type;
+  for (auto x0 : sv) {
+    const uint32_t x(x0);
+    if (!inner::fns::utf8sprint_single_uint32(s, x))
+      return false;
+  }
+  return true;
+}
+template <class S, class R>
+bool utf16sprint_utf32(S &s, R &&r) {
+  auto sv = unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  for (auto x0 : sv)
+    if (!inner::fns::utf16sprint_single_uint32(s, (uint32_t)x0))
+      return false;
+  return true;
+}
+template <class S, class R>
+bool utf32sprint_utf32(S &s, R &&r) {
+  auto sv = unicode_sprint_impl_get_iter_pair(r);
+  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+    return false;
+  const auto f = [](uint32_t c) {
+    return c > 0x10ffffu || (c >= 0xd800u && c <= 0xdfffu);
+  };
+  if (any_of(r, f))
+    return false;    
+  s.append_range(r);
+  return true;
+}
+
+}
+// arg_can_be_utf[8/16/32]string
+namespace inner {
+
+template <class R>
+concept arg_can_be_utf8string_pointer
+  = is_pointer_v<remove_reference_t<R>>
+  && is_integral_v<itr_vt<remove_reference_t<R>>>
+  && !is_same_v<itr_vt<remove_reference_t<R>>, bool>
+  && sizeof(itr_vt<remove_reference_t<R>>) == 1u;
+template <class R>
+concept arg_can_be_utf8string_range
+  = is_frng<R>
+  && is_integral_v<rng_vt<R>> && !is_same_v<rng_vt<R>, bool>
+  && sizeof(rng_vt<R>) == 1u;
+template <class R>
+concept arg_can_be_utf8string
+  = arg_can_be_utf8string_pointer<R> || arg_can_be_utf8string_range<R>;
+
+template <class R>
+concept arg_can_be_utf16string_pointer
+  = is_pointer_v<remove_reference_t<R>>
+  && is_integral_v<itr_vt<remove_reference_t<R>>>
+  && sizeof(itr_vt<remove_reference_t<R>>) == 2u;
+template <class R>
+concept arg_can_be_utf16string_range
+  = is_frng<R> && is_integral_v<rng_vt<R>> && sizeof(rng_vt<R>) == 2u;
+template <class R>
+concept arg_can_be_utf16string
+  = arg_can_be_utf16string_pointer<R> || arg_can_be_utf16string_range<R>;
+
+template <class R>
+concept arg_can_be_utf32string_pointer
+  = is_pointer_v<remove_reference_t<R>>
+  && is_integral_v<itr_vt<remove_reference_t<R>>>
+  && sizeof(itr_vt<remove_reference_t<R>>) == 4u;
+template <class R>
+concept arg_can_be_utf32string_range
+  = is_frng<R> && is_integral_v<rng_vt<R>> && sizeof(rng_vt<R>) == 4u;
+template <class R>
+concept arg_can_be_utf32string
+  = arg_can_be_utf32string_pointer<R> || arg_can_be_utf32string_range<R>;
+
+}
+
 namespace inner::fns {
 
 template <class T>
@@ -786,6 +1184,99 @@ public:
   iterator replace(const_iterator i1, const_iterator i2, R &&r) {
     return inner::fns::seq_container_replace_impl
       (*this, i1 - begin() + begin(), i2 - begin() + begin(), r);
+  }
+
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf8string<R>
+              && inner::arg_can_be_utf8string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf8sprint_utf8(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf8string<R>
+              && inner::arg_can_be_utf16string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf16sprint_utf8(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf8string<R>
+              && inner::arg_can_be_utf32string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf32sprint_utf8(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf16string<R>
+              && inner::arg_can_be_utf8string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf8sprint_utf16(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf16string<R>
+              && inner::arg_can_be_utf16string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf16sprint_utf16(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf16string<R>
+              && inner::arg_can_be_utf32string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf32sprint_utf16(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf32string<R>
+              && inner::arg_can_be_utf8string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf8sprint_utf32(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf32string<R>
+              && inner::arg_can_be_utf16string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf16sprint_utf32(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf32string<R>
+              && inner::arg_can_be_utf32string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf32sprint_utf32(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
   }
 
   template <class R>
@@ -1675,6 +2166,99 @@ public:
   iterator replace(const_iterator i1, const_iterator i2, R &&r) {
     return inner::fns::seq_container_replace_impl
       (*this, i1 - begin() + begin(), i2 - begin() + begin(), r);
+  }
+
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf8string<R>
+              && inner::arg_can_be_utf8string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf8sprint_utf8(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf8string<R>
+              && inner::arg_can_be_utf16string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf16sprint_utf8(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf8string<R>
+              && inner::arg_can_be_utf32string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf32sprint_utf8(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf16string<R>
+              && inner::arg_can_be_utf8string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf8sprint_utf16(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf16string<R>
+              && inner::arg_can_be_utf16string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf16sprint_utf16(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf16string<R>
+              && inner::arg_can_be_utf32string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf32sprint_utf16(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf32string<R>
+              && inner::arg_can_be_utf8string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf8sprint_utf32(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf32string<R>
+              && inner::arg_can_be_utf16string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf16sprint_utf32(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
+  }
+  template <class R>
+  bool assign_unicode(R &&r)
+    requires (inner::arg_can_be_utf32string<R>
+              && inner::arg_can_be_utf32string_range<this_t>) {
+    this_t tmp(get_allocator());
+    if (!inner::fns::utf32sprint_utf32(tmp, r))
+      return false;
+    *this = move(tmp);
+    return true;
   }
 
   template <class R>

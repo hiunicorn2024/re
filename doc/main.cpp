@@ -5538,99 +5538,8 @@ void doc_loop_range() {
 }
 
 // container
-void doc_basic_string() {
+void doc_string() {
   // basic_string<T, AL = default_allocator<T>>
-  //   pointer
-  //   const_pointer
-  //
-  //   value_type
-  //   reference
-  //   const_reference
-  //
-  //   iterator
-  //   const_iterator
-  //   difference_type
-  //   size_type
-  //
-  //   begin()
-  //   end()
-  //   cbegin()
-  //   cend()
-  //   max_size()
-  //   size()
-  //   empty()
-  //
-  //   special member functions: full // may throw
-  //   == <=>
-  //
-  //   reverse_iterator
-  //   const_reverse_iterator
-  //   rbegin()
-  //   rend()
-  //   crbegin()
-  //   crend()
-  //
-  //   allocator_type
-  //   get_allocator()
-  //
-  //   basic_string(alloc)
-  //   basic_string(const basic_string &, alloc) // may throw
-  //   basic_string(basic_string &&, alloc) // may throw
-  //
-  //   explicit basic_string(n, alloc = {}) // may throw
-  //   basic_string(n, x, alloc = {}) // may throw
-  //   assign(n, x) // may throw
-  //
-  //   basic_string(from, to, alloc = {}) // may throw
-  //   assign(from, to) // may throw
-  //
-  //   basic_string(il, alloc = {}) // may throw
-  //   operator =(il) // may throw
-  //   assign(il) // may throw
-  //
-  //   insert(cit, x) // may throw
-  //   insert(cit, n, x) // may throw
-  //   insert(cit, from, to) // may throw
-  //   insert(cit, il) // may throw
-  //   erase(cit)
-  //   erase(from, to)
-  //   clear()
-  //
-  //   front()
-  //   back()
-  //   push_back(x) // may throw
-  //   pop_back()
-  //   operator [](n)
-  //   at(n) // may throw
-  //
-  //   data()
-  //   capacity()
-  //   full()
-  //   resize(n, x) // may throw
-  //   resize(n) // may throw
-  //   reserve(n) // may throw
-  //   reserve_more(n) // may throw
-  //   reallocate(n = size()) // may throw
-  //   shrink_to_fit()
-  //   remove_if(eq) // may throw
-  //   remove(x) // may throw
-  //   replace(i1, i2, r) // may throw
-  //
-  //   basic_string(from_range, r, a = {}) // may throw
-  //   basic_string(array) // may throw
-  //   explicit basic_string(r) // may throw
-  //   basic_string(r, alloc) // may throw
-  //   operator =(r) // may throw
-  //   assign(r) // may throw
-  //   assign_range(r) // may throw
-  //   insert(cit, r) // may throw
-  //   insert_range(cit, r) // may throw
-  //   push_back(r) // may throw
-  //   append_range(r) // may throw
-  //   pop_back(n) // requires: n <= size()
-  //   append(s...) // may throw
-}
-void doc_sso_string() {
   // sso_string<T, size_t N, AL = default_allocator<T>>
   //   pointer
   //   const_pointer
@@ -5661,15 +5570,19 @@ void doc_sso_string() {
   //
   //   allocator_type
   //   get_allocator()
-  //   sso_string(alloc)
-  //   sso_string(const sso_string &, alloc) // may throw
-  //   sso_string(sso_string &&, alloc) // may throw
-  //   explicit sso_string(n, alloc = {}) // may throw
-  //   sso_string(n, x, alloc = {}) // may throw
+  //
+  //   this_t(alloc)
+  //   this_t(const this_t &, alloc) // may throw
+  //   this_t(this_t &&, alloc) // may throw
+  //
+  //   explicit this_t(n, alloc = {}) // may throw
+  //   this_t(n, x, alloc = {}) // may throw
   //   assign(n, x) // may throw
-  //   sso_string(from, to, alloc = {}) // may throw
+  //
+  //   this_t(from, to, alloc = {}) // may throw
   //   assign(from, to) // may throw
-  //   sso_string(il, alloc = {}) // may throw
+  //
+  //   this_t(il, alloc = {}) // may throw
   //   operator =(il) // may throw
   //   assign(il) // may throw
   //
@@ -5683,12 +5596,12 @@ void doc_sso_string() {
   //
   //   front()
   //   back()
-  //   push_back(x)
+  //   push_back(x) // may throw
   //   pop_back()
   //   operator [](n)
   //   at(n) // may throw
   //
-  //   local()
+  //   local() // only for this_t
   //   data()
   //   capacity()
   //   full()
@@ -5702,10 +5615,12 @@ void doc_sso_string() {
   //   remove(x) // may throw
   //   replace(i1, i2, r) // may throw
   //
-  //   sso_string(from_range, r, a = {}) // may throw
-  //   sso_string(array) // may throw
-  //   explicit sso_string(r) // may throw
-  //   sso_string(r, alloc) // may throw
+  //   assign_unicode(s)->bool // strong exception-guarantee
+  //
+  //   this_t(from_range, r, a = {}) // may throw
+  //   this_t(array) // may throw
+  //   explicit this_t(r) // may throw
+  //   this_t(r, alloc) // may throw
   //   operator =(r) // may throw
   //   assign(r) // may throw
   //   assign_range(r) // may throw
@@ -8717,6 +8632,10 @@ void doc_c_file() {
   //   put(const char *) // auto call flush()
   //   put(char_range) // auto call flush()
   //
+  //   putwc(wint_t) // no flush()
+  //   putws(const wchar_t *)
+  //   putws(wchar_range)
+  //
   // file_exists(const char *)
   //
   // console_c_file
@@ -8779,6 +8698,7 @@ void doc_print_tag() {
 }
 void doc_sscan() {
   // sscan(sv_ref, sv)->bool
+  // sscan(sv_ref, bool &)->bool // non-zero integer means true
   // sscan(sv_ref, int_ref)->bool
   // sscan(sv_ref, int_ref, dec)->bool
   // sscan(sv_ref, int_ref, bin)->bool
@@ -8847,6 +8767,8 @@ void doc_sprint() {
   //
   // put(...)
   // putln(...)
+  // putws(...)
+  // putwsln(...)
 }
 void doc_big_int() {
   // big_int
@@ -9100,8 +9022,7 @@ int main() {
   doc_rotate_range();
   doc_loop_range();
 
-  doc_basic_string();
-  doc_sso_string();
+  doc_string();
   doc_string_reference();
   doc_bitset();
   doc_vector();
