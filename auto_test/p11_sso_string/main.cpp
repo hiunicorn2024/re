@@ -1304,12 +1304,134 @@ void test_string_compare() {
   }
 }
 
+void test_utf8_utf16_utf32_conversion() {
+  // utf16->utf32 conversion rule
+  {
+    // >= 0x10000
+    // 1'0000'0000'0000'0000'0000
+    // 1'1111'1111'1111'1111'1111
+    const uint32_t j = 0x20bb7u - 0x10000u;
+    const uint32_t h = (uint32_t)(j >> (uint32_t)10u);
+    const uint32_t l = (uint32_t)((uint32_t)((uint32_t)(j << (uint32_t)22u))
+                                  >> (uint32_t)22u);
+    const char16_t word_1 = h + 0xd800u;
+    const char16_t word_2 = l + 0xdc00u;
+
+    u16sview v = u"𠮷";
+    assert(v.size() == 2u);
+    assert(v[0] == word_1 && v[1] == word_2);
+
+    u32sview v2 = U"𠮷";
+    assert(v2.size() == 1u);
+
+    assert(v2[0] == 0x20bb7u);
+
+    u16string s(u"一二abc三𠮷");
+    u16string s2;
+    u32string ss(U"一二abc三𠮷");
+    u32string ss2;
+
+    assert(s2.assign_unicode(ss));
+    assert(s == s2);
+    assert(ss2.assign_unicode(s));
+    assert(ss == ss2);
+
+    string s3;
+    assert(s3.assign_unicode(ss2));
+    assert(s3 == "一二abc三𠮷");
+    assert(ss2.assign_unicode(s3));
+    assert(ss == ss2);
+  }
+
+  // inner::fns::unicode_sprint_impl_get_iter_pair
+  {
+    const sview v = "view";
+    const char *p = "pointer";
+    assert(equal(inner::fns::unicode_sprint_impl_get_iter_pair(v),
+                 "view"_sv));
+    assert(equal(inner::fns::unicode_sprint_impl_get_iter_pair(p),
+                 "pointer"_sv));
+  }
+
+  // utf8-utf16-utf32 conversion
+  {
+    rander<mt19937> r;
+
+    //r(1u, 0xd800u)
+    for (int i : irng(1, 1000)) {
+      string s, sb, sc, sd;
+      u16string s2, s2b, s2c, s2d;
+      u32string s3, s3b, s3c, s3d;
+
+      for (int j : irng(0, i)) {
+        uint32_t k = 0;
+        for (;;) {
+          k = r(1u, 0x10ffffu);
+          if (!(k >= 0xd800u && k <= 0xdfffu))
+            break;
+        }
+        s3.push_back(k);
+      }
+      assert(s.assign_unicode(s3));
+      assert(s3b.assign_unicode(s));
+      assert(s3 == s3b);
+      assert(s2.assign_unicode(s3));
+      assert(s3c.assign_unicode(s2));
+      assert(s3 == s3c);
+
+      assert(sb.assign_unicode(s2));
+      assert(s2b.assign_unicode(sb));
+      assert(s2 == s2b);
+
+      assert(s2c.assign_unicode(s));
+      assert(sc.assign_unicode(s2c));
+      assert(s == sc);
+
+      assert(sd.assign_unicode(s) && s == sd);
+      assert(s2d.assign_unicode(s2) && s2 == s2d);
+      assert(s3d.assign_unicode(s3) && s3 == s3d);
+    }
+
+    const uint32_t a[] = {
+      1u, 2u, 3u, 0xe000u, 0xe001u, 0xe002u, 0x10fffd, 0x10fffe, 0x10ffff
+    };
+    for (int i : irng(1, 100)) {
+      string s, sb, sc, sd;
+      u16string s2, s2b, s2c, s2d;
+      u32string s3, s3b, s3c, s3d;
+
+      for (int c : irng(0, i))
+        s3.push_back(a[r(1u, size(a)) - 1u]);
+
+      assert(s.assign_unicode(s3));
+      assert(s3b.assign_unicode(s));
+      assert(s3 == s3b);
+      assert(s2.assign_unicode(s3));
+      assert(s3c.assign_unicode(s2));
+      assert(s3 == s3c);
+
+      assert(sb.assign_unicode(s2));
+      assert(s2b.assign_unicode(sb));
+      assert(s2 == s2b);
+
+      assert(s2c.assign_unicode(s));
+      assert(sc.assign_unicode(s2c));
+      assert(s == sc);
+
+      assert(sd.assign_unicode(s) && s == sd);
+      assert(s2d.assign_unicode(s2) && s2 == s2d);
+      assert(s3d.assign_unicode(s3) && s3 == s3d);
+    }
+  }
+}
+
 void test_string2() {
   printf("container - sso_string: ");
 
   test_sso_string();
   test_string_reference();
   test_string_compare();
+  test_utf8_utf16_utf32_conversion();
 
   printf("ok\n");
 }

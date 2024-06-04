@@ -217,6 +217,101 @@ void test_sscan() {
     assert(sscan(v, "defg"));
     assert(v == "");
   }
+  // scan wide/u16/u32 string
+  {
+    // wstring
+    {
+      wsview v = L"aghijz1234567890";
+      assert(!sscan(v, L"aghijz124567890"_sv));
+      assert(sscan(v, L"aghijz1234567890"_sv));
+      assert(v == L"");
+    }
+    // u16string
+    {
+      u16sview v = u"aghijz1234567890";
+      assert(!sscan(v, u"aghijz124567890"_sv));
+      assert(sscan(v, u"aghijz1234567890"_sv));
+      assert(v == u"");
+    }
+    // u32string
+    {
+      u32sview v = U"aghijz1234567890";
+      assert(!sscan(v, U"aghijz124567890"_sv));
+      assert(sscan(v, U"aghijz1234567890"_sv));
+      assert(v == U"");
+    }
+
+    // wstring
+    {
+      wstring s = L"+12345";
+      wsview v = s;
+      int x = 0;
+      assert(sscan(v, x));
+      assert(v.empty() && x == 12345);
+
+      s = L"+10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, bin) && v.empty() && x == 0b10110);
+
+      s = L"-10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, oct) && v.empty() && x == -010110);
+
+      s = L"fFfFf";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, hex) && v.empty() && x == 0xfffff);
+    }
+    // u16string
+    {
+      u16string s = u"+12345";
+      u16sview v = s;
+      int x = 0;
+      assert(sscan(v, x));
+      assert(v.empty() && x == 12345);
+
+      s = u"+10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, bin) && v.empty() && x == 0b10110);
+
+      s = u"-10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, oct) && v.empty() && x == -010110);
+
+      s = u"fFfFf";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, hex) && v.empty() && x == 0xfffff);
+    }
+    // u32string
+    {
+      u32string s = U"+12345";
+      u32sview v = s;
+      int x = 0;
+      assert(sscan(v, x));
+      assert(v.empty() && x == 12345);
+
+      s = U"+10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, bin) && v.empty() && x == 0b10110);
+
+      s = U"-10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, oct) && v.empty() && x == -010110);
+
+      s = U"fFfFf";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, hex) && v.empty() && x == 0xfffff);
+    }
+  }
+
   // scan integral
   {
     const auto test_sscan_success = [](auto type_tag, sview v, auto cmp,
@@ -381,6 +476,39 @@ void test_sscan() {
     }
     // scan unsigned integral
     {
+      assert(test_sscan_success(type_tag<bool>{}, "0", false));
+      assert(test_sscan_success(type_tag<bool>{}, "-0", false));
+      assert(test_sscan_failure(type_tag<bool>{}, "--0"));
+      assert(test_sscan_success(type_tag<bool>{}, "00", false));
+      assert(test_sscan_success(type_tag<bool>{}, "00000", false));
+      assert(test_sscan_success(type_tag<bool>{}, "0000000", false));
+      assert(test_sscan_success(type_tag<bool>{}, "-00", false));
+      assert(test_sscan_success(type_tag<bool>{}, "-00000", false));
+      assert(test_sscan_success(type_tag<bool>{}, "-0000000", false));
+      assert(test_sscan_success(type_tag<bool>{}, "1", true));
+      assert(test_sscan_success(type_tag<bool>{}, "+1", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-1", true));
+      assert(test_sscan_failure(type_tag<bool>{}, "++1"));
+      assert(test_sscan_failure(type_tag<bool>{}, "--1"));
+      assert(test_sscan_success(type_tag<bool>{}, "1000000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0100000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0020000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0003000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0000400", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0000050", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0000006", true));
+      assert(test_sscan_success(type_tag<bool>{}, "0123456", true));
+      assert(test_sscan_success(type_tag<bool>{}, "123456", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-1000000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0100000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0020000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0003000", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0000400", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0000050", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0000006", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-0123456", true));
+      assert(test_sscan_success(type_tag<bool>{}, "-123456", true));
+
       assert(test_sscan_success(type_tag<unsigned>{}, "012", 12u));
       assert(test_sscan_success(type_tag<unsigned>{}, "12", 12u));
       assert(test_sscan_failure(type_tag<unsigned>{}, "++012"));
@@ -476,6 +604,53 @@ void test_sscan() {
       v = "0";
       assert(sscan(v, zz, hex));
       assert(v.empty() && zz == 0u);
+    }
+
+    // scan signed integral (utf16/utf32)
+    {
+      u16string s = u"+12345";
+      u16sview v = s;
+      int x = 0;
+      assert(sscan(v, x));
+      assert(v.empty() && x == 12345);
+
+      s = u"+10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, bin) && v.empty() && x == 0b10110);
+
+      s = u"-10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, oct) && v.empty() && x == -010110);
+
+      s = u"fFfFf";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, hex) && v.empty() && x == 0xfffff);
+    }
+    // scan unsigned integral (utf16/utf32)
+    {
+      u16string s = u"+12345";
+      u16sview v = s;
+      unsigned x = 0;
+      assert(sscan(v, x));
+      assert(v.empty() && x == 12345);
+
+      s = u"+10110";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, bin) && v.empty() && x == 0b10110u);
+
+      s = u"-10110";
+      v = s;
+      x = 0;
+      assert(!sscan(v, x, oct) && v.begin() == s.begin());
+
+      s = u"fFfFf";
+      v = s;
+      x = 0;
+      assert(sscan(v, x, hex) && v.empty() && x == 0xfffffu);
     }
   }
 }
@@ -1427,6 +1602,84 @@ void test_big_int() {
     assert(i.sprint_scientific(6u, 5u, false, false) == "1.23456'8e+19");
     assert(i.sprint_scientific(6u, 6u, false, false) == "1.234568e+19");
   }
+
+  // sscan (utf16/utf32)
+  // sprint (utf16/utf32)
+  {
+    wsview v1 =
+      L"-123456789012345678901234567890123456789012345678901234567890"_sv;
+    u16sview v2 =
+      u"-123456789012345678901234567890123456789012345678901234567890"_sv;
+    u32sview v3 =
+      U"-123456789012345678901234567890123456789012345678901234567890"_sv;
+    big_int i, i2, i3;
+    assert(i.sscan(v1) && v1.empty());
+    assert(i2.sscan(v2) && v2.empty());
+    assert(i3.sscan(v3) && v3.empty());
+    static_assert(same_as<decltype(i.sprint<wstring>(10u)), wstring>);
+    static_assert(same_as<decltype(i.sprint<u16string>(10u)), u16string>);
+    static_assert(same_as<decltype(i.sprint<u32string>(10u)), u32string>);
+    wstring s1 = i.sprint<wstring>(10u);
+    u16string s2 = i.sprint<u16string>(10u);
+    u32string s3 = i.sprint<u32string>(10u);
+    assert(s1
+           == L"-1234567890'1234567890'1234567890'1234567890'"
+           "1234567890'1234567890");
+    assert(s2
+           == u"-1234567890'1234567890'1234567890'1234567890'"
+           "1234567890'1234567890");
+    assert(s3
+           == U"-1234567890'1234567890'1234567890'1234567890'"
+           "1234567890'1234567890");
+  }
+  // sscan_hex (utf16/utf32)
+  // sprint_hex (utf16/utf32)
+  {
+    wsview v1 =
+      L"-123def'123def'123def'123def'123def'123def'123def'123def"_sv;
+    u16sview v2 =
+      u"-123def'123def'123def'123def'123def'123def'123def'123def"_sv;
+    u32sview v3 =
+      U"-123def'123def'123def'123def'123def'123def'123def'123def"_sv;
+    big_int i, i2, i3;
+    assert(i.sscan_hex(v1) && v1.empty());
+    assert(i2.sscan_hex(v2) && v2.empty());
+    assert(i3.sscan_hex(v3) && v3.empty());
+    static_assert(same_as<decltype(i.sprint_hex<wstring>(6u)), wstring>);
+    static_assert(same_as<decltype(i.sprint_hex<u16string>(6u)), u16string>);
+    static_assert(same_as<decltype(i.sprint_hex<u32string>(6u)), u32string>);
+    wstring s1 = i.sprint_hex<wstring>(6u);
+    u16string s2 = i.sprint_hex<u16string>(6);
+    u32string s3 = i.sprint_hex<u32string>(6u);
+    assert(s1
+           == L"-123def'123def'123def'123def'123def'123def'123def'123def");
+    assert(s2
+           == u"-123def'123def'123def'123def'123def'123def'123def'123def");
+    assert(s3
+           == U"-123def'123def'123def'123def'123def'123def'123def'123def");
+  }
+  // sscan_scientific (utf16/utf32)
+  // sprint_scientific (utf16/utf32)
+  {
+    wsview v1 = L"-123456.789e+20";
+    u16sview v2 = u"-123456.789e+20";
+    u32sview v3 = U"-123456.789e+20";
+    big_int i, i2, i3;
+    assert(i.sscan_scientific(v1) && v1.empty());
+    assert(i2.sscan_scientific(v2) && v2.empty());
+    assert(i3.sscan_scientific(v3) && v3.empty());
+    static_assert(same_as<decltype(i.sprint_scientific<wstring>(2u)), wstring>);
+    static_assert(same_as
+                  <decltype(i.sprint_scientific<u16string>(2u)), u16string>);
+    static_assert(same_as
+                  <decltype(i.sprint_scientific<u32string>(2u)), u32string>);
+    wstring s1 = i.sprint_scientific<wstring>((size_t)-1);
+    u16string s2 = i.sprint_scientific<u16string>((size_t)-1);
+    u32string s3 = i.sprint_scientific<u32string>((size_t)-1);
+    assert(s1 == L"-1.23456789e+25");
+    assert(s2 == u"-1.23456789e+25");
+    assert(s3 == U"-1.23456789e+25");
+  }
 }
 template <class F>
 void test_sprint_floating_point_impl() {
@@ -1638,6 +1891,17 @@ void test_sscan_floating_point_impl() {
       assert(sscan(v, f));
       assert(v.empty() && traits::is_nan(f) && traits::is_negative(f));
     }
+
+    for (wsview v : seq(L"nan"_sv, L"NAN", L"+nan", L"+NAN")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_nan(f) && traits::is_positive(f));
+    }
+    for (wsview v : seq(L"-nan"_sv, L"-NAN")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_nan(f) && traits::is_negative(f));
+    }
   }
   // inf
   {
@@ -1647,6 +1911,39 @@ void test_sscan_floating_point_impl() {
       assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
     }
     for (sview v : seq("-inf"_sv, "-INF")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+    }
+
+    for (wsview v : seq(L"inf"_sv, L"INF", L"+inf", L"+INF")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+    }
+    for (wsview v : seq(L"-inf"_sv, L"-INF")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+    }
+
+    for (u16sview v : seq(u"inf"_sv, u"INF", u"+inf", u"+INF")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+    }
+    for (u16sview v : seq(u"-inf"_sv, u"-INF")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+    }
+
+    for (u32sview v : seq(U"inf"_sv, U"INF", U"+inf", U"+INF")) {
+      F f = (F)0;
+      assert(sscan(v, f));
+      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+    }
+    for (u32sview v : seq(U"-inf"_sv, U"-INF")) {
       F f = (F)0;
       assert(sscan(v, f));
       assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
@@ -1663,6 +1960,9 @@ void test_sscan_floating_point_impl() {
       uint_t i;
       float_t x;
       string s;
+      string ws;
+      string u16s;
+      string u32s;
       sview v;
 
       const auto f = [&]() {
@@ -1737,6 +2037,35 @@ void test_sscan_floating_point_impl() {
 void test_sscan_floating_point() {
   test_sscan_floating_point_impl<float>();
   test_sscan_floating_point_impl<double>();
+}
+void test_sscan_sprint_floating_point_by_wide_string() {
+  wsview v1 = L"-126.25e-1";
+  u16sview v2 = u"-126.25e-1";
+  u32sview v3 = U"-126.25e-1";
+  float f1{}, f2{}, f3{};
+  assert(sscan(v1, f1) && v1.empty());
+  assert(sscan(v2, f2) && v2.empty());
+  assert(sscan(v3, f3) && v3.empty());
+  assert(f1 == f2 && f2 == f3);
+  assert(f1 == -12.625f);
+  wstring s1;
+  u16string s2;
+  u32string s3;
+  sprint(s1, f1);
+  sprint(s2, f2);
+  sprint(s3, f3);
+  assert(s1 == L"-12.625");
+  assert(s2 == u"-12.625");
+  assert(s3 == U"-12.625");
+  s1.clear();
+  s2.clear();
+  s3.clear();
+  sprint(s1, f1, scientific);
+  sprint(s2, f2, scientific);
+  sprint(s3, f3, scientific);
+  assert(s1 == L"-1.2625e+1");
+  assert(s2 == u"-1.2625e+1");
+  assert(s3 == U"-1.2625e+1");
 }
 void test_ssplitter() {
   {
@@ -1861,6 +2190,7 @@ void test_io() {
   test_big_int();
   test_sprint_floating_point();
   test_sscan_floating_point();
+  test_sscan_sprint_floating_point_by_wide_string();
   test_ssplitter();
   test_ssplit();
 
