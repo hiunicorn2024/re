@@ -2,7 +2,7 @@
 
 [basic/sso]_string::assign_unicode(utf[8/16/32]string_ref)->bool
 
-support utf[16/32] for conversion between [string/floating-point/integer] and string
+support utf[16/32] for conversion between [floating-point/integer] and string
 
 changed details
 
