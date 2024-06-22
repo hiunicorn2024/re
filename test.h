@@ -808,14 +808,14 @@ class exception_countdown : public instance_counter<T> {
   void constructor_check() {
     if (constructor_left)
       if (--constructor_left == 0)
-        throw_or_abort<logic_error>("exception for test\n");
+        throw_or_terminate<logic_error>("exception for test\n");
   }
 
 public:
   exception_countdown() : base_t() {
     if (default_constructor_left)
       if (--default_constructor_left == 0)
-        throw_or_abort<logic_error>("exception for test\n");
+        throw_or_terminate<logic_error>("exception for test\n");
     constructor_check();
   }
   ~exception_countdown() = default;
@@ -823,13 +823,13 @@ public:
     : base_t(static_cast<const base_t &>(t)) {
     if (copy_constructor_left)
       if (--copy_constructor_left == 0)
-        throw_or_abort<logic_error>("exception for test\n");
+        throw_or_terminate<logic_error>("exception for test\n");
     constructor_check();
   }
   exception_countdown &operator =(const exception_countdown &t) {
     if (copy_assignment_left)
       if (--copy_assignment_left == 0)
-        throw_or_abort<logic_error>("exception for test\n");
+        throw_or_terminate<logic_error>("exception for test\n");
     base_t::operator =(static_cast<const base_t &>(t));
     return *this;
   }
@@ -837,13 +837,13 @@ public:
     : base_t(move(static_cast<base_t &>(t))) {
     if (move_constructor_left)
       if (--move_constructor_left == 0)
-        throw_or_abort<logic_error>("exception for test\n");
+        throw_or_terminate<logic_error>("exception for test\n");
     constructor_check();
   }
   exception_countdown &operator =(exception_countdown &&t) {
     if (move_assignment_left)
       if (--move_assignment_left == 0)
-        throw_or_abort<logic_error>("exception for test\n");
+        throw_or_terminate<logic_error>("exception for test\n");
     base_t::operator =(move(static_cast<base_t &>(t)));
     return *this;
   }
@@ -1068,7 +1068,7 @@ public:
 
   R operator ()(S...s) const {
     if (d.empty())
-      throw_or_abort<logic_error>("re::ez_function: bad function call\n");
+      throw_or_terminate<logic_error>("re::ez_function: bad function call\n");
     return d->call(forward<S>(s)...);
   }
 
@@ -1125,7 +1125,7 @@ class ez_vector {
 
   void increase_capacity() {
     if (to_unsigned(ed - op) == max_size())
-      throw_or_abort<logic_error>("re::ez_vector: size overflow\n");
+      throw_or_terminate<logic_error>("re::ez_vector: size overflow\n");
     size_type new_capacity = (op != ed)
       ? ((to_unsigned(ed - op) < (max_size() / 2))
          ? to_unsigned((ed - op) * 2) : max_size())
@@ -2741,6 +2741,34 @@ public:
 
 }
 
+// ez_mutex
+namespace re {
+
+class ez_mutex {
+  CRITICAL_SECTION v;
+
+public:
+  ez_mutex() noexcept {
+    InitializeCriticalSection(addressof(v));
+  }
+  ~ez_mutex() {
+    DeleteCriticalSection(addressof(v));
+  }
+  ez_mutex(const ez_mutex &) = delete;
+  ez_mutex &operator=(const ez_mutex &) = delete;
+  ez_mutex(ez_mutex &&) = delete;
+  ez_mutex &operator=(ez_mutex &&) = delete;
+
+  void lock() {
+    EnterCriticalSection(addressof(v));
+  }
+  void unlock() {
+    LeaveCriticalSection(addressof(v));
+  }
+};
+
+}
+
 // test_allocator
 // stateful_test_allocator
 // test_object
@@ -2849,6 +2877,7 @@ inline inner::alloc_log<MAP> *test_allocator_base<MAP>::p = nullptr;
 template <class T, template <class, class> class MAP = ez_map>
 class test_allocator : inner::test_allocator_base<MAP> {
   using base_t = inner::test_allocator_base<MAP>;
+  static ez_mutex mtx;
 
 public:
   using value_type = T;
@@ -2884,22 +2913,32 @@ public:
 
     T *const p = reinterpret_cast<T *>(operator new(n * sizeof(T)));
     if (p == nullptr)
-      throw_or_abort<bad_alloc>();
+      throw_or_terminate<bad_alloc>();
+    mtx.lock();
     base_t::p->allocate(p, n);
+    mtx.unlock();
     return p;
   }
   void deallocate(T *p, size_t n) noexcept {
+    mtx.lock();
     base_t::p->deallocate(p, n);
+    mtx.unlock();
     operator delete(p);
   }
 
   static bool empty() noexcept {
+    mtx.lock();
+    const auto guard = exit_fn([&m = mtx]() {m.unlock();});
     return base_t::p->empty();
   }
   size_type size() const noexcept {
+    mtx.lock();
+    const auto guard = exit_fn([&m = mtx]() {m.unlock();});
     return base_t::p->size();
   }
 };
+template <class T, template <class, class> class MAP>
+inline ez_mutex test_allocator<T, MAP>::mtx;
 
 namespace inner {
 
@@ -3041,7 +3080,7 @@ public:
 
     T *const pp = reinterpret_cast<T *>(operator new(n * sizeof(T)));
     if (pp == nullptr)
-      throw_or_abort<bad_alloc>();
+      throw_or_terminate<bad_alloc>();
     p->first.allocate(pp, n);
     return pp;
   }
