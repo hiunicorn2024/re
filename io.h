@@ -3,6 +3,7 @@
 
 #include "range.h"
 #include "container.h"
+#include "time.h"
 
 // fputc_iterator
 // c_file
@@ -123,18 +124,21 @@ public:
 
   int getc() const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::getc(): null file pointer\n");
+      throw_or_terminate<logic_error>
+        ("re::c_file::getc(): null file pointer\n");
     return fgetc(fp);
   }
   const this_t &putc(int c) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::putc(c): null file pointer\n");
+      throw_or_terminate<logic_error>
+        ("re::c_file::putc(c): null file pointer\n");
     fputc(c, fp);
     return *this;
   }
   const this_t &putwc(wint_t c) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::putc(c): null file pointer\n");
+      throw_or_terminate<logic_error>
+        ("re::c_file::putc(c): null file pointer\n");
     fputwc(c, fp);
     return *this;
   }
@@ -150,7 +154,7 @@ public:
   template <class STR = string>
   STR get() const noexcept {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::get(): null file pointer\n");
+      throw_or_terminate<logic_error>("re::c_file::get(): null file pointer\n");
     STR s;
     int c;
     while ((c = fgetc(fp)) != EOF)
@@ -159,7 +163,7 @@ public:
   }
   const this_t &put(const char *s) const {
     if (empty())
-      throw_or_abort<logic_error>
+      throw_or_terminate<logic_error>
         ("re::c_file::put(const char *): null file pointer\n");
     fputs(s, fp);
     flush();
@@ -174,10 +178,11 @@ public:
               const this_t &>
   put(R &&r) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::put(csr): null file pointer\n");
+      throw_or_terminate<logic_error>
+        ("re::c_file::put(csr): null file pointer\n");
     const int result = fwrite((void *)to_address(begin(r)), 1, size(r), fp);
     if (result == EOF)
-      throw_or_abort<runtime_error>("fwrite() failed");
+      throw_or_terminate<runtime_error>("fwrite() failed");
     flush();
     return *this;
   }
@@ -191,7 +196,8 @@ public:
               const this_t &>
   put(R &&r) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::put(rsr): null file pointer\n");
+      throw_or_terminate<logic_error>
+        ("re::c_file::put(rsr): null file pointer\n");
     for (auto c : r)
       fputc(c, fp);
     flush();
@@ -200,7 +206,7 @@ public:
 
   const this_t &putws(const wchar_t *s) const {
     if (empty())
-      throw_or_abort<logic_error>
+      throw_or_terminate<logic_error>
         ("re::c_file::put(const wchar_t *): null file pointer\n");
     fputws(s, fp);
     flush();
@@ -213,7 +219,8 @@ public:
               const this_t &>
   putws(R &&r) const {
     if (empty())
-      throw_or_abort<logic_error>("re::c_file::put(wsr): null file pointer\n");
+      throw_or_terminate<logic_error>
+        ("re::c_file::put(wsr): null file pointer\n");
     for (auto c : r)
       fputwc(c, fp);
     flush();
@@ -221,7 +228,7 @@ public:
   }
 };
 
-inline bool file_exists(const char *s) {
+inline bool c_file_exists(const char *s) {
   c_file f;
   f.open(s, "rb");
   return f != nullptr;
@@ -1896,7 +1903,7 @@ public:
   }
   uint32_t div(uint32_t x) {
     if (x == 0u)
-      throw_or_abort<logic_error>("re::big_int: div by 0\n");
+      throw_or_terminate<logic_error>("re::big_int: div by 0\n");
     uint64_t left = 0u;
     for (uint32_t &u : rrng(v)) {
       const uint64_t z = left | (uint64_t)u;
@@ -3184,6 +3191,1035 @@ struct fo_ssplit {
   }
 };
 inline constexpr fo_ssplit ssplit{};
+
+}
+
+// file
+namespace re {
+
+struct read_file_t {
+  explicit read_file_t() = default;
+};
+read_file_t read_file{};
+struct open_file_t {
+  explicit open_file_t() = default;
+};
+open_file_t open_file{};
+struct create_file_t {
+  explicit create_file_t() = default;
+};
+create_file_t create_file{};
+class file {
+  HANDLE p;
+
+public:
+  file() noexcept : p(INVALID_HANDLE_VALUE) {}
+  ~file() {
+    close();
+  }
+  file(const file &) = delete;
+  file &operator =(const file &) = delete;
+  file(file &&f) noexcept : p(f.p) {
+    f.p = INVALID_HANDLE_VALUE;
+  }
+  file &operator =(file &&f) noexcept {
+    if (this != addressof(f)) {
+      close();
+      p = f.p;
+      f.p = INVALID_HANDLE_VALUE;
+    }
+    return *this;
+  }
+
+  explicit file(sview v) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl(v, p);
+  }
+  explicit file(wsview v) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl(v, p);
+  }
+  explicit file(u16sview v) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl(v, p);
+  }
+  explicit file(u32sview v) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl(v, p);
+  }
+
+  file(sview v, read_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_read(v, p);
+  }
+  file(wsview v, read_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_read(v, p);
+  }
+  file(u16sview v, read_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_read(v, p);
+  }
+  file(u32sview v, read_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_read(v, p);
+  }
+
+  file(sview v, open_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_open(v, p);
+  }
+  file(wsview v, open_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_open(v, p);
+  }
+  file(u16sview v, open_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_open(v, p);
+  }
+  file(u32sview v, open_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_open(v, p);
+  }
+
+  file(sview v, create_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_create(v, p);
+  }
+  file(wsview v, create_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_create(v, p);
+  }
+  file(u16sview v, create_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_create(v, p);
+  }
+  file(u32sview v, create_file_t) : p(INVALID_HANDLE_VALUE) {
+    file_open_impl_create(v, p);
+  }
+
+  bool empty() const noexcept {
+    return p == INVALID_HANDLE_VALUE;
+  }
+
+private:
+  template <class V>
+  static void file_open_impl(V v, HANDLE &p) {
+    wstring s;
+    if (!s.assign_unicode(v))
+      throw_or_terminate<logic_error>
+        ("re::file::open(sv): invalid unicode string\n");
+    p = CreateFile(s.data(),
+                   (GENERIC_READ | GENERIC_WRITE), 0, NULL,
+                   OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (p == INVALID_HANDLE_VALUE)
+      p = CreateFile(s.data(),
+                     GENERIC_READ, 0, NULL,
+                     OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>
+        ("re::file::file_open_impl(): failed to open\n");
+  }
+  template <class V>
+  static void file_open_impl_read(V v, HANDLE &p) {
+    wstring s;
+    if (!s.assign_unicode(v))
+      throw_or_terminate<logic_error>
+        ("re::file::open(sv, read_file): invalid unicode string\n");
+    p = CreateFile(s.data(),
+                   GENERIC_READ, 0, NULL,
+                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>
+        ("re::file::file_open_impl_read(): failed to open\n");
+  }
+  template <class V>
+  static void file_open_impl_open(V v, HANDLE &p) {
+    wstring s;
+    if (!s.assign_unicode(v))
+      throw_or_terminate<logic_error>
+        ("re::file::open(sv, open_file): invalid unicode string\n");
+    p = CreateFile(s.data(),
+                   (GENERIC_READ | GENERIC_WRITE), 0, NULL,
+                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (p == INVALID_HANDLE_VALUE)
+      p = CreateFile(s.data(),
+                     GENERIC_READ, 0, NULL,
+                     OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>
+        ("re::file::file_open_impl_open(): failed to open\n");
+  }
+  template <class V>
+  static void file_open_impl_create(V v, HANDLE &p) {
+    wstring s;
+    if (!s.assign_unicode(v))
+      throw_or_terminate<logic_error>
+        ("re::file::open(sv, create_file): invalid unicode string\n");
+    p = CreateFile(s.data(),
+                   (GENERIC_READ | GENERIC_WRITE), 0, NULL,
+                   CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>
+        ("re::file::file_open_impl_create(): failed to open\n");
+  }
+public:
+  void open(sview v) {
+    close();
+    file_open_impl(v, p);
+  }
+  void open(wsview v) {
+    close();
+    file_open_impl(v, p);
+  }
+  void open(u16sview v) {
+    close();
+    file_open_impl(v, p);
+  }
+  void open(u32sview v) {
+    close();
+    file_open_impl(v, p);
+  }
+  void open(sview v, read_file_t) {
+    close();
+    file_open_impl_read(v, p);
+  }
+  void open(wsview v, read_file_t) {
+    close();
+    file_open_impl_read(v, p);
+  }
+  void open(u16sview v, read_file_t) {
+    close();
+    file_open_impl_read(v, p);
+  }
+  void open(u32sview v, read_file_t) {
+    close();
+    file_open_impl_read(v, p);
+  }
+  void open(sview v, open_file_t) {
+    close();
+    file_open_impl_open(v, p);
+  }
+  void open(wsview v, open_file_t) {
+    close();
+    file_open_impl_open(v, p);
+  }
+  void open(u16sview v, open_file_t) {
+    close();
+    file_open_impl_open(v, p);
+  }
+  void open(u32sview v, open_file_t) {
+    close();
+    file_open_impl_open(v, p);
+  }
+  void open(sview v, create_file_t) {
+    close();
+    file_open_impl_create(v, p);
+  }
+  void open(wsview v, create_file_t) {
+    close();
+    file_open_impl_create(v, p);
+  }
+  void open(u16sview v, create_file_t) {
+    close();
+    file_open_impl_create(v, p);
+  }
+  void open(u32sview v, create_file_t) {
+    close();
+    file_open_impl_create(v, p);
+  }
+
+  void close() noexcept {
+    if (p != INVALID_HANDLE_VALUE) {
+      CloseHandle(p);
+      p = INVALID_HANDLE_VALUE;
+    }
+  }
+
+  template <class S = string>
+  S read() const
+    requires (is_crng<S> && (is_same_v<rng_vt<S>, char>
+                             || is_same_v<rng_vt<S>, signed char>
+                             || is_same_v<rng_vt<S>, unsigned char>)) {
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>("re::file::read(): null file\n");
+    S s;
+    LARGE_INTEGER sz;
+    if (GetFileSizeEx(p, addressof(sz)) == 0)
+      throw_or_terminate<logic_error>
+        ("re::file::read(): failed to get file size\n");
+    if (to_unsigned(sz.QuadPart) > s.max_size()
+        || to_unsigned(sz.QuadPart) > numeric_limits<DWORD>::max())
+      throw_or_terminate<logic_error>("re::file::read(): too big file size\n");
+    s.resize(static_cast<rng_szt<S>>(sz.QuadPart));
+    DWORD holder{};
+    if (ReadFile(p,
+                 reinterpret_cast<void *>(to_address(s.begin())),
+                 s.capacity(),
+                 addressof(holder),
+                 NULL)
+        == 0)
+      throw_or_terminate<logic_error>("re::file::read(): failed to read\n");
+    if (SetFilePointer(p, 0, NULL, FILE_BEGIN)
+        == INVALID_SET_FILE_POINTER)
+      throw_or_terminate<logic_error>("re::file::read(): failed to reset\n");
+    return s;
+  }
+private:
+  template <class R>
+  static void file_write_impl(R &&r, HANDLE p) {
+    DWORD holder{};
+    auto n = size(r);
+    if (n > numeric_limits<DWORD>::max())
+      throw_or_terminate<length_error>
+        ("re::file::write(r): too big size to write\n");
+    if (WriteFile(p,
+                  reinterpret_cast<const void *>(to_address(begin(r))),
+                  static_cast<DWORD>(n),
+                  addressof(holder),
+                  NULL)
+        == 0)
+      throw_or_terminate<logic_error>("re::file::write(r): failed to write\n");
+    if (SetEndOfFile(p) == 0)
+      throw_or_terminate<logic_error>("re::file::write(r): failed to resize\n");
+    if (SetFilePointer(p, 0, NULL, FILE_BEGIN)
+        == INVALID_SET_FILE_POINTER)
+      throw_or_terminate<logic_error>("re::file::write(r): failed to reset\n");
+  }
+public:
+  void write(sview sv) const {
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>("re::file::write(r): null file\n");
+    file_write_impl(sv, p);
+  }
+  template <class R>
+  void write(R &&r) const
+    requires (is_crng<R> && (is_same_v<rng_vt<R>, char>
+                             || is_same_v<rng_vt<R>, signed char>
+                             || is_same_v<rng_vt<R>, unsigned char>)
+              && !is_convertible_v<R, sview>) {
+    if (p == INVALID_HANDLE_VALUE)
+      throw_or_terminate<logic_error>("re::file::write(r): null file\n");
+    file_write_impl(r, p);
+  }
+};
+
+
+namespace inner::fns {
+
+template <class V, class S>
+void to_full_path_impl(V v, S &o2) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::to_full_path(sv): invalid unicode input\n");
+
+  wstring o(128u);
+  for (;;) {
+    if (o.size() > numeric_limits<DWORD>::max())
+      throw_or_terminate<length_error>
+        ("re::to_full_path(sv): too long input string\n");
+    const DWORD x = GetFullPathName(s.data(),
+                                    static_cast<DWORD>(o.size()), o.data(),
+                                    NULL);
+    if (x == 0)
+      throw_or_terminate<logic_error>
+        ("re::to_full_path(sv): conversion failed\n");
+    if (x != o.size()) {
+      o.resize(x);
+      break;
+    }
+    o.append_range(rng(o.size(), L'\0'));
+  }
+
+  if (!o2.assign_unicode(o))
+    throw_or_terminate<logic_error>
+      ("re::to_full_path(sv): invalid unicode result\n");
+}
+
+}
+struct fo_to_full_path {
+  string operator ()(sview v) const {
+    string s;
+    inner::fns::to_full_path_impl(v, s);
+    return s;
+  }
+  wstring operator ()(wsview v) const {
+    wstring s;
+    inner::fns::to_full_path_impl(v, s);
+    return s;
+  }
+  u16string operator ()(u16sview v) const {
+    u16string s;
+    inner::fns::to_full_path_impl(v, s);
+    return s;
+  }
+  u32string operator ()(u32sview v) const {
+    u32string s;
+    inner::fns::to_full_path_impl(v, s);
+    return s;
+  }
+};
+inline constexpr fo_to_full_path to_full_path{};
+
+namespace inner::fns {
+
+template <class S, class V>
+S simplify_path_impl(V v) {
+  S s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::simplify_path(sv): invalid unicode input\n");
+
+  const auto is_slash = [](auto c) {
+    return to_unsigned(c) == U'/' || to_unsigned(c) == U'\\';
+  };
+  const auto is_slash_pair = [is_slash](auto c, auto c2) {
+    return is_slash(c) && is_slash(c2);
+  };
+  s.erase(unique(s, is_slash_pair), s.end());
+  while (is_slash(back(s)) && size(s) != 1u)
+    s.pop_back();
+  replace_if(s, is_slash, static_cast<rng_vt<S>>(U'\\'));
+
+  return s;
+}
+
+}
+struct fo_simplify_path {
+  string operator ()(sview v) const {
+    return inner::fns::simplify_path_impl<string>(v);
+  }
+  wstring operator ()(wsview v) const {
+    return inner::fns::simplify_path_impl<wstring>(v);
+  }
+  u16string operator ()(u16sview v) const {
+    return inner::fns::simplify_path_impl<u16string>(v);
+  }
+  u32string operator ()(u32sview v) const {
+    return inner::fns::simplify_path_impl<u32string>(v);
+  }
+};
+inline constexpr fo_simplify_path simplify_path{};
+
+namespace inner::fns {
+
+template <class S, class V>
+S path_last_name_impl(V v) {
+  S s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::path_last_name(sv): invalid unicode input\n");
+
+  const auto is_slash = [](auto c) {
+    return to_unsigned(c) == U'/' || to_unsigned(c) == U'\\';
+  };
+  const auto deref_to_slash = [](const auto p) {
+    return to_unsigned(*p) == U'\\' || to_unsigned(*p) == U'/';
+  };
+  auto r = rng(s);
+  if (is_slash(back(r))) {
+    const auto r2 = drop_while_rng(rrng(irng(r)), deref_to_slash);
+    if (empty(r2))
+      throw_or_terminate<logic_error>("re::path_last_name(sv): no last name\n");
+    r.second = next(front(r2));
+  }
+  if (const auto it = find_last_if(r, is_slash);
+      it != r.end())
+    s.erase(s.begin(), next(it));
+  while(is_slash(back(s)))
+    s.pop_back();
+  return s;
+}
+
+}
+struct fo_path_last_name {
+  string operator ()(sview v) const {
+    return inner::fns::path_last_name_impl<string>(v);
+  }
+  wstring operator ()(wsview v) const {
+    return inner::fns::path_last_name_impl<wstring>(v);
+  }
+  u16string operator ()(u16sview v) const {
+    return inner::fns::path_last_name_impl<u16string>(v);
+  }
+  u32string operator ()(u32sview v) const {
+    return inner::fns::path_last_name_impl<u32string>(v);
+  }
+};
+inline constexpr fo_path_last_name path_last_name{};
+
+namespace inner::fns {
+
+template <class S, class V>
+S remove_path_last_name_impl(V v) {
+  S s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::remove_path_last_name(sv): invalid unicode input\n");
+  if (s.empty())
+    return s;
+
+  const auto is_slash = [](auto c) {
+    return to_unsigned(c) == U'\\' || to_unsigned(c) == U'/';
+  };
+  const auto deref_to_slash = [](const auto p) {
+    return to_unsigned(*p) == U'\\' || to_unsigned(*p) == U'/';
+  };
+  auto r = rng(s);
+  if (is_slash(back(r))) {
+    const auto r2 = drop_while_rng(rrng(irng(r)), deref_to_slash);
+    if (empty(r2))
+      return s;
+    r.second = next(front(r2));
+  }
+  if (const auto it = find_last_if(r, is_slash);
+      it != r.end())
+    s.erase(next(it), s.end());
+  return s;
+}
+
+}
+struct fo_remove_path_last_name {
+  string operator ()(sview v) const {
+    return inner::fns::remove_path_last_name_impl<string>(v);
+  }
+  wstring operator ()(wsview v) const {
+    return inner::fns::remove_path_last_name_impl<wstring>(v);
+  }
+  u16string operator ()(u16sview v) const {
+    return inner::fns::remove_path_last_name_impl<u16string>(v);
+  }
+  u32string operator ()(u32sview v) const {
+    return inner::fns::remove_path_last_name_impl<u32string>(v);
+  }
+};
+inline constexpr fo_remove_path_last_name remove_path_last_name{};
+
+namespace inner::fns {
+
+template <class S, class V>
+S replace_path_last_name_impl(V v, V v2) {
+  S s, s2;
+  if (!s.assign_unicode(v) || !s2.assign_unicode(v2))
+    throw_or_terminate<logic_error>
+      ("re::replace_path_last_name(v, v2): invalid unicode string\n");
+  S ss = remove_path_last_name(s);
+  if (ss == s)
+    throw_or_terminate<logic_error>
+      ("re::replace_path_last_name(v, v2): v has no last name\n");
+  ss.append(s2);
+  return ss;
+}
+
+}
+struct fo_replace_path_last_name {
+  string operator ()(sview v, sview v2) const {
+    return inner::fns::replace_path_last_name_impl<string>(v, v2);
+  }
+  wstring operator ()(wsview v, wsview v2) const {
+    return inner::fns::replace_path_last_name_impl<wstring>(v, v2);
+  }
+  u16string operator ()(u16sview v, u16sview v2) const {
+    return inner::fns::replace_path_last_name_impl<u16string>(v, v2);
+  }
+  u32string operator ()(u32sview v, u32sview v2) const {
+    return inner::fns::replace_path_last_name_impl<u32string>(v, v2);
+  }
+};
+inline constexpr fo_replace_path_last_name replace_path_last_name{};
+
+
+namespace inner::fns {
+
+template <class V>
+bool is_file_impl(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::is_file(sv): invalid unicode string\n");
+  const DWORD a = GetFileAttributes(s.data());
+  return a != INVALID_FILE_ATTRIBUTES;
+}
+
+}
+struct fo_is_file {
+  bool operator ()(sview v) const {
+    return inner::fns::is_file_impl(v);
+  }
+  bool operator ()(wsview v) const {
+    return inner::fns::is_file_impl(v);
+  }
+  bool operator ()(u16sview v) const {
+    return inner::fns::is_file_impl(v);
+  }
+  bool operator ()(u32sview v) const {
+    return inner::fns::is_file_impl(v);
+  }
+};
+inline constexpr fo_is_file is_file{};
+
+namespace inner::fns {
+
+template <class V>
+bool is_directory_impl(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::is_directory(sv): invalid unicode string\n");
+  DWORD a = GetFileAttributes(s.data());
+  if (a == INVALID_FILE_ATTRIBUTES)
+    return false;
+  return a & FILE_ATTRIBUTE_DIRECTORY;
+}
+
+}
+struct fo_is_directory {
+  bool operator ()(sview v) const {
+    return inner::fns::is_directory_impl(v);
+  }
+  bool operator ()(wsview v) const {
+    return inner::fns::is_directory_impl(v);
+  }
+  bool operator ()(u16sview v) const {
+    return inner::fns::is_directory_impl(v);
+  }
+  bool operator ()(u32sview v) const {
+    return inner::fns::is_directory_impl(v);
+  }
+};
+inline constexpr fo_is_directory is_directory{};
+
+namespace inner::fns {
+
+template <class V>
+bool try_create_directory_impl(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::is_directory(sv): invalid unicode string\n");
+  return CreateDirectory(s.data(), NULL) != 0;
+}
+template <class V>
+void create_directory_impl(V v) {
+  if (!inner::fns::try_create_directory_impl(v))
+    throw_or_terminate<logic_error>("re::creaate_directory(sv): failed\n");
+}
+
+}
+struct fo_try_create_directory {
+  bool operator ()(sview v) const {
+    return inner::fns::try_create_directory_impl(v);
+  }
+  bool operator ()(wsview v) const {
+    return inner::fns::try_create_directory_impl(v);
+  }
+  bool operator ()(u16sview v) const {
+    return inner::fns::try_create_directory_impl(v);
+  }
+  bool operator ()(u32sview v) const {
+    return inner::fns::try_create_directory_impl(v);
+  }
+};
+inline constexpr fo_try_create_directory try_create_directory{};
+struct fo_create_directory {
+  void operator ()(sview v) const {
+    inner::fns::create_directory_impl(v);
+  }
+  void operator ()(wsview v) const {
+    inner::fns::create_directory_impl(v);
+  }
+  void operator ()(u16sview v) const {
+    inner::fns::create_directory_impl(v);
+  }
+  void operator ()(u32sview v) const {
+    inner::fns::create_directory_impl(v);
+  }
+};
+inline constexpr fo_create_directory create_directory{};
+
+namespace inner::fns {
+
+template <class V>
+unsigned long long file_size_impl(V v);
+
+}
+struct fo_file_size {
+  unsigned long long operator ()(sview v) const {
+    return inner::fns::file_size_impl(v);
+  }
+  unsigned long long operator ()(wsview v) const {
+    return inner::fns::file_size_impl(v);
+  }
+  unsigned long long operator ()(u16sview v) const {
+    return inner::fns::file_size_impl(v);
+  }
+  unsigned long long operator ()(u32sview v) const {
+    return inner::fns::file_size_impl(v);
+  }
+};
+inline constexpr fo_file_size file_size{};
+
+namespace inner::fns {
+
+template <class V>
+time_point<system_clock> file_time_impl(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::file_time(sv): invalid unicode string\n");
+  WIN32_FILE_ATTRIBUTE_DATA a;
+  if (!GetFileAttributesEx(s.data(), GetFileExInfoStandard, addressof(a)))
+    throw_or_terminate<logic_error>("re::file_time(sv): failed\n");
+  return time_point<system_clock>(system_clock::duration
+                                  (bit_cast<long long>(a.ftLastWriteTime)));
+}
+
+}
+struct fo_file_time {
+  time_point<system_clock> operator ()(sview v) const {
+    return inner::fns::file_time_impl(v);
+  }
+  time_point<system_clock> operator ()(wsview v) const {
+    return inner::fns::file_time_impl(v);
+  }
+  time_point<system_clock> operator ()(u16sview v) const {
+    return inner::fns::file_time_impl(v);
+  }
+  time_point<system_clock> operator ()(u32sview v) const {
+    return inner::fns::file_time_impl(v);
+  }
+};
+inline constexpr fo_file_time file_time{};
+
+namespace inner::fns {
+
+template <class V>
+bool try_remove_file_impl(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::try_remove_file(sv): invalid unicode string\n");
+
+  const DWORD a = GetFileAttributes(s.data());
+  if (a != INVALID_FILE_ATTRIBUTES) {
+    if (a & FILE_ATTRIBUTE_ARCHIVE) {
+      if (DeleteFile(s.data()))
+        return true;
+    }
+    else if (a & FILE_ATTRIBUTE_DIRECTORY) {
+      s = to_full_path(s);
+      s = simplify_path(s);
+      s.push_back(L'\0');
+      SHFILEOPSTRUCT file_op = {
+        NULL,
+        FO_DELETE,
+        s.data(),
+        NULL,
+        FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
+        false,
+        0,
+        L""
+      };
+      if (SHFileOperation(addressof(file_op)) == 0)
+        return true;
+    }
+  }
+  return false;
+}
+template <class V>
+void remove_file_impl(V v) {
+  if (!inner::fns::try_remove_file_impl(v))
+   throw_or_terminate<logic_error>("re::remove_file(sv): failed\n");
+}
+
+}
+struct fo_try_remove_file {
+  bool operator ()(sview v) const {
+    return inner::fns::try_remove_file_impl(v);
+  }
+  bool operator ()(wsview v) const {
+    return inner::fns::try_remove_file_impl(v);
+  }
+  bool operator ()(u16sview v) const {
+    return inner::fns::try_remove_file_impl(v);
+  }
+  bool operator ()(u32sview v) const {
+    return inner::fns::try_remove_file_impl(v);
+  }
+};
+inline constexpr fo_try_remove_file try_remove_file{};
+struct fo_remove_file {
+  void operator ()(sview v) const {
+    inner::fns::remove_file_impl(v);
+  }
+  void operator ()(wsview v) const {
+    inner::fns::remove_file_impl(v);
+  }
+  void operator ()(u16sview v) const {
+    inner::fns::remove_file_impl(v);
+  }
+  void operator ()(u32sview v) const {
+    inner::fns::remove_file_impl(v);
+  }
+};
+inline constexpr fo_remove_file remove_file{};
+
+namespace inner::fns {
+
+template <class V>
+bool try_rename_file_impl(V, V);
+template <class V>
+void rename_file_impl(V v, V v2) {
+  if (!inner::fns::try_rename_file_impl(v, v2))
+    throw_or_terminate<logic_error>("re::rename_file(v, v2): failed\n");
+}
+
+}
+struct fo_try_rename_file {
+  bool operator ()(sview v, sview v2) const {
+    return inner::fns::try_rename_file_impl(v, v2);
+  }
+  bool operator ()(wsview v, wsview v2) const {
+    return inner::fns::try_rename_file_impl(v, v2);
+  }
+  bool operator ()(u16sview v, u16sview v2) const {
+    return inner::fns::try_rename_file_impl(v, v2);
+  }
+  bool operator ()(u32sview v, u32sview v2) const {
+    return inner::fns::try_rename_file_impl(v, v2);
+  }
+};
+inline constexpr fo_try_rename_file try_rename_file{};
+struct fo_rename_file {
+  void operator ()(sview v, sview v2) const {
+    inner::fns::rename_file_impl(v, v2);
+  }
+  void operator ()(wsview v, wsview v2) const {
+    inner::fns::rename_file_impl(v, v2);
+  }
+  void operator ()(u16sview v, u16sview v2) const {
+    inner::fns::rename_file_impl(v, v2);
+  }
+  void operator ()(u32sview v, u32sview v2) const {
+    inner::fns::rename_file_impl(v, v2);
+  }
+};
+inline constexpr fo_rename_file rename_file{};
+
+// implement inner::fns::try_rename_file_impl
+namespace inner::fns {
+
+template <class V>
+bool try_rename_file_impl(V v, V v2) {
+  wstring s, s2;
+  if (!s.assign_unicode(v) || !s2.assign_unicode(v2))
+    throw_or_terminate<logic_error>
+      ("re::try_rename_file(v, v2): invalid unicode string\n");
+  if (contains(s2, L'\\') || contains(s2, L'/'))
+    throw_or_terminate<logic_error>
+      ("re::try_rename_file(v, v2): invalid new name\n");
+
+  wstring s3 = remove_path_last_name(s);
+  if (s3 == s)
+    throw_or_terminate<logic_error>
+      ("re::try_rename_file(v, v2): v has no last name to rename\n");
+  s3.append(s2);
+  
+  return MoveFile(s.data(), s3.data()) != 0;
+}
+
+}
+
+
+template <class S = string>
+struct file_info {
+  using string_type = S;
+
+  S path;
+  S name;
+  unsigned long long size;
+  time_point<system_clock> time;
+  bool is_dir;
+};
+
+namespace inner::fns {
+
+template <class S, class V>
+file_info<S> view_file_impl0(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::view_file(sv): invalid unicode string as input");
+  s = simplify_path(to_full_path(s));
+
+  S s2;
+  if (!s2.assign_unicode(s))
+    throw_or_terminate<logic_error>
+      ("re::view_file(sv): invalid unicode string as input");
+
+  file_info<S> ret;
+
+  ret.path = s2;
+
+  ret.name = path_last_name(s2);
+
+  WIN32_FILE_ATTRIBUTE_DATA a;
+  if (!GetFileAttributesEx(s.data(), GetFileExInfoStandard, addressof(a)))
+    throw_or_terminate<logic_error>("re::view_file(sv): failed\n");
+
+  ret.time = time_point<system_clock>
+    (system_clock::duration(bit_cast<long long>(a.ftLastWriteTime)));
+
+  ret.is_dir = (a.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+
+  if (ret.is_dir)
+    ret.size = 0u;
+  else {
+    LARGE_INTEGER tmp_sz;
+    tmp_sz.HighPart = a.nFileSizeHigh;
+    tmp_sz.LowPart = a.nFileSizeLow;
+    ret.size = static_cast<unsigned long long>(tmp_sz.QuadPart);
+  }
+
+  return ret;
+}
+template <class S, class V>
+file_info<S> view_file_impl(V v) {
+  auto ret = inner::fns::view_file_impl0<S>(v);
+  if (ret.is_dir)
+    ret.size = file_size(v);
+  return ret;
+}
+
+}
+struct fo_view_file {
+  file_info<string> operator ()(sview v) const {
+    return inner::fns::view_file_impl<string>(v);
+  }
+  file_info<wstring> operator ()(wsview v) const {
+    return inner::fns::view_file_impl<wstring>(v);
+  }
+  file_info<u16string> operator ()(u16sview v) const {
+    return inner::fns::view_file_impl<u16string>(v);
+  }
+  file_info<u32string> operator ()(u32sview v) const {
+    return inner::fns::view_file_impl<u32string>(v);
+  }
+};
+inline constexpr fo_view_file view_file{};
+
+namespace inner::fns {
+
+template <class S, class V>
+tree<file_info<S>> view_directory_impl(V);
+template <class V>
+unsigned long long file_size_impl(V);
+
+}
+struct fo_view_directory {
+  tree<file_info<string>> operator ()(sview v) const {
+    return inner::fns::view_directory_impl<string>(v);
+  }
+  tree<file_info<wstring>> operator ()(wsview v) const {
+    return inner::fns::view_directory_impl<wstring>(v);
+  }
+  tree<file_info<u16string>> operator ()(u16sview v) const {
+    return inner::fns::view_directory_impl<u16string>(v);
+  }
+  tree<file_info<u32string>> operator ()(u32sview v) const {
+    return inner::fns::view_directory_impl<u32string>(v);
+  }
+};
+inline constexpr fo_view_directory view_directory{};
+namespace inner::fns {
+
+template <class S, class V>
+tree<file_info<S>> view_directory_impl(V v) {
+  using key_t = file_info<S>;
+  using tree_t = tree<file_info<S>>;
+  using tree_vt = typename tree_t::value_type;
+
+  tree_t t;
+  t.emplace(inner::fns::view_file_impl0<S>(v));
+  if ((**t.root()).is_dir == false)
+    throw_or_terminate<logic_error>
+      ("re::view_directory(sv): non-directory is unacceptable");
+
+  const auto load_direct_children = [](const wchar_t *p, auto f) {
+    WIN32_FIND_DATA find_data;
+    HANDLE h = FindFirstFile(p, addressof(find_data));
+    if (h != INVALID_HANDLE_VALUE) {
+      do {
+        f(find_data);
+      } while (FindNextFile(h, addressof(find_data)));
+      FindClose(h);
+    }
+  };
+  const auto read_find_data = [](const WIN32_FIND_DATA &x, key_t &o) {
+    if (o.name.assign_unicode(wsview(begin(x.cFileName))) == false)
+      throw_or_terminate<logic_error>
+        ("re::view_directory(sv): invalid unicode string from find data\n");
+
+    o.time = time_point<system_clock>
+      (system_clock::duration(bit_cast<long long>(x.ftLastWriteTime)));
+
+    o.is_dir = (x.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+
+    if (o.is_dir)
+      o.size = 0u;
+    else {
+      LARGE_INTEGER tmp_sz;
+      tmp_sz.HighPart = x.nFileSizeHigh;
+      tmp_sz.LowPart = x.nFileSizeLow;
+      o.size = static_cast<unsigned long long>(tmp_sz.QuadPart);
+    }
+  };
+  wstring tmp_ws;
+  for (tree_vt &x : t.root().first_order()) {
+    if ((*x).is_dir) {
+      const auto it = x.iter_to_this();
+      if (tmp_ws.assign_unicode((*x).path) == false)
+        throw_or_terminate<logic_error>
+          ("re::view_directory(sv): invalid unicode string\n");
+      tmp_ws.append(L'\\');
+      tmp_ws.append(L'*');
+      const auto load_find_data
+        = [&t, it, read_find_data, &x](const WIN32_FIND_DATA &d) {
+          key_t info;
+          read_find_data(d, info);
+          if (!((info.name.size() == 1u
+                 && to_unsigned(info.name.front()) == U'.')
+                || (info.name.size() == 2u
+                    && to_unsigned(info.name.front()) == U'.'
+                    && to_unsigned(info.name.back()) == U'.'))) {
+            info.path = (*x).path;
+            info.path.push_back(static_cast<rng_vt<S>>(U'\\'));
+            info.path.append_range(info.name);
+            t.push_back(it, move(info));
+          }
+        };
+      load_direct_children(tmp_ws.data(), load_find_data);
+    }
+  }
+
+  for (tree_vt &x : t.root().last_order()) {
+    if ((*x).is_dir)
+      for (tree_vt &u : x)
+        (*x).size += (*u).size;
+  }
+
+  return t;
+}
+
+template <class V>
+unsigned long long file_size_impl(V v) {
+  wstring s;
+  if (!s.assign_unicode(v))
+    throw_or_terminate<logic_error>
+      ("re::file_size(sv): invalid unicode string\n");
+  WIN32_FILE_ATTRIBUTE_DATA a;
+  if (!GetFileAttributesEx(s.data(), GetFileExInfoStandard, addressof(a)))
+    throw_or_terminate<logic_error>("re::file_size(sv): failed\n");
+
+  if (a.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+    const auto t = view_directory(v);
+    return (**t.root()).size;
+  }
+  else {
+    LARGE_INTEGER size;
+    size.HighPart = a.nFileSizeHigh;
+    size.LowPart = a.nFileSizeLow;
+    return static_cast<unsigned long long>(size.QuadPart);
+  }
+}
+
+}
 
 }
 
