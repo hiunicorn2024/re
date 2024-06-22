@@ -1,6 +1,8 @@
 #ifndef RE_DEFINED_RANDOM_H
 #define RE_DEFINED_RANDOM_H
 
+#include "base.h"
+
 namespace re {
 
 template <class UINT, UINT A, UINT C, UINT M>
@@ -209,7 +211,7 @@ public:
     const auto g_dif = to_unsigned(g.max() - g.min());
     const auto dif = to_unsigned(y - x);
     if (dif > g_dif)
-      throw_or_abort<logic_error>
+      throw_or_terminate<logic_error>
         ("re::uniform_int_distribution::operator (): "
          "distribute small to big\n");
 
@@ -284,8 +286,7 @@ public:
 
   template <class G>
   result_type operator ()(G &g) {
-    const auto a = uniform_int_distribution<INT>(1, y)(g);
-    return a <= x ? true : false;
+    return uniform_int_distribution<INT>(1, y)(g) <= x;
   }
   template <class G>
   result_type operator ()(G &g, const param_type &p) {
@@ -306,10 +307,10 @@ public:
     y = p.second;
   }
   result_type min() const {
-    return 0;
+    return false;
   }
   result_type max() const {
-    return 1;
+    return true;
   }
 };
 
@@ -330,8 +331,12 @@ public:
   friend constexpr void swap(rander &x, rander &y) noexcept {
     adl_swap(x.e, y.e);
   }
+  friend bool operator ==(const rander &x, const rander &y) = default;
 
   explicit rander(result_type i) : e(i) {}
+  void seed(result_type s) {
+    e.seed(s);
+  }
 
   E engine() const {
     return e;
