@@ -84,8 +84,7 @@ public:
 
 template <class BASE>
 struct dynamic_default_buffer_traits {
-  static constexpr size_t align = alignof(BASE) > alignof(void *)
-    ? alignof(BASE) : alignof(void *);
+  static constexpr size_t align = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
   static constexpr size_t size = (sizeof(BASE) <= (sizeof(void *) * 3))
     ? (sizeof(void *) * 7) : (sizeof(BASE) * 5 / 2);
 };
@@ -498,12 +497,12 @@ public:
   }
   T &value() {
     if (p == nullptr)
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return *p;
   }
   const T &value() const {
     if (p == nullptr)
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return *p;
   }
 
@@ -517,25 +516,25 @@ public:
   template <class U>
   U &as() & noexcept {
     if (type() != typeid(U))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return *static_cast<U *>(p);
   }
   template <class U>
   const U &as() const & noexcept {
     if (type() != typeid(U))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return *static_cast<add_const_t<U> *>(p);
   }
   template <class U>
   U &&as() && noexcept {
     if (type() != typeid(U))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return move(*static_cast<U *>(p));
   }
   template <class U>
   const U &&as() const && noexcept {
     if (type() != typeid(U))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return move(*static_cast<add_const_t<U> *>(p));
   }
 
@@ -757,28 +756,28 @@ public:
   template <class TT>
   TT &as() & noexcept {
     if (type() != typeid(TT))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return static_cast<TT &>
       (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
   }
   template <class TT>
   const TT &as() const & noexcept {
     if (type() != typeid(TT))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return static_cast<const TT &>
       (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
   }
   template <class TT>
   TT &&as() && noexcept {
     if (type() != typeid(TT))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return static_cast<TT &&>
       (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
   }
   template <class TT>
   const TT &&as() const && noexcept {
     if (type() != typeid(TT))
-      throw_or_abort<bad_dynamic_access>();
+      throw_or_terminate<bad_dynamic_access>();
     return static_cast<const TT &&>
       (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
   }
@@ -828,17 +827,17 @@ template <class T>
 struct fo_any_cast {
   T operator ()(const any &x) const {
     if (!is<T>(x))
-      throw_or_abort<bad_any_cast>();
+      throw_or_terminate<bad_any_cast>();
     return as<T>(x);
   }
   T operator ()(any &x) const {
     if (!is<T>(x))
-      throw_or_abort<bad_any_cast>();
+      throw_or_terminate<bad_any_cast>();
     return as<T>(x);
   }
   T operator ()(any &&x) const {
     if (!is<T>(x))
-      throw_or_abort<bad_any_cast>();
+      throw_or_terminate<bad_any_cast>();
     return as<T>(x);
   }
 
@@ -994,7 +993,8 @@ public:
   }
   template <class T>
   function &operator =(reference_wrapper<T> x) noexcept
-    requires is_invocable_r_v<R, reference_wrapper<T> &, S...> {
+    requires (is_invocable_r_v<R, reference_wrapper<T> &, S...>
+              && is_default::value) {
     impl.template emplace<inner::fn_caller
                           <reference_wrapper<T>, R (S...)>>(x);
     return *this;
@@ -1024,7 +1024,7 @@ public:
 
   R operator ()(S...s) const {
     if (impl.empty())
-      throw_or_abort<bad_function_call>();
+      throw_or_terminate<bad_function_call>();
     return impl->call(forward<S>(s)...);
   }
 
@@ -1127,11 +1127,11 @@ bool operator ==(const function<F, BUFSZ, ALIGN> &x, nullptr_t) noexcept {
 }
 
 // move_only_function
+// unique_function
 namespace re {
 
 template <class...>
 class move_only_function;
-
 namespace inner {
 
 template <class CVREF_T, class F>
@@ -1156,7 +1156,7 @@ public:
   any_fn_caller() = delete;
   any_fn_caller(const any_fn_caller &x)
     : any_fn_caller(move(const_cast<any_fn_caller &>
-                         (((void)throw_or_abort<logic_error>
+                         (((void)throw_or_terminate<logic_error>
                            ("re::inner::any_fn_caller: try to call the copy "
                             "constructor that is designed to be unreachable\n"),
                            x)))) {}
@@ -1345,7 +1345,6 @@ template <class R, class...S, class T>
 struct f_t_is_invocable<R (S...), T> : is_invocable_r<R, T, S...> {};
 
 }
-
 template <class F>
 class move_only_function<F> : public inner::any_fn_helper<F> {
   template <class>
@@ -1425,6 +1424,156 @@ public:
 
   explicit operator bool() const noexcept {
     return impl.operator bool();
+  }
+};
+
+template <class, size_t, size_t>
+class unique_function;
+namespace inner {
+
+template <class F>
+class unique_fn_caller_base;
+template <class R, class...S>
+class unique_fn_caller_base<R (S...)> : dynamic_object {
+public:
+  virtual R call(S...s) const = 0;
+};
+
+template <class IMPL, class F>
+class unique_fn_caller;
+template <class IMPL, class R, class...S>
+class unique_fn_caller<IMPL, R (S...)>
+  : public unique_fn_caller_base<R (S...)> {
+  template <class, size_t, size_t>
+  friend class re::unique_function;
+
+  mutable IMPL f;
+
+public:
+  unique_fn_caller() = delete;
+  unique_fn_caller(const unique_fn_caller &x)
+    : unique_fn_caller(move(const_cast<unique_fn_caller &>
+                         (((void)throw_or_terminate<logic_error>
+                           ("re::inner::unique_fn_caller: try to call the copy "
+                            "constructor that is designed to be unreachable\n"),
+                           x)))) {}
+  unique_fn_caller &operator =(const unique_fn_caller &) = delete;
+  unique_fn_caller(unique_fn_caller &&)
+    noexcept(noexcept(is_nothrow_move_constructible_v<IMPL>)) = default;
+  unique_fn_caller &operator =(unique_fn_caller &&) = delete;
+
+  template <class...SS>
+  explicit unique_fn_caller(in_place_t, SS &&...s) : f(forward<SS>(s)...) {}
+
+  virtual R call(S...s) const override {
+    return invoke_r<R>(f, forward<S>(s)...);
+  }
+};
+
+template <class, class>
+struct is_class_unique_function_of : false_type {};
+template <class A, size_t B, size_t C>
+struct is_class_unique_function_of<unique_function<A, B, C>, A> : true_type {};
+
+}
+template <class F,
+          size_t BUFSZ = dynamic_default_buffer_traits
+          <inner::unique_fn_caller_base<F>>::size,
+          size_t ALIGN = dynamic_default_buffer_traits
+          <inner::unique_fn_caller_base<F>>::align>
+class unique_function;
+template <class R, class...S, size_t BUFSZ, size_t ALIGN>
+class unique_function<R (S...), BUFSZ, ALIGN> {
+  using this_t = unique_function;
+
+  template <class, size_t, size_t>
+  friend class unique_function;
+
+  dynamic<inner::unique_fn_caller_base<R (S...)>, BUFSZ, ALIGN> impl;
+
+  using is_default
+    = bool_constant<BUFSZ == dynamic_default_buffer_traits
+                    <inner::unique_fn_caller_base<R (S...)>>::size
+                    && ALIGN == dynamic_default_buffer_traits
+                    <inner::unique_fn_caller_base<R (S...)>>::align>;
+
+public:
+  unique_function() noexcept = default;
+  ~unique_function() = default;
+  unique_function(const this_t &) = delete;
+  unique_function &operator =(const this_t &) = delete;
+  unique_function(this_t &&) noexcept = default;
+  unique_function &operator =(this_t &&) = default;
+  friend void swap(unique_function &x, unique_function &y) noexcept {
+    adl_swap(x.impl, y.impl);
+  }
+
+  unique_function(nullptr_t) noexcept {}
+  unique_function &operator =(nullptr_t) noexcept {
+    impl.reset();
+    return *this;
+  }
+  bool operator ==(nullptr_t) noexcept {
+    return impl.empty();
+  }
+  void reset() noexcept {
+    impl.reset();
+  }
+  void clear() noexcept {
+    impl.clear();
+  }
+  bool empty() const noexcept {
+    return impl.empty();
+  }
+  explicit operator bool() const noexcept {
+    return impl.operator bool();
+  }
+
+  template <class T>
+  unique_function(T &&x)
+    requires (!is_same_v<remove_cvref_t<T>, this_t>
+              && !is_in_place_type_v<remove_cvref_t<T>>
+              && is_invocable_r_v<R, decay_t<T> &, S...>
+              && !(inner::is_class_unique_function_of
+                   <decay_t<T>, R (S...)>::value
+                   && is_default::value))
+    : impl(in_place_type<inner::unique_fn_caller<decay_t<T>, R (S...)>>,
+           in_place, forward<T>(x)) {}
+  template <class T>
+  unique_function &operator =(T &&x)
+    requires (!is_same_v<remove_cvref_t<T>, this_t>
+              && !is_in_place_type_v<remove_cvref_t<T>>
+              && is_invocable_r_v<R, decay_t<T> &, S...>
+              && !(inner::is_class_unique_function_of
+                   <decay_t<T>, R (S...)>::value
+                   && is_default::value)) {
+    impl.template emplace<inner::unique_fn_caller<decay_t<T>, R (S...)>
+                          >(in_place, forward<T>(x));
+    return *this;
+  }
+
+  template <size_t BUFSZ2, size_t ALIGN2>
+  unique_function(unique_function<R (S...), BUFSZ2, ALIGN2> &&x)
+    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN) && is_default::value)
+    : impl(move(x.impl)) {}
+  template <size_t BUFSZ2, size_t ALIGN2>
+  unique_function &operator =(unique_function<R (S...), BUFSZ2, ALIGN2> &&x)
+    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN) && is_default::value) {
+    impl = move(x.impl);
+    return *this;
+  }
+
+  R operator ()(S...s) const {
+    return impl->call(forward<S>(s)...);
+  }
+
+  bool local() const noexcept {
+    return impl.local();
+  }
+  template <class TT>
+  static constexpr bool local() noexcept {
+    return decltype(impl)::template local<inner::unique_fn_caller
+                                          <decay_t<TT>, R (S...)>>();
   }
 };
 
@@ -1629,28 +1778,28 @@ template <size_t I, class...S>
 constexpr variant_alternative_t<I, variant<S...>> &
 get(variant<S...> &x) requires (I < sizeof...(S)) {
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <size_t I, class...S>
 constexpr const variant_alternative_t<I, variant<S...>> &
 get(const variant<S...> &x) requires (I < sizeof...(S)) {
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <size_t I, class...S>
 constexpr variant_alternative_t<I, variant<S...>> &&
 get(variant<S...> &&x) requires (I < sizeof...(S)) {
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 template <size_t I, class...S>
 constexpr const variant_alternative_t<I, variant<S...>> &&
 get(const variant<S...> &&x) requires (I < sizeof...(S)) {
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 
@@ -1659,7 +1808,7 @@ constexpr T &get(variant<S...> &x)
   requires occurs_exactly_once_v<T, S...> {
   constexpr size_t I = find_type_v<T, S...>;
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <class T, class...S>
@@ -1667,7 +1816,7 @@ constexpr const T &get(const variant<S...> &x)
   requires occurs_exactly_once_v<T, S...> {
   constexpr size_t I = find_type_v<T, S...>;
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <class T, class...S>
@@ -1675,7 +1824,7 @@ constexpr T &&get(variant<S...> &&x)
   requires occurs_exactly_once_v<T, S...> {
   constexpr size_t I = find_type_v<T, S...>;
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 template <class T, class...S>
@@ -1683,7 +1832,7 @@ constexpr const T &&get(const variant<S...> &&x)
   requires occurs_exactly_once_v<T, S...> {
   constexpr size_t I = find_type_v<T, S...>;
   if (x.index() != I)
-    throw_or_abort<bad_variant_access>();
+    throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 
@@ -1779,7 +1928,7 @@ struct fo_visit {
     const auto get_id = [](auto &x) {
       if (x.index()
           == type_pack_size_v<inner::variant_to_type_pack_t<decltype(x)>>)
-        throw_or_abort<bad_variant_access>();
+        throw_or_terminate<bad_variant_access>();
       return x.index();
     };
 
@@ -1804,7 +1953,7 @@ struct fo_visit_r {
     const auto get_id = [](auto &x) {
       if (x.index()
           == type_pack_size_v<inner::variant_to_type_pack_t<decltype(x)>>)
-        throw_or_abort<bad_variant_access>();
+        throw_or_terminate<bad_variant_access>();
       return x.index();
     };
 
@@ -2213,53 +2362,53 @@ public:
   template <class T>
   constexpr T &as() & noexcept requires occurs_exactly_once_v<T, S...> {
     if (i != find_type_v<T, S...>)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return *static_cast<T *>(void_ptr());
   }
   template <class T>
   constexpr const T &as() const & noexcept
     requires occurs_exactly_once_v<T, S...> {
     if (i != find_type_v<T, S...>)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return *static_cast<const T *>(void_ptr());
   }
   template <class T>
   constexpr T &&as() && noexcept
     requires occurs_exactly_once_v<T, S...> {
     if (i != find_type_v<T, S...>)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return static_cast<T &&>(*static_cast<T *>(void_ptr()));
   }
   template <class T>
   constexpr const T &&as() const && noexcept
     requires occurs_exactly_once_v<T, S...> {
     if (i != find_type_v<T, S...>)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return static_cast<const T &&>(*static_cast<const T *>(void_ptr()));
   }
 
   template <size_t I, class T = nth_type_t<I, S...>>
   constexpr T &at() & noexcept requires (I < sizeof...(S)) {
     if (I != i)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return *static_cast<T *>(void_ptr());
   }
   template <size_t I, class T = nth_type_t<I, S...>>
   constexpr const T &at() const & noexcept requires (I < sizeof...(S)) {
     if (I != i)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return *static_cast<const T *>(void_ptr());
   }
   template <size_t I, class T = nth_type_t<I, S...>>
   constexpr T &&at() && noexcept requires (I < sizeof...(S)) {
     if (I != i)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return static_cast<T &&>(*static_cast<T *>(void_ptr()));
   }
   template <size_t I, class T = nth_type_t<I, S...>>
   constexpr const T &&at() const && noexcept requires (I < sizeof...(S)) {
     if (I != i)
-      throw_or_abort<bad_variant_access>();
+      throw_or_terminate<bad_variant_access>();
     return static_cast<const T &&>(*static_cast<const T *>(void_ptr()));
   }
 
