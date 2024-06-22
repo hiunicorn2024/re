@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 template <class T>
 struct is_sso_string : false_type {};
@@ -1066,38 +1066,41 @@ void test_basic_string_shrink_to_fit() {
 }
 
 void test_basic_string() {
-  test_string_briefly<basic_string<int>>();
-  test_string_briefly<basic_string<int, stateful_test_allocator<int>>>();
-  test_string_briefly<basic_string<test_object<int>>>();
-  test_basic_string_1();
-  test_basic_string_2();
-  test_basic_string_ownership();
-  test_basic_string_construct_from_range();
-  test_basic_string_assign_from_range();
-  test_basic_string_erase();
-  test_basic_string_insert_1_back();
-  test_basic_string_insert_1();
-  test_basic_string_insert_range_back();
-  test_basic_string_insert_range();
-  test_basic_string_clear();
-  test_basic_string_resize();
-  test_basic_string_reallocate();
-  test_basic_string_shrink_to_fit();
+  inner::fns::test_string_briefly<basic_string<int>>();
+  inner::fns::test_string_briefly<basic_string<int, stateful_test_allocator<int>>>();
+  inner::fns::test_string_briefly<basic_string<test_object<int>>>();
+  inner::fns::test_basic_string_1();
+  inner::fns::test_basic_string_2();
+  inner::fns::test_basic_string_ownership();
+  inner::fns::test_basic_string_construct_from_range();
+  inner::fns::test_basic_string_assign_from_range();
+  inner::fns::test_basic_string_erase();
+  inner::fns::test_basic_string_insert_1_back();
+  inner::fns::test_basic_string_insert_1();
+  inner::fns::test_basic_string_insert_range_back();
+  inner::fns::test_basic_string_insert_range();
+  inner::fns::test_basic_string_clear();
+  inner::fns::test_basic_string_resize();
+  inner::fns::test_basic_string_reallocate();
+  inner::fns::test_basic_string_shrink_to_fit();
 }
 
 void test_string() {
   printf("container - basic_string: ");
 
-  test_basic_string();
+  inner::fns::test_basic_string();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_string();
+    inner::fns::test_string();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

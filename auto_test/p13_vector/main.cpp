@@ -11,7 +11,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace re;
+namespace re::inner::fns {
 
 namespace vector_test0 {
 
@@ -1110,32 +1110,35 @@ void test_vector_shrink_to_fit() {
 void test_vector() {
   printf("container - vector: ");
 
-  test_vector_ownership();
-  test_vector_briefly<vector<int>>();
-  test_vector_briefly<vector<int, stateful_test_allocator<int>>>();
-  test_vector_briefly<vector<test_object<int>>>();
-  test_vector_carefully<int>();
-  test_vector_carefully<test_object<int>>();
-  test_vector_construct_from_range();
-  test_vector_assign_range();
-  test_vector_erase();
-  test_vector_insert_1_back();
-  test_vector_insert_1();
-  test_vector_insert_range_back();
-  test_vector_insert_range();
-  test_vector_clear();
-  test_vector_resize();
-  test_vector_reallocate();
-  test_vector_shrink_to_fit();
+  inner::fns::test_vector_ownership();
+  inner::fns::test_vector_briefly<vector<int>>();
+  inner::fns::test_vector_briefly<vector<int, stateful_test_allocator<int>>>();
+  inner::fns::test_vector_briefly<vector<test_object<int>>>();
+  inner::fns::test_vector_carefully<int>();
+  inner::fns::test_vector_carefully<test_object<int>>();
+  inner::fns::test_vector_construct_from_range();
+  inner::fns::test_vector_assign_range();
+  inner::fns::test_vector_erase();
+  inner::fns::test_vector_insert_1_back();
+  inner::fns::test_vector_insert_1();
+  inner::fns::test_vector_insert_range_back();
+  inner::fns::test_vector_insert_range();
+  inner::fns::test_vector_clear();
+  inner::fns::test_vector_resize();
+  inner::fns::test_vector_reallocate();
+  inner::fns::test_vector_shrink_to_fit();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_vector();
+    inner::fns::test_vector();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

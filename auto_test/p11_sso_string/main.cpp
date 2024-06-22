@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 template <class T>
 struct is_sso_string : false_type {};
@@ -1428,19 +1428,22 @@ void test_utf8_utf16_utf32_conversion() {
 void test_string2() {
   printf("container - sso_string: ");
 
-  test_sso_string();
-  test_string_reference();
-  test_string_compare();
-  test_utf8_utf16_utf32_conversion();
+  inner::fns::test_sso_string();
+  inner::fns::test_string_reference();
+  inner::fns::test_string_compare();
+  inner::fns::test_utf8_utf16_utf32_conversion();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_string2();
+    inner::fns::test_string2();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_priority_queue() {
   struct comp_t {
@@ -508,18 +508,21 @@ void test_queue() {
 void test_stack_and_queue() {
   printf("container adaptors - stack and queue: ");
 
-  test_priority_queue();
-  test_stack();
-  test_queue();
+  inner::fns::test_priority_queue();
+  inner::fns::test_stack();
+  inner::fns::test_queue();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_stack_and_queue();
+    inner::fns::test_stack_and_queue();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

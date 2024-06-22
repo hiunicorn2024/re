@@ -11,7 +11,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace re;
+namespace re::inner::fns {
 
 template <class V>
 void test_small_vector_briefly() {
@@ -396,7 +396,7 @@ void test_small_vector_ownership() {
           const int cap2 = ii + jj;
           auto testf = [=](auto tag)->void {
             using vec_t = typename decltype(tag)::type;
-            re::test_allocator_aware_container_ownership<vec_t>
+            test_allocator_aware_container_ownership<vec_t>
               (bind(init, _1, irng(0, n1), cap1),
                bind(good, _1, irng(0, n1), cap1),
                bind(init, _1, irng(0, n2), cap2),
@@ -717,30 +717,33 @@ void test_small_vector_reallocate() {
 void test_small_vector() {
   printf("container - small_vector: ");
 
-  test_small_vector_briefly<small_vector<int, 8>>();
-  test_small_vector_briefly<small_vector
-                            <int, 8, test_allocator<int>>>();
-  test_small_vector_briefly
+  inner::fns::test_small_vector_briefly<small_vector<int, 8>>();
+  inner::fns::test_small_vector_briefly<small_vector
+                                        <int, 8, test_allocator<int>>>();
+  inner::fns::test_small_vector_briefly
     <small_vector<int, 8, stateful_test_allocator<int>>>();
-  test_small_vector_briefly<small_vector<test_object<int>, 8>>();
-  test_small_vector_ownership();
-  test_small_vector_construct_from_range();
-  test_small_vector_assign_range();
-  test_small_vector_erase();    
-  test_small_vector_insert_1();
-  test_small_vector_insert_range();
-  test_small_vector_clear();
-  test_small_vector_resize();
-  test_small_vector_reallocate();
+  inner::fns::test_small_vector_briefly<small_vector<test_object<int>, 8>>();
+  inner::fns::test_small_vector_ownership();
+  inner::fns::test_small_vector_construct_from_range();
+  inner::fns::test_small_vector_assign_range();
+  inner::fns::test_small_vector_erase();    
+  inner::fns::test_small_vector_insert_1();
+  inner::fns::test_small_vector_insert_range();
+  inner::fns::test_small_vector_clear();
+  inner::fns::test_small_vector_resize();
+  inner::fns::test_small_vector_reallocate();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_small_vector();
+    inner::fns::test_small_vector();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

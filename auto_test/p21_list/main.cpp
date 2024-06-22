@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_list_ownership() {
   const auto r = irng(0, 10);
@@ -934,29 +934,34 @@ void test_list_node_and_slice() {
 void test_list() {
   printf("container - list: ");
 
-  test_list_intrusive_mode<false>();
-  test_list_intrusive_mode<true>();
-  test_list_briefly<list<int, stateful_test_allocator<int>>>();
-  test_list_briefly<list<test_object<int>,
-                         stateful_test_allocator<test_object<int>>>>();
-  test_list_briefly<list_adaptor
-                    <list_traits
-                     <list_node<int, stateful_test_allocator<int>>,
-                      0, 0, 1, stateful_test_allocator<int>>>>();
-  test_list_carefully<list<int, stateful_test_allocator<int>>>();
-  test_list_carefully<list<test_object<int>,
-                           stateful_test_allocator<test_object<int>>>>();
-  test_list_exception_safety_of_insert();
-  test_list_node_and_slice();
+  inner::fns::test_list_intrusive_mode<false>();
+  inner::fns::test_list_intrusive_mode<true>();
+  inner::fns::test_list_briefly<list<int, stateful_test_allocator<int>>>();
+  inner::fns::test_list_briefly<list<test_object<int>,
+                                     stateful_test_allocator
+                                     <test_object<int>>>>();
+  inner::fns::test_list_briefly<list_adaptor
+                                <list_traits
+                                 <list_node<int, stateful_test_allocator<int>>,
+                                  0, 0, 1, stateful_test_allocator<int>>>>();
+  inner::fns::test_list_carefully<list<int, stateful_test_allocator<int>>>();
+  inner::fns::test_list_carefully<list<test_object<int>,
+                                       stateful_test_allocator
+                                       <test_object<int>>>>();
+  inner::fns::test_list_exception_safety_of_insert();
+  inner::fns::test_list_node_and_slice();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_list();
+    inner::fns::test_list();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

@@ -3,9 +3,7 @@
 
 #include <cassert>
 
-using namespace re;
-
-namespace help_iterator_requirements {
+namespace re::inner::fns::help_iterator_requirements {
 
 template <class T>
 concept has_difference_type = requires {typename T::difference_type;};
@@ -159,7 +157,7 @@ int &&iter_move(iswap_t2 x) {return move(*x);}
 namespace re {
 
 template <>
-struct iterator_traits<help_iterator_requirements
+struct iterator_traits<inner::fns::help_iterator_requirements
                        ::t_with_specialized_iter_traits> {
   using value_type = int;
   using reference = int &;
@@ -169,6 +167,17 @@ struct iterator_traits<help_iterator_requirements
 };
 
 }
+
+namespace re {
+
+template <>
+struct iterator_is_counted
+<degraded_iterator<void ****, bidirectional_iterator_tag>> : false_type {};
+
+}
+
+namespace re::inner::fns {
+
 void test_iterator_requirements() {
   // inner::with_primary_iter_traits
   {
@@ -951,13 +960,6 @@ constexpr test_ri<X> operator +(itr_dft<X *> n, const test_ri<X> &x) {
   auto ret = x;
   return ret += n;
 }
-
-}
-namespace re {
-
-template <>
-struct iterator_is_counted
-<degraded_iterator<void ****, bidirectional_iterator_tag>> : false_type {};
 
 }
 void test_iterator_main_components() {
@@ -4639,51 +4641,46 @@ void test_range_miscl() {
 void test_range() {
   printf("range: ");
 
-  test_iterator_requirements();
-  test_iterator_main_components();
-  test_range_main_components();
+  inner::fns::test_iterator_requirements();
+  inner::fns::test_iterator_main_components();
+  inner::fns::test_range_main_components();
 
-  test_degraded_iterator();
-  test_reverse_iterator();
-  test_insert_iterator();
-  test_move_iterator();
-  test_counted_iterator();
+  inner::fns::test_degraded_iterator();
+  inner::fns::test_reverse_iterator();
+  inner::fns::test_insert_iterator();
+  inner::fns::test_move_iterator();
+  inner::fns::test_counted_iterator();
 
-  test_array();
-  test_iter_pair();
-  test_composite_range();
-  test_iterator_wrapper();
-  test_range_wrapper();
-  test_base_range();
-  test_empty_range();
-  test_single_range();
-  test_counted_range();
-  test_degraded_range();
-  test_move_range();
-  test_reverse_range();
-  test_rng_for_iterator_n();
-  test_rng_for_n_value();
-  test_iterator_range();
-  test_bind_range();
-  test_iters();
-  test_range_miscl();
-
-  ;
-  /*
-  test_stride_range();
-  test_rotate_range();
-  test_loop_range();
-  test_filter_range();
-  */
+  inner::fns::test_array();
+  inner::fns::test_iter_pair();
+  inner::fns::test_composite_range();
+  inner::fns::test_iterator_wrapper();
+  inner::fns::test_range_wrapper();
+  inner::fns::test_base_range();
+  inner::fns::test_empty_range();
+  inner::fns::test_single_range();
+  inner::fns::test_counted_range();
+  inner::fns::test_degraded_range();
+  inner::fns::test_move_range();
+  inner::fns::test_reverse_range();
+  inner::fns::test_rng_for_iterator_n();
+  inner::fns::test_rng_for_n_value();
+  inner::fns::test_iterator_range();
+  inner::fns::test_bind_range();
+  inner::fns::test_iters();
+  inner::fns::test_range_miscl();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_range();
+    inner::fns::test_range();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

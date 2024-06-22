@@ -10,8 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
-
+// for test_deque_iterator()
 namespace re::inner {
 
 template <>
@@ -22,10 +21,13 @@ struct deque_default_lower_buffer_size<test_object<int>>
   : integral_constant<size_t, 3> {};
 
 }
+
+namespace re::inner::fns {
+
 void test_deque_iterator() {
-  using data_t = re::inner::deque_data<allocator<int>>;
-  using itr_t = re::inner::deque_iterator<int, allocator<int>>;
-  using citr_t = re::inner::deque_iterator<int, allocator<int>>;
+  using data_t = inner::deque_data<allocator<int>>;
+  using itr_t = inner::deque_iterator<int, allocator<int>>;
+  using citr_t = inner::deque_iterator<int, allocator<int>>;
 
   static_assert(random_access_iterator<itr_t>);
   static_assert(!contiguous_iterator<itr_t>);
@@ -1206,8 +1208,8 @@ void test_deque_reallocate() {
             auto &v = *p;
             assert(equal(v, irng(0, n)));
             v.reallocate(i);
-            assert(abs((int)v.lower_capacity() - i)
-                   <= re::inner::deque_default_lower_buffer_size<int>::value);
+            assert(to_unsigned(abs((int)v.lower_capacity() - i))
+                   <= inner::deque_default_lower_buffer_size<int>::value);
             assert(equal(v, irng(0, n)));
             v.~vec_t();
           }
@@ -1216,8 +1218,8 @@ void test_deque_reallocate() {
             auto &v = *p;
             assert(equal(v, irng(0, n)));
             v.reallocate(i);
-            assert(abs((int)v.lower_capacity() - i)
-                   <= re::inner::deque_default_lower_buffer_size<int>::value);
+            assert(to_unsigned(abs((int)v.lower_capacity() - i))
+                   <= inner::deque_default_lower_buffer_size<int>::value);
             assert(equal(v, irng(0, n)));
             v.~vec_t();
           }
@@ -1239,8 +1241,8 @@ void test_deque_shrink_to_fit() {
             auto &v = *p;
             assert(equal(v, irng(0, n)));
             v.shrink_to_fit();
-            assert(abs((int)v.lower_capacity() - n)
-                   <= re::inner::deque_default_lower_buffer_size<int>::value);
+            assert(to_unsigned(abs((int)v.lower_capacity() - n))
+                   <= inner::deque_default_lower_buffer_size<int>::value);
             assert(equal(v, irng(0, n)));
             v.~vec_t();
           }
@@ -1249,8 +1251,8 @@ void test_deque_shrink_to_fit() {
             auto &v = *p;
             assert(equal(v, irng(0, n)));
             v.shrink_to_fit();
-            assert(abs((int)v.lower_capacity() - n)
-                   <= re::inner::deque_default_lower_buffer_size<int>::value);
+            assert(to_unsigned(abs((int)v.lower_capacity() - n))
+                   <= inner::deque_default_lower_buffer_size<int>::value);
             assert(equal(v, irng(0, n)));
             v.~vec_t();
           }
@@ -1301,33 +1303,36 @@ void test_deque_lower_capacity_is_full() {
 void test_deque() {
   printf("container - deque: ");
 
-  test_deque_iterator();
-  test_deque_briefly();
-  test_deque_carefully();
-  test_deque_ownership();
-  test_deque_construct_from_range();
-  test_deque_assign_from_range();
-  test_deque_erase();
-  test_deque_insert_1_front();
-  test_deque_insert_1_back();
-  test_deque_insert_1();
-  test_deque_insert_range_front();
-  test_deque_insert_range_back();
-  test_deque_insert_range();
-  test_deque_clear();
-  test_deque_resize();
-  test_deque_reallocate();
-  test_deque_shrink_to_fit();
-  test_deque_lower_capacity_is_full();
+  inner::fns::test_deque_iterator();
+  inner::fns::test_deque_briefly();
+  inner::fns::test_deque_carefully();
+  inner::fns::test_deque_ownership();
+  inner::fns::test_deque_construct_from_range();
+  inner::fns::test_deque_assign_from_range();
+  inner::fns::test_deque_erase();
+  inner::fns::test_deque_insert_1_front();
+  inner::fns::test_deque_insert_1_back();
+  inner::fns::test_deque_insert_1();
+  inner::fns::test_deque_insert_range_front();
+  inner::fns::test_deque_insert_range_back();
+  inner::fns::test_deque_insert_range();
+  inner::fns::test_deque_clear();
+  inner::fns::test_deque_resize();
+  inner::fns::test_deque_reallocate();
+  inner::fns::test_deque_shrink_to_fit();
+  inner::fns::test_deque_lower_capacity_is_full();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_deque();
+    inner::fns::test_deque();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

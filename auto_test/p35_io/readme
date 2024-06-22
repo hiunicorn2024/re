@@ -1,0 +1,9 @@
+extra-file list
+  main_{0, 1, 2, 3, or 4}_test_dir
+    6_byte.txt "abcde\n"
+    empty_f
+    read_only_abc "abc\n"
+
+extra makefile args
+  gcc: -mwindows -lwinmm -lShLwApi -lShell32
+  vc: user32.lib gdi32.lib winmm.lib shlwapi.lib shell32.lib

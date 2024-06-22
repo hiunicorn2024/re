@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_owner_ptr() {
   {
@@ -2333,29 +2333,32 @@ void test_test_range() {
 void test_test() {
   printf("test: ");
 
-  test_owner_ptr();
-  test_test_throwing();
-  test_test_ownership();
-  test_rational_operator_test();
-  test_instance_counter();
-  test_ez_function();
-  test_ez_vector();
-  test_ez_forward_list();
-  test_ez_bidirectional_list();
-  test_ez_list();
-  test_ez_map();
-  test_test_allocator();
-  test_test_object();
-  test_test_range();
+  inner::fns::test_owner_ptr();
+  inner::fns::test_test_throwing();
+  inner::fns::test_test_ownership();
+  inner::fns::test_rational_operator_test();
+  inner::fns::test_instance_counter();
+  inner::fns::test_ez_function();
+  inner::fns::test_ez_vector();
+  inner::fns::test_ez_forward_list();
+  inner::fns::test_ez_bidirectional_list();
+  inner::fns::test_ez_list();
+  inner::fns::test_ez_map();
+  inner::fns::test_test_allocator();
+  inner::fns::test_test_object();
+  inner::fns::test_test_range();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_test();
+    inner::fns::test_test();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

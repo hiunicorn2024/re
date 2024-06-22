@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_split() {
   // quick
@@ -2002,34 +2002,37 @@ void test_loop_range() {
 void test_algorithm_by_range_3() {
   printf("algorithm_by_range_3: ");
 
-  test_split();
-  test_split_iterator();
-  test_split_range();
-  test_zip();
-  test_zip_iterator();
-  test_zip_range();
-  test_aligned_zip_iterator();
-  test_aligned_zip_range();
-  test_enumerate();
-  test_enumerate_iterator();
-  test_enumerate_range();
-  test_exclusive_rotate();
-  test_exclusive_rotate_iterator();
-  test_exclusive_rotate_range();
-  test_rotate_iterator();
-  test_rotate_range();
-  test_loop();
-  test_loop_iterator();
-  test_loop_range();
+  inner::fns::test_split();
+  inner::fns::test_split_iterator();
+  inner::fns::test_split_range();
+  inner::fns::test_zip();
+  inner::fns::test_zip_iterator();
+  inner::fns::test_zip_range();
+  inner::fns::test_aligned_zip_iterator();
+  inner::fns::test_aligned_zip_range();
+  inner::fns::test_enumerate();
+  inner::fns::test_enumerate_iterator();
+  inner::fns::test_enumerate_range();
+  inner::fns::test_exclusive_rotate();
+  inner::fns::test_exclusive_rotate_iterator();
+  inner::fns::test_exclusive_rotate_range();
+  inner::fns::test_rotate_iterator();
+  inner::fns::test_rotate_range();
+  inner::fns::test_loop();
+  inner::fns::test_loop_iterator();
+  inner::fns::test_loop_range();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_algorithm_by_range_3();
+    inner::fns::test_algorithm_by_range_3();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

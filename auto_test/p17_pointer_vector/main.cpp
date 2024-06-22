@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_pointer_vector_iterator() {
   int a[3][1] = {{1}, {2}, {3}};
@@ -1100,29 +1100,32 @@ void test_pointer_vector_node_and_slice() {
 void test_pointer_vector() {
   printf("container - pointer_vector: ");
 
-  test_pointer_vector_iterator();
-  test_pointer_vector_briefly();
-  test_pointer_vector_construct_from_range();
-  test_pointer_vector_ownership();
-  test_pointer_vector_assign_range();
-  test_pointer_vector_erase_1_back();
-  test_pointer_vector_erase_1_front();
-  test_pointer_vector_erase();
-  test_pointer_vector_insert_1_back();
-  test_pointer_vector_insert_1_front();
-  test_pointer_vector_insert_1();
-  test_pointer_vector_insert_range();
-  test_pointer_vector_resize();
-  test_pointer_vector_node_and_slice();
+  inner::fns::test_pointer_vector_iterator();
+  inner::fns::test_pointer_vector_briefly();
+  inner::fns::test_pointer_vector_construct_from_range();
+  inner::fns::test_pointer_vector_ownership();
+  inner::fns::test_pointer_vector_assign_range();
+  inner::fns::test_pointer_vector_erase_1_back();
+  inner::fns::test_pointer_vector_erase_1_front();
+  inner::fns::test_pointer_vector_erase();
+  inner::fns::test_pointer_vector_insert_1_back();
+  inner::fns::test_pointer_vector_insert_1_front();
+  inner::fns::test_pointer_vector_insert_1();
+  inner::fns::test_pointer_vector_insert_range();
+  inner::fns::test_pointer_vector_resize();
+  inner::fns::test_pointer_vector_node_and_slice();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_pointer_vector();
+    inner::fns::test_pointer_vector();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

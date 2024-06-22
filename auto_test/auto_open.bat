@@ -33,4 +33,6 @@ BEGIN:
 	start ./p31_limited_tree/main.cpp
 	start ./p32_linked_tree/main.cpp
 	start ./p33_logn_tree/main.cpp
-       	start ./p34_io/main.cpp
+       	start ./p34_time/main.cpp
+       	start ./p35_io/main.cpp
+       	start ./p36_concurrency/main.cpp

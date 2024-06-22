@@ -9,7 +9,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_bitset_impl() {
   {
@@ -190,16 +190,19 @@ void test_bitset_impl() {
 void test_bitset() {
   printf("bitset: ");
 
-  test_bitset_impl();
+  inner::fns::test_bitset_impl();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_bitset();
+    inner::fns::test_bitset();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

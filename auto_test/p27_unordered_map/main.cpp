@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_hashtable_adaptor() {
   using table_t = hashtable_adaptor<hashtable_traits
@@ -1956,19 +1956,22 @@ void test_unordered_map_specialized_operations() {
 void test_unordered_map() {
   printf("unordered_map: ");
 
-  test_hashtable_adaptor();
-  test_unordered_set_common_operations();
-  test_unordered_multiset_common_operations();
-  test_unordered_map_specialized_operations();
+  inner::fns::test_hashtable_adaptor();
+  inner::fns::test_unordered_set_common_operations();
+  inner::fns::test_unordered_multiset_common_operations();
+  inner::fns::test_unordered_map_specialized_operations();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_unordered_map();
+    inner::fns::test_unordered_map();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

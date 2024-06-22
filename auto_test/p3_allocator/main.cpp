@@ -8,7 +8,7 @@
 
 using namespace re;
 
-namespace help_allocator_traits {
+namespace re::inner::fns::help_allocator_traits {
 
 template <class T = int>
 struct tmp_alloc_0 {
@@ -41,9 +41,12 @@ struct tmp_al2 {
 namespace re {
 
 template <>
-struct allocator_traits<help_allocator_traits::tmp_al> {};
+struct allocator_traits<inner::fns::help_allocator_traits::tmp_al> {};
 
 }
+
+namespace re::inner::fns {
+
 void test_allocator_traits() {
   using namespace help_allocator_traits;
 
@@ -2827,25 +2830,28 @@ void test_scoped_allocator_adaptor() {
 void test_allocator() {
   printf("allocator: ");
 
-  test_allocator_traits();
-  test_uninitialized_sequence();
-  test_default_allocator();
-  test_allocator_wrapper();
-  test_unique_ptr();
-  test_unique_array();
-  test_copyable_ptr();
-  test_copyable_array();
-  test_buffer();
-  test_scoped_allocator_adaptor();
+  inner::fns::test_allocator_traits();
+  inner::fns::test_uninitialized_sequence();
+  inner::fns::test_default_allocator();
+  inner::fns::test_allocator_wrapper();
+  inner::fns::test_unique_ptr();
+  inner::fns::test_unique_array();
+  inner::fns::test_copyable_ptr();
+  inner::fns::test_copyable_array();
+  inner::fns::test_buffer();
+  inner::fns::test_scoped_allocator_adaptor();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    ::test_allocator();
+    inner::fns::test_allocator();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

@@ -11,7 +11,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_circular_vector_iterator() {
   using alloc_t = allocator<int>;
@@ -975,34 +975,38 @@ void test_circular_vector_shrink_to_fit() {
 void test_circular_vector() {
   printf("container - circular_vector: ");
 
-  test_circular_vector_iterator();
-  test_circular_vector_briefly<circular_vector<unsigned>>();
-  test_circular_vector_briefly
+  inner::fns::test_circular_vector_iterator();
+  inner::fns::test_circular_vector_briefly<circular_vector<unsigned>>();
+  inner::fns::test_circular_vector_briefly
     <circular_vector<unsigned, stateful_test_allocator<unsigned>>>();
-  test_circular_vector_briefly<circular_vector<test_object<unsigned>>>();
-  test_circular_vector_ownership();
-  test_circular_vector_construct_from_range();
-  test_circular_vector_assign_from_range();
-  test_circular_vector_erase();
-  test_circular_vector_insert_1_front();
-  test_circular_vector_insert_1_back();
-  test_circular_vector_insert_1();
-  test_circular_vector_insert_range_front();
-  test_circular_vector_insert_range_back();
-  test_circular_vector_insert_range();
-  test_circular_vector_clear();
-  test_circular_vector_resize();
-  test_circular_vector_reallocate();
-  test_circular_vector_shrink_to_fit();
+  inner::fns::test_circular_vector_briefly
+    <circular_vector<test_object<unsigned>>>();
+  inner::fns::test_circular_vector_ownership();
+  inner::fns::test_circular_vector_construct_from_range();
+  inner::fns::test_circular_vector_assign_from_range();
+  inner::fns::test_circular_vector_erase();
+  inner::fns::test_circular_vector_insert_1_front();
+  inner::fns::test_circular_vector_insert_1_back();
+  inner::fns::test_circular_vector_insert_1();
+  inner::fns::test_circular_vector_insert_range_front();
+  inner::fns::test_circular_vector_insert_range_back();
+  inner::fns::test_circular_vector_insert_range();
+  inner::fns::test_circular_vector_clear();
+  inner::fns::test_circular_vector_resize();
+  inner::fns::test_circular_vector_reallocate();
+  inner::fns::test_circular_vector_shrink_to_fit();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_circular_vector();
+    inner::fns::test_circular_vector();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

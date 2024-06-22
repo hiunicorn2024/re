@@ -11,7 +11,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_bool_vector() {
   auto rng_bind_to_int = [](auto &&r) {
@@ -410,17 +410,20 @@ void test_bool_vector_2() {
 void test_vector_bool() {
   printf("container - vector_bool: ");
 
-  test_bool_vector();
-  test_bool_vector_2();
+  inner::fns::test_bool_vector();
+  inner::fns::test_bool_vector_2();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_vector_bool();
+    inner::fns::test_vector_bool();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

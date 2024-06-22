@@ -3,11 +3,9 @@
 #include <re/algorithm.h>
 #include <re/random.h>
 
-#include <re/io.h>
-
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_random_engine_distribution() {
   const auto f = [](auto tag) {
@@ -69,16 +67,19 @@ void test_random_engine_distribution() {
 void test_random() {
   printf("random: ");
 
-  test_random_engine_distribution();
+  inner::fns::test_random_engine_distribution();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_random();
+    inner::fns::test_random();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

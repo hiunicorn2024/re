@@ -11,7 +11,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 template <class S, class F, class F2>
 void test_flat_set_common_operations_impl(F mk, F2 key) {
@@ -860,19 +860,22 @@ void test_flat_map_specialized_operations() {
 void test_flat_map() {
   printf("flat_map: ");
 
-  test_flat_set_common_operations();
-  test_flat_set_unique_operations();
-  test_flat_set_equal_operations();
-  test_flat_map_specialized_operations();
+  inner::fns::test_flat_set_common_operations();
+  inner::fns::test_flat_set_unique_operations();
+  inner::fns::test_flat_set_equal_operations();
+  inner::fns::test_flat_map_specialized_operations();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_flat_map();
+    inner::fns::test_flat_map();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

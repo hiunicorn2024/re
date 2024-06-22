@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_avltree_adaptor() {
   using tree_t = avltree_adaptor<avltree_traits
@@ -1708,19 +1708,22 @@ void test_avl_map_specialized_operations() {
 void test_avl_map() {
   printf("avl_map: ");
 
-  test_avltree_adaptor();
-  test_avl_set_common_operations();
-  test_avl_multiset_common_operations();
-  test_avl_map_specialized_operations();
+  inner::fns::test_avltree_adaptor();
+  inner::fns::test_avl_set_common_operations();
+  inner::fns::test_avl_multiset_common_operations();
+  inner::fns::test_avl_map_specialized_operations();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_avl_map();
+    inner::fns::test_avl_map();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_stable_vector_briefly() {
   using vec_t = stable_vector<int, stateful_test_allocator<int>>;
@@ -2668,18 +2668,21 @@ void test_stable_vector_intrusive_mode() {
 void test_stable_vector() {
   printf("stable_vector: ");
 
-  test_stable_vector_class();
-  test_limited_stable_vector();
-  test_stable_vector_intrusive_mode();
+  inner::fns::test_stable_vector_class();
+  inner::fns::test_limited_stable_vector();
+  inner::fns::test_stable_vector_intrusive_mode();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_stable_vector();
+    inner::fns::test_stable_vector();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

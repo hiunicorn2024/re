@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_aligned_stride() {
   auto v = aligned_stride(irng(1, 7), 2, to_back(ez_vector<int>{})).base();
@@ -2166,35 +2166,38 @@ void test_cartesian_product_range() {
 void test_algorithm_by_range_2() {
   printf("algorithm_by_range_2: ");
 
-  test_aligned_stride();
-  test_aligned_stride_iterator();
-  test_aligned_stride_range();
-  test_stride();
-  test_stride_iterator();
-  test_stride_range();
-  test_aligned_chunk();
-  test_aligned_chunk_iterator();
-  test_aligned_chunk_range();
-  test_chunk();
-  test_chunk_iterator();
-  test_chunk_range();
-  test_chunk_by();
-  test_chunk_by_iterator();
-  test_chunk_by_range();
-  test_inner_cartesian_product();
-  test_inner_cartesian_product_range();
-  test_cartesian_product();
-  test_cartesian_product_iterator();
-  test_cartesian_product_range();
+  inner::fns::test_aligned_stride();
+  inner::fns::test_aligned_stride_iterator();
+  inner::fns::test_aligned_stride_range();
+  inner::fns::test_stride();
+  inner::fns::test_stride_iterator();
+  inner::fns::test_stride_range();
+  inner::fns::test_aligned_chunk();
+  inner::fns::test_aligned_chunk_iterator();
+  inner::fns::test_aligned_chunk_range();
+  inner::fns::test_chunk();
+  inner::fns::test_chunk_iterator();
+  inner::fns::test_chunk_range();
+  inner::fns::test_chunk_by();
+  inner::fns::test_chunk_by_iterator();
+  inner::fns::test_chunk_by_range();
+  inner::fns::test_inner_cartesian_product();
+  inner::fns::test_inner_cartesian_product_range();
+  inner::fns::test_cartesian_product();
+  inner::fns::test_cartesian_product_iterator();
+  inner::fns::test_cartesian_product_range();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_algorithm_by_range_2();
+    inner::fns::test_algorithm_by_range_2();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

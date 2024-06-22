@@ -11,7 +11,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_rbtree_adaptor() {
   using tree_t = rbtree_adaptor<rbtree_traits
@@ -1709,19 +1709,22 @@ void test_rb_map_specialized_operations() {
 void test_rb_map() {
   printf("rb_map: ");
 
-  test_rbtree_adaptor();
-  test_rb_set_common_operations();
-  test_rb_multiset_common_operations();
-  test_rb_map_specialized_operations();
+  inner::fns::test_rbtree_adaptor();
+  inner::fns::test_rb_set_common_operations();
+  inner::fns::test_rb_multiset_common_operations();
+  inner::fns::test_rb_map_specialized_operations();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_rb_map();
+    inner::fns::test_rb_map();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

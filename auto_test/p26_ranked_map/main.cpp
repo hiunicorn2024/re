@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_ranked_rbtree_adaptor() {
   using tree_t = ranked_rbtree_adaptor
@@ -2207,19 +2207,22 @@ void test_ranked_map_specialized_operations() {
 void test_ranked_map() {
   printf("ranked_map: ");
 
-  test_ranked_rbtree_adaptor();
-  test_ranked_set_common_operations();
-  test_ranked_multiset_common_operations();
-  test_ranked_map_specialized_operations();
+  inner::fns::test_ranked_rbtree_adaptor();
+  inner::fns::test_ranked_set_common_operations();
+  inner::fns::test_ranked_multiset_common_operations();
+  inner::fns::test_ranked_map_specialized_operations();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_ranked_map();
+    inner::fns::test_ranked_map();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

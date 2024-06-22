@@ -11,7 +11,7 @@
 #include <cassert>
 #include <iostream>
 
-using namespace re;
+namespace re::inner::fns {
 
 namespace local_vector_test0 {
 
@@ -495,27 +495,30 @@ void test_local_vector_resize() {
 void test_local_vector() {
   printf("container - local_vector: ");
 
-  test_local_vector_ownership();
-  test_local_vector_briefly<local_vector<int, 20>>();
-  test_local_vector_briefly<local_vector<test_object<int>, 20>>();
-  test_local_vector_construct_from_range();
-  test_local_vector_assign_range();
-  test_local_vector_erase();
-  test_local_vector_insert_1_back();
-  test_local_vector_insert_1();
-  test_local_vector_insert_range_back();
-  test_local_vector_insert_range();
-  test_local_vector_clear();
-  test_local_vector_resize();
+  inner::fns::test_local_vector_ownership();
+  inner::fns::test_local_vector_briefly<local_vector<int, 20>>();
+  inner::fns::test_local_vector_briefly<local_vector<test_object<int>, 20>>();
+  inner::fns::test_local_vector_construct_from_range();
+  inner::fns::test_local_vector_assign_range();
+  inner::fns::test_local_vector_erase();
+  inner::fns::test_local_vector_insert_1_back();
+  inner::fns::test_local_vector_insert_1();
+  inner::fns::test_local_vector_insert_range_back();
+  inner::fns::test_local_vector_insert_range();
+  inner::fns::test_local_vector_clear();
+  inner::fns::test_local_vector_resize();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_local_vector();
+    inner::fns::test_local_vector();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

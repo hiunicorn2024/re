@@ -134,6 +134,14 @@ cd ./p33_logn_tree
 make clean
 cd ../
 
-cd ./p34_io
+cd ./p34_time
+make clean
+cd ../
+
+cd ./p35_io
+make clean
+cd ../
+
+cd ./p36_concurrency
 make clean
 cd ../

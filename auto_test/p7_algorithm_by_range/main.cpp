@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_permutation_combination_count() {
   // permutation_count
@@ -3564,43 +3564,46 @@ void test_slide_range() {
 void test_algorithm_by_range() {
   printf("algorithm_by_range: ");
 
-  test_permutation_combination_count();
-  test_combination_iterator();
-  test_combination_range();
-  test_filter();
-  test_filter_iterator();
-  test_filter_range();
-  test_take();
-  test_take_iterator();
-  test_take_range();
-  test_drop();
-  test_drop_range();
-  test_take_while();
-  test_take_while_iterator();
-  test_take_while_range();
-  test_drop_while();
-  test_drop_while_range();
-  test_join();
-  test_join_iterator();
-  test_join_range();
-  test_join_with();
-  test_join_with_iterator();
-  test_join_with_range();
-  test_adjacent();
-  test_adjacent_iterator();
-  test_adjacent_range();
-  test_slide();
-  test_slide_iterator();
-  test_slide_range();
+  re::inner::fns::test_permutation_combination_count();
+  re::inner::fns::test_combination_iterator();
+  re::inner::fns::test_combination_range();
+  re::inner::fns::test_filter();
+  re::inner::fns::test_filter_iterator();
+  re::inner::fns::test_filter_range();
+  re::inner::fns::test_take();
+  re::inner::fns::test_take_iterator();
+  re::inner::fns::test_take_range();
+  re::inner::fns::test_drop();
+  re::inner::fns::test_drop_range();
+  re::inner::fns::test_take_while();
+  re::inner::fns::test_take_while_iterator();
+  re::inner::fns::test_take_while_range();
+  re::inner::fns::test_drop_while();
+  re::inner::fns::test_drop_while_range();
+  re::inner::fns::test_join();
+  re::inner::fns::test_join_iterator();
+  re::inner::fns::test_join_range();
+  re::inner::fns::test_join_with();
+  re::inner::fns::test_join_with_iterator();
+  re::inner::fns::test_join_with_range();
+  re::inner::fns::test_adjacent();
+  re::inner::fns::test_adjacent_iterator();
+  re::inner::fns::test_adjacent_range();
+  re::inner::fns::test_slide();
+  re::inner::fns::test_slide_iterator();
+  re::inner::fns::test_slide_range();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_algorithm_by_range();
+    inner::fns::test_algorithm_by_range();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

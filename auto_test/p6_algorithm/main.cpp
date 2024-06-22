@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_equal() {
   const iter_pair<const int *> z{};
@@ -884,12 +884,12 @@ void test_remove() {
   l_t z;
   l_t a = {1, 2, 3, 2, 5};
   l_t b = {0, 0, 0};
-  assert(re::remove(z, 0) == end(z));
+  assert(remove(z, 0) == end(z));
   assert(remove_if(z, bind(equal_to{}, _1, 0)) == end(z));
   assert(remove_copy_if_plus(z, begin(z), bind(equal_to{}, _1, 0))
          == pair(end(z), end(z)));
   assert(remove_copy_plus(z, begin(z), 0) == pair(end(z), end(z)));
-  assert(re::remove(a, 2) == nth(a, 3));
+  assert(remove(a, 2) == nth(a, 3));
   assert(size(a) == 5 && equal(l_t({1, 3, 5}), begin(a)));
   a = {1, 2, 3, 2, 5};
   assert(remove_copy_plus(a, begin(b), 2) == pair(end(a), end(b)));
@@ -2799,65 +2799,68 @@ void test_list_unique() {
 void test_algorithm() {
   printf("algorithm: ");
 
-  ::test_equal();
-  test_allanynone_of();
-  test_for_each();
-  test_find();
-  test_find_last();
-  test_find_first_of();
-  test_find_last_of();
-  test_adjacent_find();
-  test_count();
-  test_mismatch();
-  test_is_permutation();
-  test_find_subrange();
-  test_search();
-  test_find_end();
-  test_contains();
-  test_starts_ends_with();
-  test_fold_left_right();
-  ::test_copy_move();
-  ::test_swap_ranges();
-  test_transform();
-  test_replace();
-  test_fill();
-  test_generate();
-  test_remove();
-  test_unique();
-  test_reverse();
-  test_rotate();
-  test_shift();
-  test_shuffle();
-  test_sample();
-  test_binary_search();
-  test_partition();
-  test_merge();
-  test_set_operations();
-  test_heap_operations();
-  test_minmax();
-  test_bounded_value();
-  test_lexicographical_compare();
-  test_permutation();
-  test_sorting();
-  test_accumulate();
-  test_inner_product();
-  test_partial_sum();
-  test_adjacent_difference();
-  test_iota();
-  test_gcd_and_lcm();
-  test_midpoint();
-  test_for_each_node();
-  test_list_fns();
-  test_list_unique();
+  inner::fns::test_equal();
+  inner::fns::test_allanynone_of();
+  inner::fns::test_for_each();
+  inner::fns::test_find();
+  inner::fns::test_find_last();
+  inner::fns::test_find_first_of();
+  inner::fns::test_find_last_of();
+  inner::fns::test_adjacent_find();
+  inner::fns::test_count();
+  inner::fns::test_mismatch();
+  inner::fns::test_is_permutation();
+  inner::fns::test_find_subrange();
+  inner::fns::test_search();
+  inner::fns::test_find_end();
+  inner::fns::test_contains();
+  inner::fns::test_starts_ends_with();
+  inner::fns::test_fold_left_right();
+  inner::fns::test_copy_move();
+  inner::fns::test_swap_ranges();
+  inner::fns::test_transform();
+  inner::fns::test_replace();
+  inner::fns::test_fill();
+  inner::fns::test_generate();
+  inner::fns::test_remove();
+  inner::fns::test_unique();
+  inner::fns::test_reverse();
+  inner::fns::test_rotate();
+  inner::fns::test_shift();
+  inner::fns::test_shuffle();
+  inner::fns::test_sample();
+  inner::fns::test_binary_search();
+  inner::fns::test_partition();
+  inner::fns::test_merge();
+  inner::fns::test_set_operations();
+  inner::fns::test_heap_operations();
+  inner::fns::test_minmax();
+  inner::fns::test_bounded_value();
+  inner::fns::test_lexicographical_compare();
+  inner::fns::test_permutation();
+  inner::fns::test_sorting();
+  inner::fns::test_accumulate();
+  inner::fns::test_inner_product();
+  inner::fns::test_partial_sum();
+  inner::fns::test_adjacent_difference();
+  inner::fns::test_iota();
+  inner::fns::test_gcd_and_lcm();
+  inner::fns::test_midpoint();
+  inner::fns::test_for_each_node();
+  inner::fns::test_list_fns();
+  inner::fns::test_list_unique();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_algorithm();
+    inner::fns::test_algorithm();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 template <class S, class F, class F2>
 void test_mixed_set_common_operations_impl(F mk, F2 key) {
@@ -1613,21 +1613,22 @@ void test_mixed_container_nth() {
 void test_mixed_map() {
   printf("mixed_map: ");
 
-  test_mixed_set_common_operations();
-  test_mixed_multiset_common_operations();
-  test_mixed_map_specialized_operations();
-  test_mixed_container_nth();
+  inner::fns::test_mixed_set_common_operations();
+  inner::fns::test_mixed_multiset_common_operations();
+  inner::fns::test_mixed_map_specialized_operations();
+  inner::fns::test_mixed_container_nth();
 
   printf("ok\n");
 }
 
-using namespace re;
+}
 
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_mixed_map();
+    inner::fns::test_mixed_map();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

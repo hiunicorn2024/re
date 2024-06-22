@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_tree_base() {
   using t = logn_tree<int, test_allocator<int>>;
@@ -685,7 +685,7 @@ void test_tree_back_insert_erase() {
   // emplace_back(i, s...)
   {
     t x(1, t(2), t(3));
-    assert(x.emplace_back(x.root(), 4)->key() == 4);
+    assert(x.emplace_back(x.root(), 4).key() == 4);
     assert(inner::good(x));
     assert(x == t(1, t(2), t(3), t(4)));
   }
@@ -749,7 +749,7 @@ void test_tree_front_insert_erase() {
   // emplace_front(i, s...)
   {
     t x(1, t(2), t(3));
-    assert(x.emplace_front(x.root(), 1)->key() == 1);
+    assert(x.emplace_front(x.root(), 1).key() == 1);
     assert(inner::good(x));
     assert(x == t(1, t(1), t(2), t(3)));
   }
@@ -1073,13 +1073,13 @@ void test_tree_mscl_for_sequence_container() {
     assert(inner::good(x) && x == t(1, t(2, t(3), t(0)), t(0)));
   }
 
-  // remove_if(i, iter_eq)
-  // first_order_remove_if(i, iter_eq)
+  // remove_if(i, eq)
+  // first_order_remove_if(i, eq)
   {
     t x = t(1, t(2, t(0), t(3), t(4)), t(0, t(6)), t(5));
-    x.first_order_remove_if(x.root(), [](auto it) {return **it == 0;});
+    x.first_order_remove_if(x.root(), [](auto &x) {return *x == 0;});
     assert(x == t(1, t(2, t(3), t(4)), t(5)));
-    x.first_order_remove_if(x.root(), [](auto it) {return **it == 3;});
+    x.first_order_remove_if(x.root(), [](auto &x) {return *x == 3;});
     assert(x == t(1, t(2, t(4)), t(5)));
   }
 
@@ -1087,7 +1087,7 @@ void test_tree_mscl_for_sequence_container() {
   // first_order_unique(i, eq)
   {
     t x = t(1, t(2), t(2), t(3));
-    const auto eqf = [](auto it, auto it2) {return **it == **it2;};
+    const auto eqf = [](auto &x, auto &y) {return *x == *y;};
     x.unique(x.root(), eqf);
     assert(inner::good(x) && x == t(1, t(2), t(3)));
     x = t(1, t(2), t(2, t(4), t(4)), t(3, t(5), t(5)));
@@ -1095,21 +1095,21 @@ void test_tree_mscl_for_sequence_container() {
     assert(inner::good(x) && x == t(1, t(2), t(3, t(5))));
   }
 
-  // merge(i, tree_ref, i2, iter_less)
+  // merge(i, tree_ref, i2, less)
   {
     t x = t(0, t(2), t(4));
     t y = t(0, t(1), t(3), t(5));
-    x.merge(x.root(), y, y.root(), [](auto i1, auto i2) {return **i1 < **i2;});
+    x.merge(x.root(), y, y.root(), [](auto &x, auto &y) {return *x < *y;});
     assert(inner::good(x) && inner::good(y));
     assert(x == t(0, t(1), t(2), t(3), t(4), t(5)));
     assert(y == t(0));
   }
 
-  // sort(i, iter_less)
-  // first_order_sort(i, iter_less)
+  // sort(i, less)
+  // first_order_sort(i, less)
   {
     t x = t(0, t(0), t(2), t(3), t(1), t(4));
-    const auto cmp_f = [](auto i1, auto i2) {return **i1 < **i2;};
+    const auto cmp_f = [](auto &x, auto &y) {return *x < *y;};
     x.sort(x.root(), cmp_f);
     assert(inner::good(x) && x == t(0, t(0), t(1), t(2), t(3), t(4)));
     x = t(1, t(3), t(1, t(5), t(4)), t(2));
@@ -1809,7 +1809,7 @@ void test_tree_vector_insert_erase() {
   using vec_t = logn_tree_vector<int, alloc_t>;
   using vec_tt = logn_tree_vector<long, alloc_tt>;
 
-  // emplace_back(s...)->iterator
+  // emplace_back(s...)
   // push_back(k)
   // push_back(tree_ref)
   // push_back(vector_ref)
@@ -1820,7 +1820,7 @@ void test_tree_vector_insert_erase() {
   // pop_back(n)
   {
     vec_t v = {1, 2, 3};
-    assert(**v.emplace_back(4) == 4);
+    assert(*v.emplace_back(4) == 4);
     assert(inner::good(v) && v == vec_t({1, 2, 3, 4}));
     v.push_back(5);
     v.push_back(t(t(6, t(7)), v.get_allocator()));
@@ -1840,7 +1840,7 @@ void test_tree_vector_insert_erase() {
     v.pop_back();
     assert(inner::good(v) && v.empty());
   }
-  // emplace_back(i, s...)->iterator
+  // emplace_back(i, s...)
   // push_back(i, k)
   // push_back(i, tree_ref)
   // push_back(i, vector_ref)
@@ -1851,7 +1851,7 @@ void test_tree_vector_insert_erase() {
   // pop_back(i, n)
   {
     vec_t v(t(0, t(1), t(2)));
-    assert(**v.emplace_back(v.begin(), 3) == 3);
+    assert(*v.emplace_back(v.begin(), 3) == 3);
     assert(inner::good(v) && v == vec_t(t(0, t(1), t(2), t(3))));
     v.push_back(v.begin(), 4);
     v.push_back(v.begin(), t(t(5, t(6)), v.get_allocator()));
@@ -1868,6 +1868,69 @@ void test_tree_vector_insert_erase() {
     assert(inner::good(v) && v == vec_t({1, 2, 3, 4, 5, 6}));
     v.pop_back(vec_t::iterator{}, 5);
     v.pop_back(vec_t::iterator{});
+    assert(inner::good(v) && v.empty());
+  }
+
+  // emplace_front(s...)
+  // push_front(k)
+  // push_front(tree_ref)
+  // push_front(vector_ref)
+  // push_front(kr)
+  // prepend_range(r)
+  // prepend(s...)
+  // pop_front()
+  // pop_front(n)
+  {
+    vec_t v = {1, 2, 3};
+    assert(*v.emplace_front(0) == 0);
+    assert(inner::good(v) && v == vec_t({0, 1, 2, 3}));
+    v.push_front(5);
+    v.push_front(t(t(6, t(7)), v.get_allocator()));
+    v.push_front(vec_t({0}, v.get_allocator()));
+    v.push_front(seq(9, 10));
+    assert(inner::good(v)
+           && v == vec_t(t(9), t(10), t(0), t(6, t(7)), t(5),
+                         t(0), t(1), t(2), t(3)));
+    v.clear();
+    v.prepend_range(seq(1, 2));
+    v.prepend(3, t(t(4), v.get_allocator()),
+              vec_t({5}, v.get_allocator()))
+      .prepend(seq(6));
+    assert(inner::good(v) && v == vec_t({6, 3, 4, 5, 1, 2}));
+
+    v.pop_front(5);
+    assert(inner::good(v) && v == vec_t({2}));
+    v.pop_front();
+    assert(inner::good(v) && v.empty());
+  }
+  // emplace_front(i, s...)
+  // push_front(i, k)
+  // push_front(i, tree_ref)
+  // push_front(i, vector_ref)
+  // push_front(i, kr)
+  // prepend_range(i, r)
+  // prepend(i, s...)
+  // pop_front(i)
+  // pop_front(i, n)
+  {
+    vec_t v(t(0, t(1), t(2)));
+    assert(*v.emplace_front(v.begin(), 3) == 3);
+    assert(inner::good(v) && v == vec_t(t(0, t(3), t(1), t(2))));
+    v.push_front(v.begin(), 4);
+    v.push_front(v.begin(), t(t(5, t(6)), v.get_allocator()));
+    v.push_front(v.begin(), vec_t({7}, v.get_allocator()));
+    v.push_front(v.begin(), seq(8, 9));
+    assert(inner::good(v)
+           && v == vec_t(t(0, t(8), t(9), t(7), t(5, t(6)),
+                           t(4), t(3), t(1), t(2))));
+    v.clear();
+    v.prepend_range(vec_t::iterator{}, seq(1, 2));
+    v.prepend(vec_t::iterator{},
+              3, t(t(4), v.get_allocator()), vec_t({5}, v.get_allocator()),
+              seq(6));
+    assert(inner::good(v) && v == vec_t({3, 4, 5, 6, 1, 2}));
+    v.pop_front(vec_t::iterator{}, 5);
+    v.pop_front(vec_t::iterator{});
     assert(inner::good(v) && v.empty());
   }
 }
@@ -1896,12 +1959,12 @@ void test_tree_vector_mscl_for_sequence_container() {
     assert(vv == vec_t(t(1, t(2), t(3), t(0), t(0)), t(0), t(0), t(0)));
   }
 
-  // remove_if(iter_eq)
-  // remove_if(i, iter_eq)
-  // first_order_remove_if(iter_eq)
-  // first_order_remove_if(i, iter_eq)
+  // remove_if(eq)
+  // remove_if(i, eq)
+  // first_order_remove_if(eq)
+  // first_order_remove_if(i, eq)
   {
-    const auto eq = [](auto it) {return **it == 0;};
+    const auto eq = [](auto &x) {return *x == 0;};
     {
       vec_t v(t(1), t(0), t(2, t(0, t(3)), t(4), t(0)), t(3, t(4)));
       assert(v.remove_if(eq) == 1u);
@@ -1918,13 +1981,13 @@ void test_tree_vector_mscl_for_sequence_container() {
     }
   }
 
-  // unique(iter_eq)
-  // unique(i, iter_eq)
-  // first_order_unique(iter_eq)
-  // first_order_unique(i, iter_eq)
+  // unique(eq)
+  // unique(i, eq)
+  // first_order_unique(eq)
+  // first_order_unique(i, eq)
   {
     vec_t v = {1, 2, 2, 3, 3, 3, 4};
-    const auto eqf = [](auto i1, auto i2) {return **i1 == **i2;};
+    const auto eqf = [](auto &x, auto &y) {return *x == *y;};
     v.unique(eqf);
     assert(inner::good(v) && v == vec_t({1, 2, 3, 4}));
     v = vec_t(t(0, t(1), t(2), t(2), t(3)));
@@ -1936,12 +1999,12 @@ void test_tree_vector_mscl_for_sequence_container() {
     assert(inner::good(v) && v == vec_t(t(1), t(2, t(4), t(5)), t(3)));
   }
 
-  // merge(tree/vec_ref, i2, iter_less)
-  // merge(i, tree/vec_ref, i2, iter_less)
-  // merge(vec_ref, iter_less)
-  // merge(i, vec_ref, iter_less)
+  // merge(tree/vec_ref, i2, less)
+  // merge(i, tree/vec_ref, i2, less)
+  // merge(vec_ref, less)
+  // merge(i, vec_ref, less)
   {
-    const auto compf = [](auto i1, auto i2) {return **i1 < **i2;};
+    const auto compf = [](auto &x, auto &y) {return *x < *y;};
     {
       vec_t v = {1, 3, 5};
       t x(t(0, t(2), t(4)), v.get_allocator());
@@ -1969,12 +2032,12 @@ void test_tree_vector_mscl_for_sequence_container() {
     }
   }
 
-  // sort(iter_less)
-  // sort(i, iter_less)
-  // first_order_sort(iter_less)
-  // first_order_sort(i, iter_less)
+  // sort(less)
+  // sort(i, less)
+  // first_order_sort(less)
+  // first_order_sort(i, less)
   {
-    const auto compf = [](auto i1, auto i2) {return **i1 < **i2;};
+    const auto compf = [](auto &x, auto &y) {return *x < *y;};
     {
       vec_t v = {2, 1, 3};
       v.sort(compf);
@@ -1992,32 +2055,35 @@ void test_tree_vector_mscl_for_sequence_container() {
 void test_logn_tree() {
   printf("logn_tree: ");
 
-  test_tree_base();
-  test_tree_iterator();
-  test_tree_special_member_functions();
-  test_tree_construct_assign();
-  test_tree_node_operations();
-  test_tree_insert_erase();
-  test_tree_back_insert_erase();
-  test_tree_front_insert_erase();
-  test_tree_first_last_nth_order();
-  test_tree_mscl_for_sequence_container();
+  inner::fns::test_tree_base();
+  inner::fns::test_tree_iterator();
+  inner::fns::test_tree_special_member_functions();
+  inner::fns::test_tree_construct_assign();
+  inner::fns::test_tree_node_operations();
+  inner::fns::test_tree_insert_erase();
+  inner::fns::test_tree_back_insert_erase();
+  inner::fns::test_tree_front_insert_erase();
+  inner::fns::test_tree_first_last_nth_order();
+  inner::fns::test_tree_mscl_for_sequence_container();
 
-  test_tree_vector_base();
-  test_tree_vector_special_member_functions();
-  test_tree_vector_construct_assign();
-  test_tree_vector_node_operations();
-  test_tree_vector_insert_erase();
-  test_tree_vector_mscl_for_sequence_container();
+  inner::fns::test_tree_vector_base();
+  inner::fns::test_tree_vector_special_member_functions();
+  inner::fns::test_tree_vector_construct_assign();
+  inner::fns::test_tree_vector_node_operations();
+  inner::fns::test_tree_vector_insert_erase();
+  inner::fns::test_tree_vector_mscl_for_sequence_container();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_logn_tree();
+    inner::fns::test_logn_tree();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

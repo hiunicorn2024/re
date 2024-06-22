@@ -8,7 +8,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 namespace dynamic_help {
 
@@ -665,6 +665,70 @@ void test_function() {
   assert(f5.type() == typeid(int (*)()));
   f5.reset();
   assert(f5.empty());
+}
+void test_unique_function() {
+  {
+    int (*fp)() = []() {return 1;};
+    using f_t = unique_function<int ()>;
+    f_t f = fp;
+    static_assert(movable<f_t>);
+    static_assert(!is_copy_constructible_v<f_t>);
+    static_assert(!is_copy_assignable_v<f_t>);
+    static_assert(swappable<f_t>);
+    assert(f() == 1);
+    assert(f.local());
+
+    struct tmp_t {
+      void *a[6] = {};
+    };
+    f = [x = tmp_t{}]() {return 1;};
+    assert(f.local());
+    static_assert(decltype(f)::local<int (*)()>());
+
+    assert(!f.empty() && f != nullptr && f.operator bool());
+    f = f_t(nullptr);
+    assert(f.empty() && nullptr == f && f.operator bool() == false);
+    f.reset();
+    assert(f.empty() && nullptr == f && f.operator bool() == false);
+    f.clear();
+    assert(f.empty() && nullptr == f && f.operator bool() == false);
+    f = nullptr;
+    assert(f.empty() && nullptr == f && f.operator bool() == false);
+    assert(f.local());
+
+    struct tmp_t2 {
+      void *a[100] = {};
+    };
+    f = [x = tmp_t2{}]() {return 2;};
+    assert(!f.local());
+    assert(f() == 2);
+  }
+  {
+    using f_t = void (int &);
+    using fw_t = unique_function<f_t>;
+    using fw2_t = unique_function<f_t, 0u>;
+
+    static_assert(inner::is_class_unique_function_of<fw_t, void (int &)>
+                  ::value);
+    static_assert(!inner::is_class_unique_function_of<fw_t, void (int &&)>
+                  ::value);
+
+    int x = 1;
+    fw2_t f0 = [](int &x) {++x;};
+    fw_t f(move(f0));
+    assert(f0.empty() && !f.empty());
+    assert(f0.local());
+    assert(f.local());
+    f(x);
+    assert(x == 2);
+    f = move(f0);
+    assert(f.empty());
+
+    f = fw2_t([](int &x) {++x;});
+    assert(!f.empty());
+    f(x);
+    assert(x == 3);
+  }
 }
 
 namespace help_move_only_function {
@@ -1449,25 +1513,29 @@ void test_variant_visit() {
 void test_dynamic() {
   printf("dynamic: ");
 
-  test_dynamic_t();
-  test_dynamic_2();
-  test_dynamic_3();
-  test_dynamic_4();
-  test_dynamic_void();
-  test_function();
-  test_move_only_function();
-  test_type_erased_invocation();
-  test_variant();
-  test_variant_visit();
+  inner::fns::test_dynamic_t();
+  inner::fns::test_dynamic_2();
+  inner::fns::test_dynamic_3();
+  inner::fns::test_dynamic_4();
+  inner::fns::test_dynamic_void();
+  inner::fns::test_function();
+  inner::fns::test_unique_function();
+  inner::fns::test_move_only_function();
+  inner::fns::test_type_erased_invocation();
+  inner::fns::test_variant();
+  inner::fns::test_variant_visit();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_dynamic();
+    inner::fns::test_dynamic();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {

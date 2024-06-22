@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 void test_forward_list_ownership() {
   const auto r = irng(0, 10);
@@ -1045,36 +1045,40 @@ void test_forward_list_node_and_slice() {
 void test_forward_list() {
   printf("container - forward_list: ");
 
-  test_forward_list_ownership();
-  test_forward_list_intrusive_mode();
-  test_forward_list_briefly<forward_list
-                            <int, stateful_test_allocator<int>>>();
-  test_forward_list_briefly<forward_list
-                            <int, test_allocator<int>>>();
-  test_forward_list_briefly<forward_list
-                            <test_object<int>,
-                             stateful_test_allocator<test_object<int>>>>();
-  test_forward_list_carefully
+  inner::fns::test_forward_list_ownership();
+  inner::fns::test_forward_list_intrusive_mode();
+  inner::fns::test_forward_list_briefly<forward_list
+                                        <int, stateful_test_allocator<int>>>();
+  inner::fns::test_forward_list_briefly<forward_list
+                                        <int, test_allocator<int>>>();
+  inner::fns::test_forward_list_briefly<forward_list
+                                        <test_object<int>,
+                                         stateful_test_allocator
+                                         <test_object<int>>>>();
+  inner::fns::test_forward_list_carefully
     <forward_list<int, stateful_test_allocator<int>>>();
-  test_forward_list_carefully<forward_list
-                              <int, test_allocator<int>>>();
-  test_forward_list_carefully
+  inner::fns::test_forward_list_carefully<forward_list
+                                          <int, test_allocator<int>>>();
+  inner::fns::test_forward_list_carefully
     <forward_list
      <test_object<int>,
       stateful_test_allocator<test_object<int>>>>();
-  test_slist<slist<int, test_allocator<int>>>();
+  inner::fns::test_slist<slist<int, test_allocator<int>>>();
 
-  test_forward_list_replace();
-  test_forward_list_node_and_slice();
+  inner::fns::test_forward_list_replace();
+  inner::fns::test_forward_list_node_and_slice();
 
   printf("ok\n");
 }
 
+}
+
 int main() {
+  using namespace re;
 #ifndef RE_NOEXCEPT
   try {
 #endif
-    test_forward_list();
+    inner::fns::test_forward_list();
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
