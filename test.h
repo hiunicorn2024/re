@@ -2873,11 +2873,18 @@ struct test_allocator_base {
 template <template <class, class> class MAP>
 inline inner::alloc_log<MAP> *test_allocator_base<MAP>::p = nullptr;
 
+struct test_allocator_mtx_base {
+  static ez_mutex mtx;
+};
+inline ez_mutex test_allocator_mtx_base::mtx;
+
 }
 template <class T, template <class, class> class MAP = ez_map>
-class test_allocator : inner::test_allocator_base<MAP> {
+class test_allocator
+  : inner::test_allocator_base<MAP>
+  , inner::test_allocator_mtx_base {
   using base_t = inner::test_allocator_base<MAP>;
-  static ez_mutex mtx;
+  using inner::test_allocator_mtx_base::mtx;
 
 public:
   using value_type = T;
@@ -2937,8 +2944,6 @@ public:
     return base_t::p->size();
   }
 };
-template <class T, template <class, class> class MAP>
-inline ez_mutex test_allocator<T, MAP>::mtx;
 
 namespace inner {
 
