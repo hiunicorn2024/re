@@ -1,21 +1,14 @@
-#include <re/base.h>
-#include <re/test.h>
-#include <re/range.h>
-#include <re/allocator.h>
-#include <re/dynamic.h>
-#include <re/algorithm.h>
-#include <re/container.h>
-#include <re/io.h>
-
+#include <re/all>
 #include <cassert>
 
-using namespace re;
+namespace re::inner::fns {
 
 // base
 void doc_base() {
   // optional macros:
   //   RE_NOEXCEPT
   //   RE_DEFAULT_ALLOCATOR re::test_allocator
+  //   RE_WIN32_NO_X64_INTRINSICS
   //
   // temporary macros for inner usage:
   //   RE_TO_DEFINE_SIGNED_INTEGRAL_TRAITS
@@ -26,6 +19,7 @@ void doc_base() {
   //   re
   //   re::inner
   //   re::inner::fns
+  //   re::this_thread
   //   re_adl
   //   re_adl::inner
   //
@@ -223,13 +217,44 @@ void doc_std_dependence() {
     // assert(sview(l.file_name()) == "main.cpp");
   }
 }
+void doc_std_dependence_fpfns() {
+  // ceil // from -inf to +inf
+  // floor // from -inf to +inf
+  // round // from zero to inf
+  // trunc // from inf toward zero
+
+  // NAN
+  // INFINITY // positive infinity
+
+  // FP_INFINITE
+  // FP_NAN
+  // FP_NORMAL
+  // FP_SUBNORMAL
+  // FP_ZERO
+  // fpclassify(x)
+
+  // isfinite(x)
+  // isinf(x)
+  // isnan(x)
+  // isnormal(x)
+  // signbit(x)
+  // isunordered(x)
+}
 void doc_print_error() {
   // print_then_abort(const char *)
   // print_then_abort(const char *, s...)
   //
+  // print_then_terminate(const char *)
+  // print_then_terminate(const char *, s...)
+  //
   // // throw_or_abort: abort if RE_NOEXCEPT is defined, throw otherwise
   // throw_or_abort<E>()
   // throw_or_abort<E>(const char *)
+  //
+  // // throw_or_terminate:
+  // //   terminate if RE_NOEXCEPT is defined, throw otherwise
+  // throw_or_terminate<E>()
+  // throw_or_terminate<E>(const char *)
 }
 void doc_basic_template_metaprogramming_tools() {
   // declval<T>()
@@ -1943,7 +1968,7 @@ void doc_ratio() {
   //   special member functions:
   //     no assignment operator
   //
-  //   ratio(n, d)
+  //   ratio(n, d = 1)
   //
   //   +
   //   -
@@ -2375,6 +2400,9 @@ void doc_floating_point_traits() {
   // float_traits = floating_point_traits<float>
   // double_traits = floating_point_traits<double>
 }
+void doc_std_dependence_common_math() {
+  // abs(x)
+}
 
 // test
 void doc_owner_ptr() {
@@ -2698,6 +2726,12 @@ void doc_ez_map() {
     assert(m.empty());
     assert(!m.remove(1));
   }
+}
+void doc_ez_mutex() {
+  // ez_mutex
+  //   smf: default-constructible
+  //   lock()
+  //   unlock()
 }
 void doc_test_allocator() {
   // test_allocator<T, MAP = ez_map>
@@ -4227,7 +4261,6 @@ void doc_function() {
   }
 }
 void doc_move_only_function() {
-  // move_only_function<...>
   // move_only_function<F>
   //   return_type
   //
@@ -4246,6 +4279,29 @@ void doc_move_only_function() {
   //
   //   ()(...) // may throw // requires operator bool()
   //   explicit operator bool()
+}
+void doc_unique_function() {
+  // unique_function<F>
+  //   return_type
+  //
+  //   special member functions
+  //     move only
+  //
+  //   unique_function(nullptr_t)
+  //   =(nullptr_t)
+  //   == with nullptr
+  //   reset()
+  //   clear()
+  //   empty()
+  //   explicit operator bool
+  //
+  //   unique_function(x) // no guard to nullptr
+  //   =(x) // may throw
+  //
+  //   ()(...) // may throw // !empty()
+  //
+  //   local()
+  //   static local<T>()
 }
 void doc_type_erased_invocation() {
   // do_type_erased_invocation(f, s...) // may throw
@@ -4403,10 +4459,25 @@ void doc_random() {
   // rational_bernoulli_distribution<INT = int>
   //
   // rander<E = minstd_rand>
+  //   result_type
+  //   engine_type
+  //
+  //   special member functions: full
+  //   ==
+  //
+  //   explicit rander(seed_i)
+  //   seed(result_type)
+  //   engine()->E // rander can just be seen as engine
+  //   min()
+  //   max()
+  //
   //   ()()
   //   discard(z = 1)
-  //   ()(i, j)
+  //   ()(i, j) // make a randomized value in [i, j]
   //   gen_bool(num, den)
+  //     // den != 0
+  //     // if num >= den, num means den
+  //     // if num == 0, always return false
   // make_rander<E = minstd_rand>()
 }
 
@@ -5631,12 +5702,14 @@ void doc_string() {
   //   pop_back(n) // requires: n <= size()
   //   append(s...) // may throw
   //
-  // using string = sso_string<char, 15>;
+  // using string = sso_string<char, 15u>;
   // template <class C, class AL = default_allocator<C>>
-  // using default_sso_string = sso_string<C, 15, AL>;
+  // using default_sso_string = sso_string<C, 15u, AL>;
   // using wstring = basic_string<wchar_t>;
   // using u16string = basic_string<char16_t>;
   // using u32string = basic_string<char32_t>;
+  // template <class C>
+  // using string_t = ...
   //
   // string operator ""_s(const char *s, size_t n);
   // wstring operator ""_s(const wchar_t *s, size_t n);
@@ -8333,7 +8406,7 @@ void doc_tree_adaptor() {
   //   erase(i1, i2)->iterator
   //   clear(i)
   //
-  //   emplace_back(i, s...)->iterator
+  //   emplace_back(i, s...)
   //   push_back(i, k)
   //   push_back(i, tree_ref)
   //   push_back(i, vector_ref)
@@ -8343,7 +8416,7 @@ void doc_tree_adaptor() {
   //   pop_back(i)
   //   pop_back(i, n)
   //
-  //   emplace_front(i, s...)->iterator
+  //   emplace_front(i, s...)
   //   push_front(i, k)
   //   push_front(i, tree_ref)
   //   push_front(i, vector_ref)
@@ -8366,17 +8439,17 @@ void doc_tree_adaptor() {
   //   shrink_to_fit(i)
   //   first_order_shrink_to_fit(i)
   //
-  //   remove_if(i, iter_eq)
-  //   first_order_remove_if(i, iter_eq)
+  //   remove_if(i, eq)
+  //   first_order_remove_if(i, eq)
   //
-  //   unique(i, iter_eq)
-  //   first_order_unique(i, iter_eq)
+  //   unique(i, eq)
+  //   first_order_unique(i, eq)
   //
-  //   merge(i, tree/vec_ref, i2, iter_less)
-  //   merge(i, vec_ref, iter_less)
+  //   merge(i, tree/vec_ref, i2, less)
+  //   merge(i, vec_ref, less)
   //
   //   sort(i, iter_less)
-  //   first_order_sort(i, iter_less)
+  //   first_order_sort(i, less)
   //
   // private:
   //   good()->bool
@@ -8507,7 +8580,7 @@ void doc_tree_vector_adaptor() {
   //   erase(i1, i2)->iterator
   //   clear(i)
   //
-  //   emplace_back(s...)->iterator
+  //   emplace_back(s...)
   //   push_back(k)
   //   push_back(tree_ref)
   //   push_back(vector_ref)
@@ -8526,7 +8599,7 @@ void doc_tree_vector_adaptor() {
   //   pop_back(i)
   //   pop_back(i, n)
   //
-  //   emplace_front(s...)->iterator
+  //   emplace_front(s...)
   //   push_front(k)
   //   push_front(tree_ref)
   //   push_front(vector_ref)
@@ -8549,7 +8622,7 @@ void doc_tree_vector_adaptor() {
   //   capacity(i)
   //   full()
   //   full(i)
-  //   
+  //
   //   reserve(n)
   //   reserve(i, n)
   //   first_order_reserve(n)
@@ -8569,25 +8642,25 @@ void doc_tree_vector_adaptor() {
   //   first_order_shrink_to_fit()
   //   first_order_shrink_to_fit(i)
   //
-  //   remove_if(iter_eq)
-  //   remove_if(i, iter_eq)
-  //   first_order_remove_if(iter_eq)
-  //   first_order_remove_if(i, iter_eq)
+  //   remove_if(eq)
+  //   remove_if(i, eq)
+  //   first_order_remove_if(eq)
+  //   first_order_remove_if(i, eq)
   //
-  //   unique(iter_eq)
-  //   unique(i, iter_eq)
-  //   first_order_unique(iter_eq)
-  //   first_order_unique(i, iter_eq)
+  //   unique(eq)
+  //   unique(i, eq)
+  //   first_order_unique(eq)
+  //   first_order_unique(i, eq)
   //
-  //   merge(tree/vec_ref, i2, iter_less)
-  //   merge(i, tree/vec_ref, i2, iter_less)
-  //   merge(vec_ref, iter_less)
-  //   merge(i, vec_ref, iter_less)
+  //   merge(tree/vec_ref, i2, less)
+  //   merge(i, tree/vec_ref, i2, less)
+  //   merge(vec_ref, less)
+  //   merge(i, vec_ref, less)
   //
-  //   sort(iter_less)
-  //   sort(i, iter_less)
-  //   first_order_sort(iter_less)
-  //   first_order_sort(i, iter_less)
+  //   sort(less)
+  //   sort(i, less)
+  //   first_order_sort(less)
+  //   first_order_sort(i, less)
   //
   // private:
   //   good()->bool
@@ -8604,6 +8677,114 @@ void doc_tree_typedef() {
   //
   // logn_tree<T, AL = default_allocator<T>>
   // logn_tree_vector<T, AL = default_allocator<T>>
+}
+
+void doc_duration() {
+  // treat_as_floating_point<rep> : false_type
+  // treat_as_floating_point<float or double> : true_type
+  //
+  // duration<R, ratio P>
+  //   rep = R
+  //   period = P
+  //
+  //   special member functions : full
+  //   == <=> // with duration<R2, P2>
+  //
+  //   explicit duration(x)
+  //   count()->rep
+  //
+  //   duration(const duration<R2, P2> &) requires semi-safe
+  //
+  //   + // unary or binary, always return duration<...>
+  //   - // ...
+  //   ++
+  //   --
+  //   +=
+  //   -=
+  //
+  //   *=(rep)
+  //   /=(rep)
+  //   %=(rep)->this_t
+  //   %=(const this_t &)->this_t
+  //
+  //   * // with rep
+  //   / // with rep (->common_duration) or duration<R2, P2> (->common_rep)
+  //   % // with rep or duration<R2, P2> // both return common_duration
+  //
+  //   static zero()
+  //   static min()
+  //   static max()
+  //
+  //   flour<rep2>()
+  //   ceil<rep2>()
+  //   round<rep2>()
+  //   abs()
+  // duration_cast<d2_t>(d)
+  // duration_flour<rep2>(d)
+  // duration_ceil<rep2>(d)
+  // duration_round<rep2>(d)
+  // abs(d)
+  //
+  // nanoseconds = ...
+  // microseconds
+  // milliseconds = duration<long long, milli>;
+  // seconds
+  // minutes
+  // hours
+  // days
+  // weeks
+  // months
+  // years
+  //
+  // ""_h(x)->hours
+  // ""_min(x)->minutes
+  // ""_s(x)->seconds
+  // ""_ms(x)->milliseconds
+  // ""_us(x)->microseconds
+  // ""_ns(x)->nanoseconds
+  //
+  // ""_[h/min/s/ms/us/ns](f) // for floating-point version
+}
+void doc_time_point() {
+  // time_point<C, D = C::duration>
+  //   clock = C
+  //   duration = D
+  //   rep = duration::rep
+  //   period = duration::period
+  //
+  //   explicit time_point(d)
+  //   time_point(tp2) requires is_convertible_v<tp2_t, duration>
+  //
+  //   time_since_epoch()
+  //   time()
+  //   count()
+  //
+  //   ++ -- += -=
+  //   + with duration<...> return common_time_point
+  //   - with duration<...> return common_time_point
+  //   - with time_point_2 return common_duration
+  //
+  //   static min()
+  //   static max()
+  //
+  //   flour<rep2>()
+  //   ceil<rep2>()
+  //   round<rep2>()
+  //
+  // time_point_cast<rep2>(t)
+  // time_point_floor<rep2>(t)
+  // time_point_ceil<rep2>(t)
+  // time_point_round<rep2>(t)
+}
+void doc_clock() {
+  // system_clock
+  // steady_clock
+  //   rep = long long
+  //   period = ratio(...)
+  //   time_point = time_point<this_t>
+  //   is_steady->bool
+  //
+  //   static now()->time_point
 }
 
 void doc_c_file() {
@@ -8855,209 +9036,446 @@ void doc_ssplitter() {
          output_itr([&](auto sv) {vv.emplace_back(sv);}));
   assert(equal(vv, seq("ab"_sv, "cd", "efg")));
 }
+void doc_file() {
+  // read_file_t read_file
+  // open_file_t open_file
+  // create_file_t create_file
+  // file
+  //   special member functions: only movable
+  //   explicit file(sv) // sview, wsview, u16sview or u32sview
+  //   empty()->bool
+  //   open(sv)
+  //   close()
+  //   get<S = string>()->S
+  //   put(contiguous_r)
+  //
+  // to_full_path(sv)->s
+  // simplify_path(sv)->s
+  // remove_path_last_name(sv)->s // unchange if no last name // .../###/
+  // replace_path_last_name(sv)->s // unchange if no last name
+  //
+  // is_file(sv)->bool // is file or directory
+  // is_directory(sv)->bool
+  // try_create_directory(sv)->bool
+  // create_directory(sv)
+  // file_size(sv)->ull
+  // file_time(sv)->system_clock::time_point
+  // try_remove_file(sv)->bool
+  // remove_file(sv)
+  // try_rename_file(sv, sv2)->bool // sv is full path, sv2 is just name
+  // rename_file(sv, sv2) // same as try_...
+  //
+  // file_info<S = string>
+  //   string_type
+  //   path
+  //   name
+  //   size
+  //   time
+  //   is_dir
+  // view_file(sv)->file_info<...> // non recursive
+  // view_directory(sv)->tree<file_info<...>> // recursive to all children
+}
+
+void doc_atomic() {
+  // atomic<int>
+  // atomic<long>
+  // atomic<long long>
+  //   special member functions:
+  //     this_t() initialize to zero
+  //     non-movable
+  //   value_type
+  //   atomic(vt)
+  //   =(vt)->vt
+  //   operator vt()
+  //   load()->vt
+  //   store(vt)
+  //   exchange(vt)->vt
+  //   compare_exchange(vt &expected, vt desired)->bool
+  //     // if not equal, assign stored value to expected,
+  //     // otherwise, assign stored value by expected
+  //   fetch_add(vt)->vt
+  //   fetch_sub(vt)->vt
+  //   ++ --()->vt
+  //   ++ --(int)->vt
+  //   += -= &= |= ^=(vt)->vt
+  //
+  // atomic<T *>
+  //   special member functions:
+  //     this_t() initialize to zero
+  //     non-movable
+  //   value_type
+  //   difference_type
+  //   store(vt)
+  //   load()->vt
+  //   operator vt()
+  //   =(vt)->vt
+  //   exchange(vt)->vt
+  //   compare_exchange(vt &expected, vt desired)->bool
+  //     // if not equal, assign stored value to expected,
+  //     // otherwise, assign stored value by expected
+  //
+  // atomic_flag
+  //   special member functions:
+  //     this_t() initialize to zero
+  //     can not copy and move
+  //   test()->bool
+  //   test_and_set()->bool
+  //   clear()
+  //
+  // simple_spinlock
+  //   special member functions: default-constructible
+  //
+}
+void doc_thread() {
+  // thread
+  //   special member functions: default-constructible, movable
+  //   explicit thread(f, s...)
+  //
+  //   joinable()
+  //   join()
+  //   detach()
+  //
+  //   id
+  //   get_id()->id
+  //   native_handle_type
+  //   native_handle()->native_handle_type
+  //   static hardware_concurrency()->unsigned
+  //
+  // hash<thread::id>
+  //   ()(thread::id)->size_t
+  //
+  // this_thread::get_id()->thread::id
+  // this_thread::sleep_for(duration)
+  // this_thread::sleep_until(time_point)
+  //
+  // sleep_for(duration)
+  // sleep_until(time_point)
+  // get_thread_id()->thread::id
+}
+void doc_mutex() {
+  // mutex
+  //   special member functions: default-constructible
+  //   lock()
+  //   try_lock()->bool
+  //   unlock()
+  //   native_handle_type
+  //   native_handle()->native_handle_type
+  //
+  // defer_lock_t
+  // defer_lock
+  // try_to_lock_t
+  // try_to_lock
+  // adopt_lock_t
+  // adopt_lock
+  //
+  // lock_guard<M>
+  //   mutex_type = M
+  //   special member functions: only destructible
+  //   this_t(m, adopt_lock_t)
+  //   explicit this_t(m)
+  //
+  // unique_lock<M>
+  //   mutex_type = M
+  //   special member functions: default-constructible, movable
+  //   explicit this_t(m)
+  //   this_t(m, defer_lock)
+  //   this_t(m, try_to_lock)
+  //   this_t(m, adopt_lock)
+  //   this_t(m, time_point)
+  //   this_t(m, duration)
+  //
+  //   lock()
+  //   try_lock()
+  //   try_lock_for(t)
+  //   try_lock_until(t)
+  //   unlock()
+  //
+  //   release()->mutex_ptr
+  //   owns_lock()->bool
+  //   explicit operator bool()
+  //   mutex()->mutex_ptr
+  //
+  // enum cv_status
+  //   no_timeout
+  //   timeout
+  // condition_variable
+  //   special member functions: default-constructible
+  //   notify_one()
+  //   notify_all()
+  //   wait(unique_lock<mutex> &lock)
+  //   wait(lock, eq)
+  //   wait_until(lock, t)
+  //   wait_until(lock, t, eq)->bool
+  //   wait_for(lock, t)
+  //   wait_for(lock, t, eq)->bool
+  //   native_handle_type
+  //   native_handle()->native_handle_type
+}
+void doc_mutex_area() {
+  // mutex_area<T>
+  //   // every function argument takes no argument
+  //   special member functions: default-constructible
+  //   explicit this_t(in_place, s...)
+  //   value_type = T
+  //   ->()->value_type *
+  //   *()->value_type &
+  //   data()->value_type &
+  //   enter(f)
+  //   enter_until(f, eq)
+  //   enter_notify_one(f, condvar_ref)
+  //   enter_notify_all(f, condvar_ref)
+  //   leave_until(eq, condvar_ref) // in this->enter()
+  //   leave_notify_one(condvar_ref)
+  //   leave_notify_all(condvar_ref)
+  //   busy_wait(eq)
+}
+void doc_pool_thread() {
+  // basic_thread_pool
+  //   smf: default-constructible and destructible
+  //   this_t(n)
+  //   handle_t
+  //   awake(f)->handle_t
+  //   join(handle_t)
+  //
+  // real_thread_t real_thread
+  //
+  // pool_thread
+  //   special member functions: default-constructible, movable
+  //   explicit thread(f) // if pool is full, just call f()
+  //   explicit thread(f, real_thread) // if pool is full, throw or terminate
+  //
+  //   joinable() // always true
+  //   join() // wait or do nothing
+  //
+  //   id = thread::id
+  //   get_id()->id
+  //     // return id{} if empty of f is called in this thread
+  //   native_handle_type
+  //     // return invalid value if empty of f is called in this thread
+  //   native_handle()->native_handle_type
+  //
+  //   static hardware_concurrency()->unsigned
+}
+
+}
 
 int main() {
-  doc_base();
-  doc_simple_put_functions();
-  doc_std_dependence();
-  doc_print_error();
-  doc_basic_template_metaprogramming_tools();
-  doc_swap();
-  doc_type_traits();
-  doc_basic_utility_functions();
-  doc_pointer_traits();
-  doc_reference_wrapper_and_invoke();
-  doc_language_related_concepts();
-  doc_concept_constrained_comparisons();
-  doc_integral_traits();
-  doc_numeric_limits();
-  doc_three_way_comparison();
-  doc_type_index();
-  doc_basic_function_objects();
-  doc_tuple();
-  doc_bind();
-  doc_ratio();
-  doc_optional();
-  doc_semiregular_function();
-  doc_hash();
-  doc_miscl();
-  doc_floating_point_traits();
+  re::inner::fns::doc_base();
+  re::inner::fns::doc_simple_put_functions();
+  re::inner::fns::doc_std_dependence();
+  re::inner::fns::doc_std_dependence_fpfns();
+  re::inner::fns::doc_print_error();
+  re::inner::fns::doc_basic_template_metaprogramming_tools();
+  re::inner::fns::doc_swap();
+  re::inner::fns::doc_type_traits();
+  re::inner::fns::doc_basic_utility_functions();
+  re::inner::fns::doc_pointer_traits();
+  re::inner::fns::doc_reference_wrapper_and_invoke();
+  re::inner::fns::doc_language_related_concepts();
+  re::inner::fns::doc_concept_constrained_comparisons();
+  re::inner::fns::doc_integral_traits();
+  re::inner::fns::doc_numeric_limits();
+  re::inner::fns::doc_three_way_comparison();
+  re::inner::fns::doc_type_index();
+  re::inner::fns::doc_basic_function_objects();
+  re::inner::fns::doc_tuple();
+  re::inner::fns::doc_bind();
+  re::inner::fns::doc_ratio();
+  re::inner::fns::doc_optional();
+  re::inner::fns::doc_semiregular_function();
+  re::inner::fns::doc_hash();
+  re::inner::fns::doc_miscl();
+  re::inner::fns::doc_floating_point_traits();
+  re::inner::fns::doc_std_dependence_common_math();
 
-  doc_owner_ptr();
-  doc_test_throwing();
-  doc_test_ownership();
-  doc_test_rational_operator();
-  doc_instance_counter();
-  doc_ez_dynamic();
-  doc_ez_function();
-  doc_ez_vector();
-  doc_ez_forward_list();
-  doc_ez_slist();
-  doc_ez_bidirectional_list();
-  doc_ez_list();
-  doc_ez_map();
-  doc_test_allocator();
-  doc_test_range();
+  re::inner::fns::doc_owner_ptr();
+  re::inner::fns::doc_test_throwing();
+  re::inner::fns::doc_test_ownership();
+  re::inner::fns::doc_test_rational_operator();
+  re::inner::fns::doc_instance_counter();
+  re::inner::fns::doc_ez_dynamic();
+  re::inner::fns::doc_ez_function();
+  re::inner::fns::doc_ez_vector();
+  re::inner::fns::doc_ez_forward_list();
+  re::inner::fns::doc_ez_slist();
+  re::inner::fns::doc_ez_bidirectional_list();
+  re::inner::fns::doc_ez_list();
+  re::inner::fns::doc_ez_map();
+  re::inner::fns::doc_ez_mutex();
+  re::inner::fns::doc_test_allocator();
+  re::inner::fns::doc_test_range();
 
-  doc_iterator_requirements();
-  doc_iterator_main_components();
-  doc_range_main_components();
-  doc_degraded_iterator();
-  doc_reverse_iterator();
-  doc_insert_iterator();
-  doc_move_iterator();
-  doc_counted_iterator();
-  doc_iterator_wrapper();
-  doc_array();
-  doc_iter_pair();
-  doc_composite_range();
-  doc_range_wrapper();
-  doc_base_range();
-  doc_empty_range();
-  doc_single_range();
-  doc_counted_range();
-  doc_degraded_range();
-  doc_move_range();
-  doc_reverse_range();
-  doc_rng_for_iterator_n();
-  doc_rng_for_n_value();
-  doc_iterator_range();
-  doc_bind_iterator();
-  doc_iters();
-  doc_range_miscl();
+  re::inner::fns::doc_iterator_requirements();
+  re::inner::fns::doc_iterator_main_components();
+  re::inner::fns::doc_range_main_components();
+  re::inner::fns::doc_degraded_iterator();
+  re::inner::fns::doc_reverse_iterator();
+  re::inner::fns::doc_insert_iterator();
+  re::inner::fns::doc_move_iterator();
+  re::inner::fns::doc_counted_iterator();
+  re::inner::fns::doc_iterator_wrapper();
+  re::inner::fns::doc_array();
+  re::inner::fns::doc_iter_pair();
+  re::inner::fns::doc_composite_range();
+  re::inner::fns::doc_range_wrapper();
+  re::inner::fns::doc_base_range();
+  re::inner::fns::doc_empty_range();
+  re::inner::fns::doc_single_range();
+  re::inner::fns::doc_counted_range();
+  re::inner::fns::doc_degraded_range();
+  re::inner::fns::doc_move_range();
+  re::inner::fns::doc_reverse_range();
+  re::inner::fns::doc_rng_for_iterator_n();
+  re::inner::fns::doc_rng_for_n_value();
+  re::inner::fns::doc_iterator_range();
+  re::inner::fns::doc_bind_iterator();
+  re::inner::fns::doc_iters();
+  re::inner::fns::doc_range_miscl();
 
-  doc_allocator_traits();
-  doc_uninitialized_argo();
-  doc_default_allocator();
-  doc_allocator_wrapper();
-  doc_unique_ptr();
-  doc_unique_array();
-  doc_copyable_ptr();
-  doc_copyable_array();
-  doc_buffer();
-  doc_scoped_allocator_adaptor();
-  doc_allocator_aware_container_ownership();
+  re::inner::fns::doc_allocator_traits();
+  re::inner::fns::doc_uninitialized_argo();
+  re::inner::fns::doc_default_allocator();
+  re::inner::fns::doc_allocator_wrapper();
+  re::inner::fns::doc_unique_ptr();
+  re::inner::fns::doc_unique_array();
+  re::inner::fns::doc_copyable_ptr();
+  re::inner::fns::doc_copyable_array();
+  re::inner::fns::doc_buffer();
+  re::inner::fns::doc_scoped_allocator_adaptor();
+  re::inner::fns::doc_allocator_aware_container_ownership();
 
-  doc_dynamic_base();
-  doc_dynamic();
-  doc_dynamic_void();
-  doc_function();
-  doc_optional();
-  doc_move_only_function();
-  doc_type_erased_invocation();
-  doc_variant();
+  re::inner::fns::doc_dynamic_base();
+  re::inner::fns::doc_dynamic();
+  re::inner::fns::doc_dynamic_void();
+  re::inner::fns::doc_function();
+  re::inner::fns::doc_optional();
+  re::inner::fns::doc_move_only_function();
+  re::inner::fns::doc_unique_function();
+  re::inner::fns::doc_type_erased_invocation();
+  re::inner::fns::doc_variant();
 
-  doc_random();
+  re::inner::fns::doc_random();
 
-  doc_equal();
-  doc_allanynone_of();
-  doc_for_each();
-  doc_find();
-  doc_find_last();
-  doc_find_first_last_of();
-  doc_adjacent_find();
-  doc_count();
-  doc_mismatch();
-  doc_is_permutation();
-  doc_find_subrange();
-  doc_search();
-  doc_find_end();
-  doc_contains();
-  doc_starts_ends_with();
-  doc_fold_left_right();
-  doc_copy_move_if_backward_from();
-  doc_swap_ranges();
-  doc_transform();
-  doc_replace_if_copy_if();
-  doc_fill_generate();
-  doc_remove_if_copy_if();
-  doc_unique_copy();
-  doc_reverse_copy();
-  doc_rotate_copy();
-  doc_shift();
-  doc_sample();
-  doc_shuffle();
-  doc_binary_search_series();
-  doc_partition_series();
-  doc_merge_series();
-  doc_set_series();
-  doc_heap_series();
-  doc_min_max();
-  doc_clamp();
-  doc_lexicographical_compare();
-  doc_permutation();
-  doc_sort_series();
-  doc_accumulate_reduce();
-  doc_inner_product();
-  doc_partial_sum_series();
-  doc_adjacent_difference();
-  doc_iota();
-  doc_gcd_and_lcm();
-  doc_midpoint();
-  doc_for_each_node();
-  doc_list_fns();
-  doc_list_unique();
-  doc_combination_range();
-  doc_filter_range();
-  doc_take_range();
-  doc_drop_range();
-  doc_take_while_range();
-  doc_drop_while_range();
-  doc_join_range();
-  doc_join_with_range();
-  doc_adjacent_range();
-  doc_slide_range();
-  doc_aligned_stride_range();
-  doc_stride_range();
-  doc_aligned_chunk_range();
-  doc_chunk_range();
-  doc_chunk_by_range();
-  doc_inner_cartesian_product_range();
-  doc_cartesian_product_range();
-  doc_split_range();
-  doc_zip_range();
-  doc_aligned_zip_range();
-  doc_enumerate_range();
-  doc_exclusive_rotate_range();
-  doc_rotate_range();
-  doc_loop_range();
+  re::inner::fns::doc_equal();
+  re::inner::fns::doc_allanynone_of();
+  re::inner::fns::doc_for_each();
+  re::inner::fns::doc_find();
+  re::inner::fns::doc_find_last();
+  re::inner::fns::doc_find_first_last_of();
+  re::inner::fns::doc_adjacent_find();
+  re::inner::fns::doc_count();
+  re::inner::fns::doc_mismatch();
+  re::inner::fns::doc_is_permutation();
+  re::inner::fns::doc_find_subrange();
+  re::inner::fns::doc_search();
+  re::inner::fns::doc_find_end();
+  re::inner::fns::doc_contains();
+  re::inner::fns::doc_starts_ends_with();
+  re::inner::fns::doc_fold_left_right();
+  re::inner::fns::doc_copy_move_if_backward_from();
+  re::inner::fns::doc_swap_ranges();
+  re::inner::fns::doc_transform();
+  re::inner::fns::doc_replace_if_copy_if();
+  re::inner::fns::doc_fill_generate();
+  re::inner::fns::doc_remove_if_copy_if();
+  re::inner::fns::doc_unique_copy();
+  re::inner::fns::doc_reverse_copy();
+  re::inner::fns::doc_rotate_copy();
+  re::inner::fns::doc_shift();
+  re::inner::fns::doc_sample();
+  re::inner::fns::doc_shuffle();
+  re::inner::fns::doc_binary_search_series();
+  re::inner::fns::doc_partition_series();
+  re::inner::fns::doc_merge_series();
+  re::inner::fns::doc_set_series();
+  re::inner::fns::doc_heap_series();
+  re::inner::fns::doc_min_max();
+  re::inner::fns::doc_clamp();
+  re::inner::fns::doc_lexicographical_compare();
+  re::inner::fns::doc_permutation();
+  re::inner::fns::doc_sort_series();
+  re::inner::fns::doc_accumulate_reduce();
+  re::inner::fns::doc_inner_product();
+  re::inner::fns::doc_partial_sum_series();
+  re::inner::fns::doc_adjacent_difference();
+  re::inner::fns::doc_iota();
+  re::inner::fns::doc_gcd_and_lcm();
+  re::inner::fns::doc_midpoint();
+  re::inner::fns::doc_for_each_node();
+  re::inner::fns::doc_list_fns();
+  re::inner::fns::doc_list_unique();
+  re::inner::fns::doc_combination_range();
+  re::inner::fns::doc_filter_range();
+  re::inner::fns::doc_take_range();
+  re::inner::fns::doc_drop_range();
+  re::inner::fns::doc_take_while_range();
+  re::inner::fns::doc_drop_while_range();
+  re::inner::fns::doc_join_range();
+  re::inner::fns::doc_join_with_range();
+  re::inner::fns::doc_adjacent_range();
+  re::inner::fns::doc_slide_range();
+  re::inner::fns::doc_aligned_stride_range();
+  re::inner::fns::doc_stride_range();
+  re::inner::fns::doc_aligned_chunk_range();
+  re::inner::fns::doc_chunk_range();
+  re::inner::fns::doc_chunk_by_range();
+  re::inner::fns::doc_inner_cartesian_product_range();
+  re::inner::fns::doc_cartesian_product_range();
+  re::inner::fns::doc_split_range();
+  re::inner::fns::doc_zip_range();
+  re::inner::fns::doc_aligned_zip_range();
+  re::inner::fns::doc_enumerate_range();
+  re::inner::fns::doc_exclusive_rotate_range();
+  re::inner::fns::doc_rotate_range();
+  re::inner::fns::doc_loop_range();
 
-  doc_string();
-  doc_string_reference();
-  doc_bitset();
-  doc_vector();
-  doc_bool_vector();
-  doc_local_vector();
-  doc_small_vector();
-  doc_pointer_vector();
-  doc_circular_vector();
-  doc_deque();
-  doc_forward_list();
-  doc_list();
-  doc_queue();
-  doc_stack();
-  doc_priority_queue();
-  doc_flat_map();
-  doc_binary_search_tree_adaptor();
-  doc_map_adaptor();
-  doc_map_typedef();
-  doc_hashtable_adaptor();
-  doc_unordered_map_adaptor();
-  doc_unordered_map_typedef();
-  doc_mixed_map_adaptor();
-  doc_mixed_map_typedef();
-  doc_stable_vector_adaptor();
-  doc_stable_vector_typedef();
-  doc_tree_adaptor();
-  doc_tree_vector_adaptor();
-  doc_tree_typedef();
+  re::inner::fns::doc_string();
+  re::inner::fns::doc_string_reference();
+  re::inner::fns::doc_bitset();
+  re::inner::fns::doc_vector();
+  re::inner::fns::doc_bool_vector();
+  re::inner::fns::doc_local_vector();
+  re::inner::fns::doc_small_vector();
+  re::inner::fns::doc_pointer_vector();
+  re::inner::fns::doc_circular_vector();
+  re::inner::fns::doc_deque();
+  re::inner::fns::doc_forward_list();
+  re::inner::fns::doc_list();
+  re::inner::fns::doc_queue();
+  re::inner::fns::doc_stack();
+  re::inner::fns::doc_priority_queue();
+  re::inner::fns::doc_flat_map();
+  re::inner::fns::doc_binary_search_tree_adaptor();
+  re::inner::fns::doc_map_adaptor();
+  re::inner::fns::doc_map_typedef();
+  re::inner::fns::doc_hashtable_adaptor();
+  re::inner::fns::doc_unordered_map_adaptor();
+  re::inner::fns::doc_unordered_map_typedef();
+  re::inner::fns::doc_mixed_map_adaptor();
+  re::inner::fns::doc_mixed_map_typedef();
+  re::inner::fns::doc_stable_vector_adaptor();
+  re::inner::fns::doc_stable_vector_typedef();
+  re::inner::fns::doc_tree_adaptor();
+  re::inner::fns::doc_tree_vector_adaptor();
+  re::inner::fns::doc_tree_typedef();
 
-  doc_c_file();
-  doc_print_tag();
-  doc_sscan();
-  doc_sprint();
-  doc_big_int();
-  doc_ssplitter();
+  re::inner::fns::doc_duration();
+  re::inner::fns::doc_time_point();
+  re::inner::fns::doc_clock();
+
+  re::inner::fns::doc_c_file();
+  re::inner::fns::doc_print_tag();
+  re::inner::fns::doc_sscan();
+  re::inner::fns::doc_sprint();
+  re::inner::fns::doc_big_int();
+  re::inner::fns::doc_ssplitter();
+  re::inner::fns::doc_file();
+
+  re::inner::fns::doc_atomic();
+  re::inner::fns::doc_thread();
+  re::inner::fns::doc_mutex();
+  re::inner::fns::doc_mutex_area();
+  re::inner::fns::doc_pool_thread();
 
   printf("ok\n");
 }
