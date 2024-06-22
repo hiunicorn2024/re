@@ -522,19 +522,19 @@ public:
   T *allocate(size_type n) {
     if constexpr (alignof(T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
       if (n > max_size())
-        throw_or_abort<bad_alloc>();
+        throw_or_terminate<bad_alloc>();
       void *const p = operator new
         (n * sizeof(T), align_val_t(alignof(T)), nothrow);
       if (p == nullptr)
-        throw_or_abort<bad_alloc>();
+        throw_or_terminate<bad_alloc>();
       return reinterpret_cast<T *>(p);
     }
     else {
       if (n > max_size())
-        throw_or_abort<bad_alloc>();
+        throw_or_terminate<bad_alloc>();
       void *const p = operator new(n * sizeof(T), nothrow);
       if (p == nullptr)
-        throw_or_abort<bad_alloc>();
+        throw_or_terminate<bad_alloc>();
       return reinterpret_cast<T *>(p);
     }
   }
@@ -640,7 +640,7 @@ public:
     else {
       using szt = alloc_szt<AL>;
       if (algn > numeric_limits<szt>::max() - n)
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::allocator_wrapper::allocate_alignas: too big size\n");
       szt nn = n + algn;
       const alloc_ptr<AL> p = allocate(nn);
@@ -1124,14 +1124,14 @@ public:
     requires is_same_v<alloc_vt<AL>, byte> {
     const size_t max_align = max_value(alignof(H), alignof(U));
     if (numeric_limits<alloc_szt<AL>>::max() - max_align < sizeof(H))
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...): "
          "too big size\n");
     const alloc_szt<AL> tmp = sizeof(H) + max_align;
 
     const alloc_szt<AL> k = sizeof(U) * max_value(1u, n);
     if (numeric_limits<alloc_szt<AL>>::max() - tmp < k)
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...): "
          "too big size\n");
     const alloc_szt<AL> nn = tmp + k;
@@ -1177,7 +1177,7 @@ public:
       return pointer_pair{};
     const auto n = size(r);
     if (n > numeric_limits<size_t>::max())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::allocator_wrapper::new_array: too big size\n");
     const auto p = allocate(n);
 #ifndef RE_NOEXCEPT
@@ -1909,7 +1909,7 @@ public:
     size_type len = integral_cast<size_type>(l);
     if (len != 0) {
       if (len > max_size())
-        throw_or_abort<length_error>("re::buffer(n): too big size\n");
+        throw_or_terminate<length_error>("re::buffer(n): too big size\n");
       bufp = allocator_traits<AL>::allocate(alloc_ref(), len);
       bufpp = bufp + to_signed(len);
       p = pp = bufp;
@@ -2028,7 +2028,7 @@ public:
     if (const size_type n = integral_cast<size_type>(nn);
         n != 0) {
       if (n > max_size() - to_unsigned(bufpp - bufp))
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::buffer::increase_capacity(n): too big size\n");
       const size_type new_n = to_unsigned(to_signed(n) + (bufpp - bufp));
       reallocate(new_n);
@@ -2042,7 +2042,8 @@ public:
     new_data();
     if (len != 0) {
       if (len > max_size())
-        throw_or_abort<length_error>("re::buffer::reset(n): too big size\n");
+        throw_or_terminate<length_error>
+          ("re::buffer::reset(n): too big size\n");
       bufp = allocator_traits<AL>::allocate(alloc_ref(), len);
       bufpp = bufp + to_signed(len);
       p = pp = bufp;
