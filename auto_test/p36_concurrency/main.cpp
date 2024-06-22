@@ -744,7 +744,7 @@ void test_pool_thread() {
     atomic<int> x = 0;
     auto f = [&]() {++x;};
     {
-      stable_vector<re::pool_thread> v;
+      stable_vector<pool_thread> v;
       for (int c : irng(0, 1000))
         v.push_back(pool_thread(f));
     }
