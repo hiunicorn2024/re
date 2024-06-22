@@ -4,10 +4,63 @@
 // optional macro:
 //   RE_NOEXCEPT
 //   RE_DEFAULT_ALLOCATOR // e.g. re::stateless_test_allocator
+//   RE_WIN32_NO_X64_INTRINSICS
 
 // macro for inner usage:
 //   RE_TO_DEFINE_SIGNED_INTEGRAL_TRAITS
 //   RE_TO_DEFINE_UNSIGNED_INTEGRAL_TRAITS
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef UNICODE
+#define UNICODE
+#endif
+#include <windows.h>
+#include <cstdio>
+#include <fcntl.h>
+#include <io.h>
+#include <shlwapi.h>
+#include <intrin.h>
+#include <immintrin.h>
+
+// places use windows api
+//   base.h
+//     re::inner::fns::win32_enable_utf16_stdout
+//     re::inner::fns::win32_enable_console_for_window_program
+//   test.h
+//     re::ez_mutex
+//     re::test_allocator // use re::ez_mutex
+//   time.h
+//     re::inner::fns::win32_get_system_time_precise_as_file_time
+//     re::inner::fns::win32_query_performance_counter
+//     re::inner::fns::win32_query_performance_frequency
+//     re::inner::fns::win32_sleep_ms
+//     re::system_clock
+//     re::steady_clock
+//   io.h
+//     re::file
+//   concurrency.h
+//     ...
+
+// win32_enable_utf16_stdout()
+// win32_enable_console_for_window_program
+namespace re::inner::fns {
+
+inline void win32_enable_utf16_stdout() {
+  _setmode(_fileno(stdout), _O_U16TEXT);
+}
+
+inline void win32_enable_console_for_window_program() {
+  if (!AllocConsole())
+    abort();
+  freopen("CONOUT$", "w", stdout);
+  freopen("CONOUT$", "w", stderr);
+  freopen("CONOUT$", "w", stdin);
+  _setmode(_fileno(stdout), _O_U16TEXT);
+}
+
+}
 
 #include <cstdio>
 #include <cstddef>
@@ -428,7 +481,9 @@ inline constexpr fo_putb putb{};
 }
 
 // print_then_abort
+// print_then_terminate
 // throw_or_abort
+// throw_or_terminate
 namespace re {
 
 struct fo_print_then_abort {
@@ -445,6 +500,21 @@ struct fo_print_then_abort {
   }
 };
 inline constexpr fo_print_then_abort print_then_abort{};
+
+struct fo_print_then_terminate {
+  void operator ()(const char *s) const {
+    fputs(s, stderr);
+    fflush(stderr);
+    terminate();
+  }
+  template <class...S>
+  void operator ()(const char *s, S &&...ss) const
+    requires (sizeof...(S) != 0) {
+    fputs(s, stderr);
+    operator ()(static_cast<S &&>(ss)...);
+  }
+};
+inline constexpr fo_print_then_terminate print_then_terminate{};
 
 template <class E>
 struct fo_throw_or_abort {
@@ -468,6 +538,29 @@ struct fo_throw_or_abort {
 };
 template <class E>
 inline constexpr fo_throw_or_abort<E> throw_or_abort{};
+
+template <class E>
+struct fo_throw_or_terminate {
+  void operator ()() const {
+#ifdef RE_NOEXCEPT
+    terminate();
+#else
+    throw E{};
+#endif
+  }
+  template <class T>
+  void operator ()(T &&s) const {
+#ifdef RE_NOEXCEPT
+    fputs(s, stderr);
+    fflush(stderr);
+    terminate();
+#else
+    throw E(static_cast<T &&>(s));
+#endif
+  }
+};
+template <class E>
+inline constexpr fo_throw_or_terminate<E> throw_or_terminate{};
 
 }
 
@@ -7314,26 +7407,32 @@ inline constexpr fo_bind_back bind_back{};
 // ratio
 namespace re {
 
+namespace inner::fns {
+
+inline constexpr intmax_t constexpr_gcd(intmax_t, intmax_t);
+inline constexpr intmax_t constexpr_lcm(intmax_t, intmax_t);
+
+}
 struct ratio {
   const intmax_t num;
   const intmax_t den;
 
 private:
-  static consteval intmax_t min() {
+  static constexpr intmax_t min() {
     return integral_traits<intmax_t>::min();
   }
-  static consteval intmax_t max() {
+  static constexpr intmax_t max() {
     return integral_traits<intmax_t>::max();
   }
 
   static void fail();
 
-  static consteval intmax_t neg(intmax_t a) {
+  static constexpr intmax_t neg(intmax_t a) {
     if (a == min())
       fail();
     return -a;
   }
-  static consteval intmax_t mul(intmax_t a, intmax_t b) {
+  static constexpr intmax_t mul(intmax_t a, intmax_t b) {
     if (a == 0 || b == 0)
       return 0;
     if (a > 0) {
@@ -7360,7 +7459,7 @@ private:
     }
     return a * b;
   }
-  static consteval intmax_t add(intmax_t a, intmax_t b) {
+  static constexpr intmax_t add(intmax_t a, intmax_t b) {
     // a + b <= max() (1)
     // a + b >= min() (2)
     //
@@ -7424,7 +7523,7 @@ private:
     }
     return a + b;
   }
-  static consteval intmax_t sub(intmax_t a, intmax_t b) {
+  static constexpr intmax_t sub(intmax_t a, intmax_t b) {
     if (b != min())
       return add(a, -b);
     else {
@@ -7434,7 +7533,9 @@ private:
     }
   }
 
-  static consteval intmax_t gcd(intmax_t t, intmax_t s) {
+  friend constexpr intmax_t inner::fns::constexpr_gcd(intmax_t, intmax_t);
+  friend constexpr intmax_t inner::fns::constexpr_lcm(intmax_t, intmax_t);
+  static constexpr intmax_t gcd(intmax_t t, intmax_t s) {
     if (t < 0)
       t = neg(t);
     if (s < 0)
@@ -7462,7 +7563,7 @@ private:
       b = c;
     }
   }
-  static consteval intmax_t lcm(intmax_t t, intmax_t s) {
+  static constexpr intmax_t lcm(intmax_t t, intmax_t s) {
     if (t < 0)
       t = neg(t);
     if (s < 0)
@@ -7475,15 +7576,15 @@ private:
   }
 
   struct tag_t {};
-  consteval ratio(intmax_t a, intmax_t b, tag_t) : num(a), den(b) {}
-  static consteval ratio make(intmax_t a, intmax_t b) {
+  constexpr ratio(intmax_t a, intmax_t b, tag_t) : num(a), den(b) {}
+  static constexpr ratio make(intmax_t a, intmax_t b) {
     return ratio(a, b, tag_t{});
   }
-  static consteval ratio make_yield(intmax_t a, intmax_t b) {
+  static constexpr ratio make_yield(intmax_t a, intmax_t b) {
     return ratio(a, b, tag_t{}).yield();
   }
 
-  consteval ratio yield() {
+  constexpr ratio yield() {
     intmax_t n = this->num;
     intmax_t d = this->den;
 
@@ -7506,21 +7607,22 @@ private:
   }
 
 public:
-  consteval ratio() : num(0), den(1) {}
-  consteval ratio(const ratio &) = default;
+  constexpr ratio() : num(0), den(1) {}
+  constexpr ratio(const ratio &) = default;
   ratio &operator =(const ratio &) = delete;
-  consteval ratio(ratio &&) = default;
+  constexpr ratio(ratio &&) = default;
   ratio &operator =(ratio &&) = delete;
 
-  consteval explicit ratio(intmax_t a, intmax_t b) : ratio(make_yield(a, b)) {}
+  constexpr explicit ratio(intmax_t a, intmax_t b = 1)
+    : ratio(make_yield(a, b)) {}
 
-  consteval ratio operator +() const {
+  constexpr ratio operator +() const {
     return *this;
   }
-  consteval ratio operator -() const {
+  constexpr ratio operator -() const {
     return make(neg(num), den);
   }
-  consteval ratio operator +(ratio x) const {
+  constexpr ratio operator +(ratio x) const {
     const intmax_t den_lcm = lcm(den, x.den);
 
     const intmax_t m1 = den_lcm / den;
@@ -7528,7 +7630,7 @@ public:
 
     return make_yield(add(mul(num, m1), mul(x.num, m2)), den_lcm);
   }
-  consteval ratio operator -(ratio x) const {
+  constexpr ratio operator -(ratio x) const {
     const intmax_t den_lcm = lcm(den, x.den);
 
     const intmax_t m1 = den_lcm / den;
@@ -7536,7 +7638,7 @@ public:
 
     return make_yield(sub(mul(num, m1), mul(x.num, m2)), den_lcm);
   }
-  consteval ratio operator *(ratio x) const {
+  constexpr ratio operator *(ratio x) const {
     if (num == 0 || x.num == 0)
       return ratio{};
 
@@ -7545,7 +7647,7 @@ public:
 
     return make(mul(a.num, b.num), mul(a.den, b.den));
   }
-  consteval ratio operator /(ratio x) const {
+  constexpr ratio operator /(ratio x) const {
     if (x.num == 0)
       fail();
     intmax_t n = x.den;
@@ -7557,14 +7659,24 @@ public:
     return *this * make(n, d);
   }
 
-  friend inline consteval bool operator ==(ratio, ratio) = default;
-  friend inline consteval strong_ordering operator <=>(ratio x, ratio y) {
+  friend inline constexpr bool operator ==(ratio, ratio) = default;
+  friend inline constexpr strong_ordering operator <=>(ratio x, ratio y) {
     const intmax_t den_lcm = lcm(x.den, y.den);
     const intmax_t m1 = den_lcm / x.den;
     const intmax_t m2 = den_lcm / y.den;
     return mul(x.num, m1) <=> mul(y.num, m2);
   }
 };
+namespace inner::fns {
+
+inline constexpr intmax_t constexpr_gcd(intmax_t a, intmax_t b) {
+  return ratio::gcd(a, b);
+}
+inline constexpr intmax_t constexpr_lcm(intmax_t a, intmax_t b) {
+  return ratio::lcm(a, b);
+}
+
+}
 
 //inline constexpr ratio yocto(1, 1'000'000'000'000'000'000'000'000);
 //inline constexpr ratio zepto(1, 1'000'000'000'000'000'000'000);
@@ -9527,6 +9639,168 @@ struct hash<double> {
     return hash<uint64_t>{}(bit_cast<uint64_t>(x == 0.0 ? 0.0 : x));
   }
 };
+
+}
+
+// std dependence - floating-point related functions
+namespace re {
+
+struct fo_floor {
+  float operator ()(float x) const noexcept {
+    return std::floor(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::floor(x);
+  }
+};
+inline constexpr fo_floor floor{};
+
+struct fo_ceil {
+  float operator ()(float x) const noexcept {
+    return std::ceil(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::ceil(x);
+  }
+};
+inline constexpr fo_ceil ceil{};
+
+struct fo_round {
+  float operator ()(float x) const noexcept {
+    return std::round(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::round(x);
+  }
+};
+inline constexpr fo_round round{};
+
+struct fo_trunc {
+  float operator ()(float x) const noexcept {
+    return std::trunc(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::trunc(x);
+  }
+};
+inline constexpr fo_trunc trunc{};
+
+// NAN
+// INFINITY // positive infinity
+
+// FP_INFINITE
+// FP_NAN
+// FP_NORMAL
+// FP_SUBNORMAL
+// FP_ZERO
+struct fo_fpclassify {
+  int operator ()(float x) const noexcept {
+    return std::fpclassify(x);
+  }
+  int operator ()(double x) const noexcept {
+    return std::fpclassify(x);
+  }
+};
+inline constexpr fo_fpclassify fpclassify{};
+
+struct fo_isfinite {
+  bool operator ()(float x) const noexcept {
+    return std::isfinite(x);
+  }
+  bool operator ()(double x) const noexcept {
+    return std::isfinite(x);
+  }
+};
+inline constexpr fo_isfinite isfinite{};
+
+struct fo_isinf {
+  bool operator ()(float x) const noexcept {
+    return std::isinf(x);
+  }
+  bool operator ()(double x) const noexcept {
+    return std::isinf(x);
+  }
+};
+inline constexpr fo_isinf isinf{};
+
+struct fo_isnan {
+  bool operator ()(float x) const noexcept {
+    return std::isnan(x);
+  }
+  bool operator ()(double x) const noexcept {
+    return std::isnan(x);
+  }
+};
+inline constexpr fo_isnan isnan{};
+
+struct fo_isnormal {
+  bool operator ()(float x) const noexcept {
+    return std::isnormal(x);
+  }
+  bool operator ()(double x) const noexcept {
+    return std::isnormal(x);
+  }
+};
+inline constexpr fo_isnormal isnormal{};
+
+struct fo_signbit {
+  bool operator ()(float x) const noexcept {
+    return std::signbit(x);
+  }
+  bool operator ()(double x) const noexcept {
+    return std::signbit(x);
+  }
+};
+inline constexpr fo_signbit signbit{};
+
+struct fo_isunordered {
+  bool operator ()(float x, float y) const noexcept {
+    return std::isunordered(x, y);
+  }
+  bool operator ()(double x, double y) const noexcept {
+    return std::isunordered(x, y);
+  }
+};
+inline constexpr fo_isunordered isunordered{};
+
+}
+
+// std dependence - common mathematical functions
+namespace re {
+
+template <class, ratio>
+class duration;
+
+struct fo_abs {
+  int operator ()(int x) const noexcept {
+    return std::abs(x);
+  }
+  long operator ()(long x) const noexcept {
+    return std::abs(x);
+  }
+  long long operator ()(long long x) const noexcept {
+    return std::abs(x);
+  }
+  template <class T = intmax_t>
+  intmax_t operator ()(intmax_t x) const noexcept
+    requires (!is_same<T, int>::value
+              && !is_same<T, long>::value
+              && !is_same<T, long long>::value) {
+    return std::abs(x);
+  }
+  float operator ()(float x) const noexcept {
+    return std::abs(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::abs(x);
+  }
+
+  template <class T>
+  decltype(auto) operator ()(T &&x) const requires requires {x.abs();} {
+    return forward<T>(x).abs();
+  }
+};
+inline constexpr fo_abs abs{};
 
 }
 
