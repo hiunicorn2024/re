@@ -658,7 +658,7 @@ private:
       if (cp_rest >= n)
         reallocate_impl((n < cp && cp_rest >= cp) ? (cp + cp) : (cp + n));
       else
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::basic_string::reserve_space_at_least(n): size overflow\n");
     }
   }
@@ -674,7 +674,7 @@ private:
         n = cp + cp;
       else {
         if (cp_rest == 0u)
-          throw_or_abort<length_error>
+          throw_or_terminate<length_error>
             ("re::basic_string::increase_capacity_at_least_1(): "
              "size overflow\n");
         n = max_size();
@@ -793,7 +793,7 @@ private:
   void size_check(SZT n) {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (to_unsigned(n) > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::basic_string: size overflow in size_check(n)\n");
   }
 
@@ -932,7 +932,7 @@ private:
   void reserve_impl(size_type n) {
     if (n > to_unsigned(ed - op)) {
       if (n > max_size())
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::basic_string: size overflow in reserve_impl(n)\n");
       reallocate_impl(n);
     }
@@ -1108,12 +1108,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::basic_string: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::basic_string: at(n) failed\n");
     return op[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::basic_string: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::basic_string: at(n) failed\n");
     return op[n];
   }
 
@@ -1682,8 +1682,8 @@ private:
           cap_rest != 0u)
         reallocate_impl(cap + ((cap_rest >= cap) ? cap : 1u));
       else
-        throw_or_abort<length_error>("re::sso_string: size overflow "
-                                     "in reserve_space_at_least_1()\n");
+        throw_or_terminate<length_error>("re::sso_string: size overflow "
+                                         "in reserve_space_at_least_1()\n");
     }
   }
   template <class UINT>
@@ -1700,8 +1700,8 @@ private:
                         + ((n < cap && cap_rest >= cap)
                            ? cap : static_cast<size_type>(n)));
       else
-        throw_or_abort<length_error>("re::sso_string: size overflow "
-                                     "in reserve_space_at_least(n)\n");
+        throw_or_terminate<length_error>("re::sso_string: size overflow "
+                                         "in reserve_space_at_least(n)\n");
     }
   }
 
@@ -1793,7 +1793,7 @@ private:
   void size_check(SZT n) {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (to_unsigned(n) > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::sso_string: size overflow in size_check(n)\n");
   }
 
@@ -2095,12 +2095,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::sso_string: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::sso_string: at(n) failed\n");
     return begin()[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::sso_string: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::sso_string: at(n) failed\n");
     return begin()[n];
   }
 
@@ -2368,12 +2368,18 @@ synth_3way_result<T> operator <=>(const T (&x)[N2],
     (inner::fns::basic_string_select_range<T>(x), y);
 }
 
-using string = sso_string<char, 15>;
+using string = sso_string<char, 15u>;
 template <class C, class AL = default_allocator<C>>
-using default_sso_string = sso_string<C, 15, AL>;
+using default_sso_string = sso_string<C, 15u, AL>;
 using wstring = basic_string<wchar_t>;
 using u16string = basic_string<char16_t>;
 using u32string = basic_string<char32_t>;
+template <class T>
+using string_t = conditional_t<(is_same_v<T, char>
+                                || is_same_v<T, signed char>
+                                || is_same_v<T, unsigned char>),
+                               sso_string<T, 15u>, basic_string<T>>;
+  
 template <class AL>
 bool operator ==(const basic_string<char, AL> &x,
                  const basic_string<char, AL> &y) {
@@ -2546,12 +2552,12 @@ public:
   }
   reference at(size_type nn) {
     if (nn >= size())
-      throw_or_abort<out_of_range>("re::string_reference: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::string_reference: at(n) failed\n");
     return p[nn];
   }
   const_reference at(size_type nn) const {
     if (nn >= size())
-      throw_or_abort<out_of_range>("re::string_reference: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::string_reference: at(n) failed\n");
     return p[nn];
   }
   reference front() {
@@ -3027,7 +3033,7 @@ public:
       if (*s == one)
         x = true;
       else if (*s != zero)
-        throw_or_abort<invalid_argument>
+        throw_or_terminate<invalid_argument>
           ("re::bitset: invalid string in constructor\n");
       else
         x = false;
@@ -3036,7 +3042,7 @@ public:
   }
   constexpr unsigned long long to_ullong() const {
     if (!all_of_equal(rng(nth(v, 1), end(v)), 0u))
-      throw_or_abort<overflow_error>("re::bitset: to_ullong() failed\n");
+      throw_or_terminate<overflow_error>("re::bitset: to_ullong() failed\n");
     return v[0];
   }
   template <bool Y = (sizeof(unsigned long long) != sizeof(unsigned long))>
@@ -3044,7 +3050,7 @@ public:
     size_t n = (sizeof(unsigned long long) - sizeof(unsigned long)) * 8;
     if (!all_of_equal(rng(v + 1, actual_sz::value - 1), uint(0))
         || (v[0] >> (uint)(sizeof(unsigned long) * 8)) != 0)
-      throw_or_abort<overflow_error>("re::bitset: to_ulong() failed\n");
+      throw_or_terminate<overflow_error>("re::bitset: to_ulong() failed\n");
     return static_cast<unsigned long>(v[0]);
   }
   template <bool Y = (sizeof(unsigned long long) != sizeof(unsigned long))>
@@ -3118,12 +3124,12 @@ public:
   }
   constexpr bool at(size_t n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::bitset: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::bitset: at(n) failed\n");
     return operator [](n);
   }
   constexpr reference at(size_t n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::bitset: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::bitset: at(n) failed\n");
     return operator [](n);
   }
 
@@ -3178,7 +3184,7 @@ public:
   }
   constexpr bitset<N> &set(size_t pos, bool val = true) {
     if (pos >= N)
-      throw_or_abort<out_of_range>("re::bitset: set(pos, val) failed\n");
+      throw_or_terminate<out_of_range>("re::bitset: set(pos, val) failed\n");
     operator [](pos) = val;
     return *this;
   }
@@ -3189,7 +3195,7 @@ public:
   }
   constexpr bitset<N> &reset(size_t pos) {
     if (pos >= N)
-      throw_or_abort<out_of_range>("re::bitset: reset(pos) failed\n");
+      throw_or_terminate<out_of_range>("re::bitset: reset(pos) failed\n");
     operator [](pos) = false;
     return *this;
   }
@@ -3215,13 +3221,13 @@ public:
   }
   constexpr bitset<N> &flip(size_t pos) {
     if (pos >= N)
-      throw_or_abort<out_of_range>("re::bitset: flip(pos) failed\n");
+      throw_or_terminate<out_of_range>("re::bitset: flip(pos) failed\n");
     operator [](pos).flip();
     return *this;
   }
   constexpr bool test(size_t pos) const {
     if (pos >= N)
-      throw_or_abort<out_of_range>("re::bitset: test(pos) failed\n");
+      throw_or_terminate<out_of_range>("re::bitset: test(pos) failed\n");
     return operator [](pos);
   }
   template <bool Y = (N % (sizeof(uint) * 8) == 0u)>
@@ -3570,8 +3576,8 @@ private:
       if (cp_rest >= n)
         reallocate_impl((n < cp && cp_rest >= cp) ? (cp + cp) : (cp + n));
       else
-        throw_or_abort<length_error>("re::vector: size overflow in "
-                                     "reserve_raw_space_at_least(n)\n");
+        throw_or_terminate<length_error>("re::vector: size overflow in "
+                                         "reserve_raw_space_at_least(n)\n");
     }
   }
   void increase_capacity_at_least_1() {
@@ -3585,8 +3591,8 @@ private:
         n = cp + cp;
       else {
         if (cp_rest == 0u)
-          throw_or_abort<length_error>("re::vector: size overflow in "
-                                       "increase_capacity_at_least_1()\n");
+          throw_or_terminate<length_error>("re::vector: size overflow in "
+                                           "increase_capacity_at_least_1()\n");
         n = max_size();
       }
     }
@@ -3731,7 +3737,7 @@ private:
   void size_check(SZT n) const {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (n > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::vector: size overflow in size_check(n)\n");
   }
 
@@ -4076,12 +4082,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::vector: at(n) failed\n");
     return op[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::vector: at(n) failed\n");
     return op[n];
   }
 
@@ -4532,18 +4538,18 @@ private:
   template <class SZT>
   void size_check(SZT sz) const {
     if (sz > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::vector<bool, A>: size overflow in size_check(n)\n");
   }
   template <class SZT>
   void size_check_insert(SZT nn) const {
     if (nn > max_size() - n)
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::vector<bool, A>: size overflow in size_check_insert(n)\n");
   }
   void size_check_insert_1() const {
     if (n == max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::vector<bool, A>: size overflow in size_check_insert_1()\n");
   }
 
@@ -4981,13 +4987,13 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::vector: at(n) failed\n");
     return begin()[n];
   }
   const_reference at(size_type n) const {
 #ifndef RE_NOEXCEPT
     if (n >= size())
-      throw_or_abort<out_of_range>("re::vector<bool, A>: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::vector<bool, A>: at(n) failed\n");
 #endif
     return begin()[n];
   }
@@ -5054,7 +5060,7 @@ public:
   void reserve_more(size_type w) {
     const size_type z = size();
     if (max_size() - z < w)
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::vector<bool>: size overflow in reserve_more(n)\n");
     const size_type zz = w + z;
     if (zz != 0u)
@@ -5604,12 +5610,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::local_vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::local_vector: at(n) failed\n");
     return begin()[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::local_vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::local_vector: at(n) failed\n");
     return begin()[n];
   }
 
@@ -6118,8 +6124,8 @@ private:
       n -= rest_n;
       const size_type cp_rest = max_size() - capa;
       if (cp_rest < n)
-        throw_or_abort<length_error>("re::small_vector: size overflow in "
-                                     "reserve_raw_space_at_least(n)\n");
+        throw_or_terminate<length_error>("re::small_vector: size overflow in "
+                                         "reserve_raw_space_at_least(n)\n");
       else
         reallocate_impl((n < capa && cp_rest >= capa)
                         ? capa + capa : capa + n);
@@ -6274,7 +6280,7 @@ private:
   void size_check(SZT n) const {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (n > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::small_vector: size overflow in size_check(n)\n");
   }
 
@@ -6425,7 +6431,7 @@ private:
   void reserve_impl(size_type n) {
     if (n > capacity()) {
       if (n > max_size())
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::small_vector: size overflow in reserve_impl(n)\n");
       reallocate_impl(n);
     }
@@ -6616,12 +6622,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::small_vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::small_vector: at(n) failed\n");
     return p[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::small_vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::small_vector: at(n) failed\n");
     return p[n];
   }
 
@@ -7394,12 +7400,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::pointer_vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::pointer_vector: at(n) failed\n");
     return begin()[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::pointer_vector: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::pointer_vector: at(n) failed\n");
     return begin()[n];
   }
 
@@ -8304,8 +8310,8 @@ private:
     else if (max_size() > n)
       n += 1;
     else
-      throw_or_abort<length_error>("re::circular_vector: size overflow in "
-                                   "reserve_raw_space_at_least_1()");
+      throw_or_terminate<length_error>("re::circular_vector: size overflow in "
+                                       "reserve_raw_space_at_least_1()");
     reallocate_impl(n);
   }
   void reserve_raw_space_at_least_1() {
@@ -8323,8 +8329,9 @@ private:
       if (cp_rest >= n)
         reallocate_impl((n < cp && cp_rest >= cp) ? (cp + cp) : (cp + n));
       else
-        throw_or_abort<length_error>("re::circular_vector: size overflow in "
-                                     "reserve_raw_space_at_least(n)");
+        throw_or_terminate<length_error>
+          ("re::circular_vector: size overflow in "
+           "reserve_raw_space_at_least(n)");
     }
   }
 
@@ -8460,7 +8467,7 @@ private:
   void size_check(SZT n) {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (n > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::circular_vector: size overflow in size_check(n)");
   }
 
@@ -8722,7 +8729,7 @@ private:
   }
   void reserve_impl(size_type n) {
     if (n > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::circular_vector: size overflow in reserve_impl()");
     if (n > capacity())
       reallocate_impl(n);
@@ -8917,12 +8924,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::circular_vector: at(n) failed");
+      throw_or_terminate<out_of_range>("re::circular_vector: at(n) failed");
     return begin()[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::circular_vector: at(n) failed");
+      throw_or_terminate<out_of_range>("re::circular_vector: at(n) failed");
     return begin()[n];
   }
 
@@ -9739,8 +9746,9 @@ private:
         const size_type upper_rest
           = numeric_limits<size_type>::max() / lower_buf_size() - bufsz;
         if (upper_rest == 0u)
-          throw_or_abort<length_error>("re::deque: size overflow in "
-                                       "reserve_raw_space_back_at_least_1()\n");
+          throw_or_terminate<length_error>
+            ("re::deque: size overflow in "
+             "reserve_raw_space_back_at_least_1()\n");
         reallocate_buffer((upper_rest > bufsz) ? (bufsz + bufsz) : upper_rest);
       }
     }
@@ -9760,7 +9768,7 @@ private:
         const size_type upper_rest
           = numeric_limits<size_type>::max() / lower_buf_size() - bufsz;
         if (upper_rest == 0u)
-          throw_or_abort<length_error>
+          throw_or_terminate<length_error>
             ("re::deque: size overflow in "
              "reserve_raw_space_front_at_least_1()\n");
         reallocate_buffer((upper_rest > bufsz) ? (bufsz + bufsz) : upper_rest);
@@ -9787,8 +9795,9 @@ private:
           = numeric_limits<size_type>::max() / lower_buf_size() - bufsz;
         n = n / lower_buf_size() + 1u;
         if (n >= upper_rest)
-          throw_or_abort<length_error>("re::deque: size overflow in "
-                                       "reserve_raw_space_back_at_least(n)\n");
+          throw_or_terminate<length_error>
+            ("re::deque: size overflow in "
+             "reserve_raw_space_back_at_least(n)\n");
         reallocate_buffer((n < bufsz && upper_rest > bufsz)
                           ? bufsz + bufsz : n + bufsz);
       }
@@ -9817,8 +9826,9 @@ private:
           = numeric_limits<size_type>::max() / lower_buf_size() - bufsz;
         n = n / lower_buf_size() + 1u;
         if (n >= upper_rest)
-          throw_or_abort<length_error>("re::deque: size overflow in "
-                                       "reserve_raw_space_front_at_least(n)\n");
+          throw_or_terminate<length_error>
+            ("re::deque: size overflow in "
+             "reserve_raw_space_front_at_least(n)\n");
         reallocate_buffer((n < bufsz && upper_rest > bufsz)
                           ? bufsz + bufsz : n + bufsz);
       }
@@ -9949,7 +9959,7 @@ private:
   void size_check(SZT n) {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (n > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::deque: size overflow in size_check(n)\n");
   }
 
@@ -10251,7 +10261,7 @@ private:
         initialize_buffer_cleanup(n / lower_buf_size() + 2u);
       else if (n > ((upper_buf().size() - 1u) * lower_buf_size())) {
         if (n > max_size())
-          throw_or_abort<length_error>
+          throw_or_terminate<length_error>
             ("re::deque: size overflow in reserve_impl(n)\n");
         reallocate_buffer(n / lower_buf_size() + 2u);
       }
@@ -10452,12 +10462,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::deque: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::deque: at(n) failed\n");
     return begin()[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_abort<out_of_range>("re::deque: at(n) failed\n");
+      throw_or_terminate<out_of_range>("re::deque: at(n) failed\n");
     return begin()[n];
   }
 
@@ -10490,7 +10500,7 @@ public:
     if (const auto z = size(); n < z)
       n = z;
     else if (n > max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::deque: size overflow in reallocate(n)\n");
     if (n == 0u) {
       delete_data();
@@ -15535,27 +15545,27 @@ public:
   mapped_type &at(const key_type &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::flat_map: at(key) failed\n");
+      throw_or_terminate<out_of_range>("re::flat_map: at(key) failed\n");
     return it->second;
   }
   template <class K, class X = LESS, class = typename X::is_transparent>
   mapped_type &at(const K &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::flat_map: at(key) failed\n");
+      throw_or_terminate<out_of_range>("re::flat_map: at(key) failed\n");
     return it->second;
   }
   const mapped_type &at(const key_type &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::flat_map: at(key) failed\n");
+      throw_or_terminate<out_of_range>("re::flat_map: at(key) failed\n");
     return it->second;
   }
   template <class K, class X = LESS, class = typename X::is_transparent>
   const mapped_type &at(const K &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::flat_map: at(key) failed\n");
+      throw_or_terminate<out_of_range>("re::flat_map: at(key) failed\n");
     return it->second;
   }
 
@@ -21602,12 +21612,14 @@ public:
 
   reference at(size_type nn) {
     if (nn >= size())
-      throw_or_abort<out_of_range>("re::ranked_rbtree_adaptor: at(n) failed\n");
+      throw_or_terminate<out_of_range>
+        ("re::ranked_rbtree_adaptor: at(n) failed\n");
     return begin()[nn];
   }
   const_reference at(size_type nn) const {
     if (nn >= size())
-      throw_or_abort<out_of_range>("re::ranked_rbtree_adaptor: at(n) failed\n");
+      throw_or_terminate<out_of_range>
+        ("re::ranked_rbtree_adaptor: at(n) failed\n");
     return begin()[nn];
   }
 
@@ -22070,10 +22082,13 @@ public:
     this_t l(get_allocator());
     while (!empty()) {
       auto it = begin();
-      l.insert_equal(as_lvalue, less, *it, [&]() {
-        unlink(it);
-        return it;
-      });
+      l.insert_equal(as_lvalue,
+                     [less](const value_type &x, const value_type &y) {
+                       return less(const_cast<value_type &>(x),
+                                   const_cast<value_type &>(y));
+                     },
+                     *it,
+                     [&]() {unlink(it); return it;});
     }
     adl_swap(*this, l);
   }
@@ -23862,28 +23877,28 @@ public:
   mapped_type &at(const key_type &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
   template <class K, class X = LESS, class = typename X::is_transparent>
   mapped_type &at(const K &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
 
   const mapped_type &at(const key_type &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
   template <class K, class X = LESS, class = typename X::is_transparent>
   const mapped_type &at(const K &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
 
@@ -26743,7 +26758,7 @@ public:
     if (this != addressof(other)) {
       const auto n = other.size();
       if (n > integral_traits<size_type>::max() - size())
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::hashtable_adaptor: size overflow in merge_equal()\n");
       auto_rehash(get_key, hash, eq, size() + n);
       for_each_node(other, next, [&](auto it) {
@@ -26909,7 +26924,7 @@ public:
   insert_range_equal(GET_KEY get_key, HASH hash, EQUAL eq, R &&r) {
     const auto n = size(r);
     if (n > integral_traits<size_type>::max() - size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::hashtable_adaptor: size overflow in insert_range_equal()\n");
     auto_rehash(get_key, hash, eq, n + size());
     set_size(n + size());
@@ -26951,7 +26966,7 @@ public:
 
     const auto n = size(r);
     if (n > integral_traits<size_type>::max())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::hashtable_adaptor: size overflow in assign_range_equal()\n");
     auto_rehash(get_key, hash, eq, n);
     set_size(n);
@@ -28753,28 +28768,32 @@ public:
   mapped_type &at(const key_type &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::unordered_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::unordered_map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
   template <class K>
   mapped_type &at(const K &key) requires transparent {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::unordered_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::unordered_map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
 
   const mapped_type &at(const key_type &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::unordered_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::unordered_map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
   template <class K>
   const mapped_type &at(const K &key) const requires transparent {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::unordered_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::unordered_map_adaptor: at(key) failed");
     return traits::mapped(*it);
   }
 
@@ -31575,27 +31594,27 @@ public:
   mapped_type &at(const key_type &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
     return get_mapped()(*it);
   }
   template <class K, bool Y = transparent, class = enable_if_t<Y>>
   mapped_type &at(const K &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
     return get_mapped()(*it);
   }
   const mapped_type &at(const key_type &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
     return get_mapped()(*it);
   }
   template <class K, bool Y = transparent, class = enable_if_t<Y>>
   const mapped_type &at(const K &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_abort<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
     return get_mapped()(*it);
   }
 
@@ -33944,7 +33963,7 @@ private:
       if (cp_rest >= nn)
         reallocate_impl(cp + ((nn < cp && cp_rest >= cp) ? cp : nn));
       else
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::stable_vector_adaptor: size overflow in "
            "reserve_raw_space_at_least(n)\n");
     }
@@ -33965,7 +33984,7 @@ private:
         nn = cp + cp;
       else {
         if (cp_rest == 0u)
-          throw_or_abort<length_error>
+          throw_or_terminate<length_error>
             ("re::stable_vector_adaptor: size overflow in "
              "increase_capacity_at_least_1()\n");
         nn = max_size();
@@ -34103,8 +34122,8 @@ private:
   void size_check(SZT n) const {
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (n > max_size())
-      throw_or_abort<length_error>("re::stable_vector_adaptor: "
-                                   "size overflow in size_check(n)\n");
+      throw_or_terminate<length_error>("re::stable_vector_adaptor: "
+                                       "size overflow in size_check(n)\n");
   }
 
   template <class R>
@@ -34277,7 +34296,7 @@ private:
   void reserve_impl(size_type nn) {
     if (nn > capacity()) {
       if (nn > max_size())
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::stable_vector_adaptor: size overflow in "
            "reserve_impl(n)\n");
       reallocate_impl(nn);
@@ -34536,12 +34555,14 @@ public:
   }
   reference at(size_type nn) {
     if (nn >= size())
-      throw_or_abort<out_of_range>("re::stable_vector_adaptor: at(n) failed\n");
+      throw_or_terminate<out_of_range>
+        ("re::stable_vector_adaptor: at(n) failed\n");
     return begin()[nn];
   }
   const_reference at(size_type nn) const {
     if (nn >= size())
-      throw_or_abort<out_of_range>("re::stable_vector_adaptor: at(n) failed\n");
+      throw_or_terminate<out_of_range>
+        ("re::stable_vector_adaptor: at(n) failed\n");
     return begin()[nn];
   }
 
@@ -35900,6 +35921,12 @@ public:
   const key_t &operator *() const noexcept {
     return *data_ptr();
   }
+  key_t *operator ->() noexcept {
+    return data_ptr();
+  }
+  const key_t *operator ->() const noexcept {
+    return data_ptr();
+  }
 
   iterator parent() noexcept {
     return iterator(vec_iter_t(base_t::p));
@@ -36447,7 +36474,7 @@ private:
     requires requires {target->v.reserve(0u);} {
     const auto n = size(*p);
     if (n > target->v.max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::tree_adaptor::reserve(x, p): size overflow\n");
     target->v.reserve(static_cast<decltype(target->v.size())>(n));
   }
@@ -37039,12 +37066,12 @@ public:
   }
 
   template <class...S>
-  iterator emplace_back(const_iterator ci, S &&...s) {
+  reference emplace_back(const_iterator ci, S &&...s) {
     const iterator p = ci.to_mutable();
     const iterator it = p->v.emplace_back(alloc_ref(), forward<S>(s)...)
       .iter_to_this();
     it.parent(p);
-    return it;
+    return *it;
   }
   void push_back(const_iterator ci, const key_type &x) {
     emplace_back(ci, x);
@@ -37101,12 +37128,12 @@ public:
   }
 
   template <class...S>
-  iterator emplace_front(const_iterator ci, S &&...s) {
+  reference emplace_front(const_iterator ci, S &&...s) {
     const iterator p = ci.to_mutable();
     const iterator it = p->v.emplace_front(alloc_ref(), forward<S>(s)...)
       .iter_to_this();
     it.parent(p);
-    return it;
+    return *it;
   }
   void push_front(const_iterator ci, const key_type &x) {
     emplace_front(ci, x);
@@ -37228,32 +37255,29 @@ public:
   }
 
   template <class UPRED>
-  size_type remove_if(const_iterator p, UPRED iter_eq) {
-    return p.to_mutable()
-      ->v.remove_if([=](auto &x) {return iter_eq(x.iter_to_this());});
+  size_type remove_if(const_iterator p, UPRED eq) {
+    return p.to_mutable()->v.remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
-  void first_order_remove_if(const_iterator p, UPRED iter_eq) {
+  void first_order_remove_if(const_iterator p, UPRED eq) {
     for (auto &x : p.first_order())
-      remove_if(x.iter_to_this(), iter_eq);
+      remove_if(x.iter_to_this(), eq);
   }
 
   template <class BPRED>
-  void unique(const_iterator c_parent, BPRED iter_eq) {
+  void unique(const_iterator c_parent, BPRED eq) {
     const iterator parent = c_parent.to_mutable();
-    parent->v.unique([=](auto &x, auto &y) {
-      return iter_eq(x.iter_to_this(), y.iter_to_this());
-    });
+    parent->v.unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
-  void first_order_unique(const_iterator parent, BPRED iter_eq) {
+  void first_order_unique(const_iterator parent, BPRED eq) {
     for (auto &u : parent.first_order())
-      unique(u.iter_to_this(), iter_eq);
+      unique(u.iter_to_this(), eq);
   }
 
   template <class BPRED>
   void merge(const_iterator i, this_t &l, const_iterator i2,
-             BPRED iter_less) {
+             BPRED less) {
     const iterator p1 = i.to_mutable();
     const iterator p2 = i2.to_mutable();
     vec_t &v1 = p1->v;
@@ -37263,9 +37287,7 @@ public:
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      v1.merge(v2, [=](auto &x, auto &y) {
-        return iter_less(x.iter_to_this(), y.iter_to_this());
-      });
+      v1.merge(v2, [=](reference x, reference y) {return less(x, y);});
 #ifndef RE_NOEXCEPT
     }
     catch (...) {
@@ -37277,13 +37299,13 @@ public:
   }
   template <class BPRED>
   void merge(const_iterator i, this_t &&l, const_iterator i2,
-             BPRED iter_less) {
-    merge(i, l, i2, iter_less);
+             BPRED less) {
+    merge(i, l, i2, less);
   }
 
   template <class BPRED>
   void merge(const_iterator p, vector_type &l, const_iterator i,
-             BPRED iter_less) {
+             BPRED less) {
     const iterator p1 = p.to_mutable();
     const iterator p2 = i.to_mutable();
     vec_t &v1 = p1->v;
@@ -37293,9 +37315,7 @@ public:
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      v1.merge(v2, [=](auto &x, auto &y) {
-        return iter_less(x.iter_to_this(), y.iter_to_this());
-      });
+      v1.merge(v2, [=](reference x, reference y) {return less(x, y);});
 #ifndef RE_NOEXCEPT
     }
     catch (...) {
@@ -37307,21 +37327,19 @@ public:
   }
   template <class BPRED>
   void merge(const_iterator p, vector_type &&l, const_iterator i,
-             BPRED iter_less) {
-    merge(p, l, i, iter_less);
+             BPRED less) {
+    merge(p, l, i, less);
   }
 
   template <class BPRED>
-  void merge(const_iterator p, vector_type &l, BPRED iter_less) {
+  void merge(const_iterator p, vector_type &l, BPRED less) {
     vec_t &vv = p.to_mutable()->v;
     for (auto &it : iters(l))
       it.parent(p);
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      vv.merge(l.v, [=](auto &x, auto &y) {
-        return iter_less(x.iter_to_this(), y.iter_to_this());
-      });
+      vv.merge(l.v, [=](reference x, reference y) {return less(x, y);});
 #ifndef RE_NOEXCEPT
     }
     catch (...) {
@@ -37332,21 +37350,19 @@ public:
 #endif
   }
   template <class BPRED>
-  void merge(const_iterator p, vector_type &&l, BPRED iter_less) {
-    merge(p, l, iter_less);
+  void merge(const_iterator p, vector_type &&l, BPRED less) {
+    merge(p, l, less);
   }
 
   template <class BPRED>
-  void sort(const_iterator c_parent, BPRED iter_less) {
+  void sort(const_iterator c_parent, BPRED less) {
     const iterator parent = c_parent.to_mutable();
-    parent->v.sort([=](auto &x, auto &y) {
-      return iter_less(x.iter_to_this(), y.iter_to_this());
-    });
+    parent->v.sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
-  void first_order_sort(const_iterator parent, BPRED iter_less) {
-    for (auto &x : parent.first_order())
-      sort(x.iter_to_this(), iter_less);
+  void first_order_sort(const_iterator parent, BPRED less) {
+    for (auto &x : parent.to_mutable().first_order())
+      sort(x.iter_to_this(), less);
   }
 
 private:
@@ -37575,7 +37591,7 @@ private:
     requires requires {target->v.reserve(0u);} {
     const auto n = re::size(*p);
     if (n > target->v.max_size())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::tree_adaptor::reserve(x, p): size overflow\n");
     target->v.reserve(static_cast<decltype(target->v.size())>(n));
   }
@@ -38180,12 +38196,11 @@ public:
   }
 
   template <class...S>
-  iterator emplace_back(S &&...s)
+  reference emplace_back(S &&...s)
     requires (sizeof...(s) == 0u
               || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
                   && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
-    v.emplace_back(get_allocator(), forward<S>(s)...);
-    return iterator(before_end(v));
+    return v.emplace_back(get_allocator(), forward<S>(s)...);
   }
   void push_back(const key_type &x) {
     emplace_back(x);
@@ -38241,11 +38256,11 @@ public:
   }
 
   template <class...S>
-  iterator emplace_back(const_iterator i, S &&...s) {
+  reference emplace_back(const_iterator i, S &&...s) {
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     auto &x = vv.emplace_back(get_allocator(), forward<S>(s)...);
     x.parent(i);
-    return x.iter_to_this();
+    return x;
   }
   void push_back(const_iterator i, const key_type &x) {
     emplace_back(i, x);
@@ -38302,11 +38317,11 @@ public:
   }
 
   template <class...S>
-  iterator emplace_front(S &&...s)
+  reference emplace_front(S &&...s)
     requires (sizeof...(s) > 0u
               && !is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
               && !is_convertible_v<nth_type_t<0, S &&...>, iterator>) {
-    return v.emplace_front(get_allocator(), forward<S>(s)...).iter_to_this();
+    return v.emplace_front(get_allocator(), forward<S>(s)...);
   }
   void push_front(const key_type &x) {
     emplace_front(x);
@@ -38362,11 +38377,11 @@ public:
   }
 
   template <class...S>
-  iterator emplace_front(const_iterator i, S &&...s) {
+  reference emplace_front(const_iterator i, S &&...s) {
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     auto &x = vv.emplace_front(get_allocator(), forward<S>(s)...);
     x.parent(i);
-    return x.iter_to_this();
+    return x;
   }
   void push_front(const_iterator i, const key_type &x) {
     emplace_front(i, x);
@@ -38542,56 +38557,52 @@ public:
   }
 
   template <class UPRED>
-  size_type remove_if(UPRED iter_eq) {
-    return v.remove_if([=](auto &x) {return iter_eq(x.iter_to_this());});
+  size_type remove_if(UPRED eq) {
+    return v.remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
-  size_type remove_if(const_iterator i, UPRED iter_eq) {
+  size_type remove_if(const_iterator i, UPRED eq) {
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
-    return vv.remove_if([=](auto &x) {return iter_eq(x.iter_to_this());});
+    return vv.remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
-  void first_order_remove_if(UPRED iter_eq) {
-    first_order_remove_if(const_iterator{}, iter_eq);
+  void first_order_remove_if(UPRED eq) {
+    first_order_remove_if(const_iterator{}, eq);
   }
   template <class UPRED>
-  void first_order_remove_if(const_iterator i, UPRED iter_eq) {
-    remove_if(i, iter_eq);
+  void first_order_remove_if(const_iterator i, UPRED eq) {
+    remove_if(i, eq);
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        remove_if(x.iter_to_this(), iter_eq);
+        remove_if(x.iter_to_this(), eq);
   }
 
   template <class BPRED>
-  void unique(BPRED iter_eq) {
-    v.unique([=](auto &x, auto &y) {
-      return iter_eq(x.iter_to_this(), y.iter_to_this());
-    });
+  void unique(BPRED eq) {
+    v.unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
-  void unique(const_iterator i, BPRED iter_eq) {
+  void unique(const_iterator i, BPRED eq) {
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
-    vv.unique([=](auto &x, auto &y) {
-      return iter_eq(x.iter_to_this(), y.iter_to_this());
-    });
+    vv.unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
-  void first_order_unique(BPRED iter_eq) {
-    first_order_unique(const_iterator{}, iter_eq);
+  void first_order_unique(BPRED eq) {
+    first_order_unique(const_iterator{}, eq);
   }
   template <class BPRED>
-  void first_order_unique(const_iterator i, BPRED iter_eq) {
-    unique(i, iter_eq);
+  void first_order_unique(const_iterator i, BPRED eq) {
+    unique(i, eq);
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        unique(x.iter_to_this(), iter_eq);
+        unique(x.iter_to_this(), eq);
   }
 
   template <class BPRED>
   void merge(const_iterator i, tree_type &l, const_iterator i2,
-             BPRED iter_less) {
+             BPRED less) {
     const iterator p1 = i.to_mutable();
     const iterator p2 = i2.to_mutable();
     vec_t &v1 = ((p1 == nullptr) ? v : p1->v);
@@ -38601,9 +38612,7 @@ public:
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      v1.merge(v2, [=](auto &x, auto &y) {
-        return iter_less(x.iter_to_this(), y.iter_to_this());
-      });
+      v1.merge(v2, [=](reference x, reference y) {return less(x, y);});
 #ifndef RE_NOEXCEPT
     }
     catch (...) {
@@ -38615,21 +38624,20 @@ public:
   }
   template <class BPRED>
   void merge(const_iterator i, tree_type &&l, const_iterator i2,
-             BPRED iter_less) {
-    merge(i, l, i2, iter_less);
+             BPRED less) {
+    merge(i, l, i2, less);
   }
   template <class BPRED>
-  void merge(tree_type &l, const_iterator i2, BPRED iter_less) {
-    merge(const_iterator{}, l, i2, iter_less);
+  void merge(tree_type &l, const_iterator i2, BPRED less) {
+    merge(const_iterator{}, l, i2, less);
   }
   template <class BPRED>
-  void merge(tree_type &&l, const_iterator i2, BPRED iter_less) {
-    merge(l, i2, iter_less);
+  void merge(tree_type &&l, const_iterator i2, BPRED less) {
+    merge(l, i2, less);
   }
 
   template <class BPRED>
-  void merge(const_iterator i, this_t &l, const_iterator i2,
-             BPRED iter_less) {
+  void merge(const_iterator i, this_t &l, const_iterator i2, BPRED less) {
     const iterator p1 = i.to_mutable();
     const iterator p2 = i2.to_mutable();
     vec_t &v1 = ((p1 == nullptr) ? v : p1->v);
@@ -38639,9 +38647,7 @@ public:
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      v1.merge(v2, [=](auto &x, auto &y) {
-        return iter_less(x.iter_to_this(), y.iter_to_this());
-      });
+      v1.merge(v2, [=](reference x, reference y) {return less(x, y);});
 #ifndef RE_NOEXCEPT
     }
     catch (...) {
@@ -38652,30 +38658,27 @@ public:
 #endif
   }
   template <class BPRED>
-  void merge(const_iterator i, this_t &&l, const_iterator i2,
-             BPRED iter_less) {
-    merge(i, l, i2, iter_less);
+  void merge(const_iterator i, this_t &&l, const_iterator i2, BPRED less) {
+    merge(i, l, i2, less);
   }
   template <class BPRED>
-  void merge(this_t &l, const_iterator i2, BPRED iter_less) {
-    merge(const_iterator{}, l, i2, iter_less);
+  void merge(this_t &l, const_iterator i2, BPRED less) {
+    merge(const_iterator{}, l, i2, less);
   }
   template <class BPRED>
-  void merge(this_t &&l, const_iterator i2, BPRED iter_less) {
-    merge(l, i2, iter_less);
+  void merge(this_t &&l, const_iterator i2, BPRED less) {
+    merge(l, i2, less);
   }
 
   template <class BPRED>
-  void merge(const_iterator p, vector_type &l, BPRED iter_less) {
+  void merge(const_iterator p, vector_type &l, BPRED less) {
     vec_t &vv = ((p == nullptr) ? v : p.to_mutable()->v);
     for (auto &it : iters(l))
       it.parent(p);
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      vv.merge(l.v, [=](auto &x, auto &y) {
-        return iter_less(x.iter_to_this(), y.iter_to_this());
-      });
+      vv.merge(l.v, [=](reference x, reference y) {return less(x, y);});
 #ifndef RE_NOEXCEPT
     }
     catch (...) {
@@ -38686,42 +38689,38 @@ public:
 #endif
   }
   template <class BPRED>
-  void merge(const_iterator p, vector_type &&l, BPRED iter_less) {
-    merge(p, l, iter_less);
+  void merge(const_iterator p, vector_type &&l, BPRED less) {
+    merge(p, l, less);
   }
   template <class BPRED>
-  void merge(vector_type &l, BPRED iter_less) {
-    merge(const_iterator{}, l, iter_less);
+  void merge(vector_type &l, BPRED less) {
+    merge(const_iterator{}, l, less);
   }
   template <class BPRED>
-  void merge(vector_type &&l, BPRED iter_less) {
-    merge(l, iter_less);
+  void merge(vector_type &&l, BPRED less) {
+    merge(l, less);
   }
 
   template <class BPRED>
-  void sort(BPRED iter_less) {
-    v.sort([=](auto &x, auto &y) {
-      return iter_less(x.iter_to_this(), y.iter_to_this());
-    });
+  void sort(BPRED less) {
+    v.sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
-  void sort(const_iterator i, BPRED iter_less) {
+  void sort(const_iterator i, BPRED less) {
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
-    vv.sort([=](auto &x, auto &y) {
-      return iter_less(x.iter_to_this(), y.iter_to_this());
-    });
+    vv.sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
-  void first_order_sort(const_iterator i, BPRED iter_less) {
-    sort(i, iter_less);
+  void first_order_sort(const_iterator i, BPRED less) {
+    sort(i, less);
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        sort(x.iter_to_this(), iter_less);
+        sort(x.iter_to_this(), less);
   }
   template <class BPRED>
-  void first_order_sort(BPRED iter_less) {
-    first_order_sort(const_iterator{}, iter_less);
+  void first_order_sort(BPRED less) {
+    first_order_sort(const_iterator{}, less);
   }
 
 private:
