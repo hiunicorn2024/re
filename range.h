@@ -3339,13 +3339,15 @@ public:
   constexpr reference at(size_type i) {
     return (i < N)
       ? a[i]
-      : ([]{throw_or_abort<out_of_range>("array index is out of range\n");}(),
+      : ([]{throw_or_terminate<out_of_range>
+            ("array index is out of range\n");}(),
          a[i]);
   }
   constexpr const_reference at(size_type i) const {
     return (i < N)
       ? a[i]
-      : ([]{throw_or_abort<out_of_range>("array index is out of range\n");}(),
+      : ([]{throw_or_terminate<out_of_range>
+            ("array index is out of range\n");}(),
          a[i]);
   }
 
@@ -3461,13 +3463,15 @@ public:
   constexpr reference at(size_type i) {
     return (i < 0)
       ? begin()[i]
-      : ([]{throw_or_abort<out_of_range>("array index is out of range\n");}(),
+      : ([]{throw_or_terminate<out_of_range>
+            ("array index is out of range\n");}(),
          begin()[i]);
   }
   constexpr const_reference at(size_type i) const {
     return (i < 0)
       ? begin()[i]
-      : ([]{throw_or_abort<out_of_range>("array index is out of range\n");}(),
+      : ([]{throw_or_terminate<out_of_range>
+            ("array index is out of range\n");}(),
          begin()[i]);
   }
 
