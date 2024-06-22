@@ -1315,6 +1315,15 @@ public:
       ll.splice(ll.end(), l, it);
     });
   }
+
+  void clear() {
+    for (auto &x : a->sleeping_threads) {
+      x.enter([&]() {x->to_quit = true;});
+      x->waited_worker.notify_one();
+      x->thrd.join();
+    }
+    a->sleeping_threads.clear();
+  }
 };
 namespace inner::fns {
 
