@@ -9,6 +9,7 @@
 
 // todo:
 //   boyer_moore_searcher
+//   two_way_searcher
 
 // equal
 namespace re {
@@ -4124,7 +4125,7 @@ public:
 
   combination_range(R rr, rng_szt<R> nn) : r(forward<R>(rr)), n(nn), c() {
     if (n > numeric_limits<buf_szt>::max())
-      throw_or_abort<length_error>
+      throw_or_terminate<length_error>
         ("re::combination_range::combination_range(r, n): too big size\n");
   }
 
