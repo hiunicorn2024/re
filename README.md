@@ -17,3 +17,13 @@ changed details
 precise conversion between floating point and string
 
 changed details
+
+24/6/22
+
+file operations
+
+time operations
+
+concurrency operations
+
+changed details
