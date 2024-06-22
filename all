@@ -6,4 +6,6 @@
 #include <re/random.h>
 #include <re/algorithm.h>
 #include <re/container.h>
+#include <re/time.h>
 #include <re/io.h>
+#include <re/concurrency.h>
