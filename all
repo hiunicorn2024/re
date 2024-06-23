@@ -9,4 +9,3 @@
 #include <re/time.h>
 #include <re/io.h>
 #include <re/concurrency.h>
-#include <re/graphics.h>
