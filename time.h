@@ -611,5 +611,21 @@ public:
 
 }
 
+// wait_for
+namespace re {
+
+struct fo_wait_for {
+  template <class R, ratio P>
+  void operator ()(const duration<R, P> &d) const {
+    auto t0 = steady_clock::now();
+    auto t1 = t0 + d;
+    while (steady_clock::now() < t1)
+      ;
+    return;
+  }
+};
+inline constexpr fo_wait_for wait_for{};
+
+}
 
 #endif

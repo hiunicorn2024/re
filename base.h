@@ -24,7 +24,7 @@
 #include <intrin.h>
 #include <immintrin.h>
 
-// places use windows api
+// dependence of windows api
 //   base.h
 //     re::inner::fns::win32_enable_utf16_stdout
 //     re::inner::fns::win32_enable_console_for_window_program
@@ -54,10 +54,10 @@ inline void win32_enable_utf16_stdout() {
 inline void win32_enable_console_for_window_program() {
   if (!AllocConsole())
     abort();
+  _setmode(_fileno(stdout), _O_U16TEXT);
   freopen("CONOUT$", "w", stdout);
   freopen("CONOUT$", "w", stderr);
   freopen("CONOUT$", "w", stdin);
-  _setmode(_fileno(stdout), _O_U16TEXT);
 }
 
 }

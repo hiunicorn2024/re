@@ -1,0 +1,4 @@
+#ifndef RE_DEFINED_GRAPHICS_H
+#define RE_DEFINED_GRAPHICS_H
+
+#endif

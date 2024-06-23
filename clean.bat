@@ -2,6 +2,10 @@ cd ./doc
 call clean.bat
 cd ../
 
+cd ./count_lines
+call clean.bat
+cd ../
+
 cd ./immediate_test
 call clean.bat
 cd ../
