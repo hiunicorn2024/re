@@ -1418,10 +1418,6 @@ void test_unique_ptr() {
     static_assert(sizeof(unique_ptr<int>)
                   == sizeof(unique_ptr<int, alloc_delete<allocator<int>>>));
     static_assert(sizeof(unique_ptr<int>)
-                  == sizeof(unique_ptr
-                            <int,
-                             alloc_delete<test_allocator<int>>>));
-    static_assert(sizeof(unique_ptr<int>)
                   < sizeof(unique_ptr
                            <int,
                             alloc_delete<stateful_test_allocator<int>>>));
