@@ -1141,6 +1141,16 @@ public:
   }
 
   template <class F>
+  bool try_enter(F f) {
+    if (m.try_lock()) {
+      const auto guard = exit_fn([&]() {m.unlock();});
+      f();
+      return true;
+    }
+    else
+      return false;
+  }
+  template <class F>
   void enter(F f) {
     const lock_guard l(m);
     f();
@@ -1238,7 +1248,8 @@ class basic_thread_pool {
 
 public:
   basic_thread_pool(size_t n
-                    = max_value(thread::hardware_concurrency() * 8u, 32u)) {
+                    = max_value(thread::hardware_concurrency() * 16u,
+                                32u)) {
     a->sleeping_threads.resize(n);
     for (auto it : iters(a->sleeping_threads)) {
       auto &x = *it;
@@ -1334,11 +1345,6 @@ basic_thread_pool &get_thread_pool_ref() {
 
 }
 
-struct real_thread_t {
-  explicit real_thread_t() = default;
-};
-real_thread_t real_thread{};
-
 class pool_thread {
 public:
   using id = thread::id;
@@ -1369,14 +1375,6 @@ public:
 
   template <class F>
   explicit pool_thread(F &&f)
-    requires (is_constructible_v<decay_t<F>, F>
-              && is_invocable_v<decay_t<F>>) {
-    it = inner::fns::get_thread_pool_ref().awake(forward<F>(f));
-    if (it == handle_t{})
-      f();
-  }
-  template <class F>
-  explicit pool_thread(F &&f, real_thread_t)
     requires (is_constructible_v<decay_t<F>, F>
               && is_invocable_v<decay_t<F>>) {
     it = inner::fns::get_thread_pool_ref().awake(forward<F>(f));

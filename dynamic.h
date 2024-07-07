@@ -59,10 +59,10 @@ public:
   virtual void *re_dynamic_auto_move_to(void *) noexcept {
     return nullptr;
   }
-  virtual void *re_dynamic_uniform_copy_to(void *) const {
+  virtual void *re_dynamic_copy_to_uniform(void *) const {
     return nullptr;
   }
-  virtual void *re_dynamic_uniform_move_to(void *) {
+  virtual void *re_dynamic_move_to_uniform(void *) {
     return nullptr;
   }
   virtual const type_info &re_dynamic_typeid() const noexcept {
@@ -190,7 +190,7 @@ public:
       return static_cast<BASE *>(this);
     }
   }
-  virtual void *re_dynamic_uniform_copy_to(void *bufp) const override {
+  virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
     if constexpr (local_dynamic_impl<uniform_t>) {
       uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
       uniform_alw_t{}.construct(p, value());
@@ -201,7 +201,7 @@ public:
       return static_cast<BASE *>(p);
     }
   }
-  virtual void *re_dynamic_uniform_move_to(void *bufp) override {
+  virtual void *re_dynamic_move_to_uniform(void *bufp) override {
     if constexpr (local_dynamic_impl<uniform_t>) {
       uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
       uniform_alw_t{}.construct(p, move(value()));
@@ -319,12 +319,12 @@ class dynamic : inner::dynamic_optional_buf<BUFSZ, BUFALIGN> {
   template <size_t SZ, size_t ALGN>
   void uniform_copy_from(const dynamic<T, SZ, ALGN> &x) {
     if (x.p != nullptr)
-      p = reinterpret_cast<T *>(base(x.p)->re_dynamic_uniform_copy_to(bufp()));
+      p = reinterpret_cast<T *>(base(x.p)->re_dynamic_copy_to_uniform(bufp()));
   }
   template <size_t SZ, size_t ALGN>
   void uniform_move_from(dynamic<T, SZ, ALGN> &x) {
     if (x.p != nullptr) {
-      p = reinterpret_cast<T *>(base(x.p)->re_dynamic_uniform_move_to(bufp()));
+      p = reinterpret_cast<T *>(base(x.p)->re_dynamic_move_to_uniform(bufp()));
       x.p = nullptr;
     }
   }

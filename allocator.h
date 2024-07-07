@@ -1516,8 +1516,15 @@ class unique_array : derivable_wrapper<D> {
 
 public:
   using pointer = inner::unique_ptr_pointer_type_t<T, D>;
-  using size_type = inner::unique_array_size_type_t<T, D>;
+  using const_pointer = pointer_rebind_t<pointer, add_const_t<T>>;
   using element_type = T;
+  using value_type = remove_cvref_t<T>;
+  using reference = element_type &;
+  using const_reference = const element_type &;
+  using iterator = pointer;
+  using const_iterator = const_pointer;
+  using difference_type = pointer_difference_t<pointer>;
+  using size_type = inner::unique_array_size_type_t<T, D>;
   using deleter_type = D;
   using pointer_pair = iter_pair<pointer>;
 
@@ -1582,17 +1589,48 @@ public:
   unique_array(iter_pair<pointer> x, remove_reference_t<D> &&d) noexcept
     : base_t(in_place, move(d)), p(x) {}
 
-  pointer begin() const noexcept {
+  pointer begin() noexcept {
     return p.first;
   }
-  pointer end() const noexcept {
+  pointer end() noexcept {
     return p.second;
   }
+  const_iterator begin() const noexcept {
+    return p.first;
+  }
+  const_iterator end() const noexcept {
+    return p.second;
+  }
+  auto cbegin() const noexcept {
+    return begin();
+  }
+  auto cend() const noexcept {
+    return end();
+  }
   bool empty() const noexcept {
-    return p.first == p.second;
+    return p.empty();
   }
   size_type size() const noexcept {
-    return to_signed(p.second - p.first);
+    return p.size();
+  }
+
+  reference front() {
+    return *begin();
+  }
+  reference back() {
+    return *prev(end());
+  }
+  const_reference front() const {
+    return *begin();
+  }
+  const_reference back() const {
+    return *prev(end());
+  }
+  reference operator [](size_type n) {
+    return *(begin() + n);
+  }
+  const_reference operator [](size_type n) const {
+    return *(begin() + n);
   }
 
   deleter_type &get_deleter() noexcept {
@@ -1696,7 +1734,8 @@ class copyable_ptr {
   unique_ptr<T> v;
 
 public:
-  using value_type = T;
+  using element_type = T;
+  using value_type = remove_cvref_t<T>;
 
   copyable_ptr() = default;
   ~copyable_ptr() = default;
@@ -1768,8 +1807,17 @@ class copyable_array {
   unique_array<T> v;
 
 public:
-  using value_type = T;
-  using size_type = size_t;
+  using pointer = T *;
+  using const_pointer = const T *;
+  using element_type = typename unique_array<T>::element_type;
+  using value_type = typename unique_array<T>::value_type;
+  using reference = typename unique_array<T>::reference;
+  using const_reference = typename unique_array<T>::const_reference;
+  using iterator = typename unique_array<T>::iterator;
+  using const_iterator = typename unique_array<T>::const_iterator;
+  using difference_type = typename unique_array<T>::difference_type;
+  using size_type = typename unique_array<T>::size_type;
+  using pointer_pair = typename unique_array<T>::pointer_pair;
 
   copyable_array() = default;
   ~copyable_array() = default;
@@ -1810,17 +1858,48 @@ public:
   friend synth_3way_result<T1> operator <=>(const copyable_array<T1> &,
                                             const copyable_array<T1> &);
 
-  T *begin() const noexcept {
+  T *begin() noexcept {
     return v.begin();
   }
-  T *end() const noexcept {
+  T *end() noexcept {
     return v.end();
+  }
+  const T *begin() const noexcept {
+    return v.begin();
+  }
+  const T *end() const noexcept {
+    return v.end();
+  }
+  const T *cbegin() const noexcept {
+    return begin();
+  }
+  const T *cend() const noexcept {
+    return end();
   }
   bool empty() const noexcept {
     return v.empty();
   }
   size_t size() const noexcept {
     return v.size();
+  }
+
+  T &front() {
+    return v.front();
+  }
+  T &back() {
+    return v.back();
+  }
+  const T &front() const {
+    return v.front();
+  }
+  const T &back() const {
+    return v.back();
+  }
+  T &operator [](size_type n) {
+    return v[n];
+  }
+  const T &operator [](size_type n) const {
+    return v[n];
   }
 };
 template <class T1>
@@ -1951,18 +2030,25 @@ public:
     return bufpp - bufp;
   }
 
-  reference front() noexcept {
+  reference front() {
     return *begin();
   }
-  const_reference front() const noexcept {
+  const_reference front() const {
     return *begin();
   }
-  reference back() noexcept {
+  reference back() {
     return *prev(end());
   }
-  const_reference back() const noexcept {
+  const_reference back() const {
     return *prev(end());
   }
+  reference operator [](size_type n) {
+    return *(begin() + n);
+  }
+  const_reference operator [](size_type n) const {
+    return *(begin() + n);
+  }
+
   void push_front(const value_type &x) {
     allocator_traits<AL>::construct(alloc_ref(), p - 1, x);
     --p;

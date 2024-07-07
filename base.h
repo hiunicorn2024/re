@@ -5,6 +5,7 @@
 //   RE_NOEXCEPT
 //   RE_DEFAULT_ALLOCATOR // e.g. re::stateless_test_allocator
 //   RE_WIN32_NO_X64_INTRINSICS
+//   RE_NOAVX
 
 // macro for inner usage:
 //   RE_TO_DEFINE_SIGNED_INTEGRAL_TRAITS
@@ -16,6 +17,11 @@
 #ifndef UNICODE
 #define UNICODE
 #endif
+#ifdef _MSC_VER
+#ifdef RE_WIN32_WINDOW_PROGRAM
+#pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
+#endif
+#endif
 #include <windows.h>
 #include <cstdio>
 #include <fcntl.h>
@@ -26,8 +32,6 @@
 
 // dependence of windows api
 //   base.h
-//     re::inner::fns::win32_enable_utf16_stdout
-//     re::inner::fns::win32_enable_console_for_window_program
 //   test.h
 //     re::ez_mutex
 //     re::test_allocator // use re::ez_mutex
@@ -42,25 +46,22 @@
 //     re::file
 //   concurrency.h
 //     ...
+//   graphics.h
+//     re::inner::fns::win32_enable_wstring_console_for_command_line_program
+//     re::inner::fns::win32_enable_utf8_console_for_window_program
 
-// win32_enable_utf16_stdout()
-// win32_enable_console_for_window_program
-namespace re::inner::fns {
-
-inline void win32_enable_utf16_stdout() {
-  _setmode(_fileno(stdout), _O_U16TEXT);
-}
-
-inline void win32_enable_console_for_window_program() {
-  if (!AllocConsole())
-    abort();
-  _setmode(_fileno(stdout), _O_U16TEXT);
-  freopen("CONOUT$", "w", stdout);
-  freopen("CONOUT$", "w", stderr);
-  freopen("CONOUT$", "w", stdin);
-}
-
-}
+// Direct2D headers
+#include <d2d1.h>
+#include <d2d1_1.h>
+#include <dxgi.h>
+#include <dxgi1_2.h>
+#include <dxgi1_3.h>
+#include <dxgi1_4.h>
+#include <dxgi1_5.h>
+#include <dxgi1_6.h>
+#include <dxgicommon.h>
+#include <dxgidebug.h>
+#include <dxgiformat.h>
 
 #include <cstdio>
 #include <cstddef>
@@ -86,6 +87,7 @@ inline void win32_enable_console_for_window_program() {
 #include <compare>
 #include <source_location>
 #include <tuple>
+#include <bit>
 
 // std dependence
 namespace re {
@@ -434,14 +436,8 @@ struct fo_puti {
 };
 inline constexpr fo_puti puti{};
 
-static inline bool is_little_endian_v = []() {
-  unsigned long long x = 0xffffu;
-  unsigned char s[sizeof(unsigned long long)];
-  memcpy(static_cast<void *>(static_cast<unsigned char *>(s)),
-         static_cast<const void *>(&x),
-         sizeof(unsigned long long));
-  return s[0] != 0;
-}();
+static inline bool is_little_endian_v
+  = (std::endian::native == std::endian::little);
 static inline bool is_big_endian_v = !is_little_endian_v;
 
 struct fo_putb {
@@ -670,12 +666,72 @@ struct make_integer_sequence_impl<T, TO, TO, N...> {
   using type = integer_sequence<T, N...>;
 };
 
+template <class T, T S, T FROM, T TO, T...N>
+struct make_integer_sequence_by_stride_impl {
+  using type = typename make_integer_sequence_by_stride_impl
+    <T, S, FROM + 1, TO, N..., FROM * S>::type;
+};
+template <class T, T S, T TO, T...N>
+struct make_integer_sequence_by_stride_impl<T, S, TO, TO, N...> {
+  using type = integer_sequence<T, N...>;
+};
+
+template <class T, class...S>
+struct integer_sequence_cat_impl;
+template <class T>
+struct integer_sequence_cat_impl<T> {
+  using type = integer_sequence<T>;
+};
+template <class T, T...IDS>
+struct integer_sequence_cat_impl<T, integer_sequence<T, IDS...>> {
+  using type = integer_sequence<T, IDS...>;
+};
+template <class T, T...P1, T...P2, class...S>
+struct integer_sequence_cat_impl<T,
+                                 integer_sequence<T, P1...>,
+                                 integer_sequence<T, P2...>,
+                                 S...> {
+  using type = typename integer_sequence_cat_impl
+    <T, integer_sequence<T, P1..., P2...>, S...>::type;
+};
+
 }
-template<class T, T N>
+template <class T, T N>
 using make_integer_sequence
   = typename inner::make_integer_sequence_impl<T, 0, N>::type;
-template<size_t N>
+template <size_t N>
 using make_index_sequence = make_integer_sequence<size_t, N>;
+
+template <class T, T N, T S>
+using make_integer_sequence_by_stride
+  = typename inner::make_integer_sequence_by_stride_impl<T, S, 0, N>::type;
+template <size_t N, size_t S>
+using make_index_sequence_by_stride
+  = make_integer_sequence_by_stride<size_t, N, S>;
+
+template <class T, class...S>
+using integer_sequence_cat
+  = typename inner::integer_sequence_cat_impl<T, S...>::type;
+template <class...S>
+using index_sequence_cat
+  = typename inner::integer_sequence_cat_impl<size_t, S...>::type;
+
+namespace inner {
+
+template <class T, class S, T N>
+struct integer_sequence_offset_impl;
+template <class T, T...IDS, T N>
+struct integer_sequence_offset_impl<T, integer_sequence<T, IDS...>, N> {
+  using type = integer_sequence<T, (IDS + N)...>;
+};
+
+}
+template <class T, class S, T N>
+using integer_sequence_offset
+  = typename inner::integer_sequence_offset_impl<T, S, N>::type;
+template <class S, size_t N>
+using index_sequence_offset
+  = typename inner::integer_sequence_offset_impl<size_t, S, N>::type;
 
 template <class T, T V>
 struct integral_constant {
@@ -9410,6 +9466,51 @@ struct fo_function_return_false {
 };
 inline constexpr fo_function_return_false function_return_false{};
 
+template <class T>
+struct fo_l_shift {
+  constexpr T operator ()(T x, T y) const {
+    return x << y;
+  }
+};
+template <class T>
+inline constexpr fo_l_shift<T> l_shift{};
+
+template <class T>
+struct fo_r_shift {
+  constexpr T operator ()(T x, T y) const {
+    return x >> y;
+  }
+};
+template <class T>
+inline constexpr fo_r_shift<T> r_shift{};
+
+template <class T>
+struct fo_b_or {
+  constexpr T operator ()(T x, T y) const {
+    return x | y;
+  }
+};
+template <class T>
+inline constexpr fo_b_or<T> b_or{};
+
+template <class T>
+struct fo_b_and {
+  constexpr T operator ()(T x, T y) const {
+    return x & y;
+  }
+};
+template <class T>
+inline constexpr fo_b_and<T> b_and{};
+
+template <class T>
+struct fo_b_xor {
+  constexpr T operator ()(T x, T y) const {
+    return x ^ y;
+  }
+};
+template <class T>
+inline constexpr fo_b_xor<T> b_xor{};
+
 }
 
 // numeric_limits for floating point
@@ -9765,7 +9866,7 @@ inline constexpr fo_isunordered isunordered{};
 
 }
 
-// std dependence - common mathematical functions
+// common mathematical functions
 namespace re {
 
 template <class, ratio>
@@ -9801,6 +9902,91 @@ struct fo_abs {
   }
 };
 inline constexpr fo_abs abs{};
+
+struct fo_sqrt {
+  float operator ()(float x) const noexcept {
+    return std::sqrt(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::sqrt(x);
+  }
+
+  template <class T>
+  decltype(auto) operator ()(T &&x) const requires requires {x.sqrt();} {
+    return forward<T>(x).sqrt();
+  }
+};
+inline constexpr fo_sqrt sqrt{};
+
+struct fo_square {
+  float operator ()(float x) const noexcept {
+    return x * x;
+  }
+  double operator ()(double x) const noexcept {
+    return x * x;
+  }
+
+  template <class T>
+  decltype(auto) operator ()(T &&x) const requires requires {x.square();} {
+    return forward<T>(x).square();
+  }
+};
+inline constexpr fo_square square{};
+
+struct fo_sin {
+  float operator ()(float x) const noexcept {
+    return std::sin(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::sin(x);
+  }
+
+  template <class T>
+  decltype(auto) operator ()(T &&x) const requires requires {x.sin();} {
+    return forward<T>(x).sin();
+  }
+};
+inline constexpr fo_sin sin{};
+
+struct fo_cos {
+  float operator ()(float x) const noexcept {
+    return std::cos(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::cos(x);
+  }
+
+  template <class T>
+  decltype(auto) operator ()(T &&x) const requires requires {x.cos();} {
+    return forward<T>(x).cos();
+  }
+};
+inline constexpr fo_cos cos{};
+
+struct fo_tan {
+  float operator ()(float x) const noexcept {
+    return std::tan(x);
+  }
+  double operator ()(double x) const noexcept {
+    return std::tan(x);
+  }
+
+  template <class T>
+  decltype(auto) operator ()(T &&x) const requires requires {x.tan();} {
+    return forward<T>(x).tan();
+  }
+};
+inline constexpr fo_tan tan{};
+
+struct fo_approx_equal {
+  bool operator ()(float x, float y, float dif) const {
+    return abs(x - y) <= dif;
+  }
+  bool operator ()(double x, double y, double dif) const {
+    return abs(x - y) <= dif;
+  }
+};
+inline constexpr fo_approx_equal approx_equal{};
 
 }
 

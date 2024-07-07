@@ -14338,6 +14338,16 @@ public:
     c.erase(re::unique(*this, eql), c.end());
   }
 
+  void reserve(size_type n) {
+    c.reserve(n);
+  }
+  size_type capacity() const noexcept {
+    return c.capacity();
+  }
+  void shrink_to_fit() {
+    c.shrink_to_fit();
+  }
+
 private:
   void sort_c() {
 #ifndef RE_NOEXCEPT
@@ -14957,6 +14967,16 @@ public:
   template <class EQL>
   void unique(EQL eql) {
     c.erase(re::unique(*this, eql), c.end());
+  }
+
+  void reserve(size_type n) {
+    c.reserve(n);
+  }
+  size_type capacity() const noexcept {
+    return c.capacity();
+  }
+  void shrink_to_fit() {
+    c.shrink_to_fit();
   }
 
 private:
@@ -15765,6 +15785,16 @@ public:
     c.erase(re::unique(*this, eql), c.end());
   }
 
+  void reserve(size_type n) {
+    c.reserve(n);
+  }
+  size_type capacity() const noexcept {
+    return c.capacity();
+  }
+  void shrink_to_fit() {
+    c.shrink_to_fit();
+  }
+
 private:
   void sort_c() {
 #ifndef RE_NOEXCEPT
@@ -16411,6 +16441,16 @@ public:
   template <class EQL>
   void unique(EQL eql) {
     c.erase(re::unique(*this, eql), c.end());
+  }
+
+  void reserve(size_type n) {
+    c.reserve(n);
+  }
+  size_type capacity() const noexcept {
+    return c.capacity();
+  }
+  void shrink_to_fit() {
+    c.shrink_to_fit();
   }
 
 private:
