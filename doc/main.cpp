@@ -9,6 +9,7 @@ void doc_base() {
   //   RE_NOEXCEPT
   //   RE_DEFAULT_ALLOCATOR re::test_allocator
   //   RE_WIN32_NO_X64_INTRINSICS
+  //   RE_NOAVX
   //
   // temporary macros for inner usage:
   //   RE_TO_DEFINE_SIGNED_INTEGRAL_TRAITS
@@ -266,12 +267,32 @@ void doc_basic_template_metaprogramming_tools() {
 
   // integer_sequence<INT, 0, 1, 2, ..., N>
   // make_integer_sequence<INT, N>
+  // make_integer_sequence_by_stride<INT, N, S>
+  // integer_sequence_cat<T, S...>
+  // integer_sequence_offset<T, S, N>
+  //
   // index_sequence<0, 1, 2, ..., N> // = integer_sequence<size_t, ...>
   // make_index_sequence<N>
+  // make_index_sequence_by_stride<N, S>
+  // index_sequence_cat<S...>
+  // index_sequence_offset<S, N>
   {
     static_assert(is_same_v<integer_sequence<int, 0, 1, 2>,
                             make_integer_sequence<int, 3>>);
     static_assert(is_same_v<index_sequence<>, make_index_sequence<0>>);
+
+    static_assert(is_same_v
+                  <make_index_sequence_by_stride<3, 4>,
+                   index_sequence<0, 4, 8>>);
+
+    static_assert(is_same_v
+                  <index_sequence_cat
+                   <index_sequence<1>, index_sequence<2>, index_sequence<3, 4>>,
+                   index_sequence<1, 2, 3, 4>>);
+
+    static_assert(is_same_v
+                  <index_sequence_offset<index_sequence<0, 1, 2>, 1>,
+                   index_sequence<1, 2, 3>>);
   }
 
   // integral_constant<SZ_T, N>
@@ -2356,6 +2377,12 @@ void doc_miscl() {
   // container_regular_max_size<C>()
 
   // function_return_false(f, s...)
+
+  // l_shift<T>(x, y)
+  // r_shift<T>(x, y)
+  // bit_and<T>(x, y)
+  // bit_or<T>(x, y)
+  // bit_xor<T>(x, y)
 }
 void doc_floating_point_traits() {
   // floating_point_traits<float or double>
@@ -2400,8 +2427,14 @@ void doc_floating_point_traits() {
   // float_traits = floating_point_traits<float>
   // double_traits = floating_point_traits<double>
 }
-void doc_std_dependence_common_math() {
+void doc_common_math() {
   // abs(x)
+  // sqrt(x)
+  // square(x)
+  // sin(x)
+  // cos(x)
+  // tan(x)
+  // approx_equal(x, y, max_dif)
 }
 
 // test
@@ -2729,7 +2762,7 @@ void doc_ez_map() {
 }
 void doc_ez_mutex() {
   // ez_mutex
-  //   smf: default-constructible
+  //   special member functions: default-constructible
   //   lock()
   //   unlock()
 }
@@ -3861,10 +3894,17 @@ void doc_unique_ptr() {
 void doc_unique_array() {
   // unique_array<T, D = default_delete<T>>
   //   pointer
-  //   pointer_pair
-  //   size_type
+  //   const_pointer
   //   element_type
+  //   value_type
+  //   reference
+  //   const_reference
+  //   iterator
+  //   const_iterator
+  //   difference_type
+  //   size_type
   //   deleter_type
+  //   pointer_pair
   //
   //   special member functions
   //     default constructible
@@ -3879,8 +3919,14 @@ void doc_unique_array() {
   //
   //   begin()
   //   end()
+  //   cbegin()
+  //   cend()
   //   empty()
   //   size()
+  //
+  //   front()
+  //   back()
+  //   [](n)
   //
   //   get_deleter()->ref
   //
@@ -3894,7 +3940,8 @@ void doc_unique_array() {
 }
 void doc_copyable_ptr() {
   // copyable_ptr<T> // requires: T is copy constructible
-  //   value_type = T
+  //   element_type = T;
+  //   value_type
   //
   //   special member functions: full // copy may throw
   //
@@ -3918,26 +3965,38 @@ void doc_copyable_ptr() {
 }
 void doc_copyable_array() {
   // copyable_array<T>
-  //   value_type = T
-  //   size_type = size_t
+  //   pointer
+  //   element_type = T;
+  //   value_type
+  //   reference
+  //   const_reference
+  //   difference_type
+  //   size_type
+  //   pointer_pair
   //
   //   special member functions: full // copy may throw
   //
-  //   explicit copyable_array(iter_pair)
-  //   release()->iter_pair
-  //   reset(iter_pair = {})
+  //   explicit copyable_array(pointer_pair)
+  //   release()->pointer_pair
+  //   reset(pointer_pair = {})
   //   clear()
   //
   //   explicit copyable_array(n) // may throw
   //   copyable_array(n, x) // may throw
   //   copyable_array(from_range, r) // may throw
   //
-  //   <=> // may throw
+  //   == <=> // may throw
   //
   //   begin()
   //   end()
+  //   cbegin()
+  //   cend()
   //   empty()
   //   size()
+  //
+  //   front()
+  //   back()
+  //   [](n)
 }
 void doc_buffer() {
   // buffer<T, AL = default_allocator<T>>
@@ -3969,6 +4028,7 @@ void doc_buffer() {
   //
   //   front()
   //   back()
+  //   [](n)
   //   push_front(x) // may throw
   //     // requires: front_raw_space() != 0
   //   push_back(x) // may throw
@@ -7079,6 +7139,10 @@ void doc_flat_map() {
   //   merge(r)
   //   unique(eq = ...)
   //
+  //   reserve(n)
+  //   capacity()
+  //   shrink_to_fit()
+  //
   //   this_t(from_range, r)
   //   this_t(from_range, r, cmp)
   //   this_t(from_range, r, alloc)
@@ -8786,6 +8850,9 @@ void doc_clock() {
   //
   //   static now()->time_point
 }
+void doc_wait_for() {
+  // wait_for(duration)
+}
 
 void doc_c_file() {
   // fputc_iterator
@@ -9220,6 +9287,7 @@ void doc_mutex_area() {
   //   ->()->value_type *
   //   *()->value_type &
   //   data()->value_type &
+  //   try_enter(f)
   //   enter(f)
   //   enter_until(f, eq)
   //   enter_notify_one(f, condvar_ref)
@@ -9231,21 +9299,20 @@ void doc_mutex_area() {
 }
 void doc_pool_thread() {
   // basic_thread_pool
-  //   smf: default-constructible and destructible
+  //   special member functions: default-constructible and destructible
   //   this_t(n)
   //   handle_t
   //   awake(f)->handle_t
   //   join(handle_t)
   //
-  // real_thread_t real_thread
-  //
   // pool_thread
   //   special member functions: default-constructible, movable
-  //   explicit thread(f) // if pool is full, just call f()
-  //   explicit thread(f, real_thread) // if pool is full, throw or terminate
+  //   explicit thread(f) // if pool is full, throw or terminate
   //
   //   joinable() // always true
   //   join() // wait or do nothing
+  //
+  //   clear()
   //
   //   id = thread::id
   //   get_id()->id
@@ -9286,7 +9353,7 @@ int main() {
   re::inner::fns::doc_hash();
   re::inner::fns::doc_miscl();
   re::inner::fns::doc_floating_point_traits();
-  re::inner::fns::doc_std_dependence_common_math();
+  re::inner::fns::doc_common_math();
 
   re::inner::fns::doc_owner_ptr();
   re::inner::fns::doc_test_throwing();
@@ -9462,6 +9529,7 @@ int main() {
   re::inner::fns::doc_duration();
   re::inner::fns::doc_time_point();
   re::inner::fns::doc_clock();
+  re::inner::fns::doc_wait_for();
 
   re::inner::fns::doc_c_file();
   re::inner::fns::doc_print_tag();
