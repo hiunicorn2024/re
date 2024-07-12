@@ -2502,7 +2502,7 @@ public:
   }
 
   template <class X, class TT = T, class = enable_if_t
-            <is_same_v<remove_reference_t<X>, TT *>
+            <is_same_v<remove_cvref_t<X>, TT *>
              || (is_const_v<TT>
                  && is_same_v<remove_reference_t<X>, remove_const_t<TT> *>)>,
             bool = 0>
