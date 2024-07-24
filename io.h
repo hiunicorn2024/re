@@ -5,6 +5,15 @@
 #include "container.h"
 #include "time.h"
 
+// win32_enable_utf8_console
+namespace re::inner::fns {
+
+inline void win32_enable_utf8_console() {
+  SetConsoleOutputCP(65001);
+}
+
+}
+
 // fputc_iterator
 // c_file
 // console_c_file

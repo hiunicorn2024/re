@@ -351,13 +351,13 @@ public:
   }
 };
 
-#ifndef RE_WIN32_NO_X64_INTRINSICS
-template <>
-struct atomic<long long> {
-  using value_type = long long;
+template <class LL>
+requires (is_same_v<LL, long long> && sizeof(size_t) == 8u)
+struct atomic<LL> {
+  using value_type = LL;
 
 private:
-  mutable volatile long long v;
+  mutable volatile LL v;
 
 public:
   inline atomic() noexcept : v() {}
@@ -369,46 +369,46 @@ public:
 
   atomic &operator =(const atomic &) volatile = delete;
 
-  inline atomic(long long x) noexcept : v(x) {}
-  inline long long operator =(long long x) noexcept {
+  inline atomic(LL x) noexcept : v(x) {}
+  inline LL operator =(LL x) noexcept {
     _InterlockedExchange64(&v, x);
     return x;
   }
-  inline long long operator =(long long x) volatile noexcept {
+  inline LL operator =(LL x) volatile noexcept {
     _InterlockedExchange64(&v, x);
     return x;
   }
-  inline operator long long() const noexcept {
+  inline operator LL() const noexcept {
     return _InterlockedOr64(&v, 0l);
   }
-  inline operator long long() const volatile noexcept {
+  inline operator LL() const volatile noexcept {
     return _InterlockedOr64(&v, 0l);
   }
 
-  inline long long load() const noexcept {
+  inline LL load() const noexcept {
     return _InterlockedOr64(&v, 0l);
   }
-  inline long long load() const volatile noexcept {
+  inline LL load() const volatile noexcept {
     return _InterlockedOr64(&v, 0l);
   }
-  inline void store(long long x) noexcept {
+  inline void store(LL x) noexcept {
     _InterlockedExchange64(&v, x);
   }
-  inline void store(long long x) volatile noexcept {
+  inline void store(LL x) volatile noexcept {
     _InterlockedExchange64(&v, x);
   }
-  inline long long exchange(long long x) noexcept {
+  inline LL exchange(LL x) noexcept {
     return _InterlockedExchange64(&v, x);
   }
-  inline long long exchange(long long x) volatile noexcept {
+  inline LL exchange(LL x) volatile noexcept {
     return _InterlockedExchange64(&v, x);
   }
 
-  inline bool compare_exchange(long long &expected,
-                               long long desired) noexcept {
-    if (const long long x = _InterlockedCompareExchange64(&v,
-                                                          desired,
-                                                          expected);
+  inline bool compare_exchange(LL &expected,
+                               LL desired) noexcept {
+    if (const LL x = _InterlockedCompareExchange64(&v,
+                                                   desired,
+                                                   expected);
         x != expected) {
       expected = x;
       return false;
@@ -416,11 +416,10 @@ public:
     else
       return true;
   }
-  inline bool compare_exchange(long long &expected,
-                               long long desired) volatile noexcept {
-    if (const long long x = _InterlockedCompareExchange64(&v,
-                                                          desired,
-                                                          expected);
+  inline bool compare_exchange(LL &expected, LL desired) volatile noexcept {
+    if (const LL x = _InterlockedCompareExchange64(&v,
+                                                   desired,
+                                                   expected);
         x != expected) {
       expected = x;
       return false;
@@ -428,78 +427,77 @@ public:
     else
       return true;
   }
-  inline long long fetch_add(long long x) noexcept {
+  inline LL fetch_add(LL x) noexcept {
     return _InterlockedExchangeAdd64(&v, x);
   }
-  inline long long fetch_add(long long x) volatile noexcept {
+  inline LL fetch_add(LL x) volatile noexcept {
     return _InterlockedExchangeAdd64(&v, x);
   }
-  inline long long fetch_sub(long long x) noexcept {
+  inline LL fetch_sub(LL x) noexcept {
     return _InterlockedExchangeAdd64(&v, -x);
   }
-  inline long long fetch_sub(long long x) volatile noexcept {
+  inline LL fetch_sub(LL x) volatile noexcept {
     return _InterlockedExchangeAdd64(&v, -x);
   }
 
-  inline long long operator ++() noexcept {
+  inline LL operator ++() noexcept {
     return _InterlockedIncrement64(&v);
   }
-  inline long long operator ++() volatile noexcept {
+  inline LL operator ++() volatile noexcept {
     return _InterlockedIncrement64(&v);
   }
-  inline long long operator ++(int) noexcept {
+  inline LL operator ++(int) noexcept {
     return _InterlockedExchangeAdd64(&v, 1l);
   }
-  inline long long operator ++(int) volatile noexcept {
+  inline LL operator ++(int) volatile noexcept {
     return _InterlockedExchangeAdd64(&v, 1l);
   }
 
-  inline long long operator --() noexcept {
+  inline LL operator --() noexcept {
     return _InterlockedDecrement64(&v);
   }
-  inline long long operator --() volatile noexcept {
+  inline LL operator --() volatile noexcept {
     return _InterlockedDecrement64(&v);
   }
-  inline long long operator --(int) noexcept {
+  inline LL operator --(int) noexcept {
     return _InterlockedExchangeAdd64(&v, -1l);
   }
-  inline long long operator --(int) volatile noexcept {
+  inline LL operator --(int) volatile noexcept {
     return _InterlockedExchangeAdd64(&v, -1l);
   }
 
-  inline long long operator +=(long long x) noexcept {
+  inline LL operator +=(LL x) noexcept {
     return InterlockedAdd64(&v, x);
   }
-  inline long long operator +=(long long x) volatile noexcept {
+  inline LL operator +=(LL x) volatile noexcept {
     return InterlockedAdd64(&v, x);
   }
-  inline long long operator -=(long long x) noexcept {
+  inline LL operator -=(LL x) noexcept {
     return InterlockedAdd64(&v, -x);
   }
-  inline long long operator -=(long long x) volatile noexcept {
+  inline LL operator -=(LL x) volatile noexcept {
     return InterlockedAdd64(&v, -x);
   }
 
-  inline long long operator &=(long long x) noexcept {
+  inline LL operator &=(LL x) noexcept {
     return _InterlockedAnd64(&v, x) & x;
   }
-  inline long long operator &=(long long x) volatile noexcept {
+  inline LL operator &=(LL x) volatile noexcept {
     return _InterlockedAnd64(&v, x) & x;
   }
-  inline long long operator |=(long long x) noexcept {
+  inline LL operator |=(LL x) noexcept {
     return _InterlockedOr64(&v, x) | x;
   }
-  inline long long operator |=(long long x) volatile noexcept {
+  inline LL operator |=(LL x) volatile noexcept {
     return _InterlockedOr64(&v, x) | x;
   }
-  inline long long operator ^=(long long x) noexcept {
+  inline LL operator ^=(LL x) noexcept {
     return _InterlockedXor64(&v, x) ^ x;
   }
-  inline long long operator ^=(long long x) volatile noexcept {
+  inline LL operator ^=(LL x) volatile noexcept {
     return _InterlockedXor64(&v, x) ^ x;
   }
 };
-#endif
 
 template <class T>
 struct atomic<T *> {
@@ -704,8 +702,7 @@ public:
   thread() noexcept : h(INVALID_HANDLE_VALUE), id_num() {}
   ~thread() {
     if (joinable())
-      print_then_terminate
-        ("re::thread::~thread(): can not owns a thread at this time point\n");
+      join();
   }
   thread(const thread &) = delete;
   thread &operator =(const thread &) = delete;
@@ -716,7 +713,7 @@ public:
   thread &operator =(thread &&x) noexcept {
     if (joinable())
       print_then_terminate
-        ("re::thread::=(thread &&): only null thread can be assigned to\n");
+        ("re::thread::=(re::thread &&): only null thread can be assigned to\n");
     h = exchange(x.h, INVALID_HANDLE_VALUE);
     id_num = exchange(x.id_num, id{});
     return *this;
@@ -836,6 +833,7 @@ inline constexpr fo_get_thread_id get_thread_id{};
 }
 
 // mutex
+// timed_mutex
 // lock_guard
 // unique_lock
 namespace re {
@@ -851,9 +849,9 @@ public:
     DeleteCriticalSection(addressof(v));
   }
   mutex(const mutex &) = delete;
-  mutex &operator=(const mutex &) = delete;
+  mutex &operator =(const mutex &) = delete;
   mutex(mutex &&) = delete;
-  mutex &operator=(mutex &&) = delete;
+  mutex &operator =(mutex &&) = delete;
 
   void lock() {
     EnterCriticalSection(addressof(v));
@@ -868,6 +866,44 @@ public:
   using native_handle_type = CRITICAL_SECTION *;
   native_handle_type native_handle() {
     return addressof(v);
+  }
+};
+
+class timed_mutex : mutex {
+public:
+  timed_mutex() noexcept = default;
+  ~timed_mutex() = default;
+  timed_mutex(const timed_mutex &) = delete;
+  timed_mutex &operator =(const timed_mutex &) = delete;
+  timed_mutex(timed_mutex &&) = delete;
+  timed_mutex &operator =(timed_mutex &&) = delete;
+
+  using mutex::lock;
+  using mutex::try_lock;
+  using mutex::unlock;
+  using native_handle_type = mutex::native_handle_type;
+  using mutex::native_handle;
+
+  template <class R, ratio P>
+  bool try_lock_for(const duration<R, P> &d) {
+    const steady_clock::time_point t2 = steady_clock::now()
+      + duration_ceil<steady_clock::duration>(d);
+    for (;;) {
+      if (steady_clock::now().count() > t2.count())
+        return false;
+      if (try_lock())
+        return true;
+    }
+  }
+  template <class C, class D>
+  bool try_lock_until(const time_point<C, D> &t) {
+    const typename C::time_point t2 = time_point_ceil<typename C::duration>(t);
+    for (;;) {
+      if (C::now().count() > t2.count())
+        return false;
+      if (try_lock())
+        return true;
+    }
   }
 };
 
@@ -926,8 +962,14 @@ public:
     u.owns = false;
   }
   unique_lock &operator =(unique_lock &&u) {
-    p = exchange(u.p, nullptr);
-    owns = exchange(u.owns, false);
+    if (this != addressof(u)) {
+      if (owns)
+        p->unlock();
+      p = u.p;
+      owns = u.owns;
+      u.p = nullptr;
+      u.owns = false;
+    }
     return *this;
   }
   friend void swap(unique_lock &x, unique_lock &y) noexcept {
@@ -1119,7 +1161,7 @@ class mutex_area {
   mutex m;
 
 public:
-  mutex_area() = default;
+  mutex_area() noexcept(is_nothrow_default_constructible_v<T>) : v(), m() {}
   ~mutex_area() = default;
   mutex_area(const mutex_area &) = delete;
   mutex_area &operator =(const mutex_area &) = delete;
@@ -1137,6 +1179,15 @@ public:
     return v;
   }
   T *operator ->() noexcept {
+    return addressof(v);
+  }
+  const T &data() const noexcept {
+    return v;
+  }
+  const T &operator *() const noexcept {
+    return v;
+  }
+  const T *operator ->() const noexcept {
     return addressof(v);
   }
 
@@ -1216,21 +1267,331 @@ public:
 
 }
 
-// thread_pool
+// shared_mutex
+// shared_timed_mutex
+// shared_lock
 namespace re {
 
-class basic_thread_pool {
-  using this_t = basic_thread_pool;
+class shared_mutex {
+  struct state_t {
+    CRITICAL_SECTION cs;
+    bool locked = false;
+    unsigned long long reading_count = 0u;
+  };
+  mutex_area<state_t> s;
+  condition_variable l;
+
+public:
+  shared_mutex() noexcept {
+    InitializeCriticalSection(addressof(s->cs));
+  }
+  ~shared_mutex() {
+    DeleteCriticalSection(addressof(s->cs));
+  }
+  shared_mutex(const shared_mutex &) = delete;
+  shared_mutex &operator =(const shared_mutex &) = delete;
+  shared_mutex(shared_mutex &&) = delete;
+  shared_mutex &operator =(shared_mutex &&) = delete;
+
+  void lock() {
+    s.enter([&]() {
+      const auto eq = [&]() {
+        return s->reading_count == 0u && s->locked == false;
+      };
+      if (!eq())
+        s.leave_until(eq, l);
+      EnterCriticalSection(addressof(s->cs));
+      s->locked = true;
+    });
+  }
+  bool try_lock() {
+    bool y = false;
+    s.enter([&]() {
+      if (s->reading_count == 0u && s->locked == false) {
+        EnterCriticalSection(addressof(s->cs));
+        s->locked = true;
+        y = true;
+      }
+    });
+    return y;
+  }
+  void unlock() {
+    s.enter([&]() {
+      LeaveCriticalSection(addressof(s->cs));
+      s->locked = false;
+    });
+    l.notify_all();
+  }
+
+  void lock_shared() {
+    s.enter([&]() {
+      const auto eq = [&]() {
+        return s->locked == false || s->reading_count != 0u;
+      };
+      if (!eq())
+        s.leave_until(eq, l);
+      if (s->locked == false) {
+        EnterCriticalSection(addressof(s->cs));
+        s->locked = true;
+        s->reading_count = 1u;
+      }
+      else {
+        if (s->reading_count == numeric_limits<unsigned long long>::max())
+          throw_or_terminate<runtime_error>
+            ("re::shared_mutex::lock_shared(): too many shared readers");
+        s->reading_count += 1u;
+      }
+    });
+  }
+  bool try_lock_shared() {
+    bool y = false;
+    s.enter([&]() {
+      const auto eq = [&]() {
+        return s->locked == false || s->reading_count != 0u;
+      };
+      if (!eq())
+        return;
+      if (s->locked == false) {
+        EnterCriticalSection(addressof(s->cs));
+        s->locked = true;
+        s->reading_count = 1u;
+      }
+      else {
+        if (s->reading_count == numeric_limits<unsigned long long>::max())
+          throw_or_terminate<runtime_error>
+            ("re::shared_mutex::try_lock_shared(): too many shared readers");
+        s->reading_count += 1u;
+      }
+      y = true;
+    });
+    return y;
+  }
+  void unlock_shared() {
+    bool y = false;
+    s.enter([&]() {
+      if (s->reading_count == 0u) {
+        LeaveCriticalSection(addressof(s->cs));
+        s->locked = false;
+        y = true;
+      }
+      else {
+        s->reading_count -= 1u;
+        if (s->reading_count == 0u) {
+          LeaveCriticalSection(addressof(s->cs));
+          s->locked = false;
+          y = true;
+        }
+      }
+    });
+    if (y)
+      l.notify_all();
+  }
+
+  using native_handle_type = CRITICAL_SECTION *;
+  native_handle_type native_handle() {
+    return addressof(s->cs);
+  }
+};
+
+class shared_timed_mutex : shared_mutex {
+public:
+  shared_timed_mutex() noexcept = default;
+  ~shared_timed_mutex() = default;
+  shared_timed_mutex(const shared_timed_mutex &) = delete;
+  shared_timed_mutex &operator =(const shared_timed_mutex &) = delete;
+  shared_timed_mutex(shared_timed_mutex &&) = delete;
+  shared_timed_mutex &operator =(shared_timed_mutex &&) = delete;
+
+  using shared_mutex::lock;
+  using shared_mutex::try_lock;
+  using shared_mutex::unlock;
+  using shared_mutex::lock_shared;
+  using shared_mutex::try_lock_shared;
+  using shared_mutex::unlock_shared;
+  using native_handle_type = shared_mutex::native_handle_type;
+  using shared_mutex::native_handle;
+
+  template <class R, ratio P>
+  bool try_lock_for(const duration<R, P> &d) {
+    const steady_clock::time_point t2 = steady_clock::now()
+      + duration_ceil<steady_clock::duration>(d);
+    for (;;) {
+      if (steady_clock::now().count() > t2.count())
+        return false;
+      if (try_lock())
+        return true;
+    }
+  }
+  template <class C, class D>
+  bool try_lock_until(const time_point<C, D> &t) {
+    const typename C::time_point t2 = time_point_ceil<typename C::duration>(t);
+    for (;;) {
+      if (C::now().count() > t2.count())
+        return false;
+      if (try_lock())
+        return true;
+    }
+  }
+
+  template <class R, ratio P>
+  bool try_lock_shared_for(const duration<R, P> &d) {
+    const steady_clock::time_point t2 = steady_clock::now()
+      + duration_ceil<steady_clock::duration>(d);
+    for (;;) {
+      if (steady_clock::now().count() > t2.count())
+        return false;
+      if (try_lock_shared())
+        return true;
+    }
+  }
+  template <class C, class D>
+  bool try_lock_shared_until(const time_point<C, D> &t) {
+    const typename C::time_point t2 = time_point_ceil<typename C::duration>(t);
+    for (;;) {
+      if (C::now().count() > t2.count())
+        return false;
+      if (try_lock_shared())
+        return true;
+    }
+  }
+};
+
+template <class M>
+class shared_lock {
+  M *p;
+  bool owns;
+
+public:
+  using mutex_type = M;
+
+  shared_lock() noexcept : p(nullptr), owns(false) {}
+  ~shared_lock() {
+    if (owns)
+      p->unlock_shared();
+  }
+  shared_lock(const shared_lock &) = delete;
+  shared_lock &operator =(const shared_lock &) = delete;
+  shared_lock(shared_lock &&u) noexcept : p(u.p), owns(u.owns) {
+    u.p = nullptr;
+    u.owns = false;
+  }
+  shared_lock &operator =(shared_lock &&u) {
+    if (this != addressof(u)) {
+      if (owns)
+        p->unlock_shared();
+      p = u.p;
+      owns = u.owns;
+      u.p = nullptr;
+      u.owns = false;
+    }
+    return *this;
+  }
+  friend void swap(shared_lock &x, shared_lock &y) noexcept {
+    adl_swap(x.p, y.p);
+    adl_swap(x.owns, y.owns);
+  }
+
+  explicit shared_lock(mutex_type &m) : p(addressof(m)), owns(true) {
+    m.lock_shared();
+  }
+  shared_lock(mutex_type &m, defer_lock_t) noexcept
+    : p(addressof(m)), owns(false) {}
+  shared_lock(mutex_type &m, try_to_lock_t)
+    : p(addressof(m)), owns(m.try_lock_shared()) {}
+  shared_lock(mutex_type &m, adopt_lock_t) : p(addressof(m)), owns(true) {}
+
+  template <class C, class D>
+  shared_lock(mutex_type &m, const time_point<C, D> &t)
+    : p(addressof(m)), owns(m.try_lock_shared_until(t)) {}
+  template<class R, ratio P>
+  shared_lock(mutex_type &m, const duration<R, P> &t)
+    : p(addressof(m)), owns(m.try_lock_shared_for(t)) {}
+
+  void lock() {
+    if (owns)
+      throw runtime_error
+        ("re::shared_lock<M>::lock(): already locked\n");
+    if (p == nullptr)
+      throw runtime_error
+        ("re::shared_lock<M>::lock(): no mutex\n");
+    p->lock_shared();
+    owns = true;
+  }
+  bool try_lock() {
+    if (owns)
+      throw runtime_error
+        ("re::shared_lock<M>::try_lock(): already locked\n");
+    if (p == nullptr)
+      throw runtime_error
+        ("re::shared_lock<M>::try_lock(): no mutex\n");
+    owns = p->try_lock_shared();
+    return owns;
+  }
+  template <class R, ratio P>
+  bool try_lock_for(const duration<R, P> &t) {
+    if (owns)
+      throw runtime_error
+        ("re::shared_lock<M>::try_lock_for(t): already locked\n");
+    if (p == nullptr)
+      throw runtime_error
+        ("re::shared_lock<M>::try_lock_for(t): no mutex\n");
+    owns = p->try_lock_shared_for(t);
+    return owns;
+  }
+  template <class C, class D>
+  bool try_lock_until(const time_point<C, D> &t) {
+    if (owns)
+      throw runtime_error
+        ("re::shared_lock<M>::try_lock_until(t): already locked\n");
+    if (p == nullptr)
+      throw runtime_error
+        ("re::shared_lock<M>::try_lock_until(t): no mutex\n");
+    owns = p->try_lock_shared_until(t);
+    return owns;
+  }
+  void unlock() {
+    if (!owns)
+      throw runtime_error
+        ("re::shared_lock<M>::unlock(t): no locked mutex\n");
+    p->unlock_shared();
+    owns = false;
+  }
+
+  mutex_type *release() noexcept {
+    owns = false;
+    return exchange(p, nullptr);
+  }
+  bool owns_lock() const noexcept {
+    return owns;
+  }
+  explicit operator bool() const noexcept {
+    return owns;
+  }
+  mutex_type *mutex() const noexcept {
+    return p;
+  }
+};
+
+}
+
+// thread_pool
+// pool_thread
+namespace re {
+
+class pool_thread;
+class thread_pool {
+  using this_t = thread_pool;
+
+  friend class pool_thread;
 
   struct pool_t;
   struct thrd_t {
     function<void (), 1024u> any_fn;
     thread thrd;
     thread::id thrd_id;
-    mutex_area<pool_t> *pool_p = nullptr;
     bool to_start_or_join = false; // true: start  false: join
     bool to_quit = false; // true: quit
-    condition_variable waited_owner;
+    condition_variable waited_receiver;
     condition_variable waited_worker;
 
     thrd_t() = default;
@@ -1246,51 +1607,53 @@ class basic_thread_pool {
   };
   mutex_area<pool_t> a;
 
+  auto thread_function(mutex_area<thrd_t> &x) {
+    return [&x]() {
+      for (;;) {
+        bool quit_flag = false;
+        x.enter([&]() {
+          x->thrd_id = get_thread_id();
+          for (;;) {
+            x.leave_until([&]() {return x->to_start_or_join || x->to_quit;},
+                          x->waited_worker);
+            if (x->to_quit) {
+              quit_flag = true;
+              return;
+            }
+            // to start
+            x->any_fn();
+            x->to_start_or_join = false;
+            // to join
+            x.leave_notify_one(x->waited_receiver);
+          }
+        });
+        if (quit_flag)
+          return;
+      }
+    };
+  }
 public:
-  basic_thread_pool(size_t n
-                    = max_value(thread::hardware_concurrency() * 16u,
-                                32u)) {
+  thread_pool(size_t n
+              = max_value(thread::hardware_concurrency() * 2u, 16u)) {
     a->sleeping_threads.resize(n);
     for (auto it : iters(a->sleeping_threads)) {
       auto &x = *it;
-      x->pool_p = addressof(a);
-      x->thrd = thread([&]() {
-        for (;;) {
-          bool quit_flag = false;
-          x.enter([&]() {
-            x->thrd_id = get_thread_id();
-            for (;;) {
-              x.leave_until([&]() {return x->to_start_or_join || x->to_quit;},
-                            x->waited_worker);
-              if (x->to_quit) {
-                quit_flag = true;
-                return;
-              }
-              // to start
-              x->any_fn();
-              x->to_start_or_join = false;
-              // to join
-              x.leave_notify_one(x->waited_owner);
-            }
-          });
-          if (quit_flag)
-            return;
-        }
-      });
+      x->thrd = thread(thread_function(x));
     }
   }
-  ~basic_thread_pool() {
+  ~thread_pool() {
     for (auto &x : a->sleeping_threads) {
       x.enter([&]() {x->to_quit = true;});
       x->waited_worker.notify_one();
       x->thrd.join();
     }
   }
-  basic_thread_pool(const this_t &) = delete;
+  thread_pool(const this_t &) = delete;
   this_t &operator =(const this_t &) = delete;
-  basic_thread_pool(this_t &&) = delete;
+  thread_pool(this_t &&) = delete;
   this_t &operator =(this_t &&) = delete;
 
+private:
   using handle_t = bidirectional_list<mutex_area<thrd_t>>::iterator;
   template <class F>
   handle_t awake(F f) {
@@ -1317,7 +1680,7 @@ public:
     auto &x = *it;
     x.enter([&]() {
       x.leave_until([&]() {return x->to_start_or_join == false;},
-                    x->waited_owner);
+                    x->waited_receiver);
       x->any_fn.clear();
     });
     a.enter([&]() {
@@ -1327,70 +1690,152 @@ public:
     });
   }
 
-  void clear() {
-    for (auto &x : a->sleeping_threads) {
-      x.enter([&]() {x->to_quit = true;});
-      x->waited_worker.notify_one();
-      x->thrd.join();
-    }
-    a->sleeping_threads.clear();
+public:
+  template <class F>
+  pool_thread fetch(F &&);
+  template <class F>
+  pool_thread fetch_real(F &&);
+
+  using size_type = size_t;
+  size_type count() noexcept {
+    size_type ret = 0u;
+    a.enter([&]() {
+      ret = re::size(a->running_threads) + re::size(a->sleeping_threads);
+    });
+    return ret;
+  }
+  size_type count_running() noexcept {
+    size_type ret = 0u;
+    a.enter([&]() {ret = re::size(a->running_threads);});
+    return ret;
+  }
+  size_type count_sleeping() noexcept {
+    size_type ret = 0u;
+    a.enter([&]() {ret = re::size(a->sleeping_threads);});
+    return ret;
+  }
+  void shrink_to_fit() {
+    a.enter([&]() {
+      for (auto &x : a->sleeping_threads) {
+        x.enter([&]() {x->to_quit = true;});
+        x->waited_worker.notify_one();
+        x->thrd.join();
+      }
+      a->sleeping_threads.clear();
+    });
+  }
+  void append(size_type n) {
+    a.enter([&]() {
+      for (; n != 0; --n) {
+        auto &x = a->sleeping_threads.emplace_back();
+        x->thrd = thread(thread_function(x));
+      }
+    });
   }
 };
-namespace inner::fns {
 
-basic_thread_pool &get_thread_pool_ref() {
-  static basic_thread_pool p;
-  return p;
-}
+struct fo_default_thread_pool {
+  thread_pool &operator ()() const {
+    static thread_pool p(max_value(thread::hardware_concurrency() * 8u, 32u));
+    return p;
+  }
+};
+inline constexpr fo_default_thread_pool default_thread_pool{};
 
-}
-
+struct real_thread_t {
+  explicit real_thread_t() = default;
+};
+inline real_thread_t real_thread{};
 class pool_thread {
+  friend class thread_pool;
 public:
   using id = thread::id;
   using native_handle_type = HANDLE;
 
 private:
-  using handle_t = basic_thread_pool::handle_t;
+  using handle_t = thread_pool::handle_t;
   handle_t it = handle_t{};
+  thread_pool *p = nullptr;
 
 public:
   pool_thread() noexcept = default;
   ~pool_thread() {
     if (it != handle_t{})
-      inner::fns::get_thread_pool_ref().join(it);
+      p->join(it);
   }
   pool_thread(const pool_thread &) = delete;
   pool_thread &operator =(const pool_thread &) = delete;
-  pool_thread(pool_thread &&x) noexcept : it(x.it) {
+  pool_thread(pool_thread &&x) noexcept : it(x.it), p(x.p) {
     x.it = handle_t{};
+    x.p = nullptr;
   }
   pool_thread &operator =(pool_thread &&x) noexcept {
-    it = exchange(x.it, handle_t{});
+    if (this != addressof(x)) {
+      if (it != handle_t{})
+        print_then_terminate
+          ("re::pool_thread::=(re::pool_thread &&): "
+           "only null thread can be assigned to\n");
+      it = exchange(x.it, handle_t{});
+      p = exchange(x.p, nullptr);
+    }
     return *this;
   }
   friend void swap(pool_thread &x, pool_thread &y) noexcept {
     adl_swap(x.it, y.it);
+    adl_swap(x.p, y.p);
   }
 
   template <class F>
   explicit pool_thread(F &&f)
     requires (is_constructible_v<decay_t<F>, F>
               && is_invocable_v<decay_t<F>>) {
-    it = inner::fns::get_thread_pool_ref().awake(forward<F>(f));
+    p = addressof(default_thread_pool());
+    it = p->awake(forward<F>(f));
+    if (it == handle_t{})
+      f();
+  }
+  template <class F>
+  pool_thread(F &&f, real_thread_t)
+    requires (is_constructible_v<decay_t<F>, F>
+              && is_invocable_v<decay_t<F>>) {
+    p = addressof(default_thread_pool());
+    it = p->awake(forward<F>(f));
     if (it == handle_t{})
       throw_or_terminate<runtime_error>
         ("re::pool_thread(f, real_thread): full pool\n");
   }
+private:
+  template <class F>
+  pool_thread(thread_pool &pool, F &&f) {
+    p = addressof(pool);
+    it = p->awake(forward<F>(f));
+    if (it == handle_t{})
+      f();
+  }
+  template <class F>
+  pool_thread(thread_pool &pool, F &&f, real_thread_t) {
+    p = addressof(pool);
+    it = p->awake(forward<F>(f));
+    if (it == handle_t{})
+      throw_or_terminate<runtime_error>
+        ("re::pool_thread(pool, f, real_thread): full pool\n");
+  }
 
+public:
   bool joinable() const noexcept {
-    return true;
+    return it != handle_t{};
   }
   void join() {
-    if (it != handle_t{}) {
-      inner::fns::get_thread_pool_ref().join(it);
-      it = handle_t{};
-    }
+    if (it == handle_t{})
+      throw_or_terminate<runtime_error>
+        ("re::pool_thread::join(): non-joinable\n");
+    p->join(it);
+    it = handle_t{};
+    p = nullptr;
+  }
+
+  thread_pool *pool() const noexcept {
+    return p;
   }
 
   id get_id() const noexcept {
@@ -1400,11 +1845,15 @@ public:
     return (it == handle_t{})
       ? INVALID_HANDLE_VALUE : (*it)->thrd.native_handle();
   }
-
-  static unsigned int hardware_concurrency() noexcept {
-    return thread::hardware_concurrency();
-  }
 };
+template <class F>
+pool_thread thread_pool::fetch(F &&f) {
+  return pool_thread(*this, forward<F>(f));
+}
+template <class F>
+pool_thread thread_pool::fetch_real(F &&f) {
+  return pool_thread(*this, forward<F>(f), real_thread);
+}
 
 }
 

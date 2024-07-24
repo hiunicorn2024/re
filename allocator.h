@@ -520,7 +520,7 @@ public:
   allocator(const allocator<U> &) noexcept {}
 
   T *allocate(size_type n) {
-    if constexpr (alignof(T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    if constexpr (alignof(T) > RE_DEFAULT_NEW_ALIGNMENT) {
       if (n > max_size())
         throw_or_terminate<bad_alloc>();
       void *const p = operator new
@@ -539,7 +539,7 @@ public:
     }
   }
   void deallocate(T *p, size_type) {
-    if constexpr (alignof(T) > __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+    if constexpr (alignof(T) > RE_DEFAULT_NEW_ALIGNMENT) {
       operator delete(p, align_val_t(alignof(T)), nothrow);
     }
     else {
@@ -552,7 +552,7 @@ public:
   }
   size_t min_alignment() const {
     return max_value(alignof(value_type),
-                     static_cast<size_t>(__STDCPP_DEFAULT_NEW_ALIGNMENT__));
+                     static_cast<size_t>(RE_DEFAULT_NEW_ALIGNMENT));
   }
 };
 template <class T, class T2>

@@ -4115,9 +4115,11 @@ public:
   combination_range &operator =(const combination_range &) = default;
   combination_range(combination_range &&) = default;
   combination_range &operator =(combination_range &&) = default;
+  template <class RR = R>
   friend void swap(combination_range &x, combination_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<combination_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR>
+              && default_swappable<combination_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.n, y.n);
     adl_swap(x.c, y.c);
@@ -4343,9 +4345,12 @@ public:
   filter_range &operator =(const filter_range &) = default;
   filter_range(filter_range &&) = default;
   filter_range &operator =(filter_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(filter_range &x, filter_range &y)
-    noexcept(is_nothrow_swappable_v<R> && is_nothrow_swappable_v<rng_itr<R>>)
-    requires (is_swappable_v<R> && default_swappable<filter_range>) {
+    noexcept(is_nothrow_swappable_v<RR>
+             && is_nothrow_swappable_v<rng_itr<RR>>)
+    requires (is_swappable_v<RR>
+              && default_swappable<filter_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.f, y.f);
     adl_swap(x.c, y.c);
@@ -4546,9 +4551,10 @@ public:
   take_range &operator =(const take_range &) = default;
   take_range(take_range &&) = default;
   take_range &operator =(take_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(take_range &x, take_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<take_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<take_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
   }
@@ -4686,9 +4692,10 @@ public:
   drop_range &operator =(const drop_range &) = default;
   drop_range(drop_range &&) = default;
   drop_range &operator =(drop_range &&) = default;
+  template <class RR>
   friend constexpr void swap(drop_range &x, drop_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<drop_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<drop_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
     adl_swap(x.c, y.c);
@@ -4889,9 +4896,11 @@ public:
   take_while_range &operator =(const take_while_range &) = default;
   take_while_range(take_while_range &&) = default;
   take_while_range &operator =(take_while_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(take_while_range &x, take_while_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<take_while_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR>
+              && default_swappable<take_while_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.f, y.f);
   }
@@ -5022,9 +5031,11 @@ public:
   drop_while_range &operator =(const drop_while_range &) = default;
   drop_while_range(drop_while_range &&) = default;
   drop_while_range &operator =(drop_while_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(drop_while_range &x, drop_while_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<drop_while_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR>
+              && default_swappable<drop_while_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.f, y.f);
     adl_swap(x.c, y.c);
@@ -5277,10 +5288,11 @@ public:
   this_t &operator =(const this_t &) = default;
   join_range(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
+  template <class RR = R>
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<R>
-             && is_nothrow_swappable_v<cache_t>)
-    requires is_swappable_v<R> && default_swappable<this_t> {
+    noexcept(is_nothrow_swappable_v<RR>
+             && is_nothrow_swappable_v<typename join_range<RR>::cache_t>)
+    requires is_swappable_v<RR> && default_swappable<join_range<RR>> {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -5454,9 +5466,11 @@ public:
   this_t &operator =(const this_t &) = default;
   join_range(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
+  template <class RR = R>
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<R> && is_nothrow_swappable_v<cache_t>)
-    requires (is_swappable_v<R> && default_swappable<this_t>) {
+    noexcept(is_nothrow_swappable_v<RR>
+             && is_nothrow_swappable_v<typename join_range<RR>::cache_t>)
+    requires (is_swappable_v<RR> && default_swappable<join_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -5787,14 +5801,18 @@ public:
     copy_and_swap(x, *this);
     return *this;
   }
+  template <class RR = R, class RR2 = R2>
   friend constexpr void swap(join_with_range &x, join_with_range &y)
-    noexcept(is_nothrow_swappable_v<R>
-             && is_nothrow_swappable_v<R2>
-             && is_nothrow_swappable_v<iter_t>
-             && is_nothrow_swappable_v<inner_iter_t>
-             && is_nothrow_swappable_v<iter2_t>)
-    requires (is_swappable_v<R> && is_swappable_v<R2>
-              && default_swappable<join_with_range>) {
+    noexcept(is_nothrow_swappable_v<RR>
+             && is_nothrow_swappable_v<RR2>
+             && is_nothrow_swappable_v
+             <typename join_with_range<RR, RR2>::iter_t>
+             && is_nothrow_swappable_v
+             <typename join_with_range<RR, RR2>::inner_iter_t>
+             && is_nothrow_swappable_v
+             <typename join_with_range<RR, RR2>::iter2_t>)
+    requires (is_swappable_v<RR> && is_swappable_v<RR2>
+              && default_swappable<join_with_range<RR, RR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.r2, y.r2);
     adl_swap(x.it, y.it);
@@ -6042,11 +6060,12 @@ public:
     copy_and_swap(x, *this);
     return *this;
   }
+  template <class RR = R, class RR2 = R2>
   friend constexpr void swap(join_with_range &x, join_with_range &y)
-    noexcept(is_nothrow_swappable_v<R>
-             && is_nothrow_swappable_v<R2>)
-    requires (is_swappable_v<R> && is_swappable_v<R2>
-              && default_swappable<join_with_range>) {
+    noexcept(is_nothrow_swappable_v<RR>
+             && is_nothrow_swappable_v<RR2>)
+    requires (is_swappable_v<RR> && is_swappable_v<RR2>
+              && default_swappable<join_with_range<RR, RR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.r2, y.r2);
     adl_swap(x.c, y.c);
@@ -6309,9 +6328,11 @@ public:
   adjacent_range &operator =(const adjacent_range &) = default;
   adjacent_range(adjacent_range &&) = default;
   adjacent_range &operator =(adjacent_range &&) = default;
+  template <class FR2 = FR>
   friend constexpr void swap(adjacent_range &x, adjacent_range &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires is_swappable_v<FR> && default_swappable<adjacent_range> {
+    noexcept(is_nothrow_swappable_v<FR2>)
+    requires (is_swappable_v<FR2>
+              && default_swappable<adjacent_range<FR2, N>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -6672,9 +6693,10 @@ public:
   slide_range &operator =(const slide_range &) = default;
   slide_range(slide_range &&) = default;
   slide_range &operator =(slide_range &&) = default;
+  template <class FR2 = FR>
   friend constexpr void swap(slide_range &x, slide_range &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires is_swappable_v<FR> && default_swappable<slide_range> {
+    noexcept(is_nothrow_swappable_v<FR2>)
+    requires is_swappable_v<FR2> && default_swappable<slide_range<FR2>> {
     adl_swap(x.r, y.r);
     adl_swap(x.n, y.n);
     adl_swap(x.c, y.c);
@@ -6905,9 +6927,11 @@ public:
   aligned_stride_range &operator =(const aligned_stride_range &) = default;
   aligned_stride_range(aligned_stride_range &&) = default;
   aligned_stride_range &operator =(aligned_stride_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(aligned_stride_range &x, aligned_stride_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires is_swappable_v<R> && default_swappable<aligned_stride_range> {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR>
+              && default_swappable<aligned_stride_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
   }
@@ -7164,9 +7188,10 @@ public:
   stride_range &operator =(const stride_range &) = default;
   stride_range(stride_range &&) = default;
   stride_range &operator =(stride_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(stride_range &x, stride_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<stride_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<stride_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.s, y.s);
     adl_swap(x.c, y.c);
@@ -7407,9 +7432,11 @@ public:
   aligned_chunk_range &operator =(const aligned_chunk_range &) = default;
   aligned_chunk_range(aligned_chunk_range &&) = default;
   aligned_chunk_range &operator =(aligned_chunk_range &&) = default;
+  template <class FR2 = FR>
   friend constexpr void swap(aligned_chunk_range &x, aligned_chunk_range &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires is_swappable_v<FR> && default_swappable<aligned_chunk_range> {
+    noexcept(is_nothrow_swappable_v<FR2>)
+    requires (is_swappable_v<FR2>
+              && default_swappable<aligned_chunk_range<FR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
   }
@@ -7711,9 +7738,10 @@ public:
   chunk_range &operator =(const chunk_range &) = default;
   chunk_range(chunk_range &&) = default;
   chunk_range &operator =(chunk_range &&) = default;
+  template <class FR2 = FR>
   friend constexpr void swap(chunk_range &x, chunk_range &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires (is_swappable_v<FR> && default_swappable<chunk_range>) {
+    noexcept(is_nothrow_swappable_v<FR2>)
+    requires (is_swappable_v<FR2> && default_swappable<chunk_range<FR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.s, y.s);
     adl_swap(x.c, y.c);
@@ -7944,9 +7972,11 @@ public:
   chunk_by_range &operator =(const chunk_by_range &) = default;
   chunk_by_range(chunk_by_range &&) = default;
   chunk_by_range &operator =(chunk_by_range &&) = default;
+  template <class FR2 = FR>
   friend constexpr void swap(chunk_by_range &x, chunk_by_range &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires (is_swappable_v<FR> && default_swappable<chunk_by_range>) {
+    noexcept(is_nothrow_swappable_v<FR2>)
+    requires (is_swappable_v<FR2>
+              && default_swappable<chunk_by_range<FR2, EQ>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.eq, y.eq);
     adl_swap(x.c, y.c);
@@ -8188,9 +8218,11 @@ public:
   this_t &operator =(const this_t &) = default;
   inner_cartesian_product_range(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
+  template <class FR2 = FR>  
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires (is_swappable_v<FR> && default_swappable<this_t>) {
+    noexcept(is_nothrow_swappable_v<FR2>)
+    requires (is_swappable_v<FR2>
+              && default_swappable<inner_cartesian_product_range<FR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -8977,11 +9009,12 @@ public:
     copy_and_swap(x, *this);
     return *this;
   }
+  template <class RR = FR, class RR2 = FR2>
   friend constexpr void swap(split_range &x, split_range &y)
-    noexcept(is_nothrow_swappable_v<FR>
-             && is_nothrow_swappable_v<FR2>)
-    requires (is_swappable_v<FR> && is_swappable_v<FR2>
-              && default_swappable<split_range>) {
+    noexcept(is_nothrow_swappable_v<RR>
+             && is_nothrow_swappable_v<RR2>)
+    requires (is_swappable_v<RR> && is_swappable_v<RR2>
+              && default_swappable<split_range<RR, RR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.r2, y.r2);
     adl_swap(x.c, y.c);

@@ -4,12 +4,30 @@
 // optional macro:
 //   RE_NOEXCEPT
 //   RE_DEFAULT_ALLOCATOR // e.g. re::stateless_test_allocator
-//   RE_WIN32_NO_X64_INTRINSICS
-//   RE_NOAVX
 
 // macro for inner usage:
+//   RE_DEFAULT_NEW_ALIGNMENT
 //   RE_TO_DEFINE_SIGNED_INTEGRAL_TRAITS
 //   RE_TO_DEFINE_UNSIGNED_INTEGRAL_TRAITS
+
+#ifdef __MINGW32__
+#ifdef WINVER
+#undef WINVER
+#endif
+#ifdef _WIN32_WINNT
+#undef _WIN32_WINNT
+#endif
+#define WINVER 0x0A00
+#define _WIN32_WINNT 0x0A00
+#include <cstdlib>
+namespace re::inner {
+inline const int mingw_no_assertion_failure_popup
+  = []() {
+    _set_error_mode(_OUT_TO_STDERR);
+    return 0;
+  }();
+}
+#endif
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -50,19 +68,6 @@
 //     re::inner::fns::win32_enable_wstring_console_for_command_line_program
 //     re::inner::fns::win32_enable_utf8_console_for_window_program
 
-// Direct2D headers
-#include <d2d1.h>
-#include <d2d1_1.h>
-#include <dxgi.h>
-#include <dxgi1_2.h>
-#include <dxgi1_3.h>
-#include <dxgi1_4.h>
-#include <dxgi1_5.h>
-#include <dxgi1_6.h>
-#include <dxgicommon.h>
-#include <dxgidebug.h>
-#include <dxgiformat.h>
-
 #include <cstdio>
 #include <cstddef>
 #include <cstdlib>
@@ -88,6 +93,12 @@
 #include <source_location>
 #include <tuple>
 #include <bit>
+
+#ifndef __MINGW32__
+#define RE_DEFAULT_NEW_ALIGNMENT __STDCPP_DEFAULT_NEW_ALIGNMENT__
+#else
+#define RE_DEFAULT_NEW_ALIGNMENT alignof(max_align_t)
+#endif
 
 // std dependence
 namespace re {
@@ -476,26 +487,9 @@ inline constexpr fo_putb putb{};
 
 }
 
-// print_then_abort
 // print_then_terminate
-// throw_or_abort
 // throw_or_terminate
 namespace re {
-
-struct fo_print_then_abort {
-  void operator ()(const char *s) const {
-    fputs(s, stderr);
-    fflush(stderr);
-    abort();
-  }
-  template <class...S>
-  void operator ()(const char *s, S &&...ss) const
-    requires (sizeof...(S) != 0) {
-    fputs(s, stderr);
-    operator ()(static_cast<S &&>(ss)...);
-  }
-};
-inline constexpr fo_print_then_abort print_then_abort{};
 
 struct fo_print_then_terminate {
   void operator ()(const char *s) const {
@@ -511,29 +505,6 @@ struct fo_print_then_terminate {
   }
 };
 inline constexpr fo_print_then_terminate print_then_terminate{};
-
-template <class E>
-struct fo_throw_or_abort {
-  void operator ()() const {
-#ifdef RE_NOEXCEPT
-    abort();
-#else
-    throw E{};
-#endif
-  }
-  template <class T>
-  void operator ()(T &&s) const {
-#ifdef RE_NOEXCEPT
-    fputs(s, stderr);
-    fflush(stderr);
-    abort();
-#else
-    throw E(static_cast<T &&>(s));
-#endif
-  }
-};
-template <class E>
-inline constexpr fo_throw_or_abort<E> throw_or_abort{};
 
 template <class E>
 struct fo_throw_or_terminate {
@@ -1482,8 +1453,8 @@ struct fo_default_swap {
   constexpr void operator ()(T &x, T &y)
     const noexcept(is_nothrow_move_constructible<T>::value
                    && is_nothrow_move_assignable<T>::value)
-    requires is_move_constructible<T>::value
-    && is_move_assignable<T>::value {
+    requires (is_move_constructible<T>::value
+              && is_move_assignable<T>::value) {
     T z = static_cast<T &&>(x);
     x = static_cast<T &&>(y);
     y = static_cast<T &&>(z);
@@ -1491,7 +1462,11 @@ struct fo_default_swap {
 };
 inline constexpr fo_default_swap default_swap{};
 template <class R>
-concept default_swappable = requires(R &x, R &y) {default_swap(x, y);};
+concept default_swappable = is_move_constructible<R>::value
+  && is_move_assignable<R>::value;
+template <class R>
+concept nothrow_default_swappable = is_nothrow_move_constructible<R>::value
+  && is_nothrow_move_assignable<R>::value;
 
 template <class, class>
 struct is_swappable_with;
@@ -7755,6 +7730,8 @@ inline constexpr ratio exa(1'000'000'000'000'000'000, 1);
 //inline constexpr ratio zetta(1'000'000'000'000'000'000'000, 1);
 //inline constexpr ratio yotta(1'000'000'000'000'000'000'000'000, 1);
 
+//refresh();
+
 }
 
 // iterator tags
@@ -8118,22 +8095,22 @@ public:
 
   constexpr const T &value() const & {
     if (!y)
-      throw_or_abort<bad_optional_access>();
+      throw_or_terminate<bad_optional_access>();
     return buf.value;
   }
   constexpr T &value() & {
     if (!y)
-      throw_or_abort<bad_optional_access>();
+      throw_or_terminate<bad_optional_access>();
     return buf.value;
   }
   constexpr T &&value() && {
     if (!y)
-      throw_or_abort<bad_optional_access>();
+      throw_or_terminate<bad_optional_access>();
     return static_cast<T &&>(buf.value);
   }
   constexpr const T &&value() const && {
     if (!y)
-      throw_or_abort<bad_optional_access>();
+      throw_or_terminate<bad_optional_access>();
     return static_cast<const T &&>(buf.value);
   }
 
@@ -8388,11 +8365,13 @@ public:
     assign_non_assignable<F>(f, move(x).f);
     return *this;
   }
+  template <class FF = F>
   friend constexpr void swap(copyable_wrapper &x,
                              copyable_wrapper &y)
-    noexcept(is_nothrow_swappable_v<F> || noexcept(default_swap(x, y)))
-    requires default_swappable<copyable_wrapper> {
-    if constexpr (is_nothrow_swappable_v<F>) {
+    noexcept(is_nothrow_swappable_v<FF>
+             || nothrow_default_swappable<copyable_wrapper<FF>>)
+    requires default_swappable<copyable_wrapper<FF>> {
+    if constexpr (is_nothrow_swappable_v<FF>) {
       adl_swap(x.f, y.f);
     }
     else {
@@ -9171,9 +9150,9 @@ concept is_template = requires(R &&r) {
 struct fo_is_aligned {
   template <class P>
   constexpr bool operator ()(P p, size_t a) const {
-    return (reinterpret_cast<const byte *>(to_address(p))
-            - static_cast<const byte *>(nullptr))
-      % a == 0;
+    return static_cast<size_t>(reinterpret_cast<const byte *>(to_address(p))
+                               - static_cast<const byte *>(nullptr))
+      % a == 0u;
   }
 };
 inline constexpr fo_is_aligned is_aligned{};
@@ -9182,7 +9161,7 @@ struct fo_div_round_up {
   template<class I>
   constexpr I operator ()(I x, I y) const requires is_integral_v<I> {
     if (y == 0)
-      throw_or_abort<logic_error>("re::div_round_up(x, y): divided by 0\n");
+      throw_or_terminate<logic_error>("re::div_round_up(x, y): divided by 0\n");
     I r = x / y;
     if ((x % y) != 0) {
       if (r > 0)
@@ -9207,23 +9186,23 @@ struct fo_integral_cast {
   constexpr T operator ()(U u) const requires integral<U> && integral<T> {
     if constexpr (is_unsigned_v<U>) {
       if (u > numeric_limits<T>::max())
-        throw_or_abort<length_error>
+        throw_or_terminate<length_error>
           ("re::integral_cast<T>(x): upper overflow\n");
     }
     else {
       if (u >= 0) {
         if (to_unsigned(u) > to_unsigned(numeric_limits<T>::max()))
-          throw_or_abort<length_error>
+          throw_or_terminate<length_error>
             ("re::integral_cast<T>(x): upper overflow\n");
       }
       else {
         if constexpr (is_unsigned_v<T>) {
-          throw_or_abort<length_error>
+          throw_or_terminate<length_error>
             ("re::integral_cast<T>(x): lower overflow\n");
         }
         else {
           if (u < numeric_limits<T>::min())
-            throw_or_abort<length_error>
+            throw_or_terminate<length_error>
               ("re::integral_cast<T>(x): lower overflow\n");
         }
       }
@@ -9322,9 +9301,10 @@ public:
   simple_wrapper &operator =(const simple_wrapper &) = default;
   simple_wrapper(simple_wrapper &&) = default;
   simple_wrapper &operator =(simple_wrapper &&) = default;
+  template <class TT = T>
   friend constexpr void swap(simple_wrapper &x, simple_wrapper &y)
-    noexcept(is_nothrow_swappable_v<T>)
-    requires is_swappable_v<T> && default_swappable<simple_wrapper> {
+    noexcept(is_nothrow_swappable_v<TT>)
+    requires is_swappable_v<TT> && default_swappable<simple_wrapper<TT>> {
     adl_swap(x.v, y.v);
   }
 

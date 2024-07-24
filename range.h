@@ -1380,9 +1380,10 @@ public:
   n_value &operator =(const n_value &) = default;
   n_value(n_value &&) = default;
   n_value &operator =(n_value &&) = default;
+  template <class TT = T>
   friend constexpr void swap(n_value &x, n_value &y)
-    noexcept(is_nothrow_swappable_v<T>)
-    requires is_swappable_v<T> && default_swappable<n_value> {
+    noexcept(is_nothrow_swappable_v<TT>)
+    requires is_swappable_v<TT> && default_swappable<n_value<TT>> {
     adl_swap(x.n, y.n);
     adl_swap(x.value, y.value);
   }
@@ -3887,9 +3888,10 @@ public:
   range_wrapper &operator =(const range_wrapper &) = default;
   range_wrapper(range_wrapper &&) = default;
   range_wrapper &operator =(range_wrapper &&) = default;
+  template <class RR = R>
   friend constexpr void swap(range_wrapper &x, range_wrapper &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<range_wrapper>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<range_wrapper<RR>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -3963,9 +3965,10 @@ public:
   base_range &operator =(const base_range &) = default;
   base_range(base_range &&) = default;
   base_range &operator =(base_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(base_range &x, base_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<base_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<base_range<RR>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -4035,9 +4038,12 @@ public:
   inplace_base_range &operator =(const inplace_base_range &) = default;
   inplace_base_range(inplace_base_range &&) = default;
   inplace_base_range &operator =(inplace_base_range &&) = default;
-  friend constexpr void swap(inplace_base_range &x, inplace_base_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<inplace_base_range>) {
+  template <class RR = R>
+  friend constexpr void swap(inplace_base_range &x,
+                             inplace_base_range &y)
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR>
+              && default_swappable<inplace_base_range<RR>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -4136,9 +4142,10 @@ public:
   single_range &operator =(const single_range &) = default;
   single_range(single_range &&) = default;
   single_range &operator =(single_range &&) = default;
+  template <class TT = T>
   friend constexpr void swap(single_range &x, single_range &y)
-    noexcept(is_nothrow_swappable_v<T>)
-    requires is_swappable_v<T> && default_swappable<single_range> {
+    noexcept(is_nothrow_swappable_v<TT>)
+    requires is_swappable_v<TT> && default_swappable<single_range<TT>> {
     adl_swap(x.v, y.v);
   }
 
@@ -4228,9 +4235,10 @@ public:
     }
     return *this;
   }
+  template <class RR = R>
   friend constexpr void swap(counted_range &x, counted_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<counted_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<counted_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.sz, y.sz);
   }
@@ -4313,9 +4321,11 @@ public:
   degraded_range &operator =(const degraded_range &) = default;
   degraded_range(degraded_range &&) = default;
   degraded_range &operator =(degraded_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(degraded_range &x, degraded_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<degraded_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR>
+              && default_swappable<degraded_range<RR, TAG>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -4441,9 +4451,10 @@ public:
   move_range &operator =(const move_range &) = default;
   move_range(move_range &&) = default;
   move_range &operator =(move_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(move_range &x, move_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires is_swappable_v<R> && default_swappable<move_range> {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires is_swappable_v<RR> && default_swappable<move_range<RR>> {
     adl_swap(x.r, y.r);
   }
 
@@ -4515,9 +4526,10 @@ public:
   reverse_range &operator =(const reverse_range &) = default;
   reverse_range(reverse_range &&) = default;
   reverse_range &operator =(reverse_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(reverse_range &x, reverse_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires is_swappable_v<R> && default_swappable<reverse_range> {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires is_swappable_v<RR> && default_swappable<reverse_range<RR>> {
     adl_swap(x.r, y.r);
   }
 
@@ -4846,9 +4858,10 @@ public:
   iterator_range &operator =(const iterator_range &) = default;
   iterator_range(iterator_range &&) = default;
   iterator_range &operator =(iterator_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(iterator_range &x, iterator_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires is_swappable_v<R> && default_swappable<iterator_range> {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires is_swappable_v<RR> && default_swappable<iterator_range<RR>> {
     adl_swap(x.r, y.r);
   }
 
@@ -5060,9 +5073,10 @@ public:
   bind_range &operator =(const bind_range &) = default;
   bind_range(bind_range &&) = default;
   bind_range &operator =(bind_range &&) = default;
+  template <class RR = R>
   friend constexpr void swap(bind_range &x, bind_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && default_swappable<bind_range>) {
+    noexcept(is_nothrow_swappable_v<RR>)
+    requires (is_swappable_v<RR> && default_swappable<bind_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.fn, y.fn);
   }

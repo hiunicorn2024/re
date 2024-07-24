@@ -84,7 +84,7 @@ public:
 
 template <class BASE>
 struct dynamic_default_buffer_traits {
-  static constexpr size_t align = __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+  static constexpr size_t align = RE_DEFAULT_NEW_ALIGNMENT;
   static constexpr size_t size = (sizeof(BASE) <= (sizeof(void *) * 3))
     ? (sizeof(void *) * 7) : (sizeof(BASE) * 5 / 2);
 };

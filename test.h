@@ -134,69 +134,69 @@ struct fo_test_ownership<T> {
     init_right(p2);
     const auto guard2 = exit_fn([=]() {p2->~T();});
     if (!(equal_left(p1) && equal_right(p2)))
-      print_then_abort("re::test_ownership(...) failed at step 0\n");
+      print_then_terminate("re::test_ownership(...) failed at step 0\n");
 
     T &l = *p1;
     T &r = *p2;
 
     T cpy = l;
     if (!equal_left(addressof(cpy)))
-      print_then_abort("re::test_ownership(...) failed at step 1\n");
+      print_then_terminate("re::test_ownership(...) failed at step 1\n");
     if (!equal_left(addressof(l)))
-      print_then_abort("re::test_ownership(...) failed at step 2\n");
+      print_then_terminate("re::test_ownership(...) failed at step 2\n");
     T cpy2 = r;
     if (!equal_right(addressof(cpy2)))
-      print_then_abort("re::test_ownership(...) failed at step 3\n");
+      print_then_terminate("re::test_ownership(...) failed at step 3\n");
     if (!equal_right(addressof(r)))
-      print_then_abort("re::test_ownership(...) failed at step 4\n");
+      print_then_terminate("re::test_ownership(...) failed at step 4\n");
     if (!(addressof(cpy = cpy2) == addressof(cpy)
           && equal_right(addressof(cpy))))
-      print_then_abort("re::test_ownership(...) failed at step 5\n");
+      print_then_terminate("re::test_ownership(...) failed at step 5\n");
     if (!equal_right(addressof(cpy2)))
-      print_then_abort("re::test_ownership(...) failed at step 6\n");
+      print_then_terminate("re::test_ownership(...) failed at step 6\n");
     if (!(addressof(cpy = cpy) == addressof(cpy)
           && equal_right(addressof(cpy))))
-      print_then_abort("re::test_ownership(...) failed at step 7\n");
+      print_then_terminate("re::test_ownership(...) failed at step 7\n");
 
     T mov = move(l);
     if (!equal_left(addressof(mov)))
-      print_then_abort("re::test_ownership(...) failed at step 8\n");
+      print_then_terminate("re::test_ownership(...) failed at step 8\n");
     if (!is_empty(addressof(l)))
-      print_then_abort("re::test_ownership(...) failed at step 9\n");
+      print_then_terminate("re::test_ownership(...) failed at step 9\n");
     T mov2 = move(r);
     if (!equal_right(addressof(mov2)))
-      print_then_abort("re::test_ownership(...) failed at step 10\n");
+      print_then_terminate("re::test_ownership(...) failed at step 10\n");
     if (!is_empty(addressof(r)))
-      print_then_abort("re::test_ownership(...) failed at step 11\n");
+      print_then_terminate("re::test_ownership(...) failed at step 11\n");
     adl_swap(mov, mov2);
     if (!equal_right(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 12\n");
     if (!equal_left(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 13\n");
 
     adl_swap(mov, mov2);
     if (!equal_left(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 14\n");
     if (!equal_right(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 15\n");
     if (!(addressof(mov = move(mov2)) == addressof(mov)
           && equal_right(addressof(mov))))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 16\n");
     if (!is_empty(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 17\n");
     if (!(addressof(mov = move(mov)) == addressof(mov)
           && equal_right(addressof(mov))))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 18\n");
     adl_swap(mov, mov);
     if (!equal_right(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_ownership(...) failed at step 19\n");
   }
 };
@@ -231,23 +231,23 @@ struct fo_test_copy {
     const auto guard2 = exit_fn([&]() {p2->~T();});
 
     if (!(equal_left(p1) && equal_right(p2)))
-      print_then_abort("re::test_copy() failed at step 0\n");
+      print_then_terminate("re::test_copy() failed at step 0\n");
 
     T &l = *p1;
     T &r = *p2;
 
     T cpy = l;
     if (!(equal_left(addressof(cpy)) && equal_left(addressof(l))))
-      print_then_abort("re::test_copy() failed at step 1\n");
+      print_then_terminate("re::test_copy() failed at step 1\n");
     T cpy2 = r;
     if (!(equal_right(addressof(cpy2)) && equal_right(addressof(r))))
-      print_then_abort("re::test_copy() failed at step 2\n");
+      print_then_terminate("re::test_copy() failed at step 2\n");
     if (!(addressof(cpy = cpy2) == addressof(cpy)
           && equal_right(addressof(cpy)) && equal_right(addressof(cpy2))))
-      print_then_abort("re::test_copy() failed at step 3\n");
+      print_then_terminate("re::test_copy() failed at step 3\n");
     if (!(addressof(cpy = cpy) == addressof(cpy)
           && equal_right(addressof(cpy))))
-      print_then_abort("re::test_copy() failed at step 4\n");
+      print_then_terminate("re::test_copy() failed at step 4\n");
   }
 };
 template <class T>
@@ -268,23 +268,23 @@ struct fo_test_move {
     init_right(p2);
     const auto guard2 = exit_fn([&]() {p2->~T();});
     if (!(equal_left(p1) && equal_right(p2)))
-      print_then_abort("re::test_move() failed at step 0\n");
+      print_then_terminate("re::test_move() failed at step 0\n");
 
     T &l = *p1;
     T &r = *p2;
 
     T mov = move(l);
     if (!(equal_left(addressof(mov)) && is_empty(addressof(l))))
-      print_then_abort("re::test_move() failed at step 1\n");
+      print_then_terminate("re::test_move() failed at step 1\n");
     T mov2 = move(r);
     if (!(equal_right(addressof(mov2)) && is_empty(addressof(r))))
-      print_then_abort("re::test_move() failed at step 2\n");
+      print_then_terminate("re::test_move() failed at step 2\n");
     if (!(addressof(mov = move(mov2)) == addressof(mov)
           && equal_right(addressof(mov)) && is_empty(addressof(mov2))))
-      print_then_abort("re::test_move() failed at step 3\n");
+      print_then_terminate("re::test_move() failed at step 3\n");
     if (!(addressof(mov = move(mov)) == addressof(mov)
           && equal_right(addressof(mov))))
-      print_then_abort("re::test_move() failed at step 4\n");
+      print_then_terminate("re::test_move() failed at step 4\n");
   }
 };
 template <class T>
@@ -305,20 +305,20 @@ struct fo_test_swap {
     init_right(p2);
     const auto guard2 = exit_fn([&]() {p2->~T();});
     if (!(equal_left(p1) && equal_right(p2)))
-      print_then_abort("re::test_swap() failed at step 0\n");
+      print_then_terminate("re::test_swap() failed at step 0\n");
 
     T &l = *p1;
     T &r = *p2;
 
     adl_swap(l, r);
     if (!(equal_right(addressof(l)) && equal_left(addressof(r))))
-      print_then_abort("re::test_swap() failed at step 1\n");
+      print_then_terminate("re::test_swap() failed at step 1\n");
     adl_swap(l, r);
     if (!(equal_left(addressof(l)) && equal_right(addressof(r))))
-      print_then_abort("re::test_swap() failed at step 2\n");
+      print_then_terminate("re::test_swap() failed at step 2\n");
     adl_swap(l, l);
     if (!equal_left(addressof(l)))
-      print_then_abort("re::test_swap() failed at step 3\n");
+      print_then_terminate("re::test_swap() failed at step 3\n");
   }
 };
 template <class T>
@@ -336,16 +336,16 @@ struct fo_test_copy_construct {
     const auto guard1 = exit_fn([&]() {p1->~T();});
 
     if (!(equal_left(p1)))
-      print_then_abort("re::test_copy_construct() failed at step 0\n");
+      print_then_terminate("re::test_copy_construct() failed at step 0\n");
 
     T &l = *p1;
 
     T cpy = l;
     if (!(equal_left(addressof(cpy)) && equal_left(addressof(l))))
-      print_then_abort("re::test_copy_construct() failed at step 1\n");
+      print_then_terminate("re::test_copy_construct() failed at step 1\n");
     T cpy2 = move(l);
     if (!(equal_left(addressof(cpy2)) && empt(p1)))
-      print_then_abort("re::test_copy_construct() failed at step 2\n");
+      print_then_terminate("re::test_copy_construct() failed at step 2\n");
   }
 };
 template <class T>
@@ -399,7 +399,7 @@ struct fo_test_allocator_aware_container_ownership {
     init_right(p2);
     const auto guard2 = exit_fn([=]() {p2->~T();});
     if (!(equal_left(p1) && equal_right(p2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 0\n");
 
@@ -410,20 +410,20 @@ struct fo_test_allocator_aware_container_ownership {
 
     T cpy = l;
     if (!equal_left(addressof(cpy)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 1\n");
     if (!equal_left(addressof(l)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 2\n");
     T cpy2 = r;
     if (!equal_right(addressof(cpy2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 3\n");
     if (!equal_right(addressof(r)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 4\n");
     cpy = cpy2;
@@ -431,34 +431,34 @@ struct fo_test_allocator_aware_container_ownership {
           : (inner::fns::copy_prpg<decltype(l_al)>()
              ? cpy.get_allocator() == r_al
              : cpy.get_allocator() == l_al)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 5\n");
     if (!equal_right(addressof(cpy)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 6\n");
     if (!equal_right(addressof(cpy2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 7\n");
 
     T mov = move(l);
     if (!equal_left(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 8\n");
     if (!is_empty(addressof(l)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 9\n");
     T mov2 = move(r);
     if (!equal_right(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 10\n");
     if (!is_empty(addressof(r)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 11\n");
     adl_swap(mov, mov2);
@@ -468,29 +468,29 @@ struct fo_test_allocator_aware_container_ownership {
                 && mov2.get_allocator() == l_al)
              : (mov.get_allocator() == l_al
                 && mov2.get_allocator() == r_al))))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 12\n");
     if (!equal_right(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 13\n");
     if (!equal_left(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 14\n");
 
     adl_swap(mov, mov2);
     if (!(mov.get_allocator() == l_al && mov2.get_allocator() == r_al))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 15\n");
     if (!equal_left(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 16\n");
     if (!equal_right(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 17\n");
     mov = move(mov2);
@@ -498,15 +498,15 @@ struct fo_test_allocator_aware_container_ownership {
           : (inner::fns::move_prpg<decltype(l_al)>()
              ? mov.get_allocator() == r_al
              : mov.get_allocator() == l_al)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 18\n");
     if (!equal_right(addressof(mov)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 19\n");
     if (!is_empty(addressof(mov2)))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 20\n");
   }
@@ -620,10 +620,12 @@ struct fo_test_equal {
   constexpr bool operator ()(X &&x, Y &&y) const {
     if (!(x == y && y == x && !(x != y) && !(y != x)))
       return false;
+    /* work around msvc bug
     if (!inner::fns::test_equal_impl1(x, y))
       return false;
     if (!inner::fns::test_equal_impl2(x, y))
       return false;
+    */
     return true;
   }
 };
@@ -633,10 +635,12 @@ struct fo_test_unequal {
   constexpr bool operator ()(X &&x, Y &&y) const {
     if (!(x != y && y != x && !(x == y) && !(y == x)))
       return false;
+    /* work around msvc bug
     if (!inner::fns::test_unequal_impl1(x, y))
       return false;
     if (!inner::fns::test_unequal_impl2(x, y))
       return false;
+    */
     return true;
   }
 };
@@ -668,7 +672,7 @@ struct fo_test_equality {
   template <class X, class Y>
   constexpr void operator ()(X &&x, Y &&y) const {
     if (!test_equal(forward<X>(x), forward<Y>(y)))
-      print_then_abort("re::test_equality(x, y) failed\n");
+      print_then_terminate("re::test_equality(x, y) failed\n");
   }
 };
 inline constexpr fo_test_equality test_equality{};
@@ -676,7 +680,7 @@ struct fo_test_inequality {
   template <class X, class Y>
   constexpr void operator ()(X &&x, Y &&y) const {
     if (!test_unequal(forward<X>(x), forward<Y>(y)))
-      print_then_abort("re::test_inequality(x, y) failed\n");
+      print_then_terminate("re::test_inequality(x, y) failed\n");
   }
 };
 inline constexpr fo_test_inequality test_inequality{};
@@ -684,7 +688,7 @@ struct fo_test_lessness {
   template <class X, class Y>
   constexpr void operator ()(X &&x, Y &&y) const {
     if (!test_less(forward<X>(x), forward<Y>(y)))
-      print_then_abort("re::test_lessness(x, y) failed\n");
+      print_then_terminate("re::test_lessness(x, y) failed\n");
   }
 };
 inline constexpr fo_test_lessness test_lessness{};
@@ -702,8 +706,8 @@ class instance_counter {
 
   void plus() {
     ++c;
-    if (c == integral_traits<int>::max())
-      print_then_abort("re::instance_counter: count beyond limit\n");
+    if (c == to_unsigned(integral_traits<int>::max()))
+      print_then_terminate("re::instance_counter: count beyond limit\n");
   }
 
 public:
@@ -2789,7 +2793,7 @@ struct alloc_log {
   alloc_log() = default;
   ~alloc_log() {
     if (!empty())
-      print_then_abort("error: re::alloc_log: memory leak\n");
+      print_then_terminate("error: re::alloc_log: memory leak\n");
   }
   alloc_log(const alloc_log &) = default;
   alloc_log &operator =(const alloc_log &) = default;
@@ -2802,13 +2806,13 @@ struct alloc_log {
   void allocate(T *p, size_t n) {
     if (n == 0) {
       if (++m_zero[p] == numeric_limits<size_t>::max())
-        print_then_abort
+        print_then_terminate
           ("error: re::alloc_log: zero allocation counter overflow\n");
       return;
     }
 
     if (m.find(p) != m.end())
-      print_then_abort
+      print_then_terminate
         ("error: re::alloc_log: "
          "two allocation operations share the one address\n");
 
@@ -2819,7 +2823,7 @@ struct alloc_log {
     if (n == 0) {
       auto &c = m_zero[p];
       if (c == 0)
-        print_then_abort
+        print_then_terminate
           ("error: re::alloc_log: "
            "deallocate unexisted zero allocated pointer\n");
       --c;
@@ -2830,15 +2834,15 @@ struct alloc_log {
 
     const auto i = m.find(p);
     if (i == m.end())
-      print_then_abort
+      print_then_terminate
         ("error: re::inner::alloc_log: unexisted address to deallocate\n");
 
     if (i->second.size != n)
-      print_then_abort
+      print_then_terminate
         ("error: re::inner::alloc_log: dismatched size to deallocate\n");
 
     if (i->second.type != typeid(T) && n != 1)
-      print_then_abort
+      print_then_terminate
         ("error: re::inner::alloc_log: "
          "dismatched pointer type to deallocate\n");
 
@@ -2893,7 +2897,7 @@ public:
     return to_unsigned(integral_traits<ptrdiff_t>::max()) / sizeof(value_type);
   }
   size_type min_alignment() const {
-    return __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+    return RE_DEFAULT_NEW_ALIGNMENT;
   }
   template <class U>
   struct rebind {
@@ -2913,9 +2917,9 @@ public:
   }
 
   T *allocate(size_t n) {
-    static_assert(alignof(T) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+    static_assert(alignof(T) <= RE_DEFAULT_NEW_ALIGNMENT);
     if (n > integral_traits<size_t>::max() / sizeof(T))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator: too big size to allocate\n");
 
     T *const p = reinterpret_cast<T *>(operator new(n * sizeof(T)));
@@ -2953,7 +2957,7 @@ struct scalloc_leak_guard {
   scalloc_leak_guard() : c(0) {}
   ~scalloc_leak_guard() {
     if (c != 0)
-      print_then_abort("re::stateful_test_allocator: leak\n");
+      print_then_terminate("re::stateful_test_allocator: leak\n");
   }
   scalloc_leak_guard(const scalloc_leak_guard &) = delete;
   scalloc_leak_guard &operator =(const scalloc_leak_guard &) = delete;
@@ -2962,13 +2966,13 @@ struct scalloc_leak_guard {
 
   void plus() {
     if (c == integral_traits<size_t>::max())
-      print_then_abort
+      print_then_terminate
         ("re::stateful_test_allocator: too many overall instances\n");
     ++c;
   }
   void minus() {
     if (c == 0)
-      print_then_abort
+      print_then_terminate
         ("re::stateful_test_allocator: negative overall reference count\n");
     --c;
   }
@@ -2996,17 +3000,17 @@ class stateful_test_allocator {
 
   void plus() {
     if (p->second == integral_traits<size_t>::max())
-      print_then_abort("re::stateful_test_allocator: too many instances\n");
+      print_then_terminate("re::stateful_test_allocator: too many instances\n");
     ++p->second;
     inner::fns::get_scalloc_leak_guard().plus();
   }
   void minus() {
     if (p->second == 0)
-      print_then_abort
+      print_then_terminate
         ("re::stateful_test_allocator: negative reference count\n");
     if (--p->second == 0) {
       if (!p->first.empty())
-        print_then_abort("re::stateful_test_allocator: memory leak\n");
+        print_then_terminate("re::stateful_test_allocator: memory leak\n");
       delete p;
     }
     inner::fns::get_scalloc_leak_guard().minus();
@@ -3024,7 +3028,7 @@ public:
     return to_unsigned(integral_traits<ptrdiff_t>::max()) / sizeof(value_type);
   }
   size_type min_alignment() const {
-    return __STDCPP_DEFAULT_NEW_ALIGNMENT__;
+    return RE_DEFAULT_NEW_ALIGNMENT;
   }
   template <class U>
   struct rebind {
@@ -3049,7 +3053,7 @@ public:
     if (addressof(x) != this) {
       minus();
       if (x.p == nullptr)
-        print_then_abort
+        print_then_terminate
           ("re::stateful_test_allocator: nullptr assignment\n");
       refer_to(x.p);
     }
@@ -3078,9 +3082,9 @@ public:
   }
 
   T *allocate(size_t n) {
-    static_assert(alignof(T) <= __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+    static_assert(alignof(T) <= RE_DEFAULT_NEW_ALIGNMENT);
     if (n > integral_traits<size_t>::max() / sizeof(T))
-      print_then_abort
+      print_then_terminate
         ("re::test_allocator: too big size to allocate\n");
 
     T *const pp = reinterpret_cast<T *>(operator new(n * sizeof(T)));
@@ -3246,7 +3250,7 @@ constexpr void test_iitr_impl_impl(I i, J j, const char *errs)
   I y = j;
   adl_swap(x, y);
   if (!(x == j && y == i))
-    print_then_abort(errs, "failed at step 0-2\n");
+    print_then_terminate(errs, "failed at step 0-2\n");
 }
 template <class I, class J, class IT, class EQ>
 constexpr void test_iitr_impl(I i, J j, IT it1, IT it2, EQ eq,
@@ -3255,12 +3259,12 @@ constexpr void test_iitr_impl(I i, J j, IT it1, IT it2, EQ eq,
     I x = i;
     adl_swap(x, x);
     if (!(x == i))
-      print_then_abort(errs, " failed at step 0-0\n");
+      print_then_terminate(errs, " failed at step 0-0\n");
 
     J y = j;
     adl_swap(y, y);
     if (!(y == j))
-      print_then_abort(errs, " failed at step 0-1\n");
+      print_then_terminate(errs, " failed at step 0-1\n");
 
     inner::fns::test_iitr_impl_impl(i, j, errs);
   }
@@ -3271,14 +3275,14 @@ constexpr void test_iitr_impl(I i, J j, IT it1, IT it2, EQ eq,
   const auto a_j = it2;
   for (; a_i != a_j; ++ii, (void)++a_i) {
     if (!test_equal(ii, ii))
-      print_then_abort(errs, " failed at step 1-0\n");
+      print_then_terminate(errs, " failed at step 1-0\n");
     if (test_equal(ii, jj))
-      print_then_abort(errs, " failed at step 1-1\n");
+      print_then_terminate(errs, " failed at step 1-1\n");
     if (!eq(*ii, *a_i))
-      print_then_abort(errs, " failed at step 1-2\n");
+      print_then_terminate(errs, " failed at step 1-2\n");
   }
   if (!test_equal(ii, jj))
-    print_then_abort(errs, " failed at step 1-3\n");
+    print_then_terminate(errs, " failed at step 1-3\n");
 }
 
 template <class I, class J, class IT, class EQ>
@@ -3290,11 +3294,11 @@ constexpr void test_fitr_impl0(I i, J j, IT it1, IT it2, EQ eq,
     for (; ii != jj; ++ii) {
       for (auto x = i; x != ii; ++x)
         if (!test_unequal(x, ii))
-          print_then_abort(errs, " failed at step 1-4\n");
+          print_then_terminate(errs, " failed at step 1-4\n");
       for (auto x = ii; x != jj;) {
         ++x;
         if (!test_unequal(x, ii))
-          print_then_abort(errs, " failed at step 1-5\n");
+          print_then_terminate(errs, " failed at step 1-5\n");
       }
     }
   }
@@ -3303,9 +3307,9 @@ constexpr void test_fitr_impl0(I i, J j, IT it1, IT it2, EQ eq,
     if (i != j) {
       I ii = i;
       if (!(ii++ == i))
-        print_then_abort(errs, " failed at step 2-0\n");
+        print_then_terminate(errs, " failed at step 2-0\n");
       if (!test_equal(++kk, ii))
-        print_then_abort(errs, " failed at step 2-1\n");
+        print_then_terminate(errs, " failed at step 2-1\n");
     }
   }
 }
@@ -3323,30 +3327,30 @@ constexpr void test_bitr_impl0(I i, J j, IT it1, IT it2, EQ eq,
   I y = i;
   adl_swap(x, x);
   if (!(x == i))
-    print_then_abort("re::test_bitr(...) failed at step 00-0\n");
+    print_then_terminate("re::test_bitr(...) failed at step 00-0\n");
 
   if (i != j) {
     ++x;
     adl_swap(x, y);
     if (!(x == i))
-      print_then_abort("re::test_bitr(...) failed at step 00-1\n");
+      print_then_terminate("re::test_bitr(...) failed at step 00-1\n");
     ++x;
     if (!(x == y))
-      print_then_abort("re::test_bitr(...) failed at step 00-2\n");
+      print_then_terminate("re::test_bitr(...) failed at step 00-2\n");
 
     J z = j;
     adl_swap(z, z);
     if (!(z == j))
-      print_then_abort("re::test_bitr(...) failed at step 00-3\n");
+      print_then_terminate("re::test_bitr(...) failed at step 00-3\n");
 
     J zz = j;
     --zz;
     adl_swap(z, zz);
     if (!(zz == j))
-      print_then_abort("re::test_bitr(...) failed at step 00-4\n");
+      print_then_terminate("re::test_bitr(...) failed at step 00-4\n");
     ++z;
     if (!(z == zz))
-      print_then_abort("re::test_bitr(...) failed at step 00-5\n");
+      print_then_terminate("re::test_bitr(...) failed at step 00-5\n");
   }
 }
 template <class I, class J, class IT, class EQ>
@@ -3360,13 +3364,13 @@ constexpr void test_bitr_impl00(I i, J j, IT it1, IT it2, EQ eq,
     while (a_i != a_j) {
       --a_j;
       if (test_equal(ii, jj))
-        print_then_abort(errs, " failed at step 3-0\n");
+        print_then_terminate(errs, " failed at step 3-0\n");
       --jj;
       if (!(eq(*jj, *a_j)))
-        print_then_abort(errs, " failed at step 3-1\n");
+        print_then_terminate(errs, " failed at step 3-1\n");
     }
     if (!test_equal(ii, jj))
-      print_then_abort(errs, " failed at step 3-2\n");
+      print_then_terminate(errs, " failed at step 3-2\n");
   }
 
   if (i != j) {
@@ -3375,16 +3379,16 @@ constexpr void test_bitr_impl00(I i, J j, IT it1, IT it2, EQ eq,
     ++iii;
     ++kkk;
     if (!(iii-- == kkk))
-      print_then_abort(errs, " failed at step 4-0\n");
+      print_then_terminate(errs, " failed at step 4-0\n");
     if (!test_equal(--kkk, iii))
-      print_then_abort(errs, " failed at step 4-1\n");
+      print_then_terminate(errs, " failed at step 4-1\n");
 
     auto jjj = j;
     J kkkk = j;
     if (!test_equal(jjj--, j))
-      print_then_abort(errs, " failed at step 4-2\n");
+      print_then_terminate(errs, " failed at step 4-2\n");
     if (!test_equal(--kkkk, jjj))
-      print_then_abort(errs, " failed at step 4-3\n");
+      print_then_terminate(errs, " failed at step 4-3\n");
   }
 }
 template <class I, class J, class IT, class EQ>
@@ -3413,28 +3417,28 @@ constexpr void test_ritr_impl0(I i, J j, IT it1, IT it2, EQ eq,
           && ii - i == k
           && test_equal(i, ii - k)
           && test_equal(i, ii + (-k))))
-      print_then_abort(errs, " failed at step 5-0\n");
+      print_then_terminate(errs, " failed at step 5-0\n");
     for (dft ll = 0; ll <= sz; ++ll) {
       if (ll != sz)
         if (!(eq(ii[ll - k], it1[ll])
               && eq(*(ii + (ll - k)), it1[ll])
               && eq(*((ll - k) + ii), it1[ll])
               && eq(*(ii - (-(ll - k))), it1[ll])))
-          print_then_abort(errs, " failed at step 5-1\n");
+          print_then_terminate(errs, " failed at step 5-1\n");
       if (!(ii - (i + ll) == k - ll
             && (i + ll) - ii == -(k - ll)
             && test_equal(ii - (k - ll), i + ll)
             && test_equal(ii + (-(k - ll)), i + ll)
             && test_equal(ii, (i + ll) + (k - ll))
             && test_equal(ii, (i + ll) - (-(k - ll)))))
-        print_then_abort(errs, " failed at step 5-2\n");
+        print_then_terminate(errs, " failed at step 5-2\n");
       if (k < ll) {
         if (!test_less(i + k, i + ll))
-          print_then_abort(errs, " failed at step 5-3\n");
+          print_then_terminate(errs, " failed at step 5-3\n");
       }
       else if (k == ll) {
         if (!test_equal(i + k, i + ll))
-          print_then_abort(errs, " failed at step 5-4\n");
+          print_then_terminate(errs, " failed at step 5-4\n");
       }
     }
   }
@@ -3537,12 +3541,12 @@ constexpr void test_rng_impl0(R &&r) {
     if (inner::fns::range_empty(r)) {
       if (!(inner::fns::range_begin(r) == inner::fns::range_end(r)
             && inner::fns::range_size(r) == 0))
-        print_then_abort("re::test_rng() failed at step 0\n");
+        print_then_terminate("re::test_rng() failed at step 0\n");
     }
     else {
       if (!(inner::fns::range_begin(r) != inner::fns::range_end(r)
             && inner::fns::range_size(r) != 0))
-        print_then_abort("re::test_rng() failed at step 1\n");
+        print_then_terminate("re::test_rng() failed at step 1\n");
     }
   }
 }
@@ -3551,18 +3555,18 @@ constexpr void test_rng_impl(I i, I ii, J j, J jj, EQ eq) {
   for (;;) {
     if (i == ii) {
       if (!(test_equal(i, i) && test_equal(j, j)))
-        print_then_abort("re::test_rng() failed at step 2\n");
+        print_then_terminate("re::test_rng() failed at step 2\n");
       if (!(j == jj))
-        print_then_abort("re::test_rng() failed at step 3\n");
+        print_then_terminate("re::test_rng() failed at step 3\n");
       break;
     }
     else {
       if (!(test_equal(i, i) && test_equal(j, j)))
-        print_then_abort("re::test_rng() failed at step 4\n");
+        print_then_terminate("re::test_rng() failed at step 4\n");
       if (!(j != jj))
-        print_then_abort("re::test_rng() failed at step 5\n");
+        print_then_terminate("re::test_rng() failed at step 5\n");
       if (!eq(*i, *j))
-        print_then_abort("re::test_rng() failed at step 6\n");
+        print_then_terminate("re::test_rng() failed at step 6\n");
     }
     ++i;
     ++j;
@@ -3685,7 +3689,7 @@ constexpr void test_itr_minus_impl1(I i, J j, size_t n)
     for (;;) {
       if (!(it - it2 == it_nth - it2_nth
             && it2 - it == it2_nth - it_nth))
-        print_then_abort("re::test_itr_minus(...) failed at step 2\n");
+        print_then_terminate("re::test_itr_minus(...) failed at step 2\n");
 
       if (op == it2)
         break;
@@ -3718,7 +3722,7 @@ constexpr void test_itr_minus_impl2(I i, J j, size_t n)
     for (;;) {
       if (!(it - it2 == it_nth - it2_nth
             && it2 - it == it2_nth - it_nth))
-        print_then_abort("re::test_itr_minus(...) failed at step 3\n");
+        print_then_terminate("re::test_itr_minus(...) failed at step 3\n");
 
       if (op == it2)
         break;
@@ -3740,7 +3744,7 @@ struct fo_test_itr_minus {
     using dif_t = decltype(j - i);
     const dif_t dif = static_cast<dif_t>(n);
     if (!(j - i == dif && i - j == -dif))
-      print_then_abort("re::test_itr_minus(...) failed at step 0\n");
+      print_then_terminate("re::test_itr_minus(...) failed at step 0\n");
 
     using common_t = common_type_t<I, J>;
     static_assert(is_same_v<I, common_t> || is_same_v<J, common_t>);
@@ -3753,13 +3757,14 @@ struct fo_test_itr_minus {
       for (;;) {
         if (!(it - ed == it_nth - dif
               && ed - it == dif - it_nth))
-          print_then_abort("re::test_itr_minus(...) failed at step 1-0\n");
+          print_then_terminate("re::test_itr_minus(...) failed at step 1-0\n");
         I it2 = i;
         dif_t it2_nth = 0;
         for (;;) {
           if (!(it - it2 == it_nth - it2_nth
                 && it2 - it == it2_nth - it_nth))
-            print_then_abort("re::test_itr_minus(...) failed at step 1-1\n");
+            print_then_terminate
+              ("re::test_itr_minus(...) failed at step 1-1\n");
           if (it2 == ed)
             break;
           ++it2;
