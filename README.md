@@ -1,5 +1,8 @@
 24/7
-...
+
+improved thread_pool
+
+fixed minor bugs for latest mingw-w64 and msvc
 
 24/6/22
 
