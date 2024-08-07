@@ -3449,7 +3449,7 @@ public:
     DWORD holder{};
     if (ReadFile(p,
                  reinterpret_cast<void *>(to_address(s.begin())),
-                 s.capacity(),
+                 s.size(),
                  addressof(holder),
                  NULL)
         == 0)

@@ -9180,6 +9180,60 @@ struct fo_div_round_up {
 };
 inline constexpr fo_div_round_up div_round_up{};
 
+struct fo_div_round {
+  template <class I>
+  I operator ()(I a, I b) const
+    requires (is_integral_v<I> && is_unsigned_v<I>) {
+    if (b == 0u)
+      throw_or_terminate<logic_error>("re::div_round(x, y): divided by 0\n");
+    const I q = a / b;
+    const I r = a % b;
+    if (r >= b - r)
+      return q + 1u;
+    else
+      return q;
+  }
+  template <class I>
+  I operator ()(I a, I b) const
+    requires (is_integral_v<I> && is_signed_v<I>) {
+    if (b == 0)
+      throw_or_terminate<logic_error>("re::div_round(x, y): divided by 0\n");
+    const I q = a / b;
+    const I r = a % b;
+    if (r == 0)
+      return q;
+    if (b > 0) {
+      if (a > 0) {
+        if (r >= b - r)
+          return q + 1;
+        else
+          return q;
+      }
+      else {
+        if (-r >= b + r)
+          return q - 1;
+        else
+          return q;
+      }
+    }
+    else {
+      if (a > 0) {
+        if (-r <= b + r)
+          return q - 1;
+        else
+          return q;
+      }
+      else {
+        if (r <= b - r)
+          return q + 1;
+        else
+          return q;
+      }
+    }
+  }
+};
+inline constexpr fo_div_round div_round{};
+
 template <class T>
 struct fo_integral_cast {
   template <class U>

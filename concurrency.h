@@ -1742,10 +1742,6 @@ struct fo_default_thread_pool {
 };
 inline constexpr fo_default_thread_pool default_thread_pool{};
 
-struct real_thread_t {
-  explicit real_thread_t() = default;
-};
-inline real_thread_t real_thread{};
 class pool_thread {
   friend class thread_pool;
 public:
@@ -1794,32 +1790,6 @@ public:
     if (it == handle_t{})
       f();
   }
-  template <class F>
-  pool_thread(F &&f, real_thread_t)
-    requires (is_constructible_v<decay_t<F>, F>
-              && is_invocable_v<decay_t<F>>) {
-    p = addressof(default_thread_pool());
-    it = p->awake(forward<F>(f));
-    if (it == handle_t{})
-      throw_or_terminate<runtime_error>
-        ("re::pool_thread(f, real_thread): full pool\n");
-  }
-private:
-  template <class F>
-  pool_thread(thread_pool &pool, F &&f) {
-    p = addressof(pool);
-    it = p->awake(forward<F>(f));
-    if (it == handle_t{})
-      f();
-  }
-  template <class F>
-  pool_thread(thread_pool &pool, F &&f, real_thread_t) {
-    p = addressof(pool);
-    it = p->awake(forward<F>(f));
-    if (it == handle_t{})
-      throw_or_terminate<runtime_error>
-        ("re::pool_thread(pool, f, real_thread): full pool\n");
-  }
 
 public:
   bool joinable() const noexcept {
@@ -1848,11 +1818,24 @@ public:
 };
 template <class F>
 pool_thread thread_pool::fetch(F &&f) {
-  return pool_thread(*this, forward<F>(f));
+  pool_thread ret;
+  ret.p = this;
+  ret.it = awake(forward<F>(f));
+  if (ret.it == handle_t{})
+    f();
+  return ret;
 }
 template <class F>
 pool_thread thread_pool::fetch_real(F &&f) {
-  return pool_thread(*this, forward<F>(f), real_thread);
+  pool_thread ret;
+  ret.p = this;
+  for (;;) {
+    ret.it = awake(forward<F>(f));
+    if (ret.it != handle_t{})
+      break;
+    append(1u);
+  }
+  return ret;
 }
 
 }

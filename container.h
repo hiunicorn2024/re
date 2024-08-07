@@ -6774,6 +6774,18 @@ synth_3way_result<T> operator <=>(const small_vector<T, N, AL> &x,
   return lexicographical_synth_3way(x, y);
 }
 
+template <class T>
+concept has_allocator_type = requires {
+  typename T::allocator_type;
+};
+template <class T>
+struct conditional_allocator_type {};
+template <class T>
+requires has_allocator_type<T>
+struct conditional_allocator_type<T> {
+  using allocator_type = typename T::allocator_type;
+};
+
 template <class T, class VEC = vector<T *>>
 class pointer_vector;
 namespace inner {
@@ -6921,13 +6933,13 @@ operator -(ptrvec_iterator<X, ITER> a, ptrvec_iterator<Y, ITER> b) {
 
 }
 template <class T, class VEC>
-class pointer_vector {
+class pointer_vector : public conditional_allocator_type<VEC> {
   using this_t = pointer_vector;
   using base_t = VEC;
   mutable VEC vec;
 
   static_assert(is_same_v
-                <typename pointer_traits<typename VEC::value_type>
+                <typename pointer_traits<typename base_t::value_type>
                  ::element_type, T>);
 
   base_t &base() noexcept {
@@ -6938,9 +6950,28 @@ class pointer_vector {
   }
 
 private:
-  using base_alloc_t = typename base_t::allocator_type;
-  using alloc_t = alloc_rebind<base_alloc_t, T>;
+  static default_allocator<typename base_t::value_type>
+  base_alloc_val() noexcept {
+    return default_allocator<typename base_t::value_type>{};
+  }
+  static auto base_alloc_val() noexcept
+    requires has_allocator_type<base_t> {
+    return typename base_t::allocator_type{};
+  }
+  using base_alloc_t = decltype(base_alloc_val());
+
+  static default_allocator<T> alloc_val() noexcept {
+    return default_allocator<T>{};
+  }
+  static auto alloc_val() noexcept requires has_allocator_type<base_t> {
+    return alloc_rebind<typename base_t::allocator_type, T>{};
+  }
+  using alloc_t = decltype(alloc_val());
+
   auto node_alw() const noexcept {
+    return allocator_wrapper<default_allocator<T>>{};
+  }
+  auto node_alw() const noexcept requires has_allocator_type<base_t> {
     return allocator_wrapper<alloc_t>(alloc_t(vec.get_allocator()));
   }
 
@@ -6958,7 +6989,7 @@ private:
   static auto empty(R &&r) {return re::empty(r);}
 
 public:
-  using pointer = typename VEC::value_type;
+  using pointer = typename base_t::value_type;
   using const_pointer = pointer_rebind_t<pointer, const T>;
 
   // container
@@ -7081,7 +7112,7 @@ public:
                         [&](auto p) {delete_node(*p);});
   }
   pointer_vector &operator =(const pointer_vector &x) {
-    if constexpr (alloc_copy_prpg<alloc_t>) {
+    if constexpr (has_allocator_type<base_t> && alloc_copy_prpg<alloc_t>) {
       if (this != addressof(x)) {
         if (base().get_allocator() == x.base().get_allocator()) {
           base().alloc_ref() = x.base().alloc_ref();
@@ -7123,10 +7154,10 @@ public:
     }
   }
   pointer_vector(pointer_vector &&x)
-    noexcept(is_nothrow_move_constructible_v<VEC>) : vec(move(x.base())) {}
+    noexcept(is_nothrow_move_constructible_v<base_t>) : vec(move(x.base())) {}
   pointer_vector &operator =(pointer_vector &&x)
-    noexcept(is_nothrow_move_assignable_v<VEC>) {
-    if constexpr (alloc_move_prpg<alloc_t>) {
+    noexcept(is_nothrow_move_assignable_v<base_t>) {
+    if constexpr (has_allocator_type<base_t> && alloc_move_prpg<alloc_t>) {
       if (this != addressof(x)) {
         auto a = node_alw();
         for (auto p : base())
@@ -7155,8 +7186,8 @@ public:
     }
   }
   friend void swap(pointer_vector &x, pointer_vector &y)
-    noexcept(is_nothrow_swappable_v<VEC>) {
-    if constexpr (alloc_swap_prpg<alloc_t>) {
+    noexcept(is_nothrow_swappable_v<base_t>) {
+    if constexpr (has_allocator_type<base_t> && alloc_swap_prpg<alloc_t>) {
       adl_swap(x.base(), y.base());
     }
     else {
@@ -7208,19 +7239,22 @@ public:
 
   // allocator-aware container
 
-  using allocator_type = alloc_t;
-  allocator_type get_allocator() const noexcept {
+  auto get_allocator() const noexcept
+    requires has_allocator_type<base_t> {
     return base().get_allocator();
   }
 
-  explicit pointer_vector(const allocator_type &a) noexcept
+  explicit pointer_vector(const alloc_t &a) noexcept
+    requires has_allocator_type<base_t>
     : vec(base_alloc_t(a)) {}
-  pointer_vector(const pointer_vector &x, const allocator_type &a)
+  pointer_vector(const pointer_vector &x, const alloc_t &a)
+    requires has_allocator_type<base_t>
     : vec(x.base(), base_alloc_t(a)) {
     securely_initialize(base(), [&](auto p) {*p = new_node(**p);},
                         [&](auto p) {delete_node(*p);});
   }
-  pointer_vector(pointer_vector &&x, const allocator_type &a)
+  pointer_vector(pointer_vector &&x, const alloc_t &a)
+    requires has_allocator_type<base_t>
     : vec(x.base(), a) {
     if (x.get_allocator() != a) {
       securely_initialize(base(), [&](auto p) {*p = new_node(**p);},
@@ -7233,15 +7267,21 @@ public:
 
   // sequence container
 
-  explicit pointer_vector(size_type n,
-                          const allocator_type &a = allocator_type{})
-    : vec(n, base_alloc_t(a)) {
+  explicit pointer_vector(size_type n) : vec(n) {
     securely_initialize(base(), [&](auto p) {*p = new_node();},
                         [&](auto p) {delete_node(*p);});
   }
+  explicit pointer_vector(size_type n, const alloc_t &a)
+    requires has_allocator_type<base_t> : vec(n, base_alloc_t(a)) {
+    securely_initialize(base(), [&](auto p) {*p = new_node();},
+                        [&](auto p) {delete_node(*p);});
+  }
+  pointer_vector(size_type n, const value_type &x) : vec(n) {
+    securely_initialize(base(), [&](auto p) {*p = new_node(x);},
+                        [&](auto p) {delete_node(*p);});
+  }
   pointer_vector(size_type n, const value_type &x,
-                 const allocator_type &a = allocator_type{})
-    : vec(n, base_alloc_t(a)) {
+                 const alloc_t &a) : vec(n, base_alloc_t(a)) {
     securely_initialize(base(), [&](auto p) {*p = new_node(x);},
                         [&](auto p) {delete_node(*p);});
   }
@@ -7250,9 +7290,12 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  pointer_vector(IITR from, IITR to,
-                 const allocator_type &a = allocator_type{})
-    : vec(base_alloc_t(a)) {
+  pointer_vector(IITR from, IITR to) : vec{} {
+    construct_from_range(rng(from, to));
+  }
+  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  pointer_vector(IITR from, IITR to, const alloc_t &a)
+    requires has_allocator_type<base_t> : vec(base_alloc_t(a)) {
     construct_from_range(rng(from, to));
   }
   template <class IITR>
@@ -7260,8 +7303,11 @@ public:
     assign_range(rng(from, to));
   }
 
-  pointer_vector(initializer_list<value_type> l,
-                 const allocator_type &a = allocator_type{}) : vec(a) {
+  pointer_vector(initializer_list<value_type> l) : vec{} {
+    construct_from_range(l);
+  }
+  pointer_vector(initializer_list<value_type> l, const alloc_t &a)
+    requires has_allocator_type<base_t> : vec(a) {
     construct_from_range(l);
   }
   pointer_vector &operator =(initializer_list<value_type> l) {
@@ -7699,21 +7745,30 @@ public:
   }
 
   template <class R>
-  pointer_vector(from_range_t, R &&r,
-                 const allocator_type &al = allocator_type{})
+  pointer_vector(from_range_t, R &&r)
     requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    : vec{} {
+    construct_from_range(r);
+  }
+  template <class R>
+  pointer_vector(from_range_t, R &&r, const alloc_t &al)
+    requires (has_allocator_type<base_t>
+              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
     : vec(base_alloc_t(al)) {
     construct_from_range(r);
   }
   template <class R, class = enable_if_t
             <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const allocator_type &>
+             && !is_convertible_v<R &&, const alloc_t &>
              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
-  explicit pointer_vector(R &&r) : pointer_vector(r, allocator_type{}) {}
+  explicit pointer_vector(R &&r) : vec{} {
+    construct_from_range(r);
+  }
   template <class R, class = enable_if_t
             <!is_same_v<decay_t<R>, this_t>
+             && has_allocator_type<base_t>
              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
-  pointer_vector(R &&r, const allocator_type &al) : vec(base_alloc_t(al)) {
+  pointer_vector(R &&r, const alloc_t &al) : vec(base_alloc_t(al)) {
     construct_from_range(r);
   }
   template <class IITR_RANGE>
@@ -13823,25 +13878,10 @@ struct uses_allocator<priority_queue<A, B, C>, D>
 // flat_(set/map/multiset/multimap)
 namespace re {
 
-namespace inner {
-
-struct check_has_allocator_type {
-  template <class X, class = typename X::allocator_type>
-  static void f(type_pack<X>);
-};
-template <class T, bool = f_is_well_formed_v<check_has_allocator_type, T>>
-struct inherit_allocator_type {};
-template <class T>
-struct inherit_allocator_type<T, true> {
-  using allocator_type = typename T::allocator_type;
-};
-
-}
-
 template <class T, class LESS = less<T>, class CONTAINER = vector<T>>
 class flat_set
   : derivable_wrapper<LESS>
-  , public inner::inherit_allocator_type<CONTAINER> {
+  , public conditional_allocator_type<CONTAINER> {
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
   template <class R>
@@ -14478,7 +14518,7 @@ synth_3way_result<A> operator <=>(const flat_set<A, B, C> &x,
 template <class T, class LESS = less<T>, class CONTAINER = vector<T>>
 class flat_multiset
   : derivable_wrapper<LESS>
-  , public inner::inherit_allocator_type<CONTAINER> {
+  , public conditional_allocator_type<CONTAINER> {
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
   template <class R>
@@ -15108,7 +15148,7 @@ template <class KEY, class MAPPED, class LESS = less<KEY>,
           class CONTAINER = vector<pair<KEY, MAPPED>>>
 class flat_map
   : derivable_wrapper<LESS>
-  , public inner::inherit_allocator_type<CONTAINER> {
+  , public conditional_allocator_type<CONTAINER> {
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
   template <class R>
@@ -15924,7 +15964,7 @@ template <class KEY, class MAPPED, class LESS = less<KEY>,
           class CONTAINER = vector<pair<KEY, MAPPED>>>
 class flat_multimap
   : derivable_wrapper<LESS>
-  , public inner::inherit_allocator_type<CONTAINER> {
+  , public conditional_allocator_type<CONTAINER> {
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
   template <class R>
@@ -36795,9 +36835,9 @@ public:
 
   template <class...S>
   value_type &emplace(S &&...s)
-    requires (sizeof...(s) > 0u
-              && !is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
-              && !is_convertible_v<nth_type_t<0, S &&...>, iterator>) {
+    requires (sizeof...(s) == 0u
+              || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
+                  && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
     clear();
     iter = new_node(forward<S>(s)...);
     iter.parent(iterator{});
@@ -38822,6 +38862,812 @@ template <class T, class AL = default_allocator<T>>
 using logn_tree = tree_adaptor<inner::lgtt<T, AL>>;
 template <class T, class AL = default_allocator<T>>
 using logn_tree_vector = tree_vector_adaptor<inner::lgtt<T, AL>>;
+
+}
+
+// matrix
+namespace re {
+
+template <class T, class C = vector<T>>
+class matrix;
+
+namespace inner {
+
+template <class T>
+struct is_matrix_impl : false_type {};
+template <class T, class C>
+struct is_matrix_impl<matrix<T, C>> : true_type {};
+template <class T, class C>
+struct is_matrix_impl<const matrix<T, C>> : true_type {};
+template <class T, class C>
+struct is_matrix_impl<volatile matrix<T, C>> : true_type {};
+template <class T, class C>
+struct is_matrix_impl<const volatile matrix<T, C>> : true_type {};
+
+}
+template <class T>
+concept is_matrix = inner::is_matrix_impl<T>::value;
+
+template <class T, class C>
+class matrix : public conditional_allocator_type<C> {
+  template <class, class>
+  friend class matrix;
+
+  C c;
+  size_t w = 0;
+  size_t h = 0;
+
+  using base_t = C;
+  base_t &base() noexcept {
+    return c;
+  }
+  const base_t &base() const noexcept {
+    return c;
+  }
+  static default_allocator<T> alloc_val() noexcept {
+    return default_allocator<T>{};
+  }
+  static auto alloc_val() noexcept requires has_allocator_type<base_t> {
+    return typename base_t::allocator_type{};
+  }
+  using alloc_t = decltype(alloc_val());
+
+  matrix(C &&cc, size_t ww, size_t hh) : c(move(cc)), w(ww), h(hh) {}
+
+public:
+  using value_type = typename C::value_type;
+  using reference = typename C::reference;
+  using const_reference = typename C::const_reference;
+  using iterator = typename C::iterator;
+  using const_iterator = typename C::const_iterator;
+  using difference_type = typename C::difference_type;
+  using size_type = typename C::size_type;
+
+  iterator begin() noexcept {
+    return c.begin();
+  }
+  iterator end() noexcept {
+    return c.end();
+  }
+  const_iterator begin() const noexcept {
+    return c.begin();
+  }
+  const_iterator end() const noexcept {
+    return c.end();
+  }
+  const_iterator cbegin() const noexcept {
+    return c.begin();
+  }
+  const_iterator cend() const noexcept {
+    return c.end();
+  }
+
+  size_type max_size() const noexcept {
+    return c.max_size();
+  }
+  size_type size() const noexcept {
+    return c.size();
+  }
+  bool empty() const noexcept {
+    return c.empty();
+  }
+
+  size_type width() const noexcept {
+    return w;
+  }
+  size_type height() const noexcept {
+    return h;
+  }
+
+  using reverse_iterator = typename C::reverse_iterator;
+  using const_reverse_iterator = typename C::const_reverse_iterator;
+  reverse_iterator rbegin() noexcept {
+    return c.rbegin();
+  }
+  reverse_iterator rend() noexcept {
+    return c.rend();
+  }
+  const_reverse_iterator rbegin() const noexcept {
+    return c.rbegin();
+  }
+  const_reverse_iterator rend() const noexcept {
+    return c.rend();
+  }
+  const_reverse_iterator crbegin() const noexcept {
+    return c.rbegin();
+  }
+  const_reverse_iterator crend() const noexcept {
+    return c.rend();
+  }
+
+  matrix() = default;
+  ~matrix() = default;
+  matrix(const matrix &) = default;
+  matrix &operator =(const matrix &x) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      c = x.c;
+      w = x.w;
+      h = x.h;
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      clear();
+      throw;
+    }
+#endif
+    return *this;
+  }
+  matrix(matrix &&x) noexcept : c(move(x.c)), w(x.w), h(x.h) {
+    x.clear();
+  }
+  matrix(matrix &&x) requires (!is_nothrow_move_constructible_v<base_t>)
+#ifndef RE_NOEXCEPT
+    try : c(move(x.c)), w(x.w), h(x.h) {
+      x.clear();
+    }
+    catch (...) {
+      x.clear();
+      throw;
+    }
+#else
+    : c(move(x.c)), w(x.w), h(x.h) {
+    x.clear();
+  }
+#endif
+  matrix &operator =(matrix &&x) noexcept {
+    c = move(x.c);
+    w = x.w;
+    h = x.h;
+    x.clear();
+    return *this;
+  }
+  matrix &operator =(matrix &&x)
+    requires (!is_nothrow_move_assignable_v<base_t>) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      c = move(x.c);
+      w = x.w;
+      h = x.h;
+      x.clear();
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      clear();
+      x.clear();
+      throw;
+    }
+#endif
+    return *this;
+  }
+  void swap(matrix &x, matrix &y) noexcept(is_nothrow_swappable_v<base_t>)
+    requires is_swappable_v<base_t> {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      adl_swap(x.c, y.c);
+      adl_swap(x.w, y.w);
+      adl_swap(x.h, y.h);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      x.clear();
+      y.clear();
+    }
+#endif
+  }
+
+  bool operator ==(const matrix &m) const {
+    return w == m.w && h == m.h && c == m.c;
+  }
+
+  auto get_allocator() const noexcept
+    requires has_allocator_type<base_t> {
+    return base().get_allocator();
+  }
+
+  explicit matrix(const alloc_t &a) requires has_allocator_type<base_t>
+    : c(a) {}
+  matrix(const matrix &x, const alloc_t &a)
+    requires has_allocator_type<base_t> : c(x.c, a), w(x.w), h(x.h) {}
+  matrix(matrix &&x, const alloc_t &a)
+    requires has_allocator_type<base_t>
+#ifndef RE_NOEXCEPT
+    try : c(move(x.c), a), w(x.w), h(x.h) {
+      x.clear();
+    }
+    catch (...) {
+      x.clear();
+      throw;
+    }
+#else
+    : c(move(x.c), a), w(x.w), h(x.h) {
+    x.clear();
+  }
+#endif
+
+private:
+  static bool check_wh(size_type ww, size_type hh) noexcept {
+    if (hh == 0u)
+      return true;
+    return numeric_limits<size_type>::max() / hh >= ww;
+  }
+public:
+  matrix(size_type ww, size_type hh) : c(ww * hh), w(ww), h(hh) {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::matrix(w, h): size error\n");
+  }
+  matrix(size_type ww, size_type hh, const alloc_t &a)
+    requires has_allocator_type<base_t> : c(ww * hh, a), w(ww), h(hh) {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::matrix(w, h, a): size error\n");
+  }
+
+  matrix(size_type ww, size_type hh, const value_type &v)
+    : c(ww * hh, v), w(ww), h(hh) {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::matrix(w, h, v): size error\n");
+  }
+  matrix(size_type ww, size_type hh, const value_type &v, const alloc_t &a)
+    requires has_allocator_type<base_t> : c(ww * hh, v, a), w(ww), h(hh) {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::matrix(w, h, v, a): size error\n");
+  }
+
+private:
+  template <class R>
+  void assign_range(R &&r) {
+    if constexpr (rng_is_sized<R>) {
+      const auto sz = w * h;
+      const auto r_sz = re::size(r);
+      if (sz <= r_sz)
+        copy_from(c, re::begin(r));
+      else
+        copy(r, c.begin());
+    }
+    else {
+      auto r_it = re::begin(r);
+      const auto r_ed = re::end(r);
+      for (auto &it : c) {
+        if (r_it == r_ed)
+          break;
+        *it = *r_it;
+        ++r_it;
+      }
+    }
+  }
+public:
+  template <class R>
+  matrix(size_type ww, size_type hh, R &&r)
+    requires (!is_matrix<remove_reference_t<R>>
+              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
+              && !is_convertible_v<R &&, const value_type &>)
+    : c(ww * hh), w(ww), h(hh) {
+    assign_range(r);
+  }
+  template <class R>
+  matrix(size_type ww, size_type hh, R &&r, const alloc_t &a)
+    requires (has_allocator_type<base_t>
+              && !is_matrix<remove_reference_t<R>>
+              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
+              && !is_convertible_v<R &&, const value_type &>)
+    : c(ww * hh, a), w(ww), h(hh) {
+    assign_range(r);
+  }
+
+  template <class T2, class C2>
+  explicit matrix(const matrix<T2, C2> &x)
+    requires (!(is_same_v<T2, T> && is_same_v<C2, C>
+                && is_constructible_v<value_type, const T2 &>))
+    : c(x.c), w(x.w), h(x.h) {}
+  template <class T2, class C2>
+  matrix(const matrix<T2, C2> &x, const alloc_t &a)
+    requires (has_allocator_type<base_t>
+              && !(is_same_v<T2, T> && is_same_v<C2, C>
+                   && is_constructible_v<value_type, const T2 &>))
+    : c(x.c, a), w(x.w), h(x.h) {}
+  template <class T2, class C2>
+  matrix &operator =(const matrix<T2, C2> &x)
+    requires (!(is_same_v<T2, T> && is_same_v<C2, C>
+                && is_assignable_v<value_type &, const T2 &>)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      c = x.c;
+      w = x.w;
+      h = x.h;
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      clear();
+      throw;
+    }
+#endif
+    return *this;
+  }
+
+  template <class T2, class C2>
+  explicit matrix(matrix<T2, C2> &&x)
+    requires (!(is_same_v<T2, T> && is_same_v<C2, C>))
+#ifndef RE_NOEXCEPT
+    try : c(from_range, move(x.c)), w(x.w), h(x.h) {
+      x.clear();
+    }
+    catch (...) {
+      x.clear();
+      throw;
+    }
+#else
+    : c(from_range, move(x.c)), w(x.w), h(x.h) {
+    x.clear();
+  }
+#endif
+  template <class T2, class C2>
+  matrix(matrix<T2, C2> &&x, const alloc_t &a)
+    requires (has_allocator_type<base_t>
+              && !(is_same_v<T2, T> && is_same_v<C2, C>))
+#ifndef RE_NOEXCEPT
+    try : c(from_range, move(x.c), a), w(x.w), h(x.h) {
+      x.clear();
+    }
+    catch (...) {
+      x.clear();
+      throw;
+    }
+#else
+    : c(from_range, move(x.c), a), w(x.w), h(x.h) {
+    x.clear();
+  }
+#endif
+  template <class T2, class C2>
+  matrix &operator =(matrix<T2, C2> &&x)
+    requires (!(is_same_v<T2, T> && is_same_v<C2, C>
+                && is_assignable_v<value_type &, const T2 &>)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      c = move(x.c);
+      w = x.w;
+      h = x.h;
+      x.clear();
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      clear();
+      x.clear();
+      throw;
+    }
+#endif
+    return *this;    
+  }
+
+private:
+  template <class T2, class C2>
+  void keep_size_assign(const matrix<T2, C2> &x) {
+    for (size_type i : irng(0u, min(w, x.width())))
+      for (size_type j : irng(0u, min(h, x.height())))
+        (*this)(i, j) = x(i, j);
+  }
+  template <class T2, class C2>
+  void keep_size_assign(matrix<T2, C2> &&x) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      for (size_type i : irng(0u, min(w, x.width())))
+        for (size_type j : irng(0u, min(h, x.height())))
+          (*this)(i, j) = move(x(i, j));
+      if (reinterpret_cast<const void *>(addressof(x))
+          != reinterpret_cast<const void *>(this))
+        x.clear();
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      clear();
+      x.clear();
+      throw;
+    }
+#endif
+  }
+
+public:
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         const matrix<T2, C2> &x) : matrix(ww, hh) {
+    keep_size_assign(x);
+  }
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         const matrix<T2, C2> &x, const value_type &fll)
+    : matrix(ww, hh, fll) {
+    keep_size_assign(x);
+  }
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         const matrix<T2, C2> &x, const alloc_t &a)
+    requires has_allocator_type<base_t>
+    : matrix(ww, hh, a) {
+    keep_size_assign(x);
+  }
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         const matrix<T2, C2> &x, const value_type &fll, const alloc_t &a)
+    requires has_allocator_type<base_t>
+    : matrix(ww, hh, fll, a) {
+    keep_size_assign(x);
+  }
+  template <class T2, class C2>
+  void assign(size_type ww, size_type hh,
+              const matrix<T2, C2> &x,
+              const value_type &fll = value_type{}) {
+    resize(ww, hh, fll);
+    keep_size_assign(x);
+  }
+
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         matrix<T2, C2> &&x) : matrix(ww, hh) {
+    keep_size_assign(move(x));
+  }
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         matrix<T2, C2> &&x, const value_type &fll)
+    : matrix(ww, hh, fll) {
+    keep_size_assign(move(x));
+  }
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         matrix<T2, C2> &&x, const alloc_t &a)
+    requires has_allocator_type<base_t>
+    : matrix(ww, hh, a) {
+    keep_size_assign(move(x));
+  }
+  template <class T2, class C2>
+  matrix(size_type ww, size_type hh,
+         matrix<T2, C2> &&x, const value_type &fll, const alloc_t &a)
+    requires has_allocator_type<base_t>
+    : matrix(ww, hh, fll, a) {
+    keep_size_assign(move(x));
+  }
+  template <class T2, class C2>
+  void assign(size_type ww, size_type hh,
+              matrix<T2, C2> &&x,
+              const value_type &fll = value_type{}) {
+    resize(ww, hh, fll);
+    keep_size_assign(move(x));
+  }
+
+  void clear() noexcept {
+    c.clear();
+    w = 0;
+    h = 0;
+  }
+  void resize(size_type ww, size_type hh,
+              const value_type &fll = value_type{}) {
+    if constexpr (has_allocator_type<base_t>) {
+      if (!(ww == w && hh == h)) {
+        matrix tmp(ww, hh, fll, get_allocator());
+        tmp.keep_size_assign(move(*this));
+        *this = move(tmp);
+      }
+    }
+    else {
+      if (!(ww == w && hh == h)) {
+        matrix tmp(ww, hh, fll);
+        tmp.keep_size_assign(move(*this));
+        *this = move(tmp);
+      }
+    }
+  }
+
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, const matrix &m) {
+    const size_type h_cap = width() - x;
+    const size_type v_cap = height() - y;
+    const size_type wid = min(h_cap, m.width());
+    const size_type hei = min(v_cap, m.height());
+    for (size_type &j : iters(y, y + hei))
+      copy(rng(m.begin() + (j - y) * m.width(), wid),
+           iter(x, j));
+    return pair(wid, hei);
+  }
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, const matrix &m, F mix_f) {
+    const size_type h_cap = width() - x;
+    const size_type v_cap = height() - y;
+    const size_type wid = min(h_cap, m.width());
+    const size_type hei = min(v_cap, m.height());
+    for (size_type &j : iters(y, y + hei)) {
+      auto it = iter(x, j);
+      for (const value_type &a : rng(m.begin() + (j - y) * m.width(), wid)) {
+        *it = mix_f(*it, a);
+        ++it;
+      }
+    }
+    return pair(wid, hei);
+  }
+
+  auto row(size_type n) {
+    return rng(c.begin() + n * w, w);
+  }
+  auto row(size_type n) const {
+    return rng(c.begin() + n * w, w);
+  }
+  auto rows() {
+    return bind_rng(irng(0u, h),
+                    [this](auto n) {return this->row(n);});
+  }
+  auto rows() const {
+    return bind_rng(irng(0u, h),
+                    [this](auto n) {return this->row(n);});
+  }
+
+  auto column(size_type n) {
+    return bind_rng(irng(0u, h),
+                    [this, n](auto i)->auto & {
+                      return *(begin() + to_signed(n + i * w));
+                    });
+  }
+  auto column(size_type n) const {
+    return bind_rng(irng(0u, h),
+                    [this, n](auto i)->const auto & {
+                      return *(begin() + to_signed(n + i * w));
+                    });
+  }
+  auto columns() {
+    return bind_rng(irng(0u, w),
+                    [this](auto n) {return this->column(n);});
+  }
+  auto columns() const {
+    return bind_rng(irng(0u, w),
+                    [this](auto n) {return this->column(n);});
+  }
+
+  auto sub_range(size_type x, size_type y,
+                 size_type wid, size_type hei) {
+    if (!(x < width() && y < height())) {
+      x = 0;
+      y = 0;
+      wid = 0;
+      hei = 0;
+    }
+    const auto it = iter(x, y);
+    wid = min(wid, width() - x);
+    hei = min(hei, height() - y);
+    return join_rng(bind_rng(irng(0u, hei),
+                             [it, ww = width(), wid](size_type k) {
+                               return rng(it + k * ww, wid);
+                             }));
+  }
+  auto sub_range(size_type x, size_type y,
+                 size_type wid, size_type hei) const {
+    if (!(x < width() && y < height())) {
+      x = 0;
+      y = 0;
+      wid = 0;
+      hei = 0;
+    }
+    const auto it = iter(x, y);
+    wid = min(wid, width() - x);
+    hei = min(hei, height() - y);
+    return join_rng(bind_rng(irng(0u, hei),
+                             [it, ww = width(), wid](size_type k) {
+                               return rng(it + k * ww, wid);
+                             }));
+  }
+
+  void fill(size_type x, size_type y,
+            size_type wid, size_type hei,
+            const value_type &z) {
+    if (!(x < width() && y < height())) {
+      x = 0;
+      y = 0;
+      wid = 0;
+      hei = 0;
+    }
+    const auto it = iter(x, y);
+    wid = min(wid, width() - x);
+    hei = min(hei, height() - y);
+    for (size_type k : irng(0u, hei))
+      re::fill(rng(it + k * width(), wid), z);
+  }
+
+  value_type &front() {
+    return c.front();
+  }
+  const value_type &front() const {
+    return c.front();
+  }
+  value_type &back() {
+    return c.back();
+  }
+  const value_type &back() const {
+    return c.back();
+  }
+  value_type &operator [](size_type n) {
+    return c[n];
+  }
+  const value_type &operator [](size_type n) const {
+    return c[n];
+  }
+
+  value_type &left_top() {
+    return c.front();
+  }
+  const value_type &left_top() const {
+    return c.front();
+  }
+  value_type &left_bottom() {
+    return *prev(c.end(), to_signed(w));
+  }
+  const value_type &left_bottom() const {
+    return *prev(c.end(), to_signed(w));
+  }
+  value_type &right_bottom() {
+    return c.back();
+  }
+  const value_type &right_bottom() const {
+    return c.back();
+  }
+  value_type &right_top() {
+    return *next(c.begin(), to_signed(w - 1u));
+  }
+  const value_type &right_top() const {
+    return *next(c.begin(), to_signed(w - 1u));
+  }
+  value_type &operator ()(size_type x, size_type y) {
+    return operator [](y * w + x);
+  }
+  const value_type &operator ()(size_type x, size_type y) const {
+    return operator [](y * w + x);
+  }
+  iterator iter(size_type x, size_type y) {
+    return nth(c, y * w + x);
+  }
+  const_iterator iter(size_type x, size_type y) const {
+    return nth(c, y * w + x);
+  }
+  bool includes_point(size_type x, size_type y) const noexcept {
+    return x < width() && y < height();
+  }
+
+  size_type capacity() const noexcept {
+    return c.capacity();
+  }
+  void reserve(size_type n) {
+    c.reserve(n);
+  }
+  void reserve_more(size_type n) {
+    c.reserve_more(n);
+  }
+  void shrink_to_fit() {
+    c.shrink_to_fit();
+  }
+
+  void swap(const_iterator it, const_iterator it2) noexcept {
+    c.swap(it, it2);
+  }
+  void swap(const_iterator it, matrix &x, const_iterator it2) noexcept {
+    c.swap(it, x.c, it2);
+  }
+  void swap(const_iterator it, matrix &&x, const_iterator it2) noexcept {
+    c.swap(it, x.c, it2);
+  }
+  void replace(const_iterator it, const_iterator it2, matrix &&x) {
+    const auto sz = c.size();
+    c.replace(it, it2, move(x.c));
+    if (c.size() != sz)
+      throw_or_terminate<logic_error>
+        ("re::matrix::replace(it, it2, this_rref): size changed\n");
+    x.clear();
+  }
+  matrix exchange(const_iterator it, const_iterator it2, matrix &&x) {
+    const auto sz = c.size();
+    const auto x_sz = x.size();
+    matrix ret(c.exchange(it, it2, move(x.c)), x_sz, 1u);
+    if (c.size() != sz)
+      throw_or_terminate<logic_error>
+        ("re::matrix::exchange(it, it2, this_rref): size changed\n");
+    x.clear();
+    return ret;
+  }
+
+  matrix operator +() const {
+    return *this;
+  }
+  matrix operator -() const {
+    matrix ret = *this;
+    for (auto &x : ret)
+      x = -x;
+    return ret;
+  }
+
+  matrix &operator +=(const matrix &x) {
+    if (!(w == x.w && h == x.h))
+      throw_or_terminate<logic_error>
+        ("re::matrix::operator +=(const matrix &): different size\n");
+    for_each(x, begin(), [](const value_type &a, value_type &b) {b += a;});
+    return *this;
+  }
+  matrix &operator -=(const matrix &x) {
+    if (!(w == x.w && h == x.h))
+      throw_or_terminate<logic_error>
+        ("re::matrix::operator -=(const matrix &): different size\n");
+    for_each(x, begin(), [](const value_type &a, value_type &b) {b -= a;});
+    return *this;
+  }
+  matrix operator +(const matrix &x) const {
+    if (!(w == x.w && h == x.h))
+      throw_or_terminate<logic_error>
+        ("re::matrix::operator +(const matrix &): different size\n");
+    matrix ret(w, h);
+    auto it = ret.begin();
+    for_each(*this, x, [&it](const auto &a, const auto &b) {
+      *it = a + b;
+      ++it;
+    });
+    return ret;
+  }
+  matrix operator -(const matrix &x) const {
+    if (!(w == x.w && h == x.h))
+      throw_or_terminate<logic_error>
+        ("re::matrix::operator -(const matrix &): different size\n");
+    matrix ret(w, h);
+    auto it = ret.begin();
+    for_each(*this, x, [&it](const auto &a, const auto &b) {
+      *it = a - b;
+      ++it;
+    });
+    return ret;
+  }
+  matrix operator *(const value_type &k) const {
+    matrix ret = *this;
+    for (auto &x : ret)
+      x = x * k;
+    return ret;
+  }
+  matrix &operator *=(const value_type &k) {
+    for (auto &x : *this)
+      x *= k;
+    return *this;
+  }
+  friend matrix operator *(const value_type &k, const matrix &x) {
+    return x * k;
+  }
+  matrix operator /(const value_type &k) const {
+    matrix ret = *this;
+    for (auto &x : ret)
+      x = x / k;
+    return ret;
+  }
+  matrix &operator /=(const value_type &k) {
+    for (auto &x : *this)
+      x /= k;
+    return *this;
+  }
+
+  matrix operator *(const matrix &x) const {
+    if (empty() || x.empty() || !(w == x.h))
+      throw_or_terminate<logic_error>
+        ("re::matrix::operator *(const matrix &): unmatched\n");
+    matrix ret(x.w, h);
+    for (size_type i : irng(0u, x.w))
+      for (size_type j : irng(0u, h)) {
+        auto &z = ret(i, j);
+        for_each(row(j), x.column(i),
+                 [&z](const value_type &a, const value_type &b) {
+                   z += (a * b);
+                 });
+      }
+    return ret;
+  }
+};
 
 }
 

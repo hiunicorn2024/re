@@ -50,7 +50,7 @@ inline constexpr bool is_in_place_index_v = is_in_place_index<T>::value;
 // dynamic
 namespace re {
 
-class dynamic_object {
+class as_dynamic {
 public:
   virtual void re_dynamic_clear() noexcept {}
   virtual void *re_dynamic_auto_copy_to(void *) const {
@@ -85,8 +85,7 @@ public:
 template <class BASE>
 struct dynamic_default_buffer_traits {
   static constexpr size_t align = RE_DEFAULT_NEW_ALIGNMENT;
-  static constexpr size_t size = (sizeof(BASE) <= (sizeof(void *) * 3))
-    ? (sizeof(void *) * 7) : (sizeof(BASE) * 5 / 2);
+  static constexpr size_t size = 128u;
 };
 
 struct bad_dynamic_access : public exception {
@@ -101,7 +100,7 @@ template <class, class, size_t, size_t>
 class dynamic_impl;
 
 template <class T>
-class dynamic_composite_data : public T, public dynamic_object {
+class dynamic_composite_data : public T, public as_dynamic {
 public:
   dynamic_composite_data() : T() {}
   ~dynamic_composite_data() = default;
@@ -114,14 +113,15 @@ public:
   dynamic_composite_data(S &&...s) : T(forward<S>(s)...) {}
 };
 template <class T>
-using dynamic_data = conditional_t<is_base_of_v<dynamic_object, T>,
+using dynamic_data = conditional_t<is_base_of_v<as_dynamic, T>,
                                    T, dynamic_composite_data<T>>;
 
 template <class IMPL_T>
 concept local_dynamic_impl = (sizeof(IMPL_T) <= IMPL_T::bufsz
                               && alignof(IMPL_T) <= IMPL_T::bufalign)
 #ifndef RE_NOEXCEPT
-  && is_nothrow_move_constructible_v<typename IMPL_T::value_type>
+  && (!is_move_constructible_v<typename IMPL_T::value_type>
+      || is_nothrow_move_constructible_v<typename IMPL_T::value_type>)
 #endif
   ;
 
@@ -169,49 +169,77 @@ public:
     }
   }
   virtual void *re_dynamic_auto_copy_to(void *bufp) const override {
-    if constexpr (local_dynamic_impl<this_t>) {
-      this_t *const p = reinterpret_cast<this_t *>(bufp);
-      alw_t{}.construct(p, value());
-      return static_cast<BASE *>(p);
+    if constexpr (is_copy_constructible_v<value_type>) {
+      if constexpr (local_dynamic_impl<this_t>) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, value());
+        return static_cast<BASE *>(p);
+      }
+      else {
+        this_t *const p = to_address(alw_t{}.new_1(value()));
+        return static_cast<BASE *>(p);
+      }
     }
     else {
-      this_t *const p = to_address(alw_t{}.new_1(value()));
-      return static_cast<BASE *>(p);
+      print_then_terminate("re::dynamic_impl::re_dynamic_auto_copy_to(): "
+                           "no copy constructor\n");
+      return nullptr;
     }
   }
   virtual void *re_dynamic_auto_move_to(void *bufp) noexcept override {
-    if constexpr (local_dynamic_impl<this_t>) {
-      this_t *const p = reinterpret_cast<this_t *>(bufp);
-      alw_t{}.construct(p, move(value()));
-      re_dynamic_clear();
-      return static_cast<BASE *>(p);
+    if constexpr (is_move_constructible_v<value_type>) {
+      if constexpr (local_dynamic_impl<this_t>) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, move(value()));
+        re_dynamic_clear();
+        return static_cast<BASE *>(p);
+      }
+      else {
+        return static_cast<BASE *>(this);
+      }
     }
     else {
-      return static_cast<BASE *>(this);
+      print_then_terminate("re::dynamic_impl::re_dynamic_auto_move_to(): "
+                           "no move constructor\n");
+      return nullptr;
     }
   }
   virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
-    if constexpr (local_dynamic_impl<uniform_t>) {
-      uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
-      uniform_alw_t{}.construct(p, value());
-      return static_cast<BASE *>(p);
+    if constexpr (is_copy_constructible_v<value_type>) {
+      if constexpr (local_dynamic_impl<uniform_t>) {
+        uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
+        uniform_alw_t{}.construct(p, value());
+        return static_cast<BASE *>(p);
+      }
+      else {
+        uniform_t *const p = to_address(uniform_alw_t{}.new_1(value()));
+        return static_cast<BASE *>(p);
+      }
     }
     else {
-      uniform_t *const p = to_address(uniform_alw_t{}.new_1(value()));
-      return static_cast<BASE *>(p);
+      print_then_terminate("re::dynamic_impl::re_dynamic_copy_to_uniform(): "
+                           "no copy constructor\n");
+      return nullptr;
     }
   }
   virtual void *re_dynamic_move_to_uniform(void *bufp) override {
-    if constexpr (local_dynamic_impl<uniform_t>) {
-      uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
-      uniform_alw_t{}.construct(p, move(value()));
-      re_dynamic_clear();
-      return static_cast<BASE *>(p);
+    if constexpr (is_move_constructible_v<value_type>) {
+      if constexpr (local_dynamic_impl<uniform_t>) {
+        uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
+        uniform_alw_t{}.construct(p, move(value()));
+        re_dynamic_clear();
+        return static_cast<BASE *>(p);
+      }
+      else {
+        uniform_t *p = to_address(uniform_alw_t{}.new_1(move(value())));
+        re_dynamic_clear();
+        return static_cast<BASE *>(p);
+      }
     }
     else {
-      uniform_t *p = to_address(uniform_alw_t{}.new_1(move(value())));
-      re_dynamic_clear();
-      return static_cast<BASE *>(p);
+      print_then_terminate("re::dynamic_impl::re_dynamic_move_to_uniform(): "
+                           "no move constructor\n");
+      return nullptr;
     }
   }
   virtual const type_info &re_dynamic_typeid() const noexcept override {
@@ -267,8 +295,7 @@ struct dynamic_optional_buf<0, ALIGN> {
 
 template <class U, class T>
 concept compatible_type_of_dynamic
-  = is_base_of_v<T, U> && is_convertible_v<U &, T &>
-  && is_move_constructible_v<U> && is_copy_constructible_v<U>;
+  = is_base_of_v<T, U> && is_convertible_v<U &, T &>;
 template <class U>
 concept compatible_type_of_any
   = is_move_constructible_v<U> && is_copy_constructible_v<U>;
@@ -297,12 +324,12 @@ class dynamic : inner::dynamic_optional_buf<BUFSZ, BUFALIGN> {
 
   T *p;
 
-  static dynamic_object *base(T *pp) noexcept {
-    return dynamic_cast<dynamic_object *>(pp);
+  static as_dynamic *base(T *pp) noexcept {
+    return dynamic_cast<as_dynamic *>(pp);
   }
-  static dynamic_object *base(T *pp) noexcept
-    requires is_base_of_v<dynamic_object, T> {
-    return (dynamic_object *)pp; // accept private base
+  static as_dynamic *base(T *pp) noexcept
+    requires is_base_of_v<as_dynamic, T> {
+    return (as_dynamic *)pp; // accept private base
   }
 
   void auto_copy_from(const dynamic &x) {
@@ -596,7 +623,7 @@ namespace re {
 
 namespace inner {
 
-class any_wrapper_base : dynamic_object {
+class any_wrapper_base : as_dynamic {
 public:
   virtual const type_info &type() const noexcept = 0;
   virtual size_t size() const noexcept = 0;
@@ -884,7 +911,7 @@ namespace inner {
 template <class F>
 class fn_caller_base;
 template <class R, class...S>
-class fn_caller_base<R (S...)> : dynamic_object {
+class fn_caller_base<R (S...)> : as_dynamic {
 public:
   virtual R call(S...s) const = 0;
   virtual const type_info &type() const noexcept = 0;
@@ -1137,7 +1164,7 @@ namespace inner {
 template <class CVREF_T, class F>
 class any_fn_caller_base;
 template <class CVREF_T, class R, class...S>
-class any_fn_caller_base<CVREF_T, R (S...)> : dynamic_object {
+class any_fn_caller_base<CVREF_T, R (S...)> : as_dynamic {
 public:
   virtual R call(S...s) const = 0;
 };
@@ -1434,7 +1461,7 @@ namespace inner {
 template <class F>
 class unique_fn_caller_base;
 template <class R, class...S>
-class unique_fn_caller_base<R (S...)> : dynamic_object {
+class unique_fn_caller_base<R (S...)> : as_dynamic {
 public:
   virtual R call(S...s) const = 0;
 };
