@@ -16,7 +16,7 @@ time operations
 
 concurrency operations
 
-changed details
+minor changes
 
 24/6/4
 
@@ -24,16 +24,16 @@ changed details
 
 support utf[16/32] for conversion between [floating-point/integer] and string
 
-changed details
+minor changes
 
 24/6/2
 
 updated document
 
-changed details
+minor changes
 
 24/5/31
 
 precise conversion between floating point and string
 
-changed details
+minor changes
