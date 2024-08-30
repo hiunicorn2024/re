@@ -59,6 +59,12 @@ public:
   virtual void *re_dynamic_auto_move_to(void *) noexcept {
     return nullptr;
   }
+  virtual void *re_dynamic_auto_copy_to(void *, size_t, size_t) const {
+    return nullptr;
+  }
+  virtual void *re_dynamic_auto_move_to(void *, size_t, size_t) {
+    return nullptr;
+  }
   virtual void *re_dynamic_copy_to_uniform(void *) const {
     return nullptr;
   }
@@ -125,6 +131,8 @@ concept local_dynamic_impl = (sizeof(IMPL_T) <= IMPL_T::bufsz
 #endif
   ;
 
+template <class BASE, class T>
+class dynamic_impl2;
 template <class BASE, class T, size_t BUFSZ, size_t BUFALIGN>
 class dynamic_impl : public dynamic_data<T> {
 public:
@@ -142,6 +150,9 @@ public:
                                  dynamic_default_buffer_traits<BASE>::align>;
   using uniform_alloc_t = default_allocator<uniform_t>;
   using uniform_alw_t = allocator_wrapper<uniform_alloc_t>;
+  using impl2_t = dynamic_impl2<BASE, T>;
+  using impl2_alloc_t = default_allocator<impl2_t>;
+  using impl2_alw_t = allocator_wrapper<impl2_alloc_t>;
 
   T &value() noexcept {
     return static_cast<T &>(*this);
@@ -160,13 +171,18 @@ public:
   template <class...S>
   dynamic_impl(S &&...s) : data_t(forward<S>(s)...) {}
 
-  virtual void re_dynamic_clear() noexcept override {
+private:
+  void clear_impl() noexcept {
     if constexpr (local_dynamic_impl<this_t>) {
       alw_t{}.destroy(this);
     }
     else {
       alw_t{}.delete_1(pointer_to<alloc_ptr<alloc_t>>(*this));
     }
+  }
+public:
+  virtual void re_dynamic_clear() noexcept override {
+    clear_impl();
   }
   virtual void *re_dynamic_auto_copy_to(void *bufp) const override {
     if constexpr (is_copy_constructible_v<value_type>) {
@@ -181,7 +197,7 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl::re_dynamic_auto_copy_to(): "
+      print_then_terminate("re::dynamic_impl::re_dynamic_auto_copy_to(bufp): "
                            "no copy constructor\n");
       return nullptr;
     }
@@ -191,7 +207,7 @@ public:
       if constexpr (local_dynamic_impl<this_t>) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, move(value()));
-        re_dynamic_clear();
+        clear_impl();
         return static_cast<BASE *>(p);
       }
       else {
@@ -199,11 +215,22 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl::re_dynamic_auto_move_to(): "
+      print_then_terminate("re::dynamic_impl::re_dynamic_auto_move_to(bufp): "
                            "no move constructor\n");
       return nullptr;
     }
   }
+private:
+  static bool impl2_local_for(size_t sz, size_t algn) noexcept {
+    return sizeof(impl2_t) <= sz && alignof(impl2_t) <= algn
+      && (!is_move_constructible_v<value_type>
+          || is_nothrow_move_constructible_v<value_type>);
+  }
+public:
+  virtual void *re_dynamic_auto_copy_to(void *bufp,
+                                        size_t sz, size_t algn) const override;
+  virtual void *re_dynamic_auto_move_to(void *bufp,
+                                        size_t sz, size_t algn) override;
   virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
     if constexpr (is_copy_constructible_v<value_type>) {
       if constexpr (local_dynamic_impl<uniform_t>) {
@@ -227,12 +254,12 @@ public:
       if constexpr (local_dynamic_impl<uniform_t>) {
         uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
         uniform_alw_t{}.construct(p, move(value()));
-        re_dynamic_clear();
+        clear_impl();
         return static_cast<BASE *>(p);
       }
       else {
         uniform_t *p = to_address(uniform_alw_t{}.new_1(move(value())));
-        re_dynamic_clear();
+        clear_impl();
         return static_cast<BASE *>(p);
       }
     }
@@ -258,6 +285,260 @@ public:
     return alignof(this_t);
   }
 };
+template <class BASE, class T>
+class dynamic_impl2 : public dynamic_data<T> {
+  template <class, class, size_t, size_t>
+  friend class dynamic_impl;
+
+  bool local_y;
+
+public:
+  using this_t = dynamic_impl2;
+  using data_t = dynamic_data<T>;
+  using base_t = BASE;
+  using value_type = T;
+
+  using alloc_t = default_allocator<this_t>;
+  using alw_t = allocator_wrapper<alloc_t>;
+
+  T &value() noexcept {
+    return static_cast<T &>(*this);
+  }
+  const T &value() const noexcept {
+    return static_cast<const T &>(*this);
+  }
+
+  dynamic_impl2() : data_t() {}
+  ~dynamic_impl2() = default;
+  dynamic_impl2(const dynamic_impl2 &) = delete;
+  dynamic_impl2 &operator =(const dynamic_impl2 &) = delete;
+  dynamic_impl2(dynamic_impl2 &&) = delete;
+  dynamic_impl2 &operator =(dynamic_impl2 &&) = delete;
+
+  template <class...S>
+  dynamic_impl2(S &&...s) : data_t(forward<S>(s)...) {}
+
+private:
+  void local(bool y) noexcept {
+    local_y = y;
+  }
+  void clear_impl() noexcept {
+    if (local_y)
+      alw_t{}.destroy(this);
+    else
+      alw_t{}.delete_1(pointer_to<alloc_ptr<alloc_t>>(*this));
+  }
+public:
+  virtual void re_dynamic_clear() noexcept override {
+    clear_impl();
+  }
+  virtual void *re_dynamic_auto_copy_to(void *bufp) const override {
+    if constexpr (is_copy_constructible_v<value_type>) {
+      if (local_y) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, value());
+        p->local(local_y);
+        return static_cast<BASE *>(p);
+      }
+      else {
+        this_t *const p = to_address(alw_t{}.new_1(value()));
+        p->local(local_y);
+        return static_cast<BASE *>(p);
+      }
+    }
+    else {
+      print_then_terminate("re::dynamic_impl2::re_dynamic_auto_copy_to(bufp): "
+                           "no copy constructor\n");
+      return nullptr;
+    }
+  }
+  virtual void *re_dynamic_auto_move_to(void *bufp) noexcept override {
+    if constexpr (is_move_constructible_v<value_type>) {
+      if (local_y) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, move(value()));
+        p->local(local_y);
+        clear_impl();
+        return static_cast<BASE *>(p);
+      }
+      else {
+        return static_cast<BASE *>(this);
+      }
+    }
+    else {
+      print_then_terminate("re::dynamic_impl2::re_dynamic_auto_move_to(bufp): "
+                           "no move constructor\n");
+      return nullptr;
+    }
+  }
+private:
+  static bool local_for(size_t sz, size_t algn) noexcept {
+    return sizeof(this_t) <= sz && alignof(this_t) <= algn
+      && (!is_move_constructible_v<value_type>
+          || is_nothrow_move_constructible_v<value_type>);
+  }
+public:
+  virtual void *re_dynamic_auto_copy_to(void *bufp,
+                                        size_t sz, size_t algn) const {
+    if constexpr (is_copy_constructible_v<value_type>) {
+      if (local_for(sz, algn)) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, value());
+        p->local(true);
+        return static_cast<BASE *>(p);
+      }
+      else {
+        this_t *const p = to_address(alw_t{}.new_1(value()));
+        p->local(false);
+        return static_cast<BASE *>(p);
+      }
+    }
+    else {
+      print_then_terminate
+        ("re::dynamic_impl2::re_dynamic_auto_copy_to(p, sz, algn):"
+         "  no copy constructor\n");
+      return nullptr;
+    }
+  }
+  virtual void *re_dynamic_auto_move_to(void *bufp,
+                                        size_t sz, size_t algn) {
+    if constexpr (is_move_constructible_v<value_type>) {
+      if (local_for(sz, algn)) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, move(value()));
+        p->local(true);
+        clear_impl();
+        return static_cast<BASE *>(p);
+      }
+      else {
+        if (!local_y)
+          return static_cast<BASE *>(this);
+        else {
+          this_t *const p = to_address(alw_t{}.new_1(move(value())));
+          p->local(false);
+          clear_impl();
+          return static_cast<BASE *>(p);
+        }
+      }
+    }
+    else {
+      print_then_terminate
+        ("re::dynamic_impl::re_dynamic_auto_move_to(p, sz, algn):"
+         "  no move constructor\n");
+      return nullptr;
+    }
+  }
+  virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
+    if constexpr (is_copy_constructible_v<value_type>) {
+      if (local_for(dynamic_default_buffer_traits<BASE>::size,
+                    dynamic_default_buffer_traits<BASE>::align)) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, value());
+        p->local(true);
+        return static_cast<BASE *>(p);
+      }
+      else {
+        this_t *const p = to_address(alw_t{}.new_1(value()));
+        p->local(false);
+        return static_cast<BASE *>(p);
+      }
+    }
+    else {
+      print_then_terminate("re::dynamic_impl2::re_dynamic_copy_to_uniform(): "
+                           "no copy constructor\n");
+      return nullptr;
+    }
+  }
+  virtual void *re_dynamic_move_to_uniform(void *bufp) override {
+    if constexpr (is_move_constructible_v<value_type>) {
+      if (local_for(dynamic_default_buffer_traits<BASE>::size,
+                    dynamic_default_buffer_traits<BASE>::align)) {
+        this_t *const p = reinterpret_cast<this_t *>(bufp);
+        alw_t{}.construct(p, move(value()));
+        p->local(true);
+        clear_impl();
+        return static_cast<BASE *>(p);
+      }
+      else {
+        this_t *const p = to_address(alw_t{}.new_1(move(value())));
+        p->local(false);
+        clear_impl();
+        return static_cast<BASE *>(p);
+      }
+    }
+    else {
+      print_then_terminate("re::dynamic_impl2::re_dynamic_move_to_uniform(): "
+                           "no move constructor\n");
+      return nullptr;
+    }
+  }
+  virtual const type_info &re_dynamic_typeid() const noexcept override {
+    return typeid(T);
+  }
+  virtual size_t re_dynamic_size() const noexcept override {
+    return sizeof(T);
+  }
+  virtual size_t re_dynamic_align() const noexcept override {
+    return alignof(T);
+  }
+  virtual size_t re_dynamic_wrapper_size() const noexcept override {
+    return sizeof(this_t);
+  }
+  virtual size_t re_dynamic_wrapper_align() const noexcept override {
+    return alignof(this_t);
+  }
+};
+
+template <class BASE, class T, size_t BUFSZ, size_t BUFALIGN>
+void *
+dynamic_impl<BASE, T, BUFSZ, BUFALIGN>
+::re_dynamic_auto_copy_to(void *bufp, size_t sz, size_t algn) const {
+  if constexpr (is_copy_constructible_v<value_type>) {
+    if (impl2_local_for(sz, algn)) {
+      impl2_t *const p = reinterpret_cast<impl2_t *>(bufp);
+      impl2_alw_t{}.construct(p, value());
+      p->local(true);
+      return static_cast<BASE *>(p);
+    }
+    else {
+      impl2_t *const p = to_address(impl2_alw_t{}.new_1(value()));
+      p->local(false);
+      return static_cast<BASE *>(p);
+    }
+  }
+  else {
+    print_then_terminate
+      ("re::dynamic_impl::re_dynamic_auto_copy_to(p, sz, algn):"
+       "  no copy constructor\n");
+    return nullptr;
+  }
+}
+template <class BASE, class T, size_t BUFSZ, size_t BUFALIGN>
+void *
+dynamic_impl<BASE, T, BUFSZ, BUFALIGN>
+::re_dynamic_auto_move_to(void *bufp, size_t sz, size_t algn) {
+  if constexpr (is_move_constructible_v<value_type>) {
+    if (impl2_local_for(sz, algn)) {
+      impl2_t *const p = reinterpret_cast<impl2_t *>(bufp);
+      impl2_alw_t{}.construct(p, move(value()));
+      p->local(true);
+      clear_impl();
+      return static_cast<BASE *>(p);
+    }
+    else {
+      impl2_t *const p = to_address(impl2_alw_t{}.new_1(move(value())));
+      p->local(false);
+      clear_impl();
+      return static_cast<BASE *>(p);
+    }
+  }
+  else {
+    print_then_terminate
+      ("re::dynamic_impl::re_dynamic_auto_move_to(p, sz, algn):"
+       "  no move constructor\n");
+    return nullptr;
+  }
+}
 
 namespace fns {
 
@@ -352,6 +633,21 @@ class dynamic : inner::dynamic_optional_buf<BUFSZ, BUFALIGN> {
   void uniform_move_from(dynamic<T, SZ, ALGN> &x) {
     if (x.p != nullptr) {
       p = reinterpret_cast<T *>(base(x.p)->re_dynamic_move_to_uniform(bufp()));
+      x.p = nullptr;
+    }
+  }
+
+  template <size_t SZ, size_t ALGN>
+  void auto_copy_from_any(const dynamic<T, SZ, ALGN> &x) {
+    if (x.p != nullptr)
+      p = reinterpret_cast<T *>
+        (base(x.p)->re_dynamic_auto_copy_to(bufp(), BUFSZ, BUFALIGN));
+  }
+  template <size_t SZ, size_t ALGN>
+  void auto_move_from_any(dynamic<T, SZ, ALGN> &x) {
+    if (x.p != nullptr) {
+      p = reinterpret_cast<T *>
+        (base(x.p)->re_dynamic_auto_move_to(bufp(), BUFSZ, BUFALIGN));
       x.p = nullptr;
     }
   }
@@ -493,6 +789,25 @@ public:
   }
 
   template <size_t SZ, size_t ALGN>
+  dynamic(const dynamic<T, SZ, ALGN> &x)
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
+              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
+                   && BUFALIGN == dynamic_default_buffer_traits<T>::align))
+    : p(nullptr) {
+    auto_copy_from_any(x);
+  }
+  template <size_t SZ, size_t ALGN>
+  dynamic &operator =(const dynamic<T, SZ, ALGN> &x)
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
+              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
+                   && BUFALIGN
+                   == dynamic_default_buffer_traits<T>::align)) {
+    reset();
+    auto_copy_from_any(x);
+    return *this;
+  }
+
+  template <size_t SZ, size_t ALGN>
   dynamic(dynamic<T, SZ, ALGN> &&x)
     requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
               && BUFSZ == dynamic_default_buffer_traits<T>::size
@@ -507,6 +822,25 @@ public:
               && BUFALIGN == dynamic_default_buffer_traits<T>::align) {
     reset();
     uniform_move_from(x);
+    return *this;
+  }
+
+  template <size_t SZ, size_t ALGN>
+  dynamic(dynamic<T, SZ, ALGN> &&x)
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
+              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
+                   && BUFALIGN == dynamic_default_buffer_traits<T>::align))
+    : p(nullptr) {
+    auto_move_from_any(x);
+  }
+  template <size_t SZ, size_t ALGN>
+  dynamic &operator =(dynamic<T, SZ, ALGN> &&x)
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
+              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
+                   && BUFALIGN
+                   == dynamic_default_buffer_traits<T>::align)) {
+    reset();
+    auto_move_from_any(x);
     return *this;
   }
 
@@ -745,29 +1079,21 @@ public:
 
   template <size_t A, size_t B>
   dynamic(const dynamic<void, A, B> &x)
-    requires (BUFSZ == dynamic_default_buffer_traits<void>::size
-              && ALIGN == dynamic_default_buffer_traits<void>::align
-              && !(A == BUFSZ && B == ALIGN)) : impl(x.impl) {}
+    requires (!(A == BUFSZ && B == ALIGN)) : impl(x.impl) {}
   template <size_t A, size_t B>
   dynamic &operator =(const dynamic<void, A, B> &x)
-    requires (BUFSZ == dynamic_default_buffer_traits<void>::size
-              && ALIGN == dynamic_default_buffer_traits<void>::align
-              && !(A == BUFSZ && B == ALIGN)) {
+    requires (!(A == BUFSZ && B == ALIGN)) {
     impl = x.impl;
     return *this;
   }
 
   template <size_t A, size_t B>
   dynamic(dynamic<void, A, B> &&x)
-    requires (BUFSZ == dynamic_default_buffer_traits<void>::size
-              && ALIGN == dynamic_default_buffer_traits<void>::align
-              && !(A == BUFSZ && B == ALIGN))
+    requires (!(A == BUFSZ && B == ALIGN))
     : impl(move(x.impl)) {}
   template <size_t A, size_t B>
   dynamic &operator =(dynamic<void, A, B> &&x)
-    requires (BUFSZ == dynamic_default_buffer_traits<void>::size
-              && ALIGN == dynamic_default_buffer_traits<void>::align
-              && !(A == BUFSZ && B == ALIGN)) {
+    requires (!(A == BUFSZ && B == ALIGN)) {
     impl = move(x.impl);
     return *this;
   }
@@ -976,12 +1302,6 @@ class function<R (S...), BUFSZ, ALIGN> {
 
   dynamic<inner::fn_caller_base<R (S...)>, BUFSZ, ALIGN> impl;
 
-  using is_default
-    = bool_constant<BUFSZ == dynamic_default_buffer_traits
-                    <inner::fn_caller_base<R (S...)>>::size
-                    && ALIGN == dynamic_default_buffer_traits
-                    <inner::fn_caller_base<R (S...)>>::align>;
-
 public:
   using result_type = R;
 
@@ -1004,24 +1324,22 @@ public:
   function(T &&x)
     requires (!is_same_v<decay_t<T>, this_t>
               && is_invocable_r_v<R, add_lvalue_reference_t<decay_t<T>>, S...>
-              && !(inner::is_class_function_of<decay_t<T>, R (S...)>::value
-                   && is_default::value))
+              && !inner::is_class_function_of<decay_t<T>, R (S...)>::value)
     : impl(in_place_type<inner::fn_caller<decay_t<T>, R (S...)>>,
            forward<T>(x)) {}
   template <class T>
   function &operator =(T &&x)
     requires (!is_same_v<decay_t<T>, this_t>
               && is_invocable_r_v<R, add_lvalue_reference_t<decay_t<T>>, S...>
-              && !(inner::is_class_function_of<decay_t<T>, R (S...)>::value
-                   && is_default::value)) {
+              && !inner::is_class_function_of<decay_t<T>, R (S...)>::value
+              ) {
     impl.template emplace<inner::fn_caller<decay_t<T>, R (S...)>
                           >(forward<T>(x));
     return *this;
   }
   template <class T>
   function &operator =(reference_wrapper<T> x) noexcept
-    requires (is_invocable_r_v<R, reference_wrapper<T> &, S...>
-              && is_default::value) {
+    requires is_invocable_r_v<R, reference_wrapper<T> &, S...> {
     impl.template emplace<inner::fn_caller
                           <reference_wrapper<T>, R (S...)>>(x);
     return *this;
@@ -1029,22 +1347,22 @@ public:
 
   template <size_t BUFSZ2, size_t ALIGN2>
   function(const function<R (S...), BUFSZ2, ALIGN2> &x)
-    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN) && is_default::value)
+    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN))
     : impl(x.impl) {}
   template <size_t BUFSZ2, size_t ALIGN2>
   function &operator =(const function<R (S...), BUFSZ2, ALIGN2> &x)
-    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN) && is_default::value) {
+    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN)) {
     impl = x.impl;
     return *this;
   }
 
   template <size_t BUFSZ2, size_t ALIGN2>
   function(function<R (S...), BUFSZ2, ALIGN2> &&x)
-    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN) && is_default::value)
+    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN))
     : impl(move(x.impl)) {}
   template <size_t BUFSZ2, size_t ALIGN2>
   function &operator =(function<R (S...), BUFSZ2, ALIGN2> &&x)
-    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN) && is_default::value) {
+    requires (!(BUFSZ2 == BUFSZ && ALIGN2 == ALIGN)) {
     impl = move(x.impl);
     return *this;
   }

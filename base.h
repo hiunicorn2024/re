@@ -9545,6 +9545,30 @@ struct fo_b_xor {
 template <class T>
 inline constexpr fo_b_xor<T> b_xor{};
 
+struct fo_no_overflow_adding {
+  template <class T>
+  constexpr bool operator ()(T x, T y) const requires signed_integral<T> {
+    T zero{};
+    if (x >= zero) {
+      if (y >= zero)
+        return x <= numeric_limits<T>::max() - y;
+      else
+        return true;
+    }
+    else {
+      if (y >= zero)
+        return true;
+      else
+        return x >= numeric_limits<T>::min() - y;
+    }
+  }
+  template <class T>
+  constexpr bool operator ()(T x, T y) const requires unsigned_integral<T> {
+    return x <= numeric_limits<T>::max() - y;
+  }
+};
+inline constexpr fo_no_overflow_adding no_overflow_adding{};
+
 }
 
 // numeric_limits for floating point

@@ -1586,7 +1586,7 @@ class thread_pool {
 
   struct pool_t;
   struct thrd_t {
-    function<void (), 1024u> any_fn;
+    function<void (), 256> any_fn;
     thread thrd;
     thread::id thrd_id;
     bool to_start_or_join = false; // true: start  false: join
@@ -1633,25 +1633,28 @@ class thread_pool {
     };
   }
 public:
-  thread_pool(size_t n
-              = max_value(thread::hardware_concurrency() * 2u, 16u)) {
+  thread_pool()
+    : thread_pool(max_value(thread::hardware_concurrency() * 2u, 16u)) {}
+  ~thread_pool() {
+    for (auto &x : a->sleeping_threads) {
+      x.enter([&]() {x->to_quit = true;});
+      x->waited_worker.notify_one();
+    }
+    for (auto &x : a->sleeping_threads)
+      x->thrd.join();
+  }
+  thread_pool(const this_t &) = delete;
+  this_t &operator =(const this_t &) = delete;
+  thread_pool(this_t &&) = delete;
+  this_t &operator =(this_t &&) = delete;
+
+  explicit thread_pool(size_t n) {
     a->sleeping_threads.resize(n);
     for (auto it : iters(a->sleeping_threads)) {
       auto &x = *it;
       x->thrd = thread(thread_function(x));
     }
   }
-  ~thread_pool() {
-    for (auto &x : a->sleeping_threads) {
-      x.enter([&]() {x->to_quit = true;});
-      x->waited_worker.notify_one();
-      x->thrd.join();
-    }
-  }
-  thread_pool(const this_t &) = delete;
-  this_t &operator =(const this_t &) = delete;
-  thread_pool(this_t &&) = delete;
-  this_t &operator =(this_t &&) = delete;
 
 private:
   using handle_t = bidirectional_list<mutex_area<thrd_t>>::iterator;
@@ -1661,7 +1664,7 @@ private:
     a.enter([&]() {
       if (a->sleeping_threads.empty())
         return;
-      auto it = a->sleeping_threads.begin();
+      const auto it = a->sleeping_threads.begin();
       auto &x = *it;
       x.enter([&]() {
         auto &l = a->running_threads;
@@ -1837,6 +1840,158 @@ pool_thread thread_pool::fetch_real(F &&f) {
   }
   return ret;
 }
+
+}
+
+// exclusive_thread_pool
+namespace re {
+
+class exclusive_thread_pool {
+  using this_t = exclusive_thread_pool;
+
+  struct pool_t;
+  struct thrd_t {
+    function<void (), 256> any_fn;
+    thread thrd;
+    bool to_start = false;
+    bool to_quit = false;
+    condition_variable waited_worker;
+
+    thrd_t() = default;
+    ~thrd_t() = default;
+    thrd_t(const thrd_t &) = delete;
+    thrd_t &operator =(const thrd_t &) = delete;
+    thrd_t(thrd_t &&) = delete;
+    thrd_t &operator =(thrd_t &&) = delete;
+  };
+  struct pool_t {
+    bidirectional_list<mutex_area<thrd_t>> running_threads;
+    bidirectional_list<mutex_area<thrd_t>> sleeping_threads;
+    condition_variable waited_controller;
+  };
+  mutex_area<pool_t> a;
+
+  auto thread_function(bidirectional_list<mutex_area<thrd_t>>
+                       ::iterator it) {
+    return [it, this]() {
+      mutex_area<thrd_t> &x = *it;
+      for (;;) {
+        bool quit_flag = false;
+        x.enter([&]() {
+          for (;;) {
+            x.leave_until([&]() {return x->to_start || x->to_quit;},
+                          x->waited_worker);
+            if (x->to_quit) {
+              quit_flag = true;
+              return;
+            }
+            // to start
+            x->any_fn();
+            x->to_start = false;
+            // to join
+            a.enter([it, this]() {
+              auto &l = a->running_threads;
+              auto &ll = a->sleeping_threads;
+              ll.splice(ll.end(), l, it);
+            });
+            if (a->running_threads.empty())
+              a->waited_controller.notify_one();
+          }
+        });
+        if (quit_flag)
+          return;
+      }
+    };
+  }
+public:
+  exclusive_thread_pool()
+    : exclusive_thread_pool(max_value(thread::hardware_concurrency() * 2u,
+                                      16u)) {}
+  ~exclusive_thread_pool() {
+    for (auto &x : a->sleeping_threads) {
+      x.enter([&]() {x->to_quit = true;});
+      x->waited_worker.notify_one();
+    }
+    for (auto &x : a->sleeping_threads)
+      x->thrd.join();
+  }
+  exclusive_thread_pool(const this_t &) = delete;
+  this_t &operator =(const this_t &) = delete;
+  exclusive_thread_pool(this_t &&) = delete;
+  this_t &operator =(this_t &&) = delete;
+
+  explicit exclusive_thread_pool(size_t n) {
+    a->sleeping_threads.resize(n);
+    for (auto &it : iters(a->sleeping_threads))
+      (*it)->thrd = thread(thread_function(it));
+  }
+
+  template <class F>
+  void fetch(F f) {
+    bool done = false;
+    a.enter([&]() {
+      if (a->sleeping_threads.empty())
+        return;
+      const auto it = a->sleeping_threads.begin();
+      auto &x = *it;
+      x.enter([&]() {
+        auto &l = a->running_threads;
+        auto &ll = a->sleeping_threads;
+        l.splice(l.end(), ll, it);
+        x->any_fn = move(f);
+        x->to_start = true;
+      });
+      x->waited_worker.notify_one();
+      done = true;
+    });
+    if (!done)
+      f();
+  }
+  void join() {
+    a.enter([&]() {
+      a.leave_until([&]() {return a->running_threads.empty();},
+                    a->waited_controller);
+    });
+  }
+
+  using size_type = size_t;
+  size_type count() noexcept {
+    size_type ret = 0u;
+    a.enter([&]() {
+      ret = re::size(a->running_threads) + re::size(a->sleeping_threads);
+    });
+    return ret;
+  }
+  size_type count_running() noexcept {
+    size_type ret = 0u;
+    a.enter([&]() {ret = re::size(a->running_threads);});
+    return ret;
+  }
+  size_type count_sleeping() noexcept {
+    size_type ret = 0u;
+    a.enter([&]() {ret = re::size(a->sleeping_threads);});
+    return ret;
+  }
+  void shrink_to_fit() {
+    a.enter([&]() {
+      for (auto &x : a->sleeping_threads) {
+        x.enter([&]() {x->to_quit = true;});
+        x->waited_worker.notify_one();
+      }
+      for (auto &x : a->sleeping_threads)
+        x->thrd.join();
+      a->sleeping_threads.clear();
+    });
+  }
+  void append(size_type n) {
+    a.enter([&]() {
+      for (; n != 0u; --n) {
+        auto &x = a->sleeping_threads.emplace_back();
+        x->thrd = thread(thread_function(before_end(a->sleeping_threads)));
+      }
+    });
+  }
+};
 
 }
 

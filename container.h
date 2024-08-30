@@ -39365,32 +39365,141 @@ public:
     }
   }
 
+private:
+  template <class M, class F>
   pair<size_type, size_type>
-  cover(size_type x, size_type y, const matrix &m) {
-    const size_type h_cap = width() - x;
-    const size_type v_cap = height() - y;
-    const size_type wid = min(h_cap, m.width());
-    const size_type hei = min(v_cap, m.height());
-    for (size_type &j : iters(y, y + hei))
-      copy(rng(m.begin() + (j - y) * m.width(), wid),
-           iter(x, j));
-    return pair(wid, hei);
-  }
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, const matrix &m, F mix_f) {
+  cover_impl(size_type x, size_type y, M &&m, F mix_f) {
+    if (x > width() || y > height()) {
+      x = width();
+      y = height();
+    }
     const size_type h_cap = width() - x;
     const size_type v_cap = height() - y;
     const size_type wid = min(h_cap, m.width());
     const size_type hei = min(v_cap, m.height());
     for (size_type &j : iters(y, y + hei)) {
       auto it = iter(x, j);
-      for (const value_type &a : rng(m.begin() + (j - y) * m.width(), wid)) {
-        *it = mix_f(*it, a);
+      for (auto &a : rng(m.begin() + (j - y) * m.width(), wid)) {
+        *it = mix_f(*it, static_cast<copy_cvref_t<M &, value_type>>(a));
         ++it;
       }
     }
     return pair(wid, hei);
+  }
+public:
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, const matrix &m, F mix_f) {
+    return cover_impl(x, y, m, mix_f);
+  }
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, matrix &&m, F mix_f) {
+    return cover_impl(x, y, move(m), mix_f);
+  }
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, matrix &m, F mix_f) {
+    return cover_impl(x, y, m, mix_f);
+  }
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, const matrix &m) {
+    return cover_impl(x, y, m,
+                      [](value_type &,
+                         const value_type &z)->const value_type & {return z;});
+  }
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, matrix &&m) {
+    return cover_impl(x, y, move(m),
+                      [](value_type &,
+                         value_type &z)->value_type && {return move(z);});
+  }
+  pair<size_type, size_type>
+  cover(size_type x, size_type y, matrix &m) {
+    return cover_impl(x, y, move(m),
+                      [](value_type &,
+                         value_type &z)->value_type & {return z;});
+  }
+
+private:
+  template <class M, class F>
+  pair<size_type, size_type>
+  cover_impl(size_type x, size_type y,
+             M &&m, size_type x2, size_type y2, size_type ww, size_type hh,
+             F mix_f) {
+    if (x > width() || y > height()) {
+      x = width();
+      y = height();
+    }
+    if (x2 > m.width() || y2 > m.height()) {
+      x2 = m.width();
+      y2 = m.height();
+    }
+    const size_type h_cap = width() - x;
+    const size_type v_cap = height() - y;
+    const size_type h_cap2 = m.width() - x2;
+    const size_type v_cap2 = m.height() - y2;
+    const size_type wid = min({h_cap, h_cap2, ww});
+    const size_type hei = min({v_cap, v_cap2, hh});
+
+    const auto m_begin = m.iter(x2, y2);
+    for (size_type &j : iters(y, y + hei)) {
+      auto it = iter(x, j);
+      for (auto &z : rng(m_begin + (j - y) * m.width(), wid)) {
+        *it = mix_f(*it, static_cast<copy_cvref_t<M &, value_type>>(z));
+        ++it;
+      }
+    }
+    return pair(wid, hei);
+  }
+public:
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y,
+        const matrix &m, size_type x2, size_type y2,
+        size_type ww, size_type hh,
+        F mix_f) {
+    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
+  }
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y,
+        matrix &&m,
+        size_type x2, size_type y2, size_type ww, size_type hh,
+        F mix_f) {
+    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
+  }
+  template <class F>
+  pair<size_type, size_type>
+  cover(size_type x, size_type y,
+        matrix &m,
+        size_type x2, size_type y2, size_type ww, size_type hh,
+        F mix_f) {
+    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
+  }
+  pair<size_type, size_type>
+  cover(size_type x, size_type y,
+        const matrix &m, size_type x2, size_type y2,
+        size_type ww, size_type hh) {
+    return cover_impl(x, y, m, x2, y2, ww, hh,
+                      [](value_type &,
+                         const value_type &b)->const value_type & {return b;});
+  }
+  pair<size_type, size_type>
+  cover(size_type x, size_type y,
+        matrix &&m,
+        size_type x2, size_type y2, size_type ww, size_type hh) {
+    return cover_impl(x, y, m, x2, y2, ww, hh,
+                      [](value_type &,
+                         value_type &b)->value_type && {return move(b);});
+  }
+  pair<size_type, size_type>
+  cover(size_type x, size_type y,
+        matrix &m,
+        size_type x2, size_type y2, size_type ww, size_type hh) {
+    return cover_impl(x, y, m, x2, y2, ww, hh,
+                      [](value_type &,
+                         value_type &b)->value_type & {return b;});
   }
 
   auto row(size_type n) {
@@ -39437,6 +39546,8 @@ public:
       wid = 0;
       hei = 0;
     }
+    x = min(x, width());
+    y = min(y, width());
     const auto it = iter(x, y);
     wid = min(wid, width() - x);
     hei = min(hei, height() - y);
@@ -39465,12 +39576,8 @@ public:
   void fill(size_type x, size_type y,
             size_type wid, size_type hei,
             const value_type &z) {
-    if (!(x < width() && y < height())) {
-      x = 0;
-      y = 0;
-      wid = 0;
-      hei = 0;
-    }
+    x = min(x, width());
+    y = min(y, height());
     const auto it = iter(x, y);
     wid = min(wid, width() - x);
     hei = min(hei, height() - y);
