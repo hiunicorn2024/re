@@ -1324,7 +1324,8 @@ public:
   function(T &&x)
     requires (!is_same_v<decay_t<T>, this_t>
               && is_invocable_r_v<R, add_lvalue_reference_t<decay_t<T>>, S...>
-              && !inner::is_class_function_of<decay_t<T>, R (S...)>::value)
+              && !inner::is_class_function_of<decay_t<T>, R (S...)>::value
+              && is_copy_constructible_v<decay_t<T>>)
     : impl(in_place_type<inner::fn_caller<decay_t<T>, R (S...)>>,
            forward<T>(x)) {}
   template <class T>
@@ -1332,6 +1333,7 @@ public:
     requires (!is_same_v<decay_t<T>, this_t>
               && is_invocable_r_v<R, add_lvalue_reference_t<decay_t<T>>, S...>
               && !inner::is_class_function_of<decay_t<T>, R (S...)>::value
+              && is_copy_constructible_v<decay_t<T>>
               ) {
     impl.template emplace<inner::fn_caller<decay_t<T>, R (S...)>
                           >(forward<T>(x));
