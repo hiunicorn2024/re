@@ -4172,7 +4172,7 @@ tree<file_info<S>> view_directory_impl(V v) {
   wstring tmp_ws;
   for (tree_vt &x : t.root().first_order()) {
     if ((*x).is_dir) {
-      const auto it = x.iter_to_this();
+      const auto it = x.iter();
       if (tmp_ws.assign_unicode((*x).path) == false)
         throw_or_terminate<logic_error>
           ("re::view_directory(sv): invalid unicode string\n");

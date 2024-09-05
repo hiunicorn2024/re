@@ -35241,7 +35241,7 @@ public:
       return *this;
     }
     else {
-      if (it->empty())
+      if (it->empty()) {
         for (IT parent;;) {
           if (it == root_it) {
             it = IT{};
@@ -35254,6 +35254,7 @@ public:
           else
             return *this;
         }
+      }
       else {
         it = it->begin();
         return *this;
@@ -36019,13 +36020,13 @@ protected:
     p = it.node();
   }
 public:
-  iterator iter_to_this() noexcept {
+  iterator iter() noexcept {
     return iterator
       (vec_iter_t
        (static_cast<typename TRAITS::node_base_pointer>
         (pointer_to<typename TRAITS::public_node_pointer>(*this))));
   }
-  const_iterator iter_to_this() const noexcept {
+  const_iterator iter() const noexcept {
     return const_iterator
       (vec_citer_t
        (static_cast<typename TRAITS::node_base_pointer>
@@ -36123,7 +36124,7 @@ public:
   tree_node_impl(const tree_node_impl &x)
     : base_t{allocator_arg, x.v.get_allocator()} {
     allocator_wrapper<key_alloc_t>(v.get_allocator()).construct(data_ptr(), *x);
-    iter_t(v.end()).parent(base_t::iter_to_this());
+    iter_t(v.end()).parent(base_t::iter());
   }
   tree_node_impl &operator =(const tree_node_impl &x) {
     p = nullptr;
@@ -36143,7 +36144,7 @@ public:
     : base_t(allocator_arg, a) {
     allocator_wrapper<key_alloc_t>(v.get_allocator())
       .construct(data_ptr(), forward<S>(s)...);
-    iter_t(v.end()).parent(base_t::iter_to_this());
+    iter_t(v.end()).parent(base_t::iter());
   }
 
   template <class T1>
@@ -36151,7 +36152,7 @@ public:
   (tuple<T1, typename vec_t::const_iterator, node_alloc_t> &&t)
     : tree_node_impl(at<2>(t), at<0>(move(t))) {
     p = at<1>(t).node();
-    iter_t(v.end()).parent(base_t::iter_to_this());
+    iter_t(v.end()).parent(base_t::iter());
   }
 };
 
@@ -37149,7 +37150,7 @@ public:
   reference emplace_back(const_iterator ci, S &&...s) {
     const iterator p = ci.to_mutable();
     const iterator it = p->v.emplace_back(alloc_ref(), forward<S>(s)...)
-      .iter_to_this();
+      .iter();
     it.parent(p);
     return *it;
   }
@@ -37211,7 +37212,7 @@ public:
   reference emplace_front(const_iterator ci, S &&...s) {
     const iterator p = ci.to_mutable();
     const iterator it = p->v.emplace_front(alloc_ref(), forward<S>(s)...)
-      .iter_to_this();
+      .iter();
     it.parent(p);
     return *it;
   }
@@ -37315,14 +37316,14 @@ public:
   void first_order_resize(const_iterator i, size_type n) {
     for (auto &x : i.to_mutable().first_order()) {
       if (x.size() != 0)
-        resize(x.iter_to_this(), n);
+        resize(x.iter(), n);
     }
   }
   void first_order_resize(const_iterator i, size_type n,
                           const key_type &k) {
     for (auto &x : i.first_order()) {
       if (x.size() != 0)
-        resize(x.iter_to_this(), n, k);
+        resize(x.iter(), n, k);
     }
   }
 
@@ -37331,7 +37332,7 @@ public:
   }
   void first_order_shrink_to_fit(const_iterator i) {
     for (auto &x : i.first_order())
-      shrink_to_fit(x.iter_to_this());
+      shrink_to_fit(x.iter());
   }
 
   template <class UPRED>
@@ -37341,7 +37342,7 @@ public:
   template <class UPRED>
   void first_order_remove_if(const_iterator p, UPRED eq) {
     for (auto &x : p.first_order())
-      remove_if(x.iter_to_this(), eq);
+      remove_if(x.iter(), eq);
   }
 
   template <class BPRED>
@@ -37352,7 +37353,7 @@ public:
   template <class BPRED>
   void first_order_unique(const_iterator parent, BPRED eq) {
     for (auto &u : parent.first_order())
-      unique(u.iter_to_this(), eq);
+      unique(u.iter(), eq);
   }
 
   template <class BPRED>
@@ -37442,7 +37443,7 @@ public:
   template <class BPRED>
   void first_order_sort(const_iterator parent, BPRED less) {
     for (auto &x : parent.to_mutable().first_order())
-      sort(x.iter_to_this(), less);
+      sort(x.iter(), less);
   }
 
 private:
@@ -37482,9 +37483,9 @@ private:
           && good_impl(root(), [&](const auto &x) {
             return allocator_type(x.v.get_allocator()) == get_allocator()
               && good(x.v)
-              && const_iterator(x.v.end()).parent() == x.iter_to_this()
+              && const_iterator(x.v.end()).parent() == x.iter()
               && all_of(x.v, [&](auto &y) {
-                return y.parent() == x.iter_to_this();
+                return y.parent() == x.iter();
               });
           }));
   }
@@ -38606,7 +38607,7 @@ public:
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order()) {
         if (x.size() != 0)
-          resize(x.iter_to_this(), n);
+          resize(x.iter(), n);
       }
   }
   void first_order_resize(const_iterator i, size_type n,
@@ -38615,7 +38616,7 @@ public:
     vec_t &&vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : it.first_order())
-        resize(x.iter_to_this(), n, k);
+        resize(x.iter(), n, k);
   }
 
   void shrink_to_fit() {
@@ -38633,7 +38634,7 @@ public:
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        shrink_to_fit(x.iter_to_this());
+        shrink_to_fit(x.iter());
   }
 
   template <class UPRED>
@@ -38655,7 +38656,7 @@ public:
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        remove_if(x.iter_to_this(), eq);
+        remove_if(x.iter(), eq);
   }
 
   template <class BPRED>
@@ -38677,7 +38678,7 @@ public:
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        unique(x.iter_to_this(), eq);
+        unique(x.iter(), eq);
   }
 
   template <class BPRED>
@@ -38796,7 +38797,7 @@ public:
     vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
     for (auto &it : iters(vv))
       for (auto &x : iterator(it).first_order())
-        sort(x.iter_to_this(), less);
+        sort(x.iter(), less);
   }
   template <class BPRED>
   void first_order_sort(BPRED less) {
@@ -38826,9 +38827,9 @@ private:
           return false;
         if (x.v.get_allocator() != get_allocator())
           return false;
-        if (const_iterator(x.v.end()).parent() != x.iter_to_this())
+        if (const_iterator(x.v.end()).parent() != x.iter())
           return false;
-        if (any_of(x.v, [&x](auto &y) {return y.parent() != x.iter_to_this();}))
+        if (any_of(x.v, [&x](auto &y) {return y.parent() != x.iter();}))
           return false;
       }
     }
