@@ -1020,10 +1020,10 @@ public:
 
   // sequence container
 
-  explicit basic_string(size_type n, const AL &al = AL()) : alw_t(al) {
+  explicit basic_string(size_type n, const AL &al = AL{}) : alw_t(al) {
     construct_n_impl(n);
   }
-  basic_string(size_type n, value_type t, const AL &al = AL()) : alw_t(al) {
+  basic_string(size_type n, value_type t, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(n, ref(t)));
   }
   void assign(size_type n, value_type t) {
@@ -1031,7 +1031,7 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  basic_string(IITR from, IITR to, const AL &al = AL()) : alw_t(al) {
+  basic_string(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
@@ -1040,7 +1040,7 @@ public:
   }
 
   basic_string(initializer_list<value_type> l,
-               const AL &al = AL()) : alw_t(al) {
+               const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(l);
   }
   basic_string &operator =(initializer_list<value_type> l) {
@@ -2007,10 +2007,10 @@ public:
 
   // sequence container
 
-  explicit sso_string(size_type n, const AL &al = AL()) : alw_t(al) {
+  explicit sso_string(size_type n, const AL &al = AL{}) : alw_t(al) {
     construct_n_impl(n);
   }
-  sso_string(size_type n, value_type t, const AL &al = AL()) : alw_t(al) {
+  sso_string(size_type n, value_type t, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(n, ref(t)));
   }
   void assign(size_type n, value_type t) {
@@ -2018,7 +2018,7 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  sso_string(IITR from, IITR to, const AL &al = AL()) : alw_t(al) {
+  sso_string(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
@@ -2027,7 +2027,7 @@ public:
   }
 
   sso_string(initializer_list<value_type> l,
-             const AL &al = AL()) : alw_t(al) {
+             const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(l);
   }
   sso_string &operator =(initializer_list<value_type> l) {
@@ -3980,11 +3980,11 @@ public:
 
   // sequence container
 
-  explicit vector(size_type n, const AL &al = AL()) : alw_t(al) {
+  explicit vector(size_type n, const AL &al = AL{}) : alw_t(al) {
     construct_n_impl(n);
   }
   vector(size_type n, const value_type &x,
-         const AL &al = AL()) : alw_t(al) {
+         const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(n, ref(x)));
   }
   void assign(size_type n, const value_type &x) {
@@ -3992,7 +3992,7 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  vector(IITR from, IITR to, const AL &al = AL()) : alw_t(al) {
+  vector(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
@@ -4000,7 +4000,7 @@ public:
     assign_range_impl(rng(from, to));
   }
 
-  vector(initializer_list<value_type> l, const AL &al = AL()) : alw_t(al) {
+  vector(initializer_list<value_type> l, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(l);
   }
   vector &operator =(initializer_list<value_type> l) {
@@ -4813,19 +4813,19 @@ private:
 
   struct range_construct_tag {};
   template <class R, class = enable_if_t<rng_is_n_value<R>>>
-  vector(range_construct_tag, R &&r, const AL &al = AL())
+  vector(range_construct_tag, R &&r, const AL &al = AL{})
     : v(checked_v_n(size(r)), max_or_zero(*begin(r)), uint_alloc(al))
     , n(size(r)) {}
   template <class R, class = enable_if_t<!rng_is_n_value<R> && rng_is_sized<R>>,
             int = 0>
-  vector(range_construct_tag, R &&r, const AL &al = AL())
+  vector(range_construct_tag, R &&r, const AL &al = AL{})
     : v(checked_v_n(size(r)), uint_alloc(al)), n(size(r)) {
     copy(r, begin());
   }
   template <class R,
             class = enable_if_t<!rng_is_n_value<R> && !rng_is_sized<R>>,
             class = void>
-  vector(range_construct_tag, R &&r, const AL &al = AL())
+  vector(range_construct_tag, R &&r, const AL &al = AL{})
     : v(uint_alloc(al)) {
     for (auto &p : iters(r))
       push_back_impl(bool(*p));
@@ -4890,23 +4890,23 @@ public:
 
   // sequence container
 
-  explicit vector(size_type nn, const AL &al = AL())
+  explicit vector(size_type nn, const AL &al = AL{})
     : v(checked_v_n(nn), uint_alloc(al)), n(nn) {}
-  vector(size_type nn, const value_type &x, const AL &al = AL())
+  vector(size_type nn, const value_type &x, const AL &al = AL{})
     : v(checked_v_n(nn), max_or_zero(x), uint_alloc(al)), n(nn) {}
   void assign(size_type nn, const value_type &x) {
     assign_range_impl(rng(nn, x));
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  vector(IITR from, IITR to, const AL &al = AL())
+  vector(IITR from, IITR to, const AL &al = AL{})
     : vector(range_construct_tag(), rng(from, to), al) {}
   template <class IITR>
   enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
-  vector(initializer_list<value_type> l, const AL &al = AL())
+  vector(initializer_list<value_type> l, const AL &al = AL{})
     : vector(range_construct_tag(), l, al) {}
   vector &operator =(initializer_list<value_type> l) {
     assign_range_impl(l);
@@ -6519,11 +6519,11 @@ public:
 
   // sequence container
 
-  explicit small_vector(size_type n, const AL &al = AL()) : alw_t(al) {
+  explicit small_vector(size_type n, const AL &al = AL{}) : alw_t(al) {
     construct_n_impl(n);
   }
   small_vector(size_type n, const value_type &x,
-               const AL &al = AL()) : alw_t(al) {
+               const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(n, ref(x)));
   }
   void assign(size_type n, const value_type &x) {
@@ -6531,7 +6531,7 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  small_vector(IITR from, IITR to, const AL &al = AL()) : alw_t(al) {
+  small_vector(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
@@ -6540,7 +6540,7 @@ public:
   }
 
   small_vector(initializer_list<value_type> l,
-               const AL &al = AL()) : alw_t(al) {
+               const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(l);
   }
   small_vector &operator =(initializer_list<value_type> l) {
@@ -8865,11 +8865,11 @@ public:
 
   // sequence container
 
-  explicit circular_vector(size_type n, const AL &al = AL()) : alw_t(al) {
+  explicit circular_vector(size_type n, const AL &al = AL{}) : alw_t(al) {
     construct_n_impl(n);
   }
   circular_vector(size_type n, const T &x,
-                  const AL &al = AL()) : alw_t(al) {
+                  const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(n, ref(x)));
   }
   void assign(size_type n, const T &x) {
@@ -8877,7 +8877,7 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  circular_vector(IITR from, IITR to, const AL &al = AL()) : alw_t(al) {
+  circular_vector(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
@@ -8885,7 +8885,7 @@ public:
     assign_range_impl(rng(from, to));
   }
 
-  circular_vector(initializer_list<T> l, const AL &al = AL()) : alw_t(al) {
+  circular_vector(initializer_list<T> l, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(l);
   }
   circular_vector &operator =(initializer_list<T> l) {
@@ -10404,10 +10404,10 @@ public:
 
   // sequence container
 
-  explicit deque(size_type n, const AL &al = AL()) : alw_t(al) {
+  explicit deque(size_type n, const AL &al = AL{}) : alw_t(al) {
     construct_n_impl(n);
   }
-  deque(size_type n, const T &x, const AL &al = AL()) : alw_t(al) {
+  deque(size_type n, const T &x, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(n, ref(x)));
   }
   void assign(size_type n, const T &x) {
@@ -10415,7 +10415,7 @@ public:
   }
 
   template <class IITR, class = enable_if_t<is_itr<IITR>>>
-  deque(IITR from, IITR to, const AL &al = AL()) : alw_t(al) {
+  deque(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
@@ -10423,7 +10423,7 @@ public:
     assign_range_impl(rng(from, to));
   }
 
-  deque(initializer_list<T> l, const AL &al = AL()) : alw_t(al) {
+  deque(initializer_list<T> l, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(l);
   }
   deque &operator =(initializer_list<T> l) {
@@ -39774,6 +39774,569 @@ public:
                  });
       }
     return ret;
+  }
+};
+
+}
+
+// dup_compressed_array
+namespace re {
+
+template <class T, class AL = default_allocator<T>>
+class dup_compressed_array;
+namespace inner {
+
+template <class T, class AL>
+class dup_compressed_array_iterator {
+  using this_t = dup_compressed_array_iterator;
+
+  template <class, class>
+  friend class dup_compressed_array_iterator;
+  template <class, class>
+  friend class re::dup_compressed_array;
+
+  using count_t = max_uint_of_max_size<sizeof(T)>;
+  using stored_t = pair<T, count_t>;
+  using container_t = vector<stored_t, alloc_rebind<AL, stored_t>>;
+  using iter_t = typename container_t::const_iterator;
+  iter_t p = iter_t{};
+  count_t n = count_t{};
+
+public:
+  using value_type = remove_const_t<T>;
+  using pointer = void;
+  using reference = T;
+  using difference_type = typename container_t::difference_type;
+  using iterator_category = bidirectional_iterator_tag;
+
+  dup_compressed_array_iterator() = default;
+  ~dup_compressed_array_iterator() = default;
+  dup_compressed_array_iterator(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  dup_compressed_array_iterator(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  friend void swap(this_t &x, this_t &y) noexcept {
+    adl_swap(x.p, y.p);
+    adl_swap(x.n, y.n);
+  }
+
+private:
+  explicit dup_compressed_array_iterator(iter_t pp, count_t nn)
+    : p(pp), n(nn) {}
+  typename container_t::iterator base() const {
+    return const_cast<typename container_t::iterator>(p);
+  }
+  count_t nth_dup() const {
+    return n;
+  }
+
+public:
+  bool operator ==(const this_t &) const = default;
+  strong_ordering operator <=>(const this_t &x) const {
+    const strong_ordering o = (p <=> x.p);
+    if (o == strong_eq)
+      return n <=> x.n;
+    return o;
+  }
+
+  reference operator *() const {
+    return p->first;
+  }
+
+  this_t &operator ++() {
+    ++n;
+    if (n == p->second) {
+      ++p;
+      n = 0;
+    }
+    return *this;
+  }
+  this_t operator ++(int) {
+    return iter_post_increment(*this);
+  }
+
+  this_t &operator --() {
+    if (n != 0u)
+      --n;
+    else {
+      --p;
+      n = p->second;
+      --n;
+    }
+    return *this;
+  }
+  this_t operator --(int) {
+    return iter_post_decrement(*this);
+  }
+};
+
+}
+template <class T, class AL>
+class dup_compressed_array {
+  using this_t = dup_compressed_array;
+
+  using count_t = max_uint_of_max_size<sizeof(T)>;
+  using stored_t = pair<T, count_t>;
+  using container_t = vector<stored_t, alloc_rebind<AL, stored_t>>;
+  using container_alloc_t = typename container_t::allocator_type;
+  container_t v;
+
+  static count_t count_max() noexcept {
+    return numeric_limits<count_t>::max();
+  }
+
+public:
+  using value_type = T;
+  using reference = value_type;
+  using const_reference = value_type;
+
+  using iterator = inner::dup_compressed_array_iterator<T, AL>;
+  using const_iterator = iterator;
+  using difference_type = typename container_t::difference_type;
+  using size_type = typename container_t::size_type;
+
+  iterator begin() const noexcept {
+    return iterator(v.begin(), 0u);
+  }
+  iterator end() const noexcept {
+    return iterator(v.end(), 0u);
+  }
+  iterator cbegin() const noexcept {
+    return begin();
+  }
+  iterator cend() const noexcept {
+    return end();
+  }
+
+  size_type max_size() const noexcept {
+    return v.max_size();
+  }
+  bool empty() const noexcept {
+    return v.empty();
+  }
+
+  dup_compressed_array() = default;
+  ~dup_compressed_array() = default;
+  dup_compressed_array(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  dup_compressed_array(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  friend void swap(this_t &a, this_t &b)
+    noexcept(is_nothrow_swappable_v<container_t>) {
+    adl_swap(a.v, b.v);
+  }
+
+  bool operator ==(const this_t &) const = default;
+  synth_3way_result<T> operator <=>(const this_t &x) const {
+    return lexicographical_synth_3way(*this, x);
+  }
+
+  using reverse_iterator = re::reverse_iterator<iterator>;
+  using const_reverse_iterator = reverse_iterator;
+  reverse_iterator rbegin() const noexcept {
+    return reverse_iterator(end());
+  }
+  reverse_iterator rend() const noexcept {
+    return reverse_iterator(begin());
+  }
+  reverse_iterator crbegin() const noexcept {
+    return rbegin();
+  }
+  reverse_iterator crend() const noexcept {
+    return rend();
+  }
+
+  using allocator_type = AL;
+  allocator_type get_allocator() const noexcept {
+    return allocator_type(v.get_allocator());
+  }
+  explicit dup_compressed_array(const AL &a)
+    : v(container_alloc_t(a)) {}
+  dup_compressed_array(const this_t &x, const AL &a)
+    : v(x.v, container_alloc_t(a)) {}
+  dup_compressed_array(this_t &&x, const AL &a)
+    : v(move(x.v), container_alloc_t(a)) {}
+
+private:
+  void append_single_impl(const value_type &x) {
+    if (v.empty()
+        || x != v.back().first
+        || v.back().second == count_max())
+      v.emplace_back(x, 1u);
+    else
+      ++v.back().second;
+  }
+  void append_n_impl(size_type n, const value_type &x = value_type{}) {
+    if (n == 0u)
+      return;
+
+    if (!v.empty() && before_end(v)->first == x) {
+      const auto base_it = before_end(v);
+      const auto nn = base_it->second;
+      if (size_type rest_n = static_cast<size_type>(count_max() - nn);
+          n > rest_n) {
+        base_it->second = count_max();
+        n -= rest_n;
+      }
+      else {
+        base_it->second += n;
+        return;
+      }
+    }
+
+    if (n <= count_max())
+      v.emplace_back(x, n);
+    else {
+      const size_type max2(count_max());
+      const size_type q = n / max2;
+      const size_type rem = n % max2;
+      v.append_range(rng(q, stored_t(x, count_max())));
+      if (rem != 0u)
+        v.emplace_back(x, rem);
+    }
+  }
+
+  template <class R>
+  void append_range_impl(R &&r) {
+    for (auto &it : iters(r))
+      append_single_impl(*it);
+  }
+  template <class R>
+  void append_range_impl(R &&r) requires rng_is_n_value<R> {
+    if (!r.empty()) {
+      if (r.size() > numeric_limits<size_type>::max())
+        throw_or_terminate<length_error>
+          ("re::dup_compressed_array::append_range_impl(r)\n");
+      append_n_impl(r.size(), *r.begin());
+    }
+  }
+
+public:
+  explicit dup_compressed_array(size_type n, const AL &al = AL{})
+    : v(container_alloc_t(al)) {
+    append_n_impl(n);
+  }
+  dup_compressed_array(size_type n, value_type x, const AL &al = AL{})
+    : v(container_alloc_t(al)) {
+    append_n_impl(n, x);
+  }
+  void assign(size_type n, value_type x) {
+    v.clear();
+    append_n_impl(n, x);
+  }
+
+  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  dup_compressed_array(IITR from, IITR to, const AL &al = AL{})
+    : v(container_alloc_t(al)) {
+    append_range_impl(rng(from, to));
+  }
+  template <class IITR>
+  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+    v.clear();
+    append_range_impl(rng(from, to));
+  }
+
+  dup_compressed_array(initializer_list<value_type> l, const AL &al = AL{})
+    : v(container_alloc_t(al)) {
+    append_range_impl(l);
+  }
+  dup_compressed_array &operator =(initializer_list<value_type> l) {
+    v.clear();
+    append_range_impl(l);
+    return *this;
+  }
+  void assign(initializer_list<value_type> l) {
+    v.clear();
+    append_range_impl(l);
+  }
+
+private:
+  iterator insert_single_impl(iterator pos, const value_type &x) {
+    if (pos.base() == v.end()) {
+      append_single_impl(x);
+      const auto base_it = before_end(v);
+      return iterator(base_it, base_it->second - 1u);
+    }
+    else {
+      const auto base_it = pos.base();
+      const count_t nn = pos.nth_dup();
+      if (nn != 0u) {
+        if (pos.base()->first == x && base_it->second < count_max()) {
+          ++(base_it->second);
+          return pos;
+        }
+        else {
+          base_it->second -= nn;
+          const auto it = v.insert_range(base_it,
+                                         seq(stored_t(base_it->first, nn),
+                                             stored_t(x, 1u)));
+          return iterator(next(it), 0u);
+        }
+      }
+      else {
+        if (base_it->first == x) {
+          if (base_it->second < count_max()) {
+            ++(base_it->second);
+            return iterator(base_it, 0u);
+          }
+        }
+        else if (prev(base_it)->first == x) {
+          if (prev(base_it)->second < count_max()) {
+            ++prev(base_it)->second;
+            return iterator(prev(base_it), prev(base_it)->second - 1u);
+          }
+        }
+        return iterator(v.emplace(base_it, x, 1u), 0u);
+      }
+    }
+  }
+public:
+  iterator insert(iterator pos, value_type x) {
+    return insert_single_impl(pos, x);
+  }
+
+private:
+  iterator erase_impl(iterator pos) {
+    const auto base_it = pos.base();
+    const count_t nn = pos.nth_dup();
+    if (base_it->second == 1u)
+      return iterator(v.erase(base_it), 0u);
+    else {
+      --(base_it->second);
+      return (nn != base_it->second) ? pos : iterator(next(base_it), 0u);
+    }
+  }
+  iterator erase_impl(iterator it1, iterator it2) {
+    if (it1 == it2)
+      return it1;
+    const auto base_it1 = it1.base();
+    const auto nn1 = it1.nth_dup();
+    const auto base_it2 = it2.base();
+    const auto nn2 = it2.nth_dup();
+    if (base_it1 == base_it2) {
+      base_it1->second -= (nn2 - nn1);
+      return it1;
+    }
+    else {
+      if (nn1 == 0u) {
+        if (base_it2 == v.end()) {
+          v.erase(base_it1, base_it2);
+          return iterator(v.end(), 0u);
+        }
+        else {
+          const auto it = v.erase(base_it1, base_it2);
+          it->second -= nn2;
+          return iterator(it, 0u);
+        }
+      }
+      else {
+        if (base_it2 == v.end()) {
+          base_it1->second = nn1;
+          v.erase(next(base_it1), base_it2);
+          return iterator(v.end(), 0u);
+        }
+        else {
+          base_it1->second = nn1;
+          base_it2->second -= nn2;
+          const auto it = v.erase(next(base_it1), base_it2);
+          return iterator(it, 0u);
+        }
+      }
+    }
+  }
+
+  iterator insert_n_impl(iterator pos, size_type n, const value_type &x) {
+    const auto base_it = pos.base();
+    const auto nn = pos.nth_dup();
+    const auto base_dif = base_it - v.begin();
+
+    this_t tmp(pos, end(), get_allocator());
+    erase(pos, end());
+    append_n_impl(n, x);
+    append_range_impl(tmp);
+
+    return iterator(v.begin() + base_dif, nn);
+  }
+  template <class R>
+  iterator insert_range_impl(iterator pos, R &&r) {
+    const auto base_it = pos.base();
+    const auto nn = pos.nth_dup();
+    const auto base_dif = base_it - v.begin();
+
+    this_t tmp(pos, end(), get_allocator());
+    erase(pos, end());
+    append_range_impl(r);
+    append_range_impl(tmp);
+
+    return iterator(v.begin() + base_dif, nn);
+  }
+  template <class R>
+  iterator insert_range_impl(iterator pos, R &&r)
+    requires rng_is_n_value<R> {
+    if (r.empty())
+      return pos;
+    return insert_n_impl(pos, r.size(), *r.begin());
+  }
+
+public:
+  iterator insert(iterator pos, size_type n, value_type x) {
+    return insert_n_impl(pos, n, x);
+  }
+  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  iterator insert(iterator pos, IITR from, IITR to) {
+    return insert_range_impl(pos, rng(from, to));
+  }
+  iterator insert(iterator pos, initializer_list<value_type> l) {
+    return insert_range_impl(pos, l);
+  }
+
+  iterator erase(iterator pos) {
+    return erase_impl(pos);
+  }
+  iterator erase(iterator from, iterator to) {
+    return erase_impl(from, to);
+  }
+
+  void clear() noexcept {
+    v.clear();
+  }
+
+  // optional sequence container operations
+
+  value_type front() const {
+    return v.begin()->first;
+  }
+  value_type back() const {
+    return before_end(v)->first;
+  }
+  void push_back(value_type x) {
+    append_single_impl(x);
+  }
+  void pop_back() noexcept {
+    const auto base_it = before_end(v);
+    const auto nn = base_it->second;
+    if (nn == 1u)
+      v.pop_back();
+    else
+      --(base_it->second);
+  }
+
+  // extensions
+
+  size_type compressed_size() const noexcept {
+    return v.size();
+  }
+  size_type capacity() const noexcept {
+    return v.capacity();
+  }
+  bool full() const noexcept {
+    return v.full();
+  }
+  void reserve(size_type n) {
+    v.reserve(n);
+  }
+  void reserve_more(size_type n) {
+    v.reserve_more(n);
+  }
+  void shrink_to_fit() {
+    v.shrink_to_fit();
+  }
+  void reallocate(size_type n = 0) {
+    v.reallocate(n);
+  }
+  template <class R>
+  iterator replace(iterator i1, iterator i2, R &&r) {
+    return insert_range(erase(i1, i2), r);
+  }
+
+  template <class R>
+  dup_compressed_array(from_range_t,
+                       R &&r, const AL &al = AL{})
+    requires (is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>)
+    : v(container_alloc_t(al)) {
+    append_range_impl(r);
+  }
+  template <class R, class = enable_if_t
+            <!is_same_v<decay_t<R>, this_t>
+             && !is_convertible_v<R &&, const AL &>
+             && is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>>>
+  explicit dup_compressed_array(R &&r) {
+    append_range_impl(r);
+  }
+  template <class R, class = enable_if_t
+            <!is_same_v<decay_t<R>, this_t>
+             && !is_convertible_v<R &&, const AL &>
+             && is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>>>
+  dup_compressed_array(R &&r, const AL &al)
+    : v(container_alloc_t(al)) {
+    construct_from_range_impl(r);
+  }
+  template <class R>
+  enable_if_t<!is_same_v<decay_t<R>, this_t>
+              && !is_convertible_v<R &&, const AL &>
+              && is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>,
+              this_t &>
+  operator =(R &&r) {
+    v.clear();
+    append_range_impl(r);
+    return *this;
+  }
+  template <class IITR_RANGE>
+  void assign(IITR_RANGE &&r) {
+    v.clear();
+    append_range_impl(r);
+  }
+  template <class IITR_RANGE>
+  void assign_range(IITR_RANGE &&r) {
+    v.clear();
+    append_range_impl(r);
+  }
+
+  template <class IITR_RANGE>
+  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>, iterator>
+  insert(iterator pos, IITR_RANGE &&r) {
+    return insert_range_impl(pos, r);
+  }
+  template <class IITR_RANGE>
+  iterator insert_range(iterator pos, IITR_RANGE &&r) {
+    return insert_range_impl(pos, r);
+  }
+
+  template <class IITR_RANGE>
+  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>>
+  push_back(IITR_RANGE &&r) {
+    append_range_impl(r);
+  }
+  template <class IITR_RANGE>
+  void append_range(IITR_RANGE &&r) {
+    append_range_impl(r);
+  }
+  void pop_back(size_type n) {
+    for (;;) {
+      const auto base_it = before_end(v);
+      const auto nn = base_it->second;
+      if (nn == n) {
+        v.pop_back();
+        return;
+      }
+      else if (nn > n) {
+        base_it->second -= n;
+        return;
+      }
+      else {
+        v.pop_back();
+        n -= nn;
+      }
+    }
+  }
+
+  this_t &append() {
+    return *this;
+  }
+  template <class X, class...S>
+  this_t &append(X &&x, S &&...s) {
+    push_back(forward<X>(x));
+    return append(forward<S>(s)...);
   }
 };
 

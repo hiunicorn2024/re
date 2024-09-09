@@ -9569,6 +9569,39 @@ struct fo_no_overflow_adding {
 };
 inline constexpr fo_no_overflow_adding no_overflow_adding{};
 
+struct fo_add_with_overflow_check {
+  template <class T, class...S>
+  constexpr optional<T> operator ()(T x, T y, S...s) const
+    requires (integral<T> && sizeof...(S) == 0u) {
+    if (!no_overflow_adding(x, y))
+      return nullopt;
+    else
+      return optional<T>(x + y);
+  }
+  template <class T, class...S>
+  constexpr optional<T> operator ()(T x, T y, S...s) const
+    requires (integral<T> && sizeof...(S) != 0u) {
+    if (!no_overflow_adding(x, y))
+      return nullopt;
+    else
+      return operator ()(static_cast<T>(x + y), s...);
+  }
+};
+inline constexpr fo_add_with_overflow_check add_with_overflow_check{};
+
+template <size_t N>
+using max_uint_of_max_size
+  = conditional_t<sizeof(uint64_t) <= N,
+                  uint64_t,
+                  conditional_t<sizeof(uint32_t) <= N,
+                                uint32_t,
+                                conditional_t<sizeof(uint16_t) <= N,
+                                              uint16_t,
+                                              conditional_t<(sizeof(uint8_t)
+                                                             <= N),
+                                                            uint8_t,
+                                                            void>>>>;
+
 }
 
 // numeric_limits for floating point

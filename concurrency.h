@@ -833,6 +833,7 @@ inline constexpr fo_get_thread_id get_thread_id{};
 }
 
 // mutex
+// recursive_mutex
 // timed_mutex
 // lock_guard
 // unique_lock
@@ -852,6 +853,37 @@ public:
   mutex &operator =(const mutex &) = delete;
   mutex(mutex &&) = delete;
   mutex &operator =(mutex &&) = delete;
+
+  void lock() {
+    EnterCriticalSection(addressof(v));
+  }
+  bool try_lock() {
+    return TryEnterCriticalSection(addressof(v));
+  }
+  void unlock() {
+    LeaveCriticalSection(addressof(v));
+  }
+
+  using native_handle_type = CRITICAL_SECTION *;
+  native_handle_type native_handle() {
+    return addressof(v);
+  }
+};
+
+class recursive_mutex {
+  CRITICAL_SECTION v;
+
+public:
+  recursive_mutex() noexcept {
+    InitializeCriticalSection(addressof(v));
+  }
+  ~recursive_mutex() {
+    DeleteCriticalSection(addressof(v));
+  }
+  recursive_mutex(const recursive_mutex &) = delete;
+  recursive_mutex &operator =(const recursive_mutex &) = delete;
+  recursive_mutex(recursive_mutex &&) = delete;
+  recursive_mutex &operator =(recursive_mutex &&) = delete;
 
   void lock() {
     EnterCriticalSection(addressof(v));
