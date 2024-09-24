@@ -1,0 +1,21 @@
+UTF-8
+0___'____                                    7bits
+110_'____  10__'____                        11bits
+1110'____  10__'____  10__'____             16bits
+1111'0___  10__'____  10__'____  10__'____  21bits
+
+
+UTF-16
+[0, d800)
+[d800, dbff][dc00, dfff]
+(dbff, dfff]             (invalid)
+[e000, ffff]
+high_10bit: [0xd800, 0xdbff] // 0xdbff - 0xd800 + 1 == 0b1'00000'00000
+lower_10bit: [0xdc00, 0xdfff] // 0xdfff - 0xdc00 == 0b1'00000'00000
+(high_10bit << 10) + lower_10bit + 0x10000 == vlaue_32bit
+
+UTF-32
+[0, d800)
+[d800, dfff] (invalid)
+[e000, 10ffff]
+(10ffff, max] (invalid)
