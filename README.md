@@ -4,6 +4,8 @@ improved unique_ptr
 
 shared_ptr (weak_ptr)
 
+minor changes
+
 24/9/5
 
 minor changes
