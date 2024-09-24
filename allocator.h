@@ -382,29 +382,352 @@ concept nothrow_move_constructible_by_allocator
 // uninitialized algorithms
 namespace re {
 
-struct fo_default_construct_at {
+struct fo_default_construct_non_array_at {
   template <class T>
   T *operator ()(T *p) const {
-    return ::new(p) T;
+    return ::new(const_cast<void *>
+                 (reinterpret_cast<const volatile void *>(p))) T;
   }
 };
-inline constexpr fo_default_construct_at default_construct_at{};
+inline constexpr fo_default_construct_non_array_at
+default_construct_non_array_at{};
+
+struct fo_construct_non_array_at {
+  template <class T, class...S>
+  T *operator ()(T *p, S &&...s) const {
+    return ::new(const_cast<void *>
+                 (reinterpret_cast<const volatile void *>(p)))
+      T(forward<S>(s)...);
+  }
+};
+inline constexpr fo_construct_non_array_at construct_non_array_at{};
 
 struct fo_construct_at {
   template <class T, class...S>
   T *operator ()(T *p, S &&...s) const {
-    return ::new(p) T(forward<S>(s)...);
+    return ::new(const_cast<void *>
+                 (reinterpret_cast<const volatile void *>(p)))
+      T(forward<S>(s)...);
   }
 };
 inline constexpr fo_construct_at construct_at{};
 
-struct fo_destroy_at {
+struct fo_destroy_non_array_at {
   template <class T>
   constexpr void operator ()(T *p) const {
     p->~T();
   }
 };
+inline constexpr fo_destroy_non_array_at destroy_non_array_at{};
+
+struct fo_destroy {
+  template <class R, class D>
+  void operator ()(R &&r, D d) const;
+  template <class R>
+  void operator ()(R &&r) const;
+};
+inline constexpr fo_destroy destroy{};
+struct fo_destroy_at {
+  template <class T>
+  constexpr void operator ()(T *p) const {
+    p->~T();
+  }
+  template <class T>
+  constexpr void operator ()(T *p) const requires is_array_v<T> {
+    destroy(*p);
+  }
+
+  template <class T, class D>
+  constexpr void operator ()(T *p, D d) const {
+    d(p);
+  }
+  template <class T, class D>
+  constexpr void operator ()(T *p, D d) const requires is_array_v<T> {
+    destroy(*p, d);
+  }
+};
 inline constexpr fo_destroy_at destroy_at{};
+template <class R, class D>
+void fo_destroy::operator ()(R &&r, D d) const {
+  for (auto &it : iters(r))
+    destroy_at(addressof(*it), d);
+}
+template <class R>
+void fo_destroy::operator ()(R &&r) const {
+  operator ()(r, destroy_non_array_at);
+}
+
+namespace inner::fns {
+
+template <class T, class F, class D>
+void default_construct_array_impl(T *, F, D);
+template <class T, class F, class D>
+void default_construct_array_impl(T *, F, D) requires is_bounded_array_v<T>;
+template <class T, class F, class D>
+void default_construct_array_impl(T *p, F f, D) {
+  f(p);
+}
+template <class T, class F, class D>
+void default_construct_array_impl(T *p, F f, D d)
+  requires is_bounded_array_v<T> {
+  for (auto &it : iters(*p)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      inner::fns::default_construct_array_impl(it, f, d);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      for (auto &it2 : r_iters(begin(*p), it))
+        destroy_at(it2, d);
+      throw;
+    }
+#endif
+  }
+}
+
+template <class T, class F, class D>
+void construct_array_impl(T *, F, D);
+template <class T, class F, class D>
+void construct_array_impl(T *, F, D) requires is_bounded_array_v<T>;
+template <class T, class F, class D>
+void construct_array_impl(T *p, F f, D d) {
+  f(p);
+}
+template <class T, class F, class D>
+void construct_array_impl(T *p, F f, D d) requires is_bounded_array_v<T> {
+  for (auto &it : iters(*p)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      inner::fns::construct_array_impl(it, f, d);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      for (auto &it2 : r_iters(begin(*p), it))
+        destroy_at(it2, d);
+      throw;
+    }
+#endif
+  }
+}
+
+template <class T, class U, class F, class D>
+void construct_array_impl(T *, const U &fll, F, D);
+template <class T, class U, class F, class D>
+void construct_array_impl(T *, const U &fll, F, D)
+  requires is_bounded_array_v<T>;
+template <class T, class U, class F, class D>
+void construct_array_impl(T *p, const U &fll, F f, D) {
+  f(p, fll);
+}
+template <class T, class U, class F, class D>
+void construct_array_impl(T *p, const U &fll, F f, D d)
+  requires is_bounded_array_v<T> {
+  for (auto &it : iters(*p)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      inner::fns::construct_array_impl(it, fll, f, d);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      for (auto &it2 : r_iters(begin(*p), it))
+        destroy_at(it2, d);
+      throw;
+    }
+#endif
+  }
+}
+
+template <class T, class U, class F, class D>
+void construct_array_impl2(T *, const U &, F, D);
+template <class T, class U, class F, class D>
+void construct_array_impl2(T *, const U &, F, D)
+  requires is_bounded_array_v<T>;
+template <class T, class U, class F, class D>
+void construct_array_impl2(T *p, const U &fll, F f, D d) {
+  f(p, fll);
+}
+template <class T, class U, class F, class D>
+void construct_array_impl2(T *p, const U &fll, F f, D d)
+  requires is_bounded_array_v<T> {
+  for (size_t n : irng(0u, extent_v<T>)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      inner::fns::construct_array_impl2(addressof((*p)[n]), fll[n], f, d);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      for (size_t n2 : r_iters(0u, n))
+        destroy_at(addressof((*p)[n2]), d);
+      throw;
+    }
+#endif
+  }
+}
+
+template <class T, class F, class D>
+void construct_array_impl22(T *p, const remove_extent_t<T> &fll, F f, D d)
+  requires is_bounded_array_v<T> {
+  for (size_t n : irng(0u, extent_v<T>)) {
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      inner::fns::construct_array_impl2(addressof((*p)[n]), fll, f, d);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      for (size_t n2 : r_iters(0u, n))
+        destroy_at(addressof((*p)[n2]), d);
+      throw;
+    }
+#endif
+  }
+}
+
+}
+struct fo_default_construct_array {
+  template <class T>
+  void operator ()(T *p) const requires is_array_v<T> {
+    inner::fns::default_construct_array_impl(p,
+                                             default_construct_non_array_at,
+                                             destroy_non_array_at);
+  }
+  template <class T, class F, class D>
+  void operator ()(T *p, F f, D d) const requires is_array_v<T> {
+    inner::fns::default_construct_array_impl(p, f, d);
+  }
+};
+inline constexpr fo_default_construct_array default_construct_array{};
+struct fo_construct_array {
+  template <class T>
+  void operator ()(T *p) const requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl(p,
+                                     construct_non_array_at,
+                                     destroy_non_array_at);
+  }
+  template <class T, class U>
+  void operator ()(T *p, const U &fll) const
+    requires (is_bounded_array_v<T>
+              && !is_convertible_v<const U &, const remove_extent_t<T> &>
+              && !is_convertible_v<const U &, const T &>) {
+    inner::fns::construct_array_impl(p, fll,
+                                     construct_non_array_at,
+                                     destroy_non_array_at);
+  }
+  template <class T>
+  void operator ()(T *p, const remove_extent_t<T> &fll) const
+    requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl22(p, fll,
+                                       construct_non_array_at,
+                                       destroy_non_array_at);
+  }
+  template <class T>
+  void operator ()(T *p, const T &fll) const
+    requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl2(p, fll,
+                                      construct_non_array_at,
+                                      destroy_non_array_at);
+  }
+  template <class T>
+  void operator ()(T *p, T &fll) const
+    requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl2(p, fll,
+                                      construct_non_array_at,
+                                      destroy_non_array_at);
+  }
+
+  template <class T, class F, class D>
+  void operator ()(T *p, F f, D d) const requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl(p, f, d);
+  }
+  template <class T, class U, class F, class D>
+  void operator ()(T *p, const U &fll, F f, D d) const
+    requires (is_bounded_array_v<T>
+              && !is_convertible_v<const U &, const remove_extent_t<T> &>
+              && !is_convertible_v<const U &, const T &>) {
+    inner::fns::construct_array_impl(p, fll, f, d);
+  }
+  template <class T, class F, class D>
+  void operator ()(T *p, const remove_extent_t<T> &fll,
+                   F f, D d) const
+    requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl22(p, fll, f, d);
+  }
+  template <class T, class F, class D>
+  void operator ()(T *p, const T &fll, F f, D d) const
+    requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl2(p, fll, f, d);
+  }
+  template <class T, class F, class D>
+  void operator ()(T *p, T &fll, F f, D d) const
+    requires is_bounded_array_v<T> {
+    inner::fns::construct_array_impl2(p, fll, f, d);
+  }
+};
+inline constexpr fo_construct_array construct_array{};
+
+struct fo_default_construct_maybe_array {
+  template <class T>
+  void operator ()(T *p) const {
+    ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T;
+  }
+  template <class T>
+  void operator ()(T *p) const requires is_bounded_array_v<T> {
+    default_construct_array(p);
+  }
+
+  template <class T, class F, class D>
+  void operator ()(T *p, F, D) const {
+    ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T;
+  }
+  template <class T, class F, class D>
+  void operator ()(T *p, F f, D d) const requires is_bounded_array_v<T> {
+    default_construct_array(p, f, d);
+  }
+};
+inline constexpr fo_default_construct_maybe_array
+default_construct_maybe_array{};
+struct fo_construct_maybe_array {
+  template <class T>
+  void operator ()(T *p) const requires (!is_array_v<T>) {
+    ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T{};
+  }
+  template <class T>
+  void operator ()(T *p) const requires is_bounded_array_v<T> {
+    construct_array(p);
+  }
+  template <class T, class U>
+  void operator ()(T *p, const U &u) const requires (!is_array_v<T>) {
+    ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T(u);
+  }
+  template <class T, class U>
+  void operator ()(T *p, const U &u) const requires is_bounded_array_v<T> {
+    construct_array(p, u);
+  }
+
+  template <class T, class F, class D>
+  void operator ()(T *p, F, D) const requires (!is_array_v<T>) {
+    ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T{};
+  }
+  template <class T, class F, class D>
+  void operator ()(T *p, F f, D d) const requires is_bounded_array_v<T> {
+    construct_array(p, f, d);
+  }
+  template <class T, class U, class F, class D>
+  void operator ()(T *p, const U &u, F, D) const
+    requires (!is_array_v<T>) {
+    ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T(u);
+  }
+  template <class T, class U, class F, class D>
+  void operator ()(T *p, const U &u, F f, D d) const
+    requires is_bounded_array_v<T> {
+    construct_array(p, u, f, d);
+  }
+};
+inline constexpr fo_construct_maybe_array construct_maybe_array{};
 
 struct fo_initialize_plus {
   template <class IR, class F>
@@ -523,7 +846,7 @@ public:
     if constexpr (alignof(T) > RE_DEFAULT_NEW_ALIGNMENT) {
       if (n > max_size())
         throw_or_terminate<bad_alloc>();
-      void *const p = operator new
+      void *const p = ::operator new
         (n * sizeof(T), align_val_t(alignof(T)), nothrow);
       if (p == nullptr)
         throw_or_terminate<bad_alloc>();
@@ -532,7 +855,7 @@ public:
     else {
       if (n > max_size())
         throw_or_terminate<bad_alloc>();
-      void *const p = operator new(n * sizeof(T), nothrow);
+      void *const p = ::operator new(n * sizeof(T), nothrow);
       if (p == nullptr)
         throw_or_terminate<bad_alloc>();
       return reinterpret_cast<T *>(p);
@@ -540,10 +863,10 @@ public:
   }
   void deallocate(T *p, size_type) {
     if constexpr (alignof(T) > RE_DEFAULT_NEW_ALIGNMENT) {
-      operator delete(p, align_val_t(alignof(T)), nothrow);
+      ::operator delete(p, align_val_t(alignof(T)), nothrow);
     }
     else {
-      operator delete(p, nothrow);
+      ::operator delete(p, nothrow);
     }
   }
 
@@ -703,6 +1026,28 @@ public:
   };
   destroy_function destroy_fn() noexcept {
     return destroy_function(this);
+  }
+
+  auto default_construct_non_array_fn() const noexcept
+    requires is_same_v<alloc_vt<AL>, byte> {
+    return [a = *this]<class T>(T *p) {
+      using vt = remove_cv_t<T>;
+      a.template rebind<vt>().construct(const_cast<vt *>(p));
+    };
+  }
+  auto construct_non_array_fn() const noexcept
+    requires is_same_v<alloc_vt<AL>, byte> {
+    return [a = *this]<class T, class...S>(T *p, S &&...s) {
+      using vt = remove_cv_t<T>;
+      a.template rebind<vt>().construct(const_cast<vt *>(p), forward<S>(s)...);
+    };
+  }
+  auto destroy_non_array_fn() const noexcept
+    requires is_same_v<alloc_vt<AL>, byte> {
+    return [a = *this]<class T>(T *p) {
+      using vt = remove_cv_t<T>;
+      a.template rebind<vt>().destroy(const_cast<vt *>(p));
+    };
   }
 
   template <class FR>
@@ -1171,8 +1516,8 @@ public:
       return rng(new_n(n, x), n);
     return {};
   }
-  template <class IR>
-  pointer_pair new_array(IR &&r) requires is_rng<IR> {
+  template <class FR>
+  pointer_pair new_array(FR &&r) requires is_frng<FR> {
     if (empty(r))
       return pointer_pair{};
     const auto n = size(r);
@@ -1240,9 +1585,18 @@ public:
     return unique_array(new_array(r), alloc_delete<allocator_type>(get()));
   }
 };
+template <class A>
+allocator_wrapper(A)->allocator_wrapper<A>;
 
 template <class T>
 using default_alloc_wrapper = allocator_wrapper<default_allocator<T>>;
+struct fo_alloc_wrapper {
+  template <class AL>
+  allocator_wrapper<AL> operator ()(AL a) const noexcept {
+    return allocator_wrapper<AL>(a);
+  }
+};
+inline constexpr fo_alloc_wrapper alloc_wrapper{};
 
 }
 
@@ -1300,7 +1654,67 @@ public:
 };
 
 template <class T>
-using default_delete = alloc_delete<default_allocator<T>>;
+class default_delete {
+public:
+  using pointer = T *;
+  using pointer_pair = iter_pair<pointer>;
+  using size_type = size_t;
+
+  default_delete() = default;
+  ~default_delete() = default;
+  default_delete(const default_delete &) = default;
+  default_delete &operator =(const default_delete &) = default;
+  default_delete(default_delete &&) = default;
+  default_delete &operator =(default_delete &&) = default;
+
+  void operator ()(T *p) const noexcept {
+    ::delete p;
+  }
+  void operator ()(iter_pair<T *> x) const noexcept {
+    for (T &u : x)
+      u.~T();
+    ::operator delete(const_cast<void *>(static_cast<const void *>(x.first)));
+  }
+};
+template <class T>
+class default_delete<T []> {
+public:
+  using pointer = T *;
+  using pointer_pair = iter_pair<pointer>;
+  using size_type = size_t;
+
+  default_delete() = default;
+  ~default_delete() = default;
+  default_delete(const default_delete &) = default;
+  default_delete &operator =(const default_delete &) = default;
+  default_delete(default_delete &&) = default;
+  default_delete &operator =(default_delete &&) = default;
+
+  template <class U>
+  void operator ()(U *p) const requires is_convertible_v<U (*)[], T (*)[]> {
+    ::delete [] p;
+  }
+};
+template <class T>
+class default_delete<T [0]>;
+template <class T, size_t N>
+class default_delete<T [N]> {
+public:
+  using pointer = T (*)[N];
+  using pointer_pair = iter_pair<pointer>;
+  using size_type = size_t;
+
+  default_delete() = default;
+  ~default_delete() = default;
+  default_delete(const default_delete &) = default;
+  default_delete &operator =(const default_delete &) = default;
+  default_delete(default_delete &&) = default;
+  default_delete &operator =(default_delete &&) = default;
+
+  void operator ()(T *p) const {
+    ::delete [] p;
+  }
+};
 
 namespace inner {
 
@@ -1401,8 +1815,10 @@ public:
     requires (!is_pointer_v<deleter_type>
               && is_default_constructible_v<deleter_type>) : p(pp) {}
   unique_ptr(type_identity_t<pointer> pp, const D &d) noexcept
+    requires is_constructible_v<D, const D &>
     : base_t(in_place, d), p(pp) {}
   unique_ptr(type_identity_t<pointer> pp, remove_reference_t<D> &&d) noexcept
+    requires is_constructible_v<D, remove_reference_t<D> &&>
     : base_t(in_place, move(d)), p(pp) {}
 
   add_lvalue_reference_t<T> operator *() const {
@@ -1463,11 +1879,127 @@ strong_ordering operator <=>(const unique_ptr<T, D> &x,
   return x != nullptr ? strong_gt : strong_eq;
 }
 template <class T, class D>
-class unique_ptr<T [], D>;
+class unique_ptr<T [], D> : derivable_wrapper<D> {
+  template <class, class>
+  friend class unique_ptr;
+
+  using this_t = unique_ptr;
+  using base_t = derivable_wrapper<D>;
+
+  base_t &base() noexcept {
+    return *this;
+  }
+  const base_t &base() const noexcept {
+    return *this;
+  }
+
+  inner::unique_ptr_pointer_type_t<T, D> p;
+
+public:
+  using pointer = inner::unique_ptr_pointer_type_t<T, D>;
+  using element_type = T;
+  using deleter_type = D;
+
+  unique_ptr() noexcept : p(nullptr) {}
+  ~unique_ptr() {
+    if (p != nullptr)
+      (*base())(p);
+  }
+  unique_ptr(const unique_ptr &) = delete;
+  unique_ptr &operator =(const unique_ptr &) = delete;
+  unique_ptr(unique_ptr &&x) noexcept
+    requires is_move_constructible_v<D>
+    : base_t(move(x.base())), p(x.p) {
+    x.p = nullptr;
+  }
+  unique_ptr &operator =(unique_ptr &&x) noexcept
+    requires is_move_assignable_v<D> {
+    reset(x.release());
+    base() = move(x.base());
+    return *this;
+  }
+  friend void swap(unique_ptr &x, unique_ptr &y) noexcept
+    requires is_nothrow_swappable_v<D> {
+    adl_swap(x.base(), y.base());
+    adl_swap(x.p, y.p);
+  }
+
+  unique_ptr(nullptr_t) noexcept : p(nullptr) {}
+  unique_ptr &operator =(nullptr_t) noexcept {
+    reset();
+    return *this;
+  }
+
+  template <class T2, class D2>
+  unique_ptr(unique_ptr<T2, D2> &&u) noexcept
+    requires (is_convertible_v<typename unique_ptr<T2, D2>::pointer, pointer>
+              && !is_array_v<T2>
+              && ((is_reference_v<D> && is_same_v<D2, D>)
+                  || (!is_reference_v<D> && is_convertible_v<D2, D>)))
+    : base_t(in_place, forward<D2>(*u.base())), p(u.p) {
+    u.p = nullptr;
+  }
+  template <class T2, class D2>
+  unique_ptr &operator =(unique_ptr<T2, D2> &&u) noexcept
+    requires (is_convertible_v<typename unique_ptr<T2, D2>::pointer, pointer>
+              && !is_array_v<T2> && is_assignable_v<D &, D2 &&>) {
+    reset(u.release());
+    *base() = forward<D2>(*u.base());
+    return *this;
+  }
+
+  template <class U>
+  explicit unique_ptr(U pp) noexcept
+    requires (is_constructible_v<inner::unique_ptr_pointer_type_t<T, D>, U &>
+              && !is_pointer_v<deleter_type>
+              && is_default_constructible_v<deleter_type>) : p(pp) {}
+  template <class U>
+  unique_ptr(U pp, const D &d) noexcept
+    requires (is_constructible_v<inner::unique_ptr_pointer_type_t<T, D>, U &>
+              && is_constructible_v<D, const D &>)
+    : base_t(in_place, d), p(pp) {}
+  template <class U>
+  unique_ptr(U pp, remove_reference_t<D> &&d) noexcept
+    requires (is_constructible_v<inner::unique_ptr_pointer_type_t<T, D>, U &>
+              && is_constructible_v<D, remove_reference_t<D> &&>)
+    : base_t(in_place, move(d)), p(pp) {}
+
+  T &operator [](size_t i) const {
+    return get()[i];
+  }
+  pointer get() const noexcept {
+    return p;
+  }
+
+  bool empty() const noexcept {
+    return p == nullptr;
+  }
+  void clear() noexcept {
+    reset();
+  }
+  explicit operator bool() const noexcept {
+    return !empty();
+  }
+
+  deleter_type &get_deleter() noexcept {
+    return *base();
+  }
+  const deleter_type &get_deleter() const noexcept {
+    return *base();
+  }
+
+  pointer release() noexcept {
+    return exchange(p, nullptr);
+  }
+  void reset(pointer pp = pointer{}) noexcept {
+    if (auto old = exchange(p, pp); old != nullptr)
+      (*base())(old);
+  }
+};
 template <class T, class D>
 struct hash<unique_ptr<T, D>> {
   size_t operator ()(const unique_ptr<T, D> &x) const {
-    return x != nullptr ? hash<T>{}(*x) : 0u;
+    return hash<typename unique_ptr<T, D>::pointer>{}(x.get());
   }
 };
 
@@ -1475,12 +2007,35 @@ template <class T>
 struct fo_make_unique {
   template <class...S>
   unique_ptr<T> operator ()(S &&...s) const {
-    using alw_t = allocator_wrapper<default_allocator<T>>;
-    return alw_t{}.make_unique(forward<S>(s)...);
+    return unique_ptr<T>(::new T(forward<S>(s)...), default_delete<T>{});
+  }
+};
+template <class T>
+struct fo_make_unique<T []> {
+  template <class...S>
+  unique_ptr<T []> operator ()(size_t sz) const {
+    return unique_ptr<T []>(::new T[sz]{}, default_delete<T []>{});
   }
 };
 template <class T>
 inline constexpr fo_make_unique<T> make_unique{};
+
+template <class T>
+struct fo_make_unique_for_overwrite {
+  template <class...S>
+  unique_ptr<T> operator ()() const {
+    return unique_ptr<T>(::new T, default_delete<T>{});
+  }
+};
+template <class T>
+struct fo_make_unique_for_overwrite<T []> {
+  template <class...S>
+  unique_ptr<T []> operator ()(size_t sz) const {
+    return unique_ptr<T []>(::new T[sz], default_delete<T>{});
+  }
+};
+template <class T>
+inline constexpr fo_make_unique_for_overwrite<T> make_unique_for_overwrite{};
 
 namespace inner {
 
@@ -1707,14 +2262,37 @@ operator <=>(const unique_array<T1, D1> &x,
 template <class T>
 struct fo_make_array {
   unique_array<T> operator ()(size_t n) const {
-    return default_alloc_wrapper<T>{}.make_array(n);
+    if (n > numeric_limits<size_t>::max() / sizeof(T))
+      throw_or_terminate<bad_alloc>();
+    void *const p = ::operator new(n * sizeof(T));
+    const auto pp = iter_pair(static_cast<T *>(p),
+                              static_cast<T *>(p) + n);
+    for (auto &u : iters(pp))
+      ::new(u) T{};
+    return unique_array<T>(pp);
   }
   unique_array<T> operator ()(size_t n, const T &x) const {
-    return default_alloc_wrapper<T>{}.make_array(n, x);
+    if (n > numeric_limits<size_t>::max() / sizeof(T))
+      throw_or_terminate<bad_alloc>();
+    void *const p = ::operator new(n * sizeof(T));
+    const auto pp = iter_pair(static_cast<T *>(p), static_cast<T *>(p) + n);
+    for (auto &u : iters(pp))
+      ::new(u) T(x);
+    return unique_array<T>(pp);
   }
-  template <class IR>
-  unique_array<T> operator ()(IR &&r) const requires is_rng<IR> {
-    return default_alloc_wrapper<T>{}.make_array(r);
+  template <class FR>
+  unique_array<T> operator ()(FR &&r) const requires is_frng<FR> {
+    const auto n = size(r);
+    if (n > numeric_limits<size_t>::max() / sizeof(T))
+      throw_or_terminate<bad_alloc>();
+    void *const p = ::operator new(n * sizeof(T));
+    const auto pp = iter_pair(static_cast<T *>(p), static_cast<T *>(p) + n);
+    auto it = pp.first;
+    for (auto &it2 : iters(r)) {
+      ::new(it) T(*it2);
+      ++it;
+    }
+    return unique_array<T>(pp); 
   }
 };
 template <class T>

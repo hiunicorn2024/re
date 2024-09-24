@@ -4044,13 +4044,13 @@ file_info<S> view_file_impl0(V v) {
   wstring s;
   if (!s.assign_unicode(v))
     throw_or_terminate<logic_error>
-      ("re::view_file(sv): invalid unicode string as input");
+      ("re::view_file(sv): invalid unicode string as input\n");
   s = simplify_path(to_full_path(s));
 
   S s2;
   if (!s2.assign_unicode(s))
     throw_or_terminate<logic_error>
-      ("re::view_file(sv): invalid unicode string as input");
+      ("re::view_file(sv): invalid unicode string as input\n");
 
   file_info<S> ret;
 
@@ -4138,7 +4138,7 @@ tree<file_info<S>> view_directory_impl(V v) {
   t.emplace(inner::fns::view_file_impl0<S>(v));
   if ((**t.root()).is_dir == false)
     throw_or_terminate<logic_error>
-      ("re::view_directory(sv): non-directory is unacceptable");
+      ("re::view_directory(sv): non-directory is unacceptable\n");
 
   const auto load_direct_children = [](const wchar_t *p, auto f) {
     WIN32_FIND_DATA find_data;

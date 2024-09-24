@@ -3027,6 +3027,21 @@ struct is_nothrow_copyable
 template <class T>
 inline constexpr bool is_nothrow_copyable_v = is_nothrow_copyable<T>::value;
 
+template <class Y, class T>
+struct is_compatible_pointer_with;
+template <class Y, class T>
+struct is_compatible_pointer_with<Y *, T *>
+  : is_convertible<Y *, T *> {};
+template <class Y, class T>
+struct is_compatible_pointer_with<Y *, T []>
+  : is_convertible<Y (*)[], T (*)[]> {};
+template <class Y, class T, size_t N>
+struct is_compatible_pointer_with<Y *, T [N]>
+  : is_convertible<Y (*)[N], T (*)[N]> {};
+template <class Y, class T>
+inline constexpr bool is_compatible_pointer_with_v
+  = is_compatible_pointer_with<Y, T>::value;
+
 }
 
 // basic utility functions

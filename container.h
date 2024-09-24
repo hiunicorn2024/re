@@ -8366,7 +8366,7 @@ private:
       n += 1;
     else
       throw_or_terminate<length_error>("re::circular_vector: size overflow in "
-                                       "reserve_raw_space_at_least_1()");
+                                       "reserve_raw_space_at_least_1()\n");
     reallocate_impl(n);
   }
   void reserve_raw_space_at_least_1() {
@@ -8386,7 +8386,7 @@ private:
       else
         throw_or_terminate<length_error>
           ("re::circular_vector: size overflow in "
-           "reserve_raw_space_at_least(n)");
+           "reserve_raw_space_at_least(n)\n");
     }
   }
 
@@ -8523,7 +8523,7 @@ private:
     static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
     if (n > max_size())
       throw_or_terminate<length_error>
-        ("re::circular_vector: size overflow in size_check(n)");
+        ("re::circular_vector: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
@@ -8785,7 +8785,7 @@ private:
   void reserve_impl(size_type n) {
     if (n > max_size())
       throw_or_terminate<length_error>
-        ("re::circular_vector: size overflow in reserve_impl()");
+        ("re::circular_vector: size overflow in reserve_impl()\n");
     if (n > capacity())
       reallocate_impl(n);
   }
@@ -8979,12 +8979,12 @@ public:
   }
   reference at(size_type n) {
     if (n >= size())
-      throw_or_terminate<out_of_range>("re::circular_vector: at(n) failed");
+      throw_or_terminate<out_of_range>("re::circular_vector: at(n) failed\n");
     return begin()[n];
   }
   const_reference at(size_type n) const {
     if (n >= size())
-      throw_or_terminate<out_of_range>("re::circular_vector: at(n) failed");
+      throw_or_terminate<out_of_range>("re::circular_vector: at(n) failed\n");
     return begin()[n];
   }
 
@@ -23957,28 +23957,28 @@ public:
   mapped_type &at(const key_type &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
   template <class K, class X = LESS, class = typename X::is_transparent>
   mapped_type &at(const K &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
 
   const mapped_type &at(const key_type &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
   template <class K, class X = LESS, class = typename X::is_transparent>
   const mapped_type &at(const K &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>("re::map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
 
@@ -28849,7 +28849,7 @@ public:
     const iterator it = find(key);
     if (it == end())
       throw_or_terminate<out_of_range>
-        ("re::unordered_map_adaptor: at(key) failed");
+        ("re::unordered_map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
   template <class K>
@@ -28857,7 +28857,7 @@ public:
     const iterator it = find(key);
     if (it == end())
       throw_or_terminate<out_of_range>
-        ("re::unordered_map_adaptor: at(key) failed");
+        ("re::unordered_map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
 
@@ -28865,7 +28865,7 @@ public:
     const const_iterator it = find(key);
     if (it == end())
       throw_or_terminate<out_of_range>
-        ("re::unordered_map_adaptor: at(key) failed");
+        ("re::unordered_map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
   template <class K>
@@ -28873,7 +28873,7 @@ public:
     const const_iterator it = find(key);
     if (it == end())
       throw_or_terminate<out_of_range>
-        ("re::unordered_map_adaptor: at(key) failed");
+        ("re::unordered_map_adaptor: at(key) failed\n");
     return traits::mapped(*it);
   }
 
@@ -31674,27 +31674,31 @@ public:
   mapped_type &at(const key_type &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::mixed_map_adaptor: at(key) failed\n");
     return get_mapped()(*it);
   }
   template <class K, bool Y = transparent, class = enable_if_t<Y>>
   mapped_type &at(const K &key) {
     const iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::mixed_map_adaptor: at(key) failed\n");
     return get_mapped()(*it);
   }
   const mapped_type &at(const key_type &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::mixed_map_adaptor: at(key) failed\n");
     return get_mapped()(*it);
   }
   template <class K, bool Y = transparent, class = enable_if_t<Y>>
   const mapped_type &at(const K &key) const {
     const const_iterator it = find(key);
     if (it == end())
-      throw_or_terminate<out_of_range>("re::mixed_map_adaptor: at(key) failed");
+      throw_or_terminate<out_of_range>
+        ("re::mixed_map_adaptor: at(key) failed\n");
     return get_mapped()(*it);
   }
 
@@ -39056,6 +39060,7 @@ public:
     catch (...) {
       x.clear();
       y.clear();
+      throw;
     }
 #endif
   }

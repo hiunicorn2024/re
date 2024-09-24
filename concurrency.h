@@ -610,6 +610,1329 @@ public:
 
 }
 
+// shared_ptr
+namespace re {
+
+class bad_weak_ptr : public exception {
+public:
+  const char *what() const noexcept override {
+    return "re::bad_weak_ptr";
+  }
+};
+
+template <class>
+class shared_ptr;
+template <class>
+class weak_ptr;
+template <class>
+class enable_shared_from_this;
+template <class>
+struct fo_make_shared;
+template <class>
+struct fo_allocate_shared;
+template <class>
+struct fo_make_shared_for_overwrite;
+template <class>
+struct fo_allocate_shared_for_overwrite;
+
+namespace inner {
+
+class shared_ptr_control_block {
+  using this_t = shared_ptr_control_block;
+
+protected:
+  atomic<long> counter;
+
+public:
+  shared_ptr_control_block() = default;
+  virtual ~shared_ptr_control_block() = default;
+  shared_ptr_control_block(const this_t &) = delete;
+  this_t &operator =(const this_t &) = delete;
+  shared_ptr_control_block(this_t &&) = delete;
+  this_t &operator =(this_t &&) = delete;
+
+  explicit shared_ptr_control_block(long c) noexcept : counter(c) {}
+
+  virtual void clear() noexcept = 0;
+  long count() const noexcept {
+    return counter.load();
+  }
+  bool plus_1() noexcept {
+    if (counter++ == numeric_limits<long>::max()) {
+      --counter;
+      return true;
+    }
+    else
+      return false;
+  }
+  bool minus_1() noexcept {
+    return --counter == 0;
+  }
+
+private:
+  virtual void *deleter_stored_ptr() noexcept = 0;
+  virtual const type_info &deleter_typeid() noexcept = 0;
+public:
+  template <class D>
+  D *get_deleter() noexcept requires is_same_v<remove_cv_t<D>, D> {
+    void *const p = deleter_stored_ptr();
+    if (p == nullptr)
+      return nullptr;
+    if (typeid(D) == deleter_typeid())
+      return reinterpret_cast<D *>(p);
+    else
+      return nullptr;
+  }
+};
+template <class T, class D = default_delete<T>, class A = default_allocator<T>>
+class shared_ptr_control_block_impl
+  : public shared_ptr_control_block
+  , public derivable_wrapper<D>
+  , public allocator_wrapper<A> {
+  using this_t = shared_ptr_control_block_impl;
+  using alw_t = allocator_wrapper<A>;
+  using base_t = shared_ptr_control_block;
+  using base_t::counter;
+
+  using element_t = remove_extent_t<T>;
+  element_t *p;
+
+public:
+  shared_ptr_control_block_impl() = default;
+  virtual ~shared_ptr_control_block_impl() override = default;
+  shared_ptr_control_block_impl(const this_t &) = delete;
+  this_t &operator =(const this_t &) = delete;
+  shared_ptr_control_block_impl(this_t &&) = delete;
+  this_t &operator =(this_t &&) = delete;
+
+  explicit shared_ptr_control_block_impl(element_t *pp)
+    : base_t(1)
+    , derivable_wrapper<D>{}
+    , alw_t{}
+    , p(pp) {}
+  shared_ptr_control_block_impl(element_t *pp, D d)
+    : base_t(1)
+    , derivable_wrapper<D>(forward<D>(d))
+    , alw_t{}
+    , p(pp) {}
+  shared_ptr_control_block_impl(element_t *pp, D d, A a)
+    : base_t(1)
+    , derivable_wrapper<D>(forward<D>(d))
+    , alw_t(a)
+    , p(pp) {}
+
+  virtual void clear() noexcept override {
+    (*static_cast<derivable_wrapper<D> &>(*this))(p);
+    alw_t::template rebind<this_t>().delete_1(this);
+  }
+
+  element_t *get() const noexcept {
+    return p;
+  }
+  using base_t::count;
+  using base_t::plus_1;
+  using base_t::minus_1;
+
+private:
+  void *deleter_stored_ptr_impl() noexcept {
+    return addressof(derivable_wrapper<D>::operator *());
+  }
+  void *deleter_stored_ptr_impl() noexcept
+    requires (!is_same_v<remove_cv_t<D>, D>) {
+    return nullptr;
+  }
+  virtual void *deleter_stored_ptr() noexcept override {
+    return deleter_stored_ptr_impl();
+  }
+  virtual const type_info &deleter_typeid() noexcept override {
+    return typeid(D);
+  }
+};
+
+}
+
+template <class T>
+class weak_ptr {
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class weak_ptr;
+  template <class>
+  friend class enable_shared_from_this;
+
+  using this_t = weak_ptr;
+
+  remove_extent_t<T> *p;
+  inner::shared_ptr_control_block *cb;
+
+public:
+  using element_type = remove_extent_t<T>;
+
+  weak_ptr() noexcept : p{}, cb{} {}
+  ~weak_ptr() = default;
+  weak_ptr(const weak_ptr &) noexcept = default;
+  weak_ptr &operator =(const weak_ptr &) noexcept = default;
+  weak_ptr(weak_ptr &&x) noexcept : p(x.p), cb(x.cb) {
+    x.p = nullptr;
+    x.cb = nullptr;
+  }
+  weak_ptr &operator =(weak_ptr &&x) noexcept {
+    p = exchange(x.p, nullptr);
+    cb = exchange(x.cb, nullptr);
+    return *this;
+  }
+  friend void swap(weak_ptr &x, weak_ptr &y) noexcept {
+    adl_swap(x.p, y.p);
+    adl_swap(x.cb, y.cb);
+  }
+
+  template<class Y>
+  weak_ptr(const weak_ptr<Y> &x) noexcept
+    requires (!is_same_v<Y, T>
+              && is_compatible_pointer_with_v<Y *, T *>)
+    : p(x.p), cb(x.cb) {}
+  template <class Y>
+  weak_ptr &operator =(const weak_ptr<Y> &x) noexcept {
+    copy_and_swap(this_t(x), *this);
+    return *this;
+  }
+
+  template <class Y>
+  weak_ptr(weak_ptr<Y> &&x) noexcept
+    requires (!is_same_v<Y, T>
+              && is_compatible_pointer_with_v<Y *, T *>)
+    : p(x.p), cb(x.cb) {
+    x.p = nullptr;
+    x.cb = nullptr;
+  }
+  template <class Y>
+  weak_ptr &operator =(weak_ptr<Y> &&x) noexcept {
+    copy_and_swap(this_t(move(x)), *this);
+    return *this;
+  }
+
+  template <class Y>
+  weak_ptr(const shared_ptr<Y> &x) noexcept
+    requires is_compatible_pointer_with_v<Y *, T *>
+    : p(x.p), cb(x.cb) {}
+  template <class Y>
+  weak_ptr &operator =(const shared_ptr<Y> &x) noexcept
+    requires is_compatible_pointer_with_v<Y *, T *> {
+    copy_and_swap(this_t(x), *this);
+    return *this;
+  }
+
+  void reset() noexcept {
+    p = nullptr;
+    cb = nullptr;
+  }
+  long use_count() const noexcept {
+    return cb == nullptr ? 0 : cb->count();
+  }
+  bool expired() const noexcept {
+    return use_count() == 0;
+  }
+  shared_ptr<T> lock() const noexcept {
+    return expired() ? shared_ptr<T>{} : shared_ptr<T>(*this);
+  }
+
+  template<class U>
+  bool owner_before(const shared_ptr<U> &b) const noexcept {
+    return cb < b.cb;
+  }
+  template<class U>
+  bool owner_before(const weak_ptr<U> &b) const noexcept {
+    return cb < b.cb;
+  }
+};
+template <class T>
+weak_ptr(shared_ptr<T>)->weak_ptr<T>;
+
+template <class T = void>
+struct owner_less;
+template <class T>
+struct owner_less<shared_ptr<T>> {
+  bool operator()(const shared_ptr<T> &x,
+                  const shared_ptr<T> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  bool operator()(const shared_ptr<T> &x,
+                  const weak_ptr<T> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  bool operator()(const weak_ptr<T> &x,
+                  const shared_ptr<T> &y) const noexcept {
+    return x.owner_before(y);
+  }
+};
+template <class T>
+struct owner_less<weak_ptr<T>> {
+  bool operator()(const weak_ptr<T> &x,
+                  const weak_ptr<T> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  bool operator()(const shared_ptr<T> &x,
+                  const weak_ptr<T> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  bool operator()(const weak_ptr<T> &x,
+                  const shared_ptr<T> &y) const noexcept {
+    return x.owner_before(y);
+  }
+};
+template <>
+struct owner_less<void> {
+  using is_transparent = inner::transparent_tag;
+
+  template<class T, class U>
+  bool operator()(const shared_ptr<T> &x,
+                  const shared_ptr<U> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  template<class T, class U>
+  bool operator()(const shared_ptr<T> &x,
+                  const weak_ptr<U> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  template<class T, class U>
+  bool operator()(const weak_ptr<T> &x,
+                  const shared_ptr<U> &y) const noexcept {
+    return x.owner_before(y);
+  }
+  template<class T, class U>
+  bool operator()(const weak_ptr<T> &x,
+                  const weak_ptr<U> &y) const noexcept {
+    return x.owner_before(y);
+  }
+};
+
+template <class T>
+class enable_shared_from_this {
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class weak_ptr;
+  template <class>
+  friend class enable_shared_from_this;
+
+  using this_t = enable_shared_from_this;
+
+  using t = T;
+
+  mutable weak_ptr<T> weak_this;
+
+protected:
+  constexpr enable_shared_from_this() noexcept : weak_this{} {}
+  ~enable_shared_from_this() = default;
+  enable_shared_from_this(const this_t &) noexcept : weak_this{} {}
+  this_t &operator =(const this_t &) noexcept {
+    return *this;
+  }
+  enable_shared_from_this(this_t &&) noexcept : weak_this{} {}
+  this_t &operator =(this_t &&) noexcept {
+    return *this;
+  }
+
+public:
+  shared_ptr<T> shared_from_this() {
+    return shared_ptr<T>(weak_this);
+  }
+  shared_ptr<const T> shared_from_this() const {
+    return shared_ptr<const T>(weak_this);
+  }
+  weak_ptr<T> weak_from_this() noexcept {
+    return weak_ptr<T>(weak_this);
+  }
+  weak_ptr<const T> weak_from_this() const noexcept {
+    return weak_ptr<const T>(weak_this);
+  }
+};
+
+namespace inner::fns {
+
+template <class T>
+enable_shared_from_this<T> *
+get_enable_shared_from_this(enable_shared_from_this<T> *p) noexcept {
+  return p;
+}
+
+}
+template <class T>
+class shared_ptr {
+  template <class>
+  friend struct fo_make_shared;
+  template <class>
+  friend struct fo_allocate_shared;
+  template <class>
+  friend struct fo_make_shared_for_overwrite;
+  template <class>
+  friend struct fo_allocate_shared_for_overwrite;
+
+  template <class>
+  friend struct fo_get_deleter;
+
+  template <class>
+  friend class weak_ptr;
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class enable_shared_from_this;
+
+  using this_t = shared_ptr;
+
+  using cb_t = inner::shared_ptr_control_block;
+
+  remove_extent_t<T> *p;
+  cb_t *cb;
+
+public:
+  using element_type = remove_extent_t<T>;
+  using weak_type = weak_ptr<T>;
+
+  constexpr shared_ptr() noexcept : p{}, cb{} {}
+  ~shared_ptr() {
+    if (cb != nullptr) {
+      if (cb->minus_1())
+        cb->clear();
+    }
+  }
+  shared_ptr(const shared_ptr &x) noexcept : p(x.p), cb(x.cb) {
+    if (cb != nullptr) {
+      if (cb->plus_1())
+        throw_or_terminate<length_error>
+          ("re::shared_ptr<T>::copy_constructor: ref-count overflow\n");
+    }
+  }
+  shared_ptr &operator =(const shared_ptr &x) noexcept {
+    copy_and_swap(x, *this);
+    return *this;
+  }
+  shared_ptr(shared_ptr &&x) noexcept : p(x.p), cb(x.cb) {
+    x.p = nullptr;
+    x.cb = nullptr;
+  }
+  shared_ptr &operator =(shared_ptr &&x) noexcept {
+    copy_and_swap(move(x), *this);
+    return *this;
+  }
+  friend void swap(this_t &x, this_t &y) noexcept {
+    adl_swap(x.p, y.p);
+    adl_swap(x.cb, y.cb);
+  }
+
+  constexpr shared_ptr(nullptr_t) noexcept : shared_ptr{} {}
+  void reset() noexcept {
+    copy_and_swap(this_t{}, *this);
+  }
+
+private:
+  template <class Y>
+  void enable_shrd_from_this(Y *) {}
+  template <class Y>
+  void enable_shrd_from_this(Y *pp)
+    requires requires {
+      inner::fns::get_enable_shared_from_this(pp);
+      requires is_convertible_v<remove_cv_t<Y> *, T *>;
+    } {
+    const auto enable_shard_p = inner::fns::get_enable_shared_from_this(pp);
+    enable_shard_p->weak_this
+      = shared_ptr<remove_cv_t<Y>>(*this, const_cast<remove_cv_t<Y> *>(pp));
+  }
+public:
+  template <class Y>
+  explicit shared_ptr(Y *pp)
+    requires (!is_array_v<T> && is_convertible_v<Y *, T *>)
+    : p(pp)
+    , cb(default_alloc_wrapper<inner::shared_ptr_control_block_impl<Y>>()
+         .new_1(pp)) {
+    enable_shrd_from_this(pp);
+  }
+  template <class Y>
+  explicit shared_ptr(Y *pp)
+    requires (is_unbounded_array_v<T>
+              && is_convertible_v<Y (*)[], T *>)
+    : p(pp)
+    , cb(default_alloc_wrapper<inner::shared_ptr_control_block_impl<Y []>>()
+         .new_1(pp)) {}
+  template <class Y>
+  explicit shared_ptr(Y *pp)
+    requires (is_bounded_array_v<T>
+              && is_convertible_v<Y (*)[extent_v<T>], T *>)
+    : p(pp)
+    , cb(default_alloc_wrapper
+         <inner::shared_ptr_control_block_impl<Y [extent_v<T>]>>()
+         .new_1(pp)) {}
+  template <class Y>
+  void reset(Y *pp) {
+    copy_and_swap(this_t(pp), *this);
+  }
+
+  template <class Y, class D>
+  shared_ptr(Y *pp, D d)
+    requires requires {
+      requires !is_array_v<T>;
+      requires is_convertible_v<Y *, T *>;
+      requires is_move_constructible_v<D>;
+      d(pp);
+    }
+    : p(pp)
+    , cb(default_alloc_wrapper
+         <inner::shared_ptr_control_block_impl<Y, D>>()
+         .new_1(pp, move(d))) {
+    enable_shrd_from_this(pp);
+  }
+  template <class Y, class D>
+  shared_ptr(Y *pp, D d)
+    requires requires {
+      requires is_unbounded_array_v<T>;
+      requires is_convertible_v<Y (*)[], T *>;
+      requires is_move_constructible_v<D>;
+      d(pp);
+    }
+    : p(pp)
+    , cb(default_alloc_wrapper
+         <inner::shared_ptr_control_block_impl<Y [], D>>()
+         .new_1(pp, move(d))) {}
+  template <class Y, class D>
+  shared_ptr(Y *pp, D d)
+    requires requires {
+      requires is_bounded_array_v<T>;
+      requires is_convertible_v<Y (*)[extent_v<T>], T *>;
+      requires is_move_constructible_v<D>;
+      d(pp);
+    }
+    : p(pp)
+    , cb(default_alloc_wrapper
+         <inner::shared_ptr_control_block_impl<Y [extent_v<T>], D>>()
+         .new_1(pp, move(d))) {}
+  template <class D>
+  shared_ptr(nullptr_t, D d)
+    requires requires {d(p);}
+    : p(nullptr)
+    , cb(default_alloc_wrapper
+         <inner::shared_ptr_control_block_impl<T, D>>()
+         .new_1(nullptr, move(d))) {}
+  template <class Y, class D>
+  void reset(Y *pp, D d) {
+    copy_and_swap(this_t(pp, move(d)), *this);
+  }
+
+  template <class Y, class D, class A>
+  shared_ptr(Y *pp, D d, A a)
+    requires requires {
+      requires !is_array_v<T>;
+      requires is_convertible_v<Y *, T *>;
+      requires is_move_constructible_v<D>;
+      d(pp);
+      requires is_pointer_v<alloc_ptr<A>>;
+    }
+    : p(pp)
+    , cb(allocator_wrapper<A>(a)
+         .template rebind
+         <inner::shared_ptr_control_block_impl<Y, D, alloc_rebind<A, Y>>>()
+         .new_1(pp, move(d), a)) {
+    enable_shrd_from_this(pp);
+  }
+  template <class Y, class D, class A>
+  shared_ptr(Y *pp, D d, A a)
+    requires requires {
+      requires is_unbounded_array_v<T>;
+      requires is_convertible_v<Y (*)[], T *>;
+      requires is_move_constructible_v<D>;
+      d(pp);
+      requires is_pointer_v<alloc_ptr<A>>;
+    }
+    : p(pp)
+    , cb(allocator_wrapper<A>(a)
+         .template rebind
+         <inner::shared_ptr_control_block_impl<Y [], D, alloc_rebind<A, Y>>>()
+         .new_1(pp, move(d), a)) {}
+  template <class Y, class D, class A>
+  shared_ptr(Y *pp, D d, A a)
+    requires requires {
+      requires is_bounded_array_v<T>;
+      requires is_convertible_v<Y (*)[extent_v<T>], T *>;
+      requires is_move_constructible_v<D>;
+      d(pp);
+      requires is_pointer_v<alloc_ptr<A>>;
+    }
+    : p(pp)
+    , cb(allocator_wrapper<A>(a)
+         .template rebind
+         <inner::shared_ptr_control_block_impl
+          <Y [extent_v<T>], D, alloc_rebind<A, Y>>>()
+         .new_1(pp, move(d), a)) {}
+  template <class D, class A>
+  shared_ptr(nullptr_t, D d, A a)
+    requires requires {
+      requires is_move_constructible_v<D>;
+      d(p);
+      requires is_pointer_v<alloc_ptr<A>>;
+    }
+    : p{}, cb(allocator_wrapper<A>(a)
+              .template rebind
+              <inner::shared_ptr_control_block_impl<T, D, alloc_rebind<A, T>>>()
+              .new_1(nullptr, move(d), a)) {}
+  template <class Y, class D, class A>
+  void reset(Y *pp, D d, A a) {
+    copy_and_swap(this_t(pp, move(d), a), *this);
+  }
+
+  template <class Y>
+  shared_ptr(const shared_ptr<Y> &x) noexcept
+    requires (!is_same_v<Y, T>
+              && is_compatible_pointer_with_v<Y *, T *>)
+    : p(x.p), cb(x.cb) {
+    if (cb != nullptr) {
+      if (cb->plus_1())
+        throw_or_terminate<length_error>
+          ("re::shared_ptr<T>::shared_ptr(const shared_ptr<Y> &):\n"
+           "  ref-count overflow\n");
+    }
+  }
+  template <class Y>
+  shared_ptr &operator =(const shared_ptr<Y> &x) noexcept
+    requires (!is_same_v<Y, T>
+              && is_compatible_pointer_with_v<Y *, T *>) {
+    copy_and_swap(this_t(x), *this);
+    return *this;
+  }
+
+  template <class Y>
+  shared_ptr(shared_ptr<Y> &&x) noexcept
+    requires (!is_same_v<Y, T>
+              && is_compatible_pointer_with_v<Y *, T *>)
+    : p(x.p), cb(x.cb) {
+    x.p = nullptr;
+    x.cb = nullptr;
+  }
+  template <class Y>
+  shared_ptr &operator =(shared_ptr<Y> &&x) noexcept
+    requires (!is_same_v<Y, T>
+              && is_compatible_pointer_with_v<Y *, T *>) {
+    copy_and_swap(this_t(move(x)), *this);
+    return *this;
+  }
+
+  template <class Y>
+  shared_ptr(const shared_ptr<Y> &x, element_type *pp) noexcept
+    : p(pp), cb(x.cb) {
+    if (cb != nullptr) {
+      if (cb->plus_1())
+        throw_or_terminate<length_error>
+          ("re::shared_ptr<T>\n"
+           "::shared_ptr(const shared_ptr<Y> &, element_type *):\n"
+           "  ref-count overflow\n");
+    }
+  }
+  template <class Y>
+  shared_ptr(shared_ptr<Y> &&x, element_type *pp) noexcept
+    : p(pp), cb(x.cb) {
+    x.p = nullptr;
+    x.cb = nullptr;
+  }
+
+  template <class Y, class D>
+  shared_ptr(unique_ptr<Y, D> &&x)
+    requires (is_pointer_v<typename unique_ptr<Y, D>::pointer>
+              && !is_array_v<T>
+              && is_convertible_v
+              <typename unique_ptr<Y, D>::pointer, T *>) {
+    if (const auto tmp_p = x.get();
+        tmp_p == nullptr) {
+      p = nullptr;
+      cb = nullptr;
+    }
+    else {
+      cb = default_alloc_wrapper<inner::shared_ptr_control_block_impl<Y, D>>{}
+        .new_1(tmp_p, x.get_deleter());
+      x.release();
+      p = tmp_p;
+      enable_shrd_from_this(tmp_p);
+    }
+  }
+  template <class Y, class D>
+  shared_ptr &operator =(unique_ptr<Y, D> &&x)
+    requires (is_pointer_v<typename unique_ptr<Y, D>::pointer>
+              && is_convertible_v
+              <typename unique_ptr<Y, D>::pointer, T *>) {
+    copy_and_swap(this_t(move(x)), *this);
+    return *this;
+  }
+
+  template <class Y>
+  explicit shared_ptr(const weak_ptr<Y> &x)
+    requires is_compatible_pointer_with_v<Y *, T *> {
+    if (x.expired())
+      throw_or_terminate<bad_weak_ptr>();
+    p = x.p;
+    cb = x.cb;
+    if (cb->plus_1())
+      throw_or_terminate<length_error>
+        ("re::shared_ptr<T>::shared_ptr(const weak_ptr<Y> &):\n"
+         "  ref-count overflow\n");
+  }
+
+  element_type *get() const noexcept {
+    return p;
+  }
+  element_type &operator *() const noexcept requires (!is_array_v<T>) {
+    return *p;
+  }
+  element_type *operator->() const noexcept requires (!is_array_v<T>) {
+    return p;
+  }
+  element_type &operator [](ptrdiff_t i) const noexcept
+    requires is_array_v<T> {
+    return p[i];
+  }
+
+  long use_count() const noexcept {
+    return cb == nullptr ? 0 : cb->count();
+  }
+  explicit operator bool() const noexcept {
+    return get() != nullptr;
+  }
+
+  template <class U>
+  bool owner_before(const shared_ptr<U> &b) const noexcept {
+    return cb < b.cb;
+  }
+  template <class U>
+  bool owner_before(const weak_ptr<U> &b) const noexcept {
+    return cb < b.cb;
+  }
+};
+template <class T>
+shared_ptr(weak_ptr<T>)->shared_ptr<T>;
+template <class T, class D>
+shared_ptr(unique_ptr<T, D>)->shared_ptr<T>;
+template <class T, class U>
+bool operator ==(const shared_ptr<T> &a, const shared_ptr<U> &b) noexcept {
+  return a.get() == b.get();
+}
+template <class T>
+bool operator ==(const shared_ptr<T> &a, nullptr_t) noexcept {
+  return !a;
+}
+template <class T, class U>
+strong_ordering operator <=>(const shared_ptr<T> &a,
+                             const shared_ptr<U> &b) noexcept {
+  return compare_three_way{}(a.get(), b.get());
+}
+template <class T>
+strong_ordering operator <=>(const shared_ptr<T> &a,
+                             nullptr_t) noexcept {
+  return compare_three_way{}(a.get(),
+                             static_cast
+                             <typename shared_ptr<T>::element_type *>
+                             (nullptr));
+}
+
+namespace inner {
+
+struct shrdp_cb_mkshrd_deleter {
+  template <class T>
+  void operator ()(T *p) const noexcept {
+    allocator_wrapper<default_allocator<T>>{}.delete_1(p);
+  }
+};
+struct shrdp_cb_mkshrd_uba_deleter {
+  using alloc_t = default_allocator<byte>;
+  template <class T>
+  void operator ()(T p) const noexcept {
+    allocator_wrapper<alloc_t>{}.deallocate_headed_buffer(p);
+  }
+};
+struct shrdp_cb_mkshrd_default_tag {};
+template <class T,
+          class D = conditional_t<is_unbounded_array_v<T>,
+                                  shrdp_cb_mkshrd_uba_deleter,
+                                  shrdp_cb_mkshrd_deleter>>
+class shrdp_cb_mkshrd : public shared_ptr_control_block, D {
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class weak_ptr;
+
+  using this_t = shrdp_cb_mkshrd;
+
+  using base_t = shared_ptr_control_block;
+  using base_t::count;
+  using base_t::plus_1;
+  using base_t::minus_1;
+
+  alignas(alignof(T)) byte data[sizeof(T)];
+
+  virtual void clear() noexcept override {
+    destroy_at(ptr());
+    static_cast<D &>(*this)(this);
+  }
+  virtual void *deleter_stored_ptr() noexcept override {
+    return nullptr;
+  }
+  virtual const type_info &deleter_typeid() noexcept override {
+    return typeid(void);
+  }
+
+public:
+  shrdp_cb_mkshrd() = delete;
+  ~shrdp_cb_mkshrd() = default;
+  shrdp_cb_mkshrd(const this_t &) noexcept = delete;
+  this_t &operator =(const this_t &) noexcept = delete;
+  shrdp_cb_mkshrd(this_t &&) noexcept = delete;
+  this_t &operator =(this_t &&) noexcept = delete;
+
+  template <class...S>
+  shrdp_cb_mkshrd(in_place_t, S &&...s) requires (!is_array_v<T>)
+    : base_t(1) {
+    ::new(void_ptr()) T(forward<S>(s)...);
+  }
+  shrdp_cb_mkshrd(in_place_t) requires is_bounded_array_v<T> : base_t(1) {
+    construct_array(ptr());
+  }
+  template <class U>
+  shrdp_cb_mkshrd(in_place_t, const U &u)
+    requires is_bounded_array_v<T> : base_t(1) {
+    construct_array(ptr(), u);
+  }
+
+  shrdp_cb_mkshrd(shrdp_cb_mkshrd_default_tag)
+    requires (!is_array_v<T>) : base_t(1) {
+    ::new(void_ptr()) T;
+  }
+  shrdp_cb_mkshrd(shrdp_cb_mkshrd_default_tag)
+    requires is_bounded_array_v<T> : base_t(1) {
+    default_construct_array(ptr());
+  }
+
+  T *ptr() noexcept {
+    return reinterpret_cast<T *>(addressof(data));
+  }
+  remove_extent_t<T> *element_ptr() noexcept {
+    return reinterpret_cast<remove_extent_t<T> *>(addressof(data));
+  }
+  void *void_ptr() noexcept {
+    return const_cast<void *>(reinterpret_cast<const volatile void *>(ptr()));
+  }
+};
+template <class T, class D>
+class shrdp_cb_mkshrd<T [], D> : public shared_ptr_control_block, D {
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class weak_ptr;
+
+  using this_t = shrdp_cb_mkshrd;
+
+  using base_t = shared_ptr_control_block;
+  using base_t::count;
+  using base_t::plus_1;
+  using base_t::minus_1;
+
+  using buf_ptr = typename allocator_wrapper<typename D::alloc_t>
+    ::template headed_buffer_ptr<this_t, remove_cv_t<T>>;
+  buf_ptr buf_p = buf_ptr(nullptr);
+
+  virtual void clear() noexcept override {
+    if (buf_p != nullptr) {
+      for (auto &p : iters(buf_p.data(), buf_p.data() + buf_p.size()))
+        destroy_at(static_cast<T *>(p));
+      static_cast<D &>(*this)(buf_p);
+    }
+  }
+  virtual void *deleter_stored_ptr() noexcept override {
+    return nullptr;
+  }
+  virtual const type_info &deleter_typeid() noexcept override {
+    return typeid(void);
+  }
+
+public:
+  shrdp_cb_mkshrd() : base_t(1) {}
+  ~shrdp_cb_mkshrd() = default;
+  shrdp_cb_mkshrd(const this_t &) noexcept = delete;
+  this_t &operator =(const this_t &) noexcept = delete;
+  shrdp_cb_mkshrd(this_t &&) noexcept = delete;
+  this_t &operator =(this_t &&) noexcept = delete;
+
+  void set_buffer_pointer(buf_ptr p) noexcept {
+    buf_p = p;
+  }
+};
+
+struct shrdp_cb_allcshrd_default_tag {};
+template <class T, class A>
+class shrdp_cb_allcshrd
+  : public shared_ptr_control_block
+  , allocator_wrapper<A> {
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class weak_ptr;
+
+  using this_t = shrdp_cb_allcshrd;
+
+  using base_t = shared_ptr_control_block;
+  using base_t::count;
+  using base_t::plus_1;
+  using base_t::minus_1;
+
+  using alw_t = allocator_wrapper<A>;
+
+  alignas(alignof(T)) byte data[sizeof(T)];
+
+  virtual void clear() noexcept override {
+    destroy_at(no_cv_ptr(), alw_t::destroy_non_array_fn());
+    alw_t tmp_alw(static_cast<const alw_t &>(*this));
+    tmp_alw.template rebind<this_t>().delete_1(this);
+  }
+  virtual void *deleter_stored_ptr() noexcept override {
+    return nullptr;
+  }
+  virtual const type_info &deleter_typeid() noexcept override {
+    return typeid(void);
+  }
+
+public:
+  shrdp_cb_allcshrd() = delete;
+  ~shrdp_cb_allcshrd() = default;
+  shrdp_cb_allcshrd(const this_t &) noexcept = delete;
+  this_t &operator =(const this_t &) noexcept = delete;
+  shrdp_cb_allcshrd(this_t &&) noexcept = delete;
+  this_t &operator =(this_t &&) noexcept = delete;
+
+  template <class...S>
+  shrdp_cb_allcshrd(in_place_t, const A &a, S &&...s) requires (!is_array_v<T>)
+    : base_t(1), alw_t(a) {
+    alw_t::construct_non_array_fn()(no_cv_ptr(), forward<S>(s)...);
+  }
+  shrdp_cb_allcshrd(in_place_t, const A &a) requires is_bounded_array_v<T>
+    : base_t(1), alw_t(a) {
+    construct_array(no_cv_ptr(),
+                    alw_t::construct_non_array_fn(),
+                    alw_t::destroy_non_array_fn());
+  }
+  template <class U>
+  shrdp_cb_allcshrd(in_place_t, const A &a, const U &u)
+    requires is_bounded_array_v<T>
+    : base_t(1), alw_t(a) {
+    construct_array(no_cv_ptr(), u,
+                    alw_t::construct_non_array_fn(),
+                    alw_t::destroy_non_array_fn());
+  }
+
+  shrdp_cb_allcshrd(shrdp_cb_allcshrd_default_tag, const A &a)
+    requires (!is_array_v<T>)
+    : base_t(1), alw_t(a) {
+    alw_t::default_construct_non_array_fn()(no_cv_ptr());
+  }
+  shrdp_cb_allcshrd(shrdp_cb_allcshrd_default_tag, const A &a)
+    requires is_bounded_array_v<T>
+    : base_t(1), alw_t(a) {
+    default_construct_array(no_cv_ptr(),
+                            alw_t::default_construct_non_array_fn(),
+                            alw_t::destroy_non_array_fn());
+  }
+
+  remove_cv_t<T> *no_cv_ptr() noexcept {
+    return reinterpret_cast<remove_cv_t<T> *>(addressof(data));
+  }
+  remove_extent_t<T> *element_ptr() noexcept {
+    return reinterpret_cast<remove_extent_t<T> *>(addressof(data));
+  }
+};
+template <class T, class A>
+class shrdp_cb_allcshrd<T [], A>
+  : public shared_ptr_control_block
+  , allocator_wrapper<A> {
+  template <class>
+  friend class shared_ptr;
+  template <class>
+  friend class weak_ptr;
+
+  using this_t = shrdp_cb_allcshrd;
+
+  using base_t = shared_ptr_control_block;
+  using base_t::count;
+  using base_t::plus_1;
+  using base_t::minus_1;
+
+  using alw_t = allocator_wrapper<A>;
+
+  using buf_ptr = alw_t::template headed_buffer_ptr<this_t, remove_cv_t<T>>;
+  buf_ptr buf_p = buf_ptr(nullptr);
+
+  virtual void clear() noexcept override {
+    if (buf_p != nullptr) {
+      for (auto &p : iters(buf_p.data(), buf_p.data() + buf_p.size()))
+        destroy_at(to_address(p), alw_t::destroy_non_array_fn());
+      alw_t tmp_alw(static_cast<const alw_t &>(*this));
+      tmp_alw.deallocate_headed_buffer(buf_p);
+    }
+  }
+  virtual void *deleter_stored_ptr() noexcept override {
+    return nullptr;
+  }
+  virtual const type_info &deleter_typeid() noexcept override {
+    return typeid(void);
+  }
+
+public:
+  shrdp_cb_allcshrd() = delete;
+  ~shrdp_cb_allcshrd() = default;
+  shrdp_cb_allcshrd(const this_t &) noexcept = delete;
+  this_t &operator =(const this_t &) noexcept = delete;
+  shrdp_cb_allcshrd(this_t &&) noexcept = delete;
+  this_t &operator =(this_t &&) noexcept = delete;
+
+  explicit shrdp_cb_allcshrd(const A &a) : base_t(1), alw_t(a) {}
+
+  void set_buffer_pointer(buf_ptr p) noexcept {
+    buf_p = p;
+  }
+};
+
+}
+template <class T>
+struct fo_make_shared {
+  template <class...S>
+  shared_ptr<T> operator ()(S &&...s) const {
+    const auto p
+      = default_alloc_wrapper<inner::shrdp_cb_mkshrd<T>>()
+      .new_1(in_place, forward<S>(s)...);
+    shared_ptr<T> ret;
+    ret.p = p->element_ptr();
+    ret.cb = p;
+    return ret;
+  }
+};
+template <class T, size_t N>
+struct fo_make_shared<T [N]> {
+  template <class...S>
+  shared_ptr<T [N]> operator ()() const requires (N != 0u) {
+    const auto p
+      = default_alloc_wrapper<inner::shrdp_cb_mkshrd<T [N]>>()
+      .new_1(in_place);
+    shared_ptr<T [N]> ret;
+    ret.p = p->element_ptr();
+    ret.cb = p;
+    return ret;
+  }
+  template <class...S>
+  shared_ptr<T [N]> operator ()(const T &x) const requires (N != 0u) {
+    const auto p
+      = default_alloc_wrapper<inner::shrdp_cb_mkshrd<T [N]>>()
+      .new_1(in_place, x);
+    shared_ptr<T [N]> ret;
+    ret.p = p->element_ptr();
+    ret.cb = p;
+    return ret;
+  }
+};
+template <class T>
+struct fo_make_shared<T []> {
+private:
+  template <class...S>
+  static shared_ptr<T []> impl(size_t n, S &&...s) {
+    default_alloc_wrapper<byte> alw;
+    const auto bufp
+      = alw.allocate_headed_buffer<inner::shrdp_cb_mkshrd<T []>,
+                                   remove_cv_t<T>>(n);
+    auto guard
+      = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
+                true);
+    const auto d = static_cast<T *>(to_address(bufp.data()));
+    securely_initialize(rng(d, n),
+                        [&](auto p) {
+                          construct_maybe_array(p, forward<S>(s)...);
+                        },
+                        [](auto p) {destroy_at(p);});
+    bufp.head().set_buffer_pointer(bufp);
+    guard.unset();
+    shared_ptr<T []> ret;
+    ret.p = static_cast<T *>(to_address(bufp.data()));
+    ret.cb = addressof(bufp.head());
+    return ret;
+  }
+
+public:
+  shared_ptr<T []> operator ()(size_t n) const {
+    return impl(n);
+  }
+  shared_ptr<T []> operator ()(size_t n, const T &x) const {
+    return impl(n, x);
+  }
+};
+template <class T>
+inline constexpr fo_make_shared<T> make_shared{};
+
+template <class T>
+struct fo_make_shared_for_overwrite {
+  shared_ptr<T> operator ()() const {
+    const auto p
+      = default_alloc_wrapper<inner::shrdp_cb_mkshrd<T>>()
+      .new_1(inner::shrdp_cb_mkshrd_default_tag{});
+    shared_ptr<T> ret;
+    ret.p = p->element_ptr();
+    ret.cb = p;
+    return ret;
+  }
+};
+template <class T>
+struct fo_make_shared_for_overwrite<T []> {
+  shared_ptr<T []> operator ()(size_t n) const {
+    default_alloc_wrapper<byte> alw;
+    const auto bufp
+      = alw.allocate_headed_buffer<inner::shrdp_cb_mkshrd<T []>,
+                                   remove_cv_t<T>>(n);
+    auto guard
+      = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
+                true);
+    const auto d = static_cast<T *>(bufp.data());
+    securely_initialize(rng(d, n),
+                        [&](auto p) {default_construct_maybe_array(p);},
+                        [](auto p) {destroy_at(p);});
+    bufp.head().set_buffer_pointer(bufp);
+    guard.unset();
+    shared_ptr<T []> ret;
+    ret.p = static_cast<T *>(bufp.data());
+    ret.cb = addressof(bufp.head());
+    return ret;
+  }
+};
+template <class T>
+inline constexpr fo_make_shared_for_overwrite<T> make_shared_for_overwrite{};
+
+template <class T>
+struct fo_allocate_shared {
+  template <class A, class...S>
+  shared_ptr<T> operator ()(const A &a, S &&...s) const {
+    auto alw = alloc_wrapper(a).template rebind<byte>();
+    const auto p = alw.template rebind
+      <inner::shrdp_cb_allcshrd<T, alloc_rebind<A, byte>>>()
+      .new_1(in_place, alw.get(), forward<S>(s)...);
+    shared_ptr<T> ret;
+    ret.p = p->element_ptr();
+    ret.cb = to_address(p);
+    return ret;
+  }
+};
+template <class T, size_t N>
+struct fo_allocate_shared<T [N]> {
+  template <class A>
+  shared_ptr<T [N]> operator ()(const A &a) const {
+    auto alw = alloc_wrapper(a).template rebind<byte>();
+    const auto p = alw.template rebind
+      <inner::shrdp_cb_allcshrd<T [N], alloc_rebind<A, byte>>>()
+      .new_1(in_place, alw.get());
+    shared_ptr<T [N]> ret;
+    ret.p = p->element_ptr();
+    ret.cb = to_address(p);
+    return ret;
+  }
+  template <class A>
+  shared_ptr<T [N]> operator ()(const A &a, const T &x) const {
+    auto alw = alloc_wrapper(a).template rebind<byte>();
+    const auto p = alw.template rebind
+      <inner::shrdp_cb_allcshrd<T [N], alloc_rebind<A, byte>>>()
+      .new_1(in_place, alw.get(), x);
+    shared_ptr<T [N]> ret;
+    ret.p = p->element_ptr();
+    ret.cb = to_address(p);
+    return ret;
+  }
+};
+template <class T>
+struct fo_allocate_shared<T []> {
+private:
+  template <class A, class...S>
+  static shared_ptr<T []> impl(const A &a, size_t n, S &&...s) {
+    auto alw = alloc_wrapper(a).template rebind<byte>();
+    const auto bufp
+      = alw.template allocate_headed_buffer<inner::shrdp_cb_allcshrd
+                                            <T [], alloc_rebind<A, byte>>,
+                                            remove_cv_t<T>>(n, alw.get());
+    auto guard
+      = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
+                true);
+    securely_initialize(rng(to_address(bufp.data()), n),
+                        [&, alw](auto p) {
+                          construct_maybe_array(p, forward<S>(s)...,
+                                                alw.construct_non_array_fn(),
+                                                alw.destroy_non_array_fn());
+                        },
+                        [alw](auto p) {
+                          destroy_at(p, alw.destroy_non_array_fn());
+                        });
+    bufp.head().set_buffer_pointer(bufp);
+    guard.unset();
+    shared_ptr<T []> ret;
+    ret.p = static_cast<T *>(to_address(bufp.data()));
+    ret.cb = addressof(bufp.head());
+    return ret;
+  }
+
+public:
+  template <class A>
+  shared_ptr<T []> operator ()(const A &a, size_t n) const {
+    return impl(a, n);
+  }
+  template <class A>
+  shared_ptr<T []> operator ()(const A &a, size_t n, const T &x) const {
+    return impl(a, n, x);
+  }
+};
+template <class T>
+inline constexpr fo_allocate_shared<T> allocate_shared{};
+
+template <class T>
+struct fo_allocate_shared_for_overwrite {
+  template <class A>
+  shared_ptr<T> operator ()(const A &a) const {
+    auto alw = alloc_wrapper(a).template rebind<byte>();
+    const auto p = alw.template rebind
+      <inner::shrdp_cb_allcshrd<T, alloc_rebind<A, byte>>>()
+      .new_1(inner::shrdp_cb_allcshrd_default_tag{}, alw.get());
+    shared_ptr<T> ret;
+    ret.p = p->element_ptr();
+    ret.cb = to_address(p);
+    return ret;
+  }
+};
+template <class T>
+struct fo_allocate_shared_for_overwrite<T []> {
+  template <class A>
+  shared_ptr<T []> operator ()(const A &a, size_t n) const {
+    auto alw = alloc_wrapper(a).template rebind<byte>();
+    const auto bufp
+      = alw.template allocate_headed_buffer<inner::shrdp_cb_allcshrd
+                                            <T [], alloc_rebind<A, byte>>,
+                                            remove_cv_t<T>>(n, alw.get());
+    auto guard
+      = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
+                true);
+    securely_initialize(rng(to_address(bufp.data()), n),
+                        [&, alw](auto p) {
+                          construct_maybe_array
+                            (p,
+                             alw.default_construct_non_array_fn(),
+                             alw.destroy_non_array_fn());
+                        },
+                        [alw](auto p) {
+                          destroy_at(p, alw.destroy_non_array_fn());
+                        });
+    bufp.head().set_buffer_pointer(bufp);
+    guard.unset();
+    shared_ptr<T []> ret;
+    ret.p = static_cast<T *>(to_address(bufp.data()));
+    ret.cb = addressof(bufp.head());
+    return ret;
+  }
+};
+template <class T>
+inline constexpr
+fo_allocate_shared_for_overwrite<T> allocate_shared_for_overwrite{};
+
+template <class T>
+struct fo_static_pointer_cast {
+  template <class U>
+  shared_ptr<T> operator ()(const shared_ptr<U> &x) const noexcept
+    requires requires {static_cast<T *>((U *)nullptr);} {
+    return shared_ptr<T>
+      (x, static_cast<typename shared_ptr<T>::element_type *>(x.get()));
+  }
+  template <class U>
+  shared_ptr<T> operator ()(shared_ptr<U> &&x) const noexcept
+    requires requires {static_cast<T *>((U *)nullptr);} {
+    return shared_ptr<T>
+      (move(x), static_cast<typename shared_ptr<T>::element_type *>(x.get()));
+  }
+};
+template <class T>
+inline constexpr fo_static_pointer_cast<T> static_pointer_cast{};
+template <class T>
+struct fo_reinterpret_pointer_cast {
+  template <class U>
+  shared_ptr<T> operator ()(const shared_ptr<U> &x) const noexcept
+    requires requires {reinterpret_cast<T *>((U *)nullptr);} {
+    return shared_ptr<T>
+      (x, reinterpret_cast<typename shared_ptr<T>::element_type *>(x.get()));
+  }
+  template <class U>
+  shared_ptr<T> operator ()(shared_ptr<U> &&x) const noexcept
+    requires requires {reinterpret_cast<T *>((U *)nullptr);} {
+    return shared_ptr<T>
+      (move(x),
+       reinterpret_cast<typename shared_ptr<T>::element_type *>(x.get()));
+  }
+};
+template <class T>
+inline constexpr fo_reinterpret_pointer_cast<T> reinterpret_pointer_cast{};
+template <class T>
+struct fo_const_pointer_cast {
+  template <class U>
+  shared_ptr<T> operator ()(const shared_ptr<U> &x) const noexcept
+    requires requires {const_cast<T *>((U *)nullptr);} {
+    return shared_ptr<T>
+      (x, const_cast<typename shared_ptr<T>::element_type *>(x.get()));
+  }
+  template <class U>
+  shared_ptr<T> operator ()(shared_ptr<U> &&x) const noexcept
+    requires requires {const_cast<T *>((U *)nullptr);} {
+    return shared_ptr<T>
+      (move(x),
+       const_cast<typename shared_ptr<T>::element_type *>(x.get()));
+  }
+};
+template <class T>
+inline constexpr fo_const_pointer_cast<T> const_pointer_cast{};
+template <class T>
+struct fo_dynamic_pointer_cast {
+  template <class U>
+  shared_ptr<T> operator ()(const shared_ptr<U> &x) const noexcept
+    requires requires {
+      dynamic_cast<T *>((U *)nullptr);
+      dynamic_cast<typename shared_ptr<T>::element_type *>(x.get());
+    } {
+    const auto p
+      = dynamic_cast<typename shared_ptr<T>::element_type *>(x.get());
+    return p != nullptr ? shared_ptr<T>(x, p) : shared_ptr<T>{};
+  }
+  template <class U>
+  shared_ptr<T> operator ()(shared_ptr<U> &&x) const noexcept
+    requires requires {
+      dynamic_cast<T *>((U *)nullptr);
+      dynamic_cast<typename shared_ptr<T>::element_type *>(x.get());
+    } {
+    const auto p
+      = dynamic_cast<typename shared_ptr<T>::element_type *>(x.get());
+    return p != nullptr ? shared_ptr<T>(move(x), p) : shared_ptr<T>{};
+  }
+};
+template <class T>
+inline constexpr fo_dynamic_pointer_cast<T> dynamic_pointer_cast{};
+
+template <class D>
+struct fo_get_deleter {
+  template <class T>
+  D *operator ()(const shared_ptr<T> &p) const noexcept
+    requires is_same_v<remove_cv_t<D>, D> {
+    return p.cb->template get_deleter<D>();
+  }
+};
+template <class D>
+inline constexpr fo_get_deleter<D> get_deleter{};
+
+template <class T>
+struct hash<shared_ptr<T>> {
+  size_t operator ()(const shared_ptr<T> &p) const {
+    return hash<typename shared_ptr<T>::element_type *>{}(p.get());
+  }
+};
+
+}
+
 // thread
 namespace re {
 
@@ -738,10 +2061,10 @@ public:
                      0, addressof(id_num.v));
     if (h == NULL)
       throw_or_terminate<runtime_error>
-        ("thread(f, s...): CreateThread() failed");
+        ("thread(f, s...): CreateThread() failed\n");
     if (id_num == id{})
       throw_or_terminate<runtime_error>
-        ("thread(f, s...): id is zero after CreateThread()");
+        ("thread(f, s...): id is zero after CreateThread()\n");
   }
 
   bool joinable() const noexcept {
@@ -1370,7 +2693,7 @@ public:
       else {
         if (s->reading_count == numeric_limits<unsigned long long>::max())
           throw_or_terminate<runtime_error>
-            ("re::shared_mutex::lock_shared(): too many shared readers");
+            ("re::shared_mutex::lock_shared(): too many shared readers\n");
         s->reading_count += 1u;
       }
     });
@@ -1391,7 +2714,7 @@ public:
       else {
         if (s->reading_count == numeric_limits<unsigned long long>::max())
           throw_or_terminate<runtime_error>
-            ("re::shared_mutex::try_lock_shared(): too many shared readers");
+            ("re::shared_mutex::try_lock_shared(): too many shared readers\n");
         s->reading_count += 1u;
       }
       y = true;

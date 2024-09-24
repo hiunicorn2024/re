@@ -3158,6 +3158,7 @@ class test_object {
     }
     catch (...) {
       a.deallocate(p, 1);
+      throw;
     }
 #else
     ::new(p) T(forward<S>(s)...);
