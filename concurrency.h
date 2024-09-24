@@ -2350,20 +2350,20 @@ public:
 
   void lock() {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::lock(): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::lock(): no mutex\n");
     p->lock();
     owns = true;
   }
   bool try_lock() {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::try_lock(): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::try_lock(): no mutex\n");
     owns = p->try_lock();
     return owns;
@@ -2371,10 +2371,10 @@ public:
   template <class R, ratio P>
   bool try_lock_for(const duration<R, P> &t) {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::try_lock_for(t): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::try_lock_for(t): no mutex\n");
     owns = p->try_lock_for(t);
     return owns;
@@ -2382,17 +2382,17 @@ public:
   template <class C, class D>
   bool try_lock_until(const time_point<C, D> &t) {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::try_lock_until(t): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::try_lock_until(t): no mutex\n");
     owns = p->try_lock_until(t);
     return owns;
   }
   void unlock() {
     if (!owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::unique_lock<M>::unlock(t): no locked mutex\n");
     p->unlock();
     owns = false;
@@ -2864,20 +2864,20 @@ public:
 
   void lock() {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::lock(): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::lock(): no mutex\n");
     p->lock_shared();
     owns = true;
   }
   bool try_lock() {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::try_lock(): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::try_lock(): no mutex\n");
     owns = p->try_lock_shared();
     return owns;
@@ -2885,10 +2885,10 @@ public:
   template <class R, ratio P>
   bool try_lock_for(const duration<R, P> &t) {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::try_lock_for(t): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::try_lock_for(t): no mutex\n");
     owns = p->try_lock_shared_for(t);
     return owns;
@@ -2896,17 +2896,17 @@ public:
   template <class C, class D>
   bool try_lock_until(const time_point<C, D> &t) {
     if (owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::try_lock_until(t): already locked\n");
     if (p == nullptr)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::try_lock_until(t): no mutex\n");
     owns = p->try_lock_shared_until(t);
     return owns;
   }
   void unlock() {
     if (!owns)
-      throw runtime_error
+      throw_or_terminate<runtime_error>
         ("re::shared_lock<M>::unlock(t): no locked mutex\n");
     p->unlock_shared();
     owns = false;

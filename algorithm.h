@@ -8065,7 +8065,7 @@ struct fo_inner_cartesian_product_plus {
 
     if (auto tmp = size(fr);
         tmp > to_unsigned(numeric_limits<make_signed_t<size_t>>::max()))
-      throw length_error
+      throw_or_terminate<length_error>
         ("re::inner_cartesian_product(r, o): too big range size\n");
 
     unique_array<rng_itr<rng_ref<FR>>> v
@@ -8199,7 +8199,7 @@ class inner_cartesian_product_range : range_fns {
       if (tmp.y) {
         if (auto tmp2 = size(r);
             tmp2 > to_unsigned(numeric_limits<make_signed_t<size_t>>::max()))
-          throw length_error
+          throw_or_terminate<length_error>
             ("re::inner_cartesian_product_range::delayed_init(): "
              "too big range size\n");
         tmp.a = make_array<rng_itr<rng_ref<FR>>>(static_cast<size_t>(size(r)));
