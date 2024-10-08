@@ -33426,7 +33426,7 @@ using mixed_ranked_multimap = mixed_multimap_adaptor
 // limited_stable_vector
 namespace re {
 
-template <class, size_t>
+template <class, size_t = 0>
 class stable_vector_adaptor;
 
 template <size_t ID = 0, class VOID_PTR = void *>
@@ -33508,7 +33508,7 @@ struct stable_vector_traits {
   }
 };
 
-template <class TRAITS, size_t N = 0>
+template <class, size_t>
 class stable_vector_adaptor;
 namespace inner {
 
@@ -35155,7 +35155,7 @@ template <class>
 class tree_vector_adaptor;
 namespace inner {
 
-template <class, class, size_t = 0u>
+template <class, class, size_t = 0>
 struct gtt;
 template <class, class>
 struct ltt;
@@ -35164,6 +35164,8 @@ struct lgtt;
 
 template <class>
 struct tree_base;
+template <class>
+class tree_node_children;
 template <class>
 class tree_node;
 template <class>
@@ -35228,7 +35230,7 @@ public:
   }
 
   reference operator *() const {
-    return static_cast<reference>(*it);
+    return *it;
   }
   pointer operator ->() const {
     return static_cast<pointer>(it.operator ->());
@@ -35387,7 +35389,7 @@ public:
   }
 
   reference operator *() const {
-    return static_cast<reference>(*it);
+    return *it;
   }
   pointer operator ->() const {
     return static_cast<pointer>(it.operator ->());
@@ -35503,7 +35505,7 @@ public:
   }
 
   reference operator *() const {
-    return static_cast<reference>(*it);
+    return *it;
   }
   pointer operator ->() const {
     return static_cast<pointer>(it.operator ->());
@@ -35636,6 +35638,8 @@ class tree_iterator {
   template <class>
   friend class tree_iterator;
   template <class>
+  friend class tree_node_children;
+  template <class>
   friend class tree_node;
   template <class>
   friend class tree_node_impl;
@@ -35650,11 +35654,10 @@ class tree_iterator {
   I i{};
 
 public:
-  using value_type = typename itr_vt<I>::public_node_type;
-  using reference = copy_cvref_t<itr_ref<I>, value_type>;
-  using pointer = pointer_rebind_t<itr_ptr<I>,
-                                   copy_cv_t<remove_reference_t<reference>,
-                                             value_type>>;
+  using value_type = remove_cvref_t<decltype(traits_t
+                                             ::dereference(declval<I>()))>;
+  using reference = decltype(traits_t::dereference(declval<I>()));
+  using pointer = add_pointer_t<remove_reference_t<reference>>;
   using difference_type = typename I::difference_type;
   using iterator_category = typename I::iterator_category;
 
@@ -35704,11 +35707,25 @@ public:
     return this_t(I(traits_t::tree_parent(i.node())));
   }
 
+  using children_type = tree_node_children<traits_t>;
+  conditional_t<is_const_v<remove_reference_t<reference>>,
+                const children_type &, children_type &>
+  children() const {
+    return *i;
+  }
+
+  using tree_node_type = tree_node<traits_t>;
+  conditional_t<is_const_v<remove_reference_t<reference>>,
+                const tree_node<traits_t> &, tree_node<traits_t> &>
+  tree_node() const {
+    return *i;
+  }
+
   reference operator *() const {
-    return static_cast<reference>(*i);
+    return traits_t::dereference(i);
   }
   pointer operator ->() const {
-    return static_cast<pointer>(i.operator ->());
+    return addressof(operator *());
   }
   this_t &operator ++() {
     ++i;
@@ -35857,9 +35874,12 @@ template <class>
 struct linked_tree_base;
 
 template <class TRAITS>
-class tree_node_impl;
+class tree_node;
+
 template <class TRAITS>
-class tree_node : TRAITS::hook_type {
+class tree_node_children : public TRAITS::hook_type {
+  template <class>
+  friend class tree_node;
   template <class>
   friend class tree_node_impl;
   template <class, class, size_t>
@@ -35873,11 +35893,13 @@ class tree_node : TRAITS::hook_type {
   template <class>
   friend class re::tree_vector_adaptor;
 
-  using this_t = tree_node;
+  using this_t = tree_node_children;
+
+  using traits_t = TRAITS;
 
 protected:
-  using base_t = typename TRAITS::hook_type;
-  using base_t::p;
+  using hook_t = typename TRAITS::hook_type;
+  using hook_t::p;
 
   using vec_t = typename TRAITS::vector_type;
   using vec_iter_t = typename vec_t::iterator;
@@ -35894,25 +35916,25 @@ protected:
       (reinterpret_cast<const key_t *>(addressof(data)));
   }
 
-  tree_node(allocator_arg_t, const node_alloc_t &a)
-    : base_t{}, data{}, v(a) {}
+  tree_node_children(allocator_arg_t, const node_alloc_t &a)
+    : hook_t{}, data{}, v(a) {}
 
-  ~tree_node() = default;
+  ~tree_node_children() = default;
 public:
-  tree_node() = delete;
-  tree_node(const tree_node &) = delete;
-  tree_node &operator =(const tree_node &) = delete;
-  tree_node(tree_node &&) = delete;
-  tree_node &operator =(tree_node &&) = delete;
-  friend void swap(tree_node &, tree_node &) noexcept = delete;
-
-  using key_type = key_t;
-  using value_type = this_t;
-  using reference = this_t &;
-  using const_reference = const this_t &;
+  tree_node_children() = delete;
+  tree_node_children(const this_t &) = delete;
+  this_t &operator =(const this_t &) = delete;
+  tree_node_children(this_t &&) = delete;
+  this_t &operator =(this_t &&) = delete;
+  friend void swap(tree_node_children &,
+                   tree_node_children &) noexcept = delete;
 
   using iterator = inner::tree_iterator<typename vec_t::iterator>;
   using const_iterator = inner::tree_iterator<typename vec_t::const_iterator>;
+
+  using value_type = itr_vt<iterator>;
+  using reference = itr_ref<iterator>;
+  using const_reference = itr_ref<const_iterator>;
   using difference_type = typename vec_t::difference_type;
   using size_type = typename vec_t::size_type;
 
@@ -35967,24 +35989,62 @@ public:
     return rend();
   }
 
-  reference front() requires inner::has_mfn_front<vec_t> {
-    return v.front();
+  reference front() noexcept
+    requires (!traits_t::dereference_to_public_node::value) {
+    return *v.begin();
   }
-  reference back() requires inner::has_mfn_back<vec_t> {
-    return v.back();
+  reference back() noexcept
+    requires (!traits_t::dereference_to_public_node::value) {
+    return *prev(v.end());
   }
-  const_reference front() const requires inner::has_mfn_front<const vec_t> {
-    return v.front();
+  const_reference front() const noexcept
+    requires (!traits_t::dereference_to_public_node::value) {
+    return *v.begin();
   }
-  const_reference back() const requires inner::has_mfn_front<const vec_t> {
-    return v.back();
+  const_reference back() const noexcept
+    requires (!traits_t::dereference_to_public_node::value) {
+    return *prev(v.end());
   }
 
-  this_t &operator [](size_type n) {
-    return static_cast<this_t &>(v[n]);
+  tree_node<TRAITS> &front() noexcept
+    requires (traits_t::dereference_to_public_node::value
+              && inner::has_mfn_front<vec_t>) {
+    return static_cast<tree_node<TRAITS> &>(v.front());
   }
-  const this_t &operator [](size_type n) const {
-    return static_cast<const this_t &>(v[n]);
+  tree_node<TRAITS> &back() noexcept
+    requires (traits_t::dereference_to_public_node::value
+              && inner::has_mfn_back<vec_t>) {
+    return static_cast<tree_node<TRAITS> &>(v.back());
+  }
+  const tree_node<TRAITS> &front() const noexcept
+    requires (traits_t::dereference_to_public_node::value
+              && inner::has_mfn_front<const vec_t>) {
+    return static_cast<const tree_node<TRAITS> &>(v.front());
+  }
+  const tree_node<TRAITS> &back() const noexcept
+    requires (traits_t::dereference_to_public_node::value
+              && inner::has_mfn_front<const vec_t>) {
+    return static_cast<const tree_node<TRAITS> &>(v.back());
+  }
+
+  tree_node<TRAITS> &operator [](size_type n)
+    requires traits_t::dereference_to_public_node::value {
+    return static_cast<tree_node<TRAITS> &>(v[n]);
+  }
+  const tree_node<TRAITS> &operator [](size_type n) const
+    requires traits_t::dereference_to_public_node::value {
+    return static_cast<const tree_node<TRAITS> &>(v[n]);
+  }
+
+  reference operator [](size_type n)
+    requires (!traits_t::dereference_to_public_node::value
+              && is_ritr<iterator>) {
+    return *nth(static_cast<difference_type>(n));
+  }
+  const_reference operator [](size_type n) const
+    requires (!traits_t::dereference_to_public_node::value
+              && is_ritr<iterator>) {
+    return *nth(static_cast<difference_type>(n));
   }
 
   iterator nth(difference_type n) {
@@ -35993,35 +36053,91 @@ public:
   const_iterator nth(difference_type n) const {
     return const_iterator(re::nth(v, n));
   }
+};
 
-  key_t &key() noexcept {
-    return *data_ptr();
+template <class TRAITS>
+class tree_node : public tree_node_children<TRAITS> {
+  template <class>
+  friend class tree_children;
+  template <class>
+  friend class tree_node_impl;
+  template <class, class, size_t>
+  friend struct gtt;
+  template <class, class>
+  friend struct ltt;
+  template <class, class>
+  friend struct lgtt;
+  template <class>
+  friend class re::tree_adaptor;
+  template <class>
+  friend class re::tree_vector_adaptor;
+
+  using this_t = tree_node;
+
+  using base_t = tree_node_children<TRAITS>;
+
+  using traits_t = TRAITS;
+
+protected:
+  using hook_t = typename base_t::hook_t;
+  using base_t::p;
+
+  using vec_t = typename base_t::vec_t;
+  using vec_iter_t = typename base_t::vec_iter_t;
+  using vec_citer_t = typename base_t::vec_citer_t;
+  using node_alloc_t = typename base_t::node_alloc_t;
+  using key_t = typename base_t::key_t;
+  using key_alloc_t = typename base_t::key_alloc_t;
+
+  using base_t::data;
+  using base_t::v;
+
+  using base_t::data_ptr;
+
+  tree_node(allocator_arg_t, const node_alloc_t &a)
+    : base_t(allocator_arg, a) {}
+
+  ~tree_node() = default;
+public:
+  tree_node() = delete;
+  tree_node(const tree_node &) = delete;
+  tree_node &operator =(const tree_node &) = delete;
+  tree_node(tree_node &&) = delete;
+  tree_node &operator =(tree_node &&) = delete;
+  friend void swap(tree_node &, tree_node &) noexcept = delete;
+
+  using key_type = typename base_t::key_t;
+
+  key_type &key() noexcept {
+    return *base_t::data_ptr();
   }
-  const key_t &key() const noexcept {
-    return *data_ptr();
+  const key_type &key() const noexcept {
+    return *base_t::data_ptr();
   }
-  key_t &operator *() noexcept {
-    return *data_ptr();
+  key_type &operator *() noexcept {
+    return key();
   }
-  const key_t &operator *() const noexcept {
-    return *data_ptr();
+  const key_type &operator *() const noexcept {
+    return key();
   }
-  key_t *operator ->() noexcept {
-    return data_ptr();
+  key_type *operator ->() noexcept {
+    return addressof(key());
   }
-  const key_t *operator ->() const noexcept {
-    return data_ptr();
+  const key_type *operator ->() const noexcept {
+    return addressof(key());
   }
 
+  using iterator = typename base_t::iterator;
+  using const_iterator = typename base_t::const_iterator;
   iterator parent() noexcept {
-    return iterator(vec_iter_t(base_t::p));
+    return iter().parent();
   }
   const_iterator parent() const noexcept {
-    return const_iterator(vec_citer_t(base_t::p));
+    return iter().parent();
   }
 protected:
   void parent(const_iterator it) noexcept {
-    p = it.node();
+    iter().parent(it);
   }
 public:
   iterator iter() noexcept {
@@ -36037,6 +36153,14 @@ public:
         (pointer_to<typename TRAITS::public_node_pointer>
          (const_cast<this_t &>(*this)))));
   }
+
+  using children_type = base_t;
+  children_type &children() noexcept {
+    return static_cast<base_t &>(*this);
+  };
+  const children_type &children() const noexcept {
+    return static_cast<const base_t &>(*this);
+  };
 };
 template <class X, class Y>
 bool operator ==(const tree_node<X> &xx, const tree_node<Y> &yy) {
@@ -36084,15 +36208,16 @@ class tree_node_impl : public tree_node<TRAITS> {
   using base_t::v;
 
   using vec_t = typename base_t::vec_t;
-  using vec_iter_t = typename vec_t::iterator;
-  using vec_citer_t = typename vec_t::const_iterator;
-  using iter_t = tree_iterator<vec_iter_t>;
-  using citer_t = tree_iterator<vec_citer_t>;
+  using vec_iter_t = typename base_t::vec_iter_t;
+  using vec_citer_t = typename base_t::vec_citer_t;
   using node_alloc_t = typename base_t::node_alloc_t;
   using key_t = typename base_t::key_t;
   using key_alloc_t = typename base_t::key_alloc_t;
 
 public:
+  using iterator = typename base_t::iterator;
+  using const_iterator = typename base_t::const_iterator;
+
   using public_node_type = tree_node<TRAITS>;
   using public_node_pointer = typename TRAITS::public_node_pointer;
   base_t &node_ref() noexcept {
@@ -36128,7 +36253,7 @@ public:
   tree_node_impl(const tree_node_impl &x)
     : base_t{allocator_arg, x.v.get_allocator()} {
     allocator_wrapper<key_alloc_t>(v.get_allocator()).construct(data_ptr(), *x);
-    iter_t(v.end()).parent(base_t::iter());
+    iterator(v.end()).parent(base_t::iter());
   }
   tree_node_impl &operator =(const tree_node_impl &x) {
     p = nullptr;
@@ -36148,7 +36273,7 @@ public:
     : base_t(allocator_arg, a) {
     allocator_wrapper<key_alloc_t>(v.get_allocator())
       .construct(data_ptr(), forward<S>(s)...);
-    iter_t(v.end()).parent(base_t::iter());
+    iterator(v.end()).parent(base_t::iter());
   }
 
   template <class T1>
@@ -36156,7 +36281,7 @@ public:
   (tuple<T1, typename vec_t::const_iterator, node_alloc_t> &&t)
     : tree_node_impl(at<2>(t), at<0>(move(t))) {
     p = at<1>(t).node();
-    iter_t(v.end()).parent(base_t::iter());
+    iterator(v.end()).parent(base_t::iter());
   }
 };
 
@@ -36211,6 +36336,15 @@ struct gtt {
   }
   static void tree_parent(node_base_pointer p, node_base_pointer pp) {
     p->p = pp;
+  }
+
+  using dereference_to_public_node = true_type;
+  static public_node_type &dereference(typename vector_type::iterator it) {
+    return static_cast<public_node_type &>(*it);
+  }
+  static const public_node_type &
+  dereference(typename vector_type::const_iterator it) {
+    return static_cast<const public_node_type &>(*it);
   }
 };
 
@@ -36311,6 +36445,15 @@ struct ltt {
   }
   static void tree_parent(node_base_pointer p, node_base_pointer pp) {
     p->p = pp;
+  }
+
+  using dereference_to_public_node = true_type;
+  static public_node_type &dereference(typename vector_type::iterator it) {
+    return static_cast<public_node_type &>(*it);
+  }
+  static const public_node_type &
+  dereference(typename vector_type::const_iterator it) {
+    return static_cast<const public_node_type &>(*it);
   }
 };
 
@@ -36425,6 +36568,15 @@ struct lgtt {
   static void tree_parent(node_base_pointer p, node_base_pointer pp) {
     p->p = pp;
   }
+
+  using dereference_to_public_node = true_type;
+  static public_node_type &dereference(typename vector_type::iterator it) {
+    return static_cast<public_node_type &>(*it);
+  }
+  static const public_node_type &
+  dereference(typename vector_type::const_iterator it) {
+    return static_cast<const public_node_type &>(*it);
+  }
 };
 
 }
@@ -36439,19 +36591,20 @@ class tree_adaptor
   friend class tree_vector_adaptor;
 
   using this_t = tree_adaptor;
+  using traits_t = TRAITS;
 
-  using vec_t = typename TRAITS::vector_type;
+  using vec_t = typename traits_t::vector_type;
   using vec_iter_t = typename vec_t::iterator;
   using vec_citer_t = typename vec_t::const_iterator;
 
-  using node_t = typename TRAITS::node_type;
-  using node_alloc_t = typename TRAITS::allocator_type;
+  using node_t = typename traits_t::node_type;
+  using node_alloc_t = typename traits_t::allocator_type;
 
-  using public_node_t = typename TRAITS::public_node_type;
-  using public_node_ptr = typename TRAITS::public_node_pointer;
+  using public_node_t = typename traits_t::public_node_type;
+  using public_node_ptr = typename traits_t::public_node_pointer;
 
-  using key_t = typename TRAITS::key_type;
-  using key_alloc_t = alloc_rebind<typename TRAITS::allocator_type, key_t>;
+  using key_t = typename traits_t::key_type;
+  using key_alloc_t = alloc_rebind<typename traits_t::allocator_type, key_t>;
   using key_alw_t = allocator_wrapper<key_alloc_t>;
 
   inner::tree_iterator<typename vec_t::iterator> iter;
@@ -36474,15 +36627,17 @@ class tree_adaptor
 
 public:
   using tree_type = this_t;
-  using vector_type = tree_vector_adaptor<TRAITS>;
-
-  using key_type = key_t;
-  using value_type = public_node_t;
-  using reference = value_type &;
-  using const_reference = const value_type &;
+  using vector_type = tree_vector_adaptor<traits_t>;
 
   using iterator = inner::tree_iterator<typename vec_t::iterator>;
   using const_iterator = inner::tree_iterator<typename vec_t::const_iterator>;
+
+  using key_type = key_t;
+  using children_type = typename iterator::children_type;
+  using tree_node_type = typename iterator::tree_node_type;
+  using value_type = itr_vt<iterator>;
+  using reference = itr_ref<iterator>;
+  using const_reference = itr_ref<const_iterator>;
   using difference_type = typename vec_t::difference_type;
   using size_type = typename vec_t::size_type;
 
@@ -36497,19 +36652,20 @@ public:
   }
 
   bool empty() const noexcept {
-    return iter == nullptr;
+    return iter == iterator{};
   }
 
 private:
   template <class...S>
   iterator new_node(S &&...s) {
     node_alloc_t na(alloc_ref());
-    return iterator(vec_iter_t(TRAITS::new_node
-                               (na, alloc_ref(), forward<S>(s)...)));
+    const iterator ret(vec_iter_t(TRAITS::new_node
+                                  (na, alloc_ref(), forward<S>(s)...)));
+    return ret;
   }
   void delete_node(const_iterator i) noexcept {
     node_alloc_t na(alloc_ref());
-    TRAITS::delete_node(na, i.node());
+    traits_t::delete_node(na, i.node());
   }
 
   iterator release() noexcept {
@@ -36518,88 +36674,85 @@ private:
 
   iterator link(const_iterator i, const_iterator x) {
     const iterator p = i.parent().to_mutable();
-    p->v.link(i.base(), x.base());
+    p.tree_node().v.link(i.base(), x.base());
     x.parent(p);
     return x.to_mutable();
   }
   iterator link_front(const_iterator p, const_iterator x) {
-    p.to_mutable()->v.link_front(x.base());
+    p.to_mutable().tree_node().v.link_front(x.base());
     x.parent(p);
     return x.to_mutable();
   }
   iterator link_back(const_iterator p, const_iterator x) {
-    p.to_mutable()->v.link_back(x.base());
+    p.to_mutable().tree_node().v.link_back(x.base());
     x.parent(p);
     return x.to_mutable();
   }
   iterator unlink(const_iterator x) noexcept {
     return (x != iter)
-      ? iterator(x.to_mutable().parent()->v.unlink(x.base()))
+      ? iterator(x.to_mutable().parent().tree_node()
+                 .v.unlink(x.base()))
       : (iter = iterator{});
   }
   iterator unlink(const_iterator i1, const_iterator i2) noexcept {
     return (i1 != i2)
-      ? iterator(i1.parent().to_mutable()->v.unlink(i1.base(), i2.base()))
+      ? iterator(i1.to_mutable().parent().tree_node()
+                 .v.unlink(i1.base(), i2.base()))
       : i1.to_mutable();
   }
   iterator unlink_front(const_iterator p) noexcept {
-    return iterator(p.to_mutable()->v.unlink_front());
+    return iterator(p.to_mutable().tree_node().v.unlink_front());
   }
   iterator unlink_back(const_iterator p) noexcept {
-    return iterator(p.to_mutable()->v.unlink_back());
+    return iterator(p.to_mutable().tree_node().v.unlink_back());
   }
   void unlink() noexcept {
     iter = iterator{};
   }
 
   template <class IT>
-  void reserve_cond(iterator target, IT p) {}
+  void reserve_cond(iterator, IT) {}
   template <class IT>
   void reserve_cond(iterator target, IT p)
-    requires requires {target->v.reserve(0u);} {
-    const auto n = size(*p);
-    if (n > target->v.max_size())
+    requires requires {target.tree_node().v.reserve(0u);} {
+    const auto n = re::size(p.children());
+    if (n > target.tree_node().v.max_size())
       throw_or_terminate<length_error>
         ("re::tree_adaptor::reserve(x, p): size overflow\n");
-    target->v.reserve(static_cast<decltype(target->v.size())>(n));
+    target.tree_node().v
+      .reserve(static_cast<typename children_type::size_type>(n));
   }
   template <class IT, class GET_KEY>
   iterator clone_node(IT p, GET_KEY get_key) {
     IT it = p;
-    const iterator ret = new_node(get_key(*it));
+    const iterator ret = new_node(get_key(it.tree_node()));
     iterator x = ret;
 #ifndef RE_NOEXCEPT
     try {
 #endif
       for (;;) {
-        if (it->empty()) {
+        if (it.children().empty()) {
           for (;;) {
-            for (;;) {
-              if (it == p)
-                return ret;
-              ++it;
-              ++x;
-              if (it == it.parent()->end()) {
-                it = it.parent();
-                x = x.parent();
-              }
-              else
-                goto continue_label;
+            if (it == p)
+              return ret;
+            ++it;
+            ++x;
+            if (it == it.parent().children().end()) {
+              it = it.parent();
+              x = x.parent();
             }
+            else
+              goto continue_label;
           }
         }
         else {
-          {
-            const auto guard = exit_fn([x]() {
-              for (auto &i : iters(x->v))
-                iterator(i).parent(x);
-            });
-            reserve_cond(x, it);
-            for (auto &u : *it)
-              emplace_back(x, get_key(u));
+          reserve_cond(x, it);
+          for (auto &u : iters(it.children())) {
+            emplace_back(x, get_key(u.tree_node()));
+            before_end(x.children()).parent(x);
           }
-          it = it->begin();
-          x = x->begin();
+          it = it.children().begin();
+          x = x.children().begin();
         }
       continue_label:
         ;
@@ -36629,21 +36782,21 @@ private:
     iter = iterator{};
   }
   void delete_data() noexcept {
-    if (iter != nullptr) {
+    if (iter != iterator{}) {
       delete_node(iter);
       iter = iterator{};
     }
   }
   void new_data(const this_t &v) {
-    iter = ((v.iter != nullptr) ? clone_node(v.iter, deref) : iterator{});
+    iter = (v.iter != iterator{}) ? clone_node(v.iter) : iterator{};
   }
   void new_data(this_t &&v) noexcept {
     iter = v.iter;
     v.iter = iterator{};
   }
   void new_data_individually(this_t &&v) {
-    if (v.iter != nullptr) {
-      iter = clone_node(v.iter, [](auto &x)->auto && {return move(*x);});
+    if (v.iter != iterator{}) {
+      iter = clone_node(v.iter, bind(move, bind(deref, _1)));
       v.delete_node(v.iter);
       v.iter = iterator{};
     }
@@ -36706,7 +36859,7 @@ public:
   explicit tree_adaptor(const tree_adaptor<TRAITS2> &x,
                         const allocator_type &al = allocator_type{})
     : key_alw_t(al) {
-    iter = ((x.root() != nullptr) ? clone_node(x.root()) : iterator{});
+    iter = (!x.empty() ? clone_node(x.root()) : iterator{});
   }
   template <class TRAITS2>
   enable_if_t<!is_same_v<TRAITS, TRAITS2>
@@ -36714,8 +36867,7 @@ public:
                                  const typename TRAITS2::key_type &>,
               tree_adaptor &>
   operator =(const tree_adaptor<TRAITS2> &x) {
-    const iterator tmp = ((x.iter != nullptr)
-                          ? clone_node(x.root()) : iterator{});
+    const iterator tmp = (!x.empty() ? clone_node(x.root()) : iterator{});
     clear();
     iter = tmp;
     return *this;
@@ -36729,8 +36881,8 @@ public:
   explicit tree_adaptor(tree_adaptor<TRAITS2> &&x,
                         const allocator_type &al = allocator_type{})
     : key_alw_t(al) {
-    iter = ((x.root() != nullptr)
-            ? clone_node(x.root(), [](auto &x)->auto && {return move(*x);})
+    iter = (!x.empty()
+            ? clone_node(x.root(), bind(move, bind(deref, _1)))
             : iterator{});
     x.delete_data();
     x.new_data();
@@ -36742,8 +36894,8 @@ public:
               tree_adaptor &>
   operator =(tree_adaptor<TRAITS2> &&x) {
     const iterator tmp
-      = ((x.iter != nullptr)
-         ? clone_node(x.iter, [](auto &x)->auto && {return move(*x);})
+      = (!x.empty()
+         ? clone_node(x.iter, bind(move, bind(deref, _1)))
          : iterator{});
     clear();
     iter = tmp;
@@ -36755,20 +36907,28 @@ public:
   template <class...S>
   explicit tree_adaptor(in_place_t, S &&...s) {
     iter = new_node(forward<S>(s)...);
-    iter.parent(iterator{});
   }
   template <class...S>
   explicit tree_adaptor(allocator_arg_t, const allocator_type &al,
                         in_place_t, S &&...s) : key_alw_t(al) {
     iter = new_node(forward<S>(s)...);
-    iter.parent(iterator{});
+  }
+
+  template <class U, class...S>
+  explicit tree_adaptor(in_place_type_t<U>, S &&...s) {
+    iter = new_node(in_place_type<U>, forward<S>(s)...);
+  }
+  template <class U, class...S>
+  explicit tree_adaptor(allocator_arg_t, const allocator_type &al,
+                        in_place_type_t<U>, S &&...s) : key_alw_t(al) {
+    iter = new_node(in_place_type<U>, forward<S>(s)...);
   }
 
 private:
   void cat_impl() {}
   template <class...S>
   void cat_impl(this_t &&x, S &&...s) {
-    insert(root()->end(), this_t(move(x), get_allocator()));
+    insert(root().children().end(), this_t(move(x), get_allocator()));
     cat_impl(forward<S>(s)...);
   }
 public:
@@ -36826,10 +36986,14 @@ public:
     return ret;
   }
   this_t copy(const_iterator p) {
-    return copy(p, deref);
+    this_t ret(get_allocator());
+    ret.iter = clone_node(p);
+    return ret;
   }
   this_t copy(iterator p) {
-    return copy(p, deref);
+    this_t ret(get_allocator());
+    ret.iter = clone_node(p);
+    return ret;
   }
   template <class U, class IT, class GET_KEY>
   this_t copy(U &u, IT i, GET_KEY get_key) {
@@ -36853,10 +37017,10 @@ public:
   }
 
   void swap(const_iterator i, const_iterator j) {
-    if (i != iter) {
+    if (i != j) {
       const auto i_p = i.to_mutable().parent();
       const auto j_p = j.to_mutable().parent();
-      i_p->v.swap(i.base(), j_p->v, j.base());
+      i_p.children().v.swap(i.base(), j_p.children().v, j.base());
       i.parent(j_p);
       j.parent(i_p);
     }
@@ -36867,7 +37031,7 @@ public:
         adl_swap(iter, l.iter);
       else {
         const auto j_p = j.to_mutable().parent();
-        iter = iterator(j_p->v.exchange_node(j.base(), i.base()));
+        iter = iterator(j_p.children().v.exchange_node(j.base(), i.base()));
         iter.parent(iterator{});
         i.parent(j_p);
       }
@@ -36875,14 +37039,14 @@ public:
     else {
       if (j == l.iter) {
         const auto i_p = i.to_mutable().parent();
-        l.iter = iterator(i_p->v.exchange_node(i.base(), j.base()));
+        l.iter = iterator(i_p.children().v.exchange_node(i.base(), j.base()));
         l.iter.parent(iterator{});
         j.parent(i_p);
       }
       else {
         const auto i_p = i.to_mutable().parent();
         const auto j_p = j.to_mutable().parent();
-        i_p->v.swap(i.base(), j_p->v, j.base());
+        i_p.children().v.swap(i.base(), j_p.children().v, j.base());
         j.parent(i_p);
         i.parent(j_p);
       }
@@ -36908,7 +37072,7 @@ public:
   iterator insert(const_iterator next, this_t &&x) {
     if (!x.empty()) {
       const iterator p = next.to_mutable().parent();
-      const iterator i(p->v.link(next.base(), x.iter.base()));
+      const iterator i(p.children().v.link(next.base(), x.iter.base()));
       i.parent(p);
       return x.release();
     }
@@ -36924,7 +37088,8 @@ public:
     else {
       if (!x.empty()) {
         const auto i_p = i.to_mutable().parent();
-        ret.iter = iterator(i_p->v.exchange_node(i.base(), x.iter.base()));
+        ret.iter = iterator(i_p.children().v
+                            .exchange_node(i.base(), x.iter.base()));
         ret.iter.parent(iterator{});
         x.iter.parent(i_p);
       }
@@ -36939,7 +37104,7 @@ public:
   }
   iterator replace(const_iterator i, this_t &&x) noexcept {
     if (i == iter) {
-      if (iter != nullptr)
+      if (iter != iterator{})
         delete_node(iter);
       iter = x.iter;
       x.iter = iterator{};
@@ -36948,7 +37113,8 @@ public:
     else {
       if (!x.empty()) {
         const auto i_p = i.to_mutable().parent();
-        delete_node(iterator(i_p->v.exchange_node(i.base(), x.iter.base())));
+        delete_node(iterator(i_p.children().v
+                             .exchange_node(i.base(), x.iter.base())));
         x.iter.parent(i_p);
         return re::exchange(x.iter, iterator{});
       }
@@ -36961,7 +37127,7 @@ public:
     vector_type ret(get_allocator());
     if (i1 != i2) {
       const iterator p = i1.to_mutable().parent();
-      auto &vv = p->v;
+      auto &vv = p.children().v;
       ret.v.splice(ret.v.end(), vv, i1.base(), i2.base());
       for (auto &i : iters(ret.v))
         iterator(i).parent(iterator{});
@@ -36970,7 +37136,7 @@ public:
   }
   iterator insert(const_iterator next, vector_type &&x) {
     const iterator p = next.to_mutable().parent();
-    auto &vv = p->v;
+    auto &vv = p.children().v;
     const iterator ret(vv.insert(next.base(), move(x.v)));
     for (auto &i : iters(ret, next.to_mutable()))
       i.parent(p);
@@ -36979,7 +37145,7 @@ public:
   vector_type exchange(const_iterator i1, const_iterator i2,
                        vector_type &&x) {
     const iterator p = i1.to_mutable().parent();
-    auto &vv = p->v;
+    auto &vv = p.children().v;
     vector_type ret(get_allocator());
     auto it = x.v.begin();
     ret.v = vv.exchange(i1.base(), i2.base(), move(x.v));
@@ -36991,7 +37157,7 @@ public:
   }
   iterator replace(const_iterator i1, const_iterator i2, vector_type &&x) {
     const iterator p = i1.to_mutable().parent();
-    auto &vv = p->v;
+    auto &vv = p.children().v;
     auto it = vv.replace(i1.base(), i2.base(), move(x.v));
     for (auto &it2 : iters(it, i2.to_mutable().base()))
       iterator(it2).parent(p);
@@ -37000,7 +37166,7 @@ public:
 
   vector_type extract_children(const_iterator i) noexcept {
     vector_type ret(get_allocator());
-    vec_t &vv = i.to_mutable()->v;
+    vec_t &vv = i.to_mutable().children().v;
     ret.v = move(vv);
     for (auto &it : iters(ret.v))
       iterator(it).parent(iterator{});
@@ -37008,7 +37174,7 @@ public:
   }
   vector_type exchange_children(const_iterator i, vector_type &&x) {
     vector_type ret(get_allocator());
-    vec_t &vv = i.to_mutable()->v;
+    vec_t &vv = i.to_mutable().children().v;
     ret.v = move(vv);
     vv = move(x.v);
     for (auto &it : iters(vv))
@@ -37018,7 +37184,7 @@ public:
     return ret;
   }
   iterator replace_children(const_iterator i, vector_type &&x) {
-    vec_t &vv = i.to_mutable()->v;
+    vec_t &vv = i.to_mutable().children().v;
     vv = move(x.v);
     for (auto &it : iters(vv))
       iterator(it).parent(i);
@@ -37035,12 +37201,16 @@ public:
   void splice(const_iterator next,
               this_t &l, const_iterator from, const_iterator to) {
     if (from != to) {
-      next.to_mutable().parent()->v
+      const iterator next_p = next.to_mutable().parent();
+      next_p.children().v
         .splice(next.base(),
-                from.to_mutable().parent()->v, from.base(), to.base());
-      const const_iterator p = next.parent();
-      for (auto i = from; i != next; ++i)
-        i.parent(p);
+                from.to_mutable().parent().children().v,
+                from.base(),
+                to.base());
+      if (to != next) {
+        for (auto i = from; i != next; ++i)
+          i.parent(next_p);
+      }
     }
   }
   void splice(const_iterator next,
@@ -37059,10 +37229,10 @@ public:
               vector_type &l, const_iterator from, const_iterator to) {
     if (from != to) {
       const auto p = next.to_mutable().parent();
-      auto &vv = p->v;
+      auto &vv = p.children().v;
 
       const auto pp = from.to_mutable().parent();
-      auto &vvv = ((pp == nullptr) ? l.v : pp->v);
+      auto &vvv = ((pp == iterator{}) ? l.v : pp.children().v);
 
       vv.splice(next.base(), vvv, from.base(), to.base());
       for (auto &i : iters(from, next))
@@ -37076,8 +37246,8 @@ public:
 
   void splice(const_iterator next, vector_type &l) {
     if (!l.empty()) {
-      const auto p = next.to_mutable().parent();
-      auto &vv = p->v;
+      const iterator p = next.to_mutable().parent();
+      auto &vv = p.children().v;
       const iterator it = l.begin();
       vv.splice(next.base(), l.v);
       for (auto &it2 : iters(it, next.to_mutable()))
@@ -37091,7 +37261,9 @@ public:
   template <class...S>
   iterator emplace(const_iterator i, S &&...s) {
     const iterator p = i.parent().to_mutable();
-    const iterator it(p->v.emplace(i.base(), alloc_ref(), forward<S>(s)...));
+    const iterator it(p.children().v.emplace(i.base(),
+                                             alloc_ref(),
+                                             forward<S>(s)...));
     it.parent(p);
     return it;
   }
@@ -37114,7 +37286,7 @@ public:
   template <class R>
   iterator insert_range(const_iterator i, R &&r) {
     const iterator p(i.to_mutable().parent());
-    const auto it = p->v.insert_range
+    const auto it = p.children().v.insert_range
       (i.base(), bind_rng(irng(r), [&](auto it) {
         return tuple<decltype(*it), typename vec_t::const_iterator,
                      node_alloc_t>(*it, p.base(), alloc_ref());
@@ -37135,7 +37307,7 @@ public:
 
   iterator erase(const_iterator i) {
     if (i != iter)
-      return iterator(i.to_mutable().parent()->v.erase(i.base()));
+      return iterator(i.to_mutable().parent().children().v.erase(i.base()));
     else {
       delete_node(iter);
       return iter = iterator{};
@@ -37143,18 +37315,19 @@ public:
   }
   iterator erase(const_iterator i1, const_iterator i2) {
     return (i1 != i2)
-      ? iterator(i1.to_mutable().parent()->v.erase(i1.base(), i2.base()))
+      ? iterator(i1.to_mutable().parent().children().v
+                 .erase(i1.base(), i2.base()))
       : i1.to_mutable();
   }
   void clear(const_iterator i) {
-    i.to_mutable()->v.clear();
+    i.to_mutable().children().v.clear();
   }
 
   template <class...S>
   reference emplace_back(const_iterator ci, S &&...s) {
     const iterator p = ci.to_mutable();
-    const iterator it = p->v.emplace_back(alloc_ref(), forward<S>(s)...)
-      .iter();
+    const iterator it = p.children().v
+      .emplace_back(alloc_ref(), forward<S>(s)...).iter();
     it.parent(p);
     return *it;
   }
@@ -37167,14 +37340,14 @@ public:
   void push_back(const_iterator ci, this_t &&x) {
     if (!x.empty()) {
       const iterator p = ci.to_mutable();
-      const iterator i(p->v.link_back(x.root().base()));
+      const iterator i(p.children().v.link_back(x.root().base()));
       x.release();
       i.parent(p);
     }
   }
   void push_back(const_iterator i, vector_type &&x) {
     if (!x.empty()) {
-      vec_t &vv = i.to_mutable()->v;
+      vec_t &vv = i.to_mutable().children().v;
       auto it = x.v.begin();
       vv.splice(vv.end(), x.v);
       for (auto &it2 : iters(it, vv.end()))
@@ -37192,7 +37365,7 @@ public:
   template <class R>
   void append_range(const_iterator ci, R &&r) {
     const iterator p = ci.to_mutable();
-    p->v.append_range(bind_rng(irng(r), [&](auto it) {
+    p.children().v.append_range(bind_rng(irng(r), [&](auto it) {
       return tuple<decltype(*it), typename vec_t::const_iterator, node_alloc_t>
         (*it, ci.base(), alloc_ref());
     }));
@@ -37205,18 +37378,18 @@ public:
   }
   void pop_back(const_iterator ci) {
     const iterator p = ci.to_mutable();
-    p->v.pop_back();
+    p.children().v.pop_back();
   }
   void pop_back(const_iterator ci, size_type n) {
     const iterator p = ci.to_mutable();
-    p->v.pop_back(n);
+    p.children().v.pop_back(n);
   }
 
   template <class...S>
   reference emplace_front(const_iterator ci, S &&...s) {
     const iterator p = ci.to_mutable();
-    const iterator it = p->v.emplace_front(alloc_ref(), forward<S>(s)...)
-      .iter();
+    const iterator it = p.children().v
+      .emplace_front(alloc_ref(), forward<S>(s)...).iter();
     it.parent(p);
     return *it;
   }
@@ -37229,14 +37402,14 @@ public:
   void push_front(const_iterator ci, this_t &&x) {
     if (!x.empty()) {
       const iterator p = ci.to_mutable();
-      const iterator i(p->v.link_front(x.root().base()));
+      const iterator i(p.children().v.link_front(x.root().base()));
       x.release();
       i.parent(p);
     }
   }
   void push_front(const_iterator i, vector_type &&x) {
     if (!x.empty()) {
-      vec_t &vv = i.to_mutable()->v;
+      vec_t &vv = i.to_mutable().children().v;
       auto it = vv.begin();
       vv.splice(vv.begin(), x.v);
       for (auto &it2 : iters(vv.begin(), it))
@@ -37254,7 +37427,7 @@ public:
   template <class R>
   void prepend_range(const_iterator ci, R &&r) {
     const iterator p = ci.to_mutable();
-    p->v.prepend_range(bind_rng(irng(r), [&](auto it) {
+    p.children().v.prepend_range(bind_rng(irng(r), [&](auto it) {
       return tuple<decltype(*it), typename vec_t::const_iterator, node_alloc_t>
         (*it, ci.base(), alloc_ref());
     }));
@@ -37267,97 +37440,97 @@ public:
   }
   void pop_front(const_iterator ci) {
     const iterator p = ci.to_mutable();
-    p->v.pop_front();
+    p.children().v.pop_front();
   }
   void pop_front(const_iterator ci, size_type n) {
     const iterator p = ci.to_mutable();
-    p->v.pop_front(n);
+    p.children().v.pop_front(n);
   }
 
   size_type capacity(const_iterator i) const {
-    return i.to_mutable()->v.capacity();
+    return i.to_mutable().children().v.capacity();
   }
   bool full(const_iterator i) const {
-    return i.to_mutable()->v.full();
+    return i.to_mutable().children().v.full();
   }
 
   void reserve(const_iterator i, size_type n) {
-    i.to_mutable()->v.reserve(n);
+    i.to_mutable().children().v.reserve(n);
   }
   void first_order_reserve(const_iterator i, size_type n) {
-    for (auto &x : i.to_mutable().first_order())
-      x.v.reserve(n);
+    for (auto &it : iters(i.to_mutable().first_order()))
+      it.base().children().v.reserve(n);
   }
 
   void reserve_more(const_iterator i, size_type n) {
-    i.to_mutable()->v.reserve_more(n);
+    i.to_mutable().children().v.reserve_more(n);
   }
   void first_order_reserve_more(const_iterator i, size_type n) {
-    for (auto &x : i.to_mutable().first_order())
-      x.v.reserve_more(n);
+    for (auto &it : iters(i.to_mutable().first_order()))
+      it.base().children().v.reserve_more(n);
   }
 
   void resize(const_iterator i, size_type n) {
     const auto it = i.to_mutable();
-    if (n <= it->size())
-      erase(prev(it->end(), it->size() - n), it->end());
+    if (n <= it.children().size())
+      erase(prev(it.children().end(), it.children().size() - n),
+            it.children().end());
     else
-      for (auto c = n - it->size(); c != 0;) {
-        --c;
+      for (auto c : irng(0u, n - it.children().size()))
         emplace_back(it);
-      }
   }
   void resize(const_iterator i, size_type n, const key_type &k) {
     const auto it = i.to_mutable();
-    if (n <= it->size())
-      erase(prev(it->end(), it->size() - n), it->end());
+    if (n <= it.children().size())
+      erase(prev(it.children().end(), it.children().size() - n),
+            it.children().end());
     else
-      for (auto c = n - it->size(); c != 0;) {
-        --c;
+      for (auto c : irng(0u, n - it.children().size()))
         emplace_back(it, k);
-      }
   }
   void first_order_resize(const_iterator i, size_type n) {
-    for (auto &x : i.to_mutable().first_order()) {
-      if (x.size() != 0)
-        resize(x.iter(), n);
+    for (auto &it : iters(i.to_mutable().first_order())) {
+      if (it.base().children().size() != 0u)
+        resize(it.base(), n);
     }
   }
   void first_order_resize(const_iterator i, size_type n,
                           const key_type &k) {
-    for (auto &x : i.first_order()) {
-      if (x.size() != 0)
-        resize(x.iter(), n, k);
+    for (auto &it : iters(i.first_order())) {
+      if (it.base().children().size() != 0u)
+        resize(it.base(), n, k);
     }
   }
 
   void shrink_to_fit(const_iterator i) {
-    i.to_mutable()->v.shrink_to_fit();
+    i.to_mutable().children().v.shrink_to_fit();
   }
   void first_order_shrink_to_fit(const_iterator i) {
-    for (auto &x : i.first_order())
-      shrink_to_fit(x.iter());
+    for (auto &it : iters(i.first_order()))
+      shrink_to_fit(it.base());
   }
 
   template <class UPRED>
   size_type remove_if(const_iterator p, UPRED eq) {
-    return p.to_mutable()->v.remove_if([=](reference x) {return eq(x);});
+    return p.to_mutable().children().v
+      .remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
   void first_order_remove_if(const_iterator p, UPRED eq) {
-    for (auto &x : p.first_order())
-      remove_if(x.iter(), eq);
+    for (auto &it : iters(p.first_order()))
+      remove_if(it.base(), eq);
   }
 
   template <class BPRED>
   void unique(const_iterator c_parent, BPRED eq) {
     const iterator parent = c_parent.to_mutable();
-    parent->v.unique([=](reference x, reference y) {return eq(x, y);});
+    parent.children().v
+      .unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
   void first_order_unique(const_iterator parent, BPRED eq) {
-    for (auto &u : parent.first_order())
-      unique(u.iter(), eq);
+    for (auto &it : iters(parent.first_order()))
+      unique(it.base(), eq);
   }
 
   template <class BPRED>
@@ -37365,8 +37538,8 @@ public:
              BPRED less) {
     const iterator p1 = i.to_mutable();
     const iterator p2 = i2.to_mutable();
-    vec_t &v1 = p1->v;
-    vec_t &v2 = p2->v;
+    vec_t &v1 = p1.children().v;
+    vec_t &v2 = p2.children().v;
     for (auto &it : iters(v2))
       iterator(it).parent(p1);
 #ifndef RE_NOEXCEPT
@@ -37393,8 +37566,8 @@ public:
              BPRED less) {
     const iterator p1 = p.to_mutable();
     const iterator p2 = i.to_mutable();
-    vec_t &v1 = p1->v;
-    vec_t &v2 = (p2 == nullptr ? l.v : p2->v);
+    vec_t &v1 = p1.children().v;
+    vec_t &v2 = (p2 == iterator{} ? l.v : p2.children().v);
     for (auto &it : iters(v2))
       iterator(it).parent(p1);
 #ifndef RE_NOEXCEPT
@@ -37418,7 +37591,7 @@ public:
 
   template <class BPRED>
   void merge(const_iterator p, vector_type &l, BPRED less) {
-    vec_t &vv = p.to_mutable()->v;
+    vec_t &vv = p.to_mutable().children().v;
     for (auto &it : iters(l))
       it.parent(p);
 #ifndef RE_NOEXCEPT
@@ -37442,12 +37615,13 @@ public:
   template <class BPRED>
   void sort(const_iterator c_parent, BPRED less) {
     const iterator parent = c_parent.to_mutable();
-    parent->v.sort([=](reference x, reference y) {return less(x, y);});
+    parent.children().v
+      .sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
   void first_order_sort(const_iterator parent, BPRED less) {
-    for (auto &x : parent.to_mutable().first_order())
-      sort(x.iter(), less);
+    for (auto &it : iters(parent.to_mutable().first_order()))
+      sort(it.base(), less);
   }
 
 private:
@@ -37461,14 +37635,14 @@ private:
   }
   template <class FN>
   bool good_impl(const_iterator p, FN f) const {
-    if (p == nullptr)
+    if (p == iterator{})
       return true;
     if (f(*p) == false)
       return false;
-    const_iterator x = p->begin();
+    const_iterator x = p.children().begin();
     const_iterator x_parent = p;
     for (;;) {
-      while (x == x_parent->end()) {
+      while (x == x_parent.children().end()) {
         if (x_parent == p)
           return true;
         x = x_parent;
@@ -37478,12 +37652,12 @@ private:
       if (!f(*x))
         return false;
       x_parent = x;
-      x = x->begin();
+      x = x.children().begin();
     }
   }
   bool good() const {
-    return iter == nullptr
-      || (iter.parent() == nullptr
+    return iter == iterator{}
+      || (iter.parent() == iterator{}
           && good_impl(root(), [&](const auto &x) {
             return allocator_type(x.v.get_allocator()) == get_allocator()
               && good(x.v)
@@ -37498,18 +37672,14 @@ template <class X, class Y>
 bool operator ==(const tree_adaptor<X> &x, const tree_adaptor<Y> &y)
   requires equality_comparable_with<typename X::key_type,
                                     typename Y::key_type> {
-  if (x.root() == nullptr)
-    return y == nullptr;
+  if (x.empty())
+    return y.empty();
   else {
-    if (y.root() == nullptr)
+    if (y.empty())
       return false;
     else
-      return *x.root() == *y.root();
+      return x.root().tree_node() == y.root().tree_node();
   }
-}
-template <class TRAITS>
-bool operator ==(const tree_adaptor<TRAITS> &x, nullptr_t) {
-  return x.root() == nullptr;
 }
 
 template <class TRAITS>
@@ -37520,6 +37690,7 @@ class tree_vector_adaptor {
   friend class tree_vector_adaptor;
 
   using this_t = tree_vector_adaptor;
+  using traits_t = TRAITS;
 
   using vec_t = typename TRAITS::vector_type;
   using vec_iter_t = typename vec_t::iterator;
@@ -37541,13 +37712,15 @@ public:
   using tree_type = tree_adaptor<TRAITS>;
   using vector_type = this_t;
 
-  using key_type = key_t;
-  using value_type = public_node_t;
-  using reference = value_type &;
-  using const_reference = const value_type &;
-
   using iterator = inner::tree_iterator<typename vec_t::iterator>;
   using const_iterator = inner::tree_iterator<typename vec_t::const_iterator>;
+
+  using key_type = key_t;
+  using children_type = typename iterator::children_type;
+  using tree_node_type = typename iterator::tree_node_type;
+  using value_type = itr_vt<iterator>;
+  using reference = itr_ref<iterator>;
+  using const_reference = itr_ref<const_iterator>;
   using difference_type = typename vec_t::difference_type;
   using size_type = typename vec_t::size_type;
 
@@ -37580,12 +37753,12 @@ public:
     return v.empty();
   }
 
-  value_type &operator [](size_type n) requires is_ritr<iterator> {
-    return v[n];
+  reference operator [](size_type n) requires is_ritr<iterator> {
+    return *iterator(v.begin() + n);
   }
-  const value_type &operator [](size_type n)
-    const requires is_ritr<iterator> {
-    return v[n];
+  const_reference operator [](size_type n) const
+    requires is_ritr<iterator> {
+    return *const_iterator(v.begin() + n);
   }
 
   iterator nth(difference_type n) {
@@ -37622,7 +37795,8 @@ private:
   iterator new_node(S &&...s) {
     const key_alloc_t ka(v.get_allocator());
     node_alloc_t na(v.get_allocator());
-    return iterator(vec_iter_t(TRAITS::new_node(na, ka, forward<S>(s)...)));
+    const iterator ret(vec_iter_t(TRAITS::new_node(na, ka, forward<S>(s)...)));
+    return ret;
   }
   void delete_node(const_iterator i) noexcept {
     node_alloc_t na(v.get_allocator());
@@ -37631,38 +37805,41 @@ private:
 
   iterator link(const_iterator i, const_iterator x) {
     const iterator p = i.parent().to_mutable();
-    ((p == nullptr) ? v : p->v).link(i.base(), x.base());
+    ((p == iterator{}) ? v : p.children().v).link(i.base(), x.base());
     x.parent(p);
     return x.to_mutable();
   }
   iterator link_front(const_iterator i, const_iterator x) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.link_front(x.base());
     x.parent(i);
     return x.to_mutable();
   }
   iterator link_back(const_iterator i, const_iterator x) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.link_back(x.base());
     x.parent(i);
     return x.to_mutable();
   }
   iterator unlink(const_iterator x) noexcept {
     const iterator p = x.parent().to_mutable();
-    return iterator(((p == nullptr) ? v : p->v).unlink(x.base()));
+    return iterator(((p == iterator{}) ? v : p.children().v).unlink(x.base()));
   }
   iterator unlink(const_iterator i1, const_iterator i2) noexcept {
-    const iterator p = i1.parent().to_mutable();
-    return (i1 != i2)
-      ? ((p == nullptr) ? v : p->v).unlink(i1.base(), i2.base())
-      : i1.to_mutable();
+    if (i1 != i2) {
+      const iterator p = i1.parent().to_mutable();
+      return ((p == iterator{}) ? v : p.children().v)
+        .unlink(i1.base(), i2.base());
+    }
+    else
+      return i1.to_mutable();
   }
   iterator unlink_front(const_iterator i) noexcept {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     return iterator(vv.unlink_front(i.base()));
   }
   iterator unlink_back(const_iterator i) noexcept {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     return iterator(vv.unlink_back(i.base()));
   }
   void unlink() noexcept {
@@ -37673,12 +37850,13 @@ private:
   void reserve_cond(iterator target, IT p) {}
   template <class IT>
   void reserve_cond(iterator target, IT p)
-    requires requires {target->v.reserve(0u);} {
-    const auto n = re::size(*p);
-    if (n > target->v.max_size())
+    requires requires {target.children().v.reserve(0u);} {
+    const auto n = re::size(p.children());
+    if (n > target.children().v.max_size())
       throw_or_terminate<length_error>
-        ("re::tree_adaptor::reserve(x, p): size overflow\n");
-    target->v.reserve(static_cast<decltype(target->v.size())>(n));
+        ("re::tree_vector_adaptor::reserve(x, p): size overflow\n");
+    target.children().v
+      .reserve(static_cast<decltype(target.children().v.size())>(n));
   }
   template <class VV>
   void reserve_cond(VV &vv) {}
@@ -37686,47 +37864,37 @@ private:
   void reserve_cond(VV &vv) requires requires {vv.reserve(0u);} {
     v.reserve(vv.size());
   }
-  void do_reserve(size_type) {}
-  void do_reserve(size_type n) requires requires {v.reserve(0u);} {
-    v.reserve(n);
-  }
   template <class IT, class GET_KEY>
   iterator clone_node(IT p, GET_KEY get_key) {
     IT it = p;
-    const iterator ret = new_node(get_key(*it));
+    const iterator ret = new_node(get_key(it.tree_node()));
     iterator x = ret;
 #ifndef RE_NOEXCEPT
     try {
 #endif
       for (;;) {
-        if (it->empty()) {
+        if (it.children().empty()) {
           for (;;) {
-            for (;;) {
-              if (it == p)
-                return ret;
-              ++it;
-              ++x;
-              if (it == it.parent()->end()) {
-                it = it.parent();
-                x = x.parent();
-              }
-              else
-                goto continue_label;
+            if (it == p)
+              return ret;
+            ++it;
+            ++x;
+            if (it == it.parent().children().end()) {
+              it = it.parent();
+              x = x.parent();
             }
+            else
+              goto continue_label;
           }
         }
         else {
-          {
-            const auto guard = exit_fn([x]() {
-              for (auto &i : iters(x->v))
-                iterator(i).parent(x);
-            });
-            reserve_cond(x, it);
-            for (auto &u : *it)
-              emplace_back(x, get_key(u));
+          reserve_cond(x, it);
+          for (auto &u : iters(it.children())) {
+            emplace_back(x, get_key(u.tree_node()));
+            before_end(x.children()).parent(x);
           }
-          it = it->begin();
-          x = x->begin();
+          it = it.children().begin();
+          x = x.children().begin();
         }
       continue_label:
         ;
@@ -37759,7 +37927,7 @@ private:
   void append_data_from_rv(TREE_VEC_T &x) {
     reserve_cond(x.v);
     for (auto &it : iters(x)) {
-      const auto n = clone_node(it, [](auto &u)->auto && {return move(*u);});
+      const auto n = clone_node(it, bind(move, bind(deref, _1)));
       auto guard = exit_fn([&]() {delete_node(n);}, true);
       link_back(const_iterator{}, n);
       guard.unset();
@@ -37775,9 +37943,14 @@ public:
   }
   tree_vector_adaptor &operator =(const tree_vector_adaptor &x) {
     if (this != addressof(x)) {
-      const vec_t tmp(x.v.get_allocator());
-      v = tmp;
-      append_data(x);
+      if (v.get_allocator() == x.v.get_allocator()) {
+        v.clear();
+        append_data(x);
+      }
+      else {
+        v = vec_t(x.v.get_allocator());
+        append_data(x);
+      }
     }
     return *this;
   }
@@ -37875,7 +38048,7 @@ public:
   explicit tree_vector_adaptor(size_type n,
                                const allocator_type &a = allocator_type{})
     : v(a) {
-    for (auto c = n; c != 0; --c)
+    for (auto c = n; c != 0u; --c)
       emplace_back();
   }
   tree_vector_adaptor(size_type n, const key_type &k,
@@ -37943,7 +38116,7 @@ public:
         return;
       }
       clear(it);
-      **it = *rr.first;
+      it.tree_node().key() = *rr.first;
       ++it;
       ++rr.first;
     }
@@ -38004,16 +38177,16 @@ public:
   void swap(const_iterator i, const_iterator j) {
     const auto i_p = i.to_mutable().parent();
     const auto j_p = j.to_mutable().parent();
-    (i_p == nullptr ? v : i_p->v)
-      .swap(i.base(), (j_p == nullptr ? v : j_p->v), j.base());
+    (i_p == iterator{} ? v : i_p.children().v)
+      .swap(i.base(), (j_p == iterator{} ? v : j_p.children().v), j.base());
     i.parent(j_p);
     j.parent(i_p);
   }
   void swap(const_iterator i, this_t &l, const_iterator j) {
     const auto i_p = i.to_mutable().parent();
     const auto j_p = j.to_mutable().parent();
-    (i_p == nullptr ? v : i_p->v)
-      .swap(i.base(), (j_p == nullptr ? l.v : j_p->v), j.base());
+    (i_p == iterator{} ? v : i_p.children().v)
+      .swap(i.base(), (j_p == iterator{} ? l.v : j_p.children().v), j.base());
     i.parent(j_p);
     j.parent(i_p);
   }
@@ -38023,7 +38196,7 @@ public:
   void swap(const_iterator i, tree_type &l, const_iterator j) {
     if (j == l.iter) {
       const auto i_p = i.to_mutable().parent();
-      const iterator x((i_p == nullptr ? v : i_p->v)
+      const iterator x((i_p == iterator{} ? v : i_p.children().v)
                        .exchange_node(i.base(), j.base()));
       l.iter = x;
       x.parent(iterator{});
@@ -38032,7 +38205,8 @@ public:
     else {
       const auto i_p = i.to_mutable().parent();
       const auto j_p = j.to_mutable().parent();
-      (i_p == nullptr ? v : i_p->v).swap(i.base(), j_p->v, j.base());
+      (i_p == iterator{} ? v : i_p.children().v)
+        .swap(i.base(), j_p.children().v, j.base());
       i.parent(j_p);
       j.parent(i_p);
     }
@@ -38051,7 +38225,7 @@ public:
   iterator insert(const_iterator next, tree_type &&x) {
     if (!x.empty()) {
       const iterator p = next.to_mutable().parent();
-      const iterator i((p == nullptr ? v : p->v)
+      const iterator i((p == iterator{} ? v : p.children().v)
                        .link(next.base(), x.iter.base()));
       i.parent(p);
       return x.release();
@@ -38063,7 +38237,7 @@ public:
     tree_type ret(get_allocator());
     if (!x.empty()) {
       const auto i_p = i.to_mutable().parent();
-      vec_t &vv = (i_p == nullptr ? v : i_p->v);
+      vec_t &vv = (i_p == iterator{} ? v : i_p.children().v);
       ret.iter = iterator(vv.exchange_node(i.base(), x.iter.base()));
       ret.iter.parent(iterator{});
       x.iter.parent(i_p);
@@ -38078,7 +38252,7 @@ public:
   }
   iterator replace(const_iterator i, tree_type &&x) noexcept {
     const auto i_p = i.to_mutable().parent();
-    auto &vv = (i_p == nullptr ? v : i_p->v);
+    auto &vv = (i_p == iterator{} ? v : i_p.children().v);
     if (!x.empty()) {
       vv.delete_node(vv.exchange_node(i.base(), x.iter.base()));
       x.iter.parent(i_p);
@@ -38092,7 +38266,7 @@ public:
     this_t ret(get_allocator());
     if (i1 != i2) {
       const iterator p = i1.to_mutable().parent();
-      auto &vv = ((p == nullptr) ? v : p->v);
+      auto &vv = ((p == iterator{}) ? v : p.children().v);
       ret.v.splice(ret.v.end(), vv, i1.base(), i2.base());
       for (auto &i : iters(ret.v))
         iterator(i).parent(iterator{});
@@ -38101,7 +38275,7 @@ public:
   }
   iterator insert(const_iterator next, this_t &&x) {
     const iterator p = next.to_mutable().parent();
-    auto &vv = ((p == nullptr) ? v : p->v);
+    auto &vv = ((p == iterator{}) ? v : p.children().v);
     const iterator ret(vv.insert(next.base(), move(x.v)));
     for (auto &i : iters(ret, next.to_mutable()))
       i.parent(p);
@@ -38109,7 +38283,7 @@ public:
   }
   this_t exchange(const_iterator i1, const_iterator i2, this_t &&x) {
     const iterator p = i1.to_mutable().parent();
-    auto &vv = ((p == nullptr) ? v : p->v);
+    auto &vv = ((p == iterator{}) ? v : p.children().v);
     this_t ret(get_allocator());
     auto it = x.v.begin();
     ret.v = vv.exchange(i1.base(), i2.base(), move(x.v));
@@ -38121,7 +38295,7 @@ public:
   }
   iterator replace(const_iterator i1, const_iterator i2, this_t &&x) {
     const iterator p = i1.to_mutable().parent();
-    auto &vv = ((p == nullptr) ? v : p->v);
+    auto &vv = ((p == iterator{}) ? v : p.children().v);
     auto it = vv.replace(i1.base(), i2.base(), move(x.v));
     for (auto &it2 : iters(it, i2.to_mutable().base()))
       iterator(it2).parent(p);
@@ -38130,7 +38304,7 @@ public:
 
   this_t extract_children(const_iterator i) noexcept {
     this_t ret(get_allocator());
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     ret.v = move(vv);
     for (auto &it : iters(ret.v))
       iterator(it).parent(iterator{});
@@ -38138,7 +38312,7 @@ public:
   }
   this_t exchange_children(const_iterator i, this_t &&x) {
     this_t ret(get_allocator());
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     ret.v = move(vv);
     vv = move(x.v);
     for (auto &it : iters(vv))
@@ -38148,7 +38322,7 @@ public:
     return ret;
   }
   iterator replace_children(const_iterator i, this_t &&x) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv = move(x.v);
     for (auto &it : iters(vv))
       iterator(it).parent(i);
@@ -38165,9 +38339,11 @@ public:
               tree_type &l, const_iterator from, const_iterator to) {
     if (from != to) {
       const auto p = next.to_mutable().parent();
-      auto &vv = ((p == nullptr) ? v : p->v);
+      auto &vv = ((p == iterator{}) ? v : p.children().v);
       vv.splice(next.base(),
-                from.to_mutable().parent()->v, from.base(), to.base());
+                from.to_mutable().parent().children().v,
+                from.base(),
+                to.base());
       for (auto &i : iters(from, next))
         i.parent(p);
     }
@@ -38188,10 +38364,10 @@ public:
               this_t &l, const_iterator from, const_iterator to) {
     if (from != to) {
       const auto p = next.to_mutable().parent();
-      auto &vv = ((p == nullptr) ? v : p->v);
+      auto &vv = ((p == iterator{}) ? v : p.children().v);
 
       const auto pp = from.to_mutable().parent();
-      auto &vvv = ((pp == nullptr) ? l.v : pp->v);
+      auto &vvv = ((pp == iterator{}) ? l.v : pp.children().v);
 
       vv.splice(next.base(), vvv, from.base(), to.base());
       for (auto &i : iters(from, next))
@@ -38206,7 +38382,7 @@ public:
   void splice(const_iterator next, this_t &l) {
     if (!l.empty()) {
       const auto p = next.to_mutable().parent();
-      auto &vv = ((p == nullptr) ? v : p->v);
+      auto &vv = ((p == iterator{}) ? v : p.children().v);
       const iterator it = l.begin();
       vv.splice(next.base(), l.v);
       for (auto &it2 : iters(it, next.to_mutable()))
@@ -38220,7 +38396,7 @@ public:
   template <class...S>
   iterator emplace(const_iterator i, S &&...s) {
     const iterator p = i.parent().to_mutable();
-    vec_t &vv = ((p == nullptr) ? v : p->v);
+    vec_t &vv = ((p == iterator{}) ? v : p.children().v);
     const iterator it(vv.emplace(i.base(), get_allocator(), forward<S>(s)...));
     it.parent(p);
     return it;
@@ -38244,7 +38420,7 @@ public:
   template <class R>
   iterator insert_range(const_iterator i, R &&r) {
     const iterator p = i.to_mutable().parent();
-    vec_t &vv = ((p == nullptr) ? v : p->v);
+    vec_t &vv = ((p == iterator{}) ? v : p.children().v);
     const auto it = vv.insert_range
       (i.base(), bind_rng(irng(r), [=, this](auto it) {
         return tuple<decltype(*it), typename vec_t::const_iterator,
@@ -38264,20 +38440,20 @@ public:
 
   iterator erase(const_iterator i) {
     const iterator p = i.to_mutable().parent();
-    vec_t &vv = ((p == nullptr) ? v : p->v);
+    vec_t &vv = ((p == iterator{}) ? v : p.children().v);
     return iterator(vv.erase(i.base()));
   }
   iterator erase(const_iterator i1, const_iterator i2) {
     if (i1 != i2) {
       const iterator p = i1.to_mutable().parent();
-      vec_t &vv = ((p == nullptr) ? v : p->v);
+      vec_t &vv = ((p == iterator{}) ? v : p.children().v);
       return iterator(vv.erase(i1.base(), i2.base()));
     }
     else
       return i1.to_mutable();
   }
   void clear(const_iterator i) {
-    ((i == nullptr) ? v : i.to_mutable()->v).clear();
+    ((i == iterator{}) ? v : i.to_mutable().children().v).clear();
   }
 
   template <class...S>
@@ -38285,7 +38461,8 @@ public:
     requires (sizeof...(s) == 0u
               || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
                   && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
-    return v.emplace_back(get_allocator(), forward<S>(s)...);
+    reference ret = v.emplace_back(get_allocator(), forward<S>(s)...);
+    return ret;
   }
   void push_back(const key_type &x) {
     emplace_back(x);
@@ -38317,10 +38494,14 @@ public:
   }
   template <class R>
   void append_range(R &&r) {
+    const size_type n = v.size();    
     v.append_range(bind_rng(irng(r), [this](auto it) {
       return tuple<decltype(*it), typename vec_t::const_iterator, node_alloc_t>
         (*it, iterator{}.base(), get_allocator());
     }));
+    const size_type n2 = v.size();
+    for (auto &it : iters(prev(v.end(), (n2 - n)), v.end()))
+      iterator(it).parent(iterator{});    
   }
   this_t &append() {
     return *this;
@@ -38342,7 +38523,7 @@ public:
 
   template <class...S>
   reference emplace_back(const_iterator i, S &&...s) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     auto &x = vv.emplace_back(get_allocator(), forward<S>(s)...);
     x.parent(i);
     return x;
@@ -38355,14 +38536,14 @@ public:
   }
   void push_back(const_iterator i, tree_type &&x) {
     if (!x.empty()) {
-      vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+      vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
       iterator(vv.link_back(x.root().base())).parent(i);
       x.release();
     }
   }
   void push_back(const_iterator i, this_t &&x) {
     if (!x.empty()) {
-      vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+      vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
       auto it = x.v.begin();
       vv.splice(vv.end(), x.v);
       for (auto &it2 : iters(it, vv.end()))
@@ -38380,7 +38561,7 @@ public:
   template <class R>
   void append_range(const_iterator i, R &&r) {
     const iterator p = i.to_mutable();
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.append_range(bind_rng(irng(r), [i, this](auto it) {
       return tuple<decltype(*it), typename vec_t::const_iterator, node_alloc_t>
         (*it, i.base(), get_allocator());
@@ -38393,11 +38574,11 @@ public:
     append(i, forward<S>(s)...);
   }
   void pop_back(const_iterator i) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.pop_back();
   }
   void pop_back(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.pop_back(n);
   }
 
@@ -38463,7 +38644,7 @@ public:
 
   template <class...S>
   reference emplace_front(const_iterator i, S &&...s) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     auto &x = vv.emplace_front(get_allocator(), forward<S>(s)...);
     x.parent(i);
     return x;
@@ -38476,15 +38657,15 @@ public:
   }
   void push_front(const_iterator i, tree_type &&x) {
     if (!x.empty()) {
-      vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+      vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
       iterator(vv.link_front(x.root().base())).parent(i);
       x.release();
     }
   }
   void push_front(const_iterator i, this_t &&x) {
     if (!x.empty()) {
-      vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
-      auto it = vv.begin();
+      vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
+      const auto it = vv.begin();
       vv.splice(vv.begin(), x.v);
       for (auto &it2 : iters(vv.begin(), it))
         iterator(it2).parent(i);
@@ -38501,7 +38682,7 @@ public:
   template <class R>
   void prepend_range(const_iterator i, R &&r) {
     const iterator p = i.to_mutable();
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.prepend_range(bind_rng(irng(r), [i, this](auto it) {
       return tuple<decltype(*it), typename vec_t::const_iterator, node_alloc_t>
         (*it, i.base(), get_allocator());
@@ -38514,11 +38695,11 @@ public:
     push_front(i, forward<X>(x));
   }
   void pop_front(const_iterator i) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.pop_front();
   }
   void pop_front(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.pop_front(n);
   }
 
@@ -38526,14 +38707,14 @@ public:
     return v.capacity();
   }
   size_type capacity(const_iterator i) const {
-    const vec_t &vv = ((i == nullptr) ? v : i->v);
+    const vec_t &vv = ((i == iterator{}) ? v : i.children().v);
     return vv.capacity();
   }
   bool full() const {
     return v.full();
   }
   bool full(const_iterator i) const {
-    const vec_t &vv = ((i == nullptr) ? v : i->v);
+    const vec_t &vv = ((i == iterator{}) ? v : i.children().v);
     return vv.full();
   }
 
@@ -38541,36 +38722,36 @@ public:
     v.reserve(n);
   }
   void reserve(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve(n);
   }
   void first_order_reserve(size_type n) {
     first_order_reserve(const_iterator{}, n);
   }
   void first_order_reserve(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve(n);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order())
-        x.v.reserve(n);
+      for (auto &it2 : iters(iterator(it).first_order()))
+        it2.base().children().v.reserve(n);
   }
 
   void reserve_more(size_type n) {
     v.reserve_more(n);
   }
   void reserve_more(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve_more(n);
   }
   void first_order_reserve_more(size_type n) {
     first_order_reserve_more(const_iterator{}, n);
   }
   void first_order_reserve_more(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve_more(n);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order())
-        x.v.reserve_more(n);
+      for (auto &it2 : iters(iterator(it).first_order()))
+        it2.base().children().v.reserve_more(n);
   }
 
   void resize(size_type n) {
@@ -38580,7 +38761,7 @@ public:
     resize(const_iterator{}, n, k);
   }
   void resize(const_iterator i, size_type n) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     if (n <= vv.size())
       vv.erase(prev(vv.end(), vv.size() - n), vv.end());
     else
@@ -38590,7 +38771,7 @@ public:
       }
   }
   void resize(const_iterator i, size_type n, const key_type &k) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     if (n <= vv.size())
       vv.erase(prev(vv.end(), vv.size() - n), vv.end());
     else
@@ -38607,27 +38788,27 @@ public:
   }
   void first_order_resize(const_iterator i, size_type n) {
     resize(i, n);
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order()) {
-        if (x.size() != 0)
-          resize(x.iter(), n);
+      for (auto &it2 : iters(iterator(it).first_order())) {
+        if (it2.base().children().size() != 0u)
+          resize(it2.base(), n);
       }
   }
   void first_order_resize(const_iterator i, size_type n,
                           const key_type &k) {
     resize(i, n, k);
-    vec_t &&vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &&vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &x : it.first_order())
-        resize(x.iter(), n, k);
+      for (auto &it2 : iters(it.first_order()))
+        resize(it2.base(), n, k);
   }
 
   void shrink_to_fit() {
     v.shrink_to_fit();
   }
   void shrink_to_fit(const_iterator i) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.shrink_to_fit();
   }
   void first_order_shrink_to_fit() {
@@ -38635,10 +38816,10 @@ public:
   }
   void first_order_shrink_to_fit(const_iterator i) {
     shrink_to_fit(i);
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order())
-        shrink_to_fit(x.iter());
+      for (auto &it2 : iters(iterator(it).first_order()))
+        shrink_to_fit(it2.base());
   }
 
   template <class UPRED>
@@ -38647,7 +38828,7 @@ public:
   }
   template <class UPRED>
   size_type remove_if(const_iterator i, UPRED eq) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     return vv.remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
@@ -38657,10 +38838,10 @@ public:
   template <class UPRED>
   void first_order_remove_if(const_iterator i, UPRED eq) {
     remove_if(i, eq);
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order())
-        remove_if(x.iter(), eq);
+      for (auto &it2 : iters(iterator(it).first_order()))
+        remove_if(it2.base(), eq);
   }
 
   template <class BPRED>
@@ -38669,7 +38850,7 @@ public:
   }
   template <class BPRED>
   void unique(const_iterator i, BPRED eq) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
@@ -38679,10 +38860,10 @@ public:
   template <class BPRED>
   void first_order_unique(const_iterator i, BPRED eq) {
     unique(i, eq);
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order())
-        unique(x.iter(), eq);
+      for (auto &it2 : iters(iterator(it).first_order()))
+        unique(it2.base(), eq);
   }
 
   template <class BPRED>
@@ -38690,8 +38871,8 @@ public:
              BPRED less) {
     const iterator p1 = i.to_mutable();
     const iterator p2 = i2.to_mutable();
-    vec_t &v1 = ((p1 == nullptr) ? v : p1->v);
-    vec_t &v2 = p2->v;
+    vec_t &v1 = ((p1 == iterator{}) ? v : p1.children().v);
+    vec_t &v2 = p2.children().v;
     for (auto &it : iters(v2))
       iterator(it).parent(p1);
 #ifndef RE_NOEXCEPT
@@ -38725,8 +38906,8 @@ public:
   void merge(const_iterator i, this_t &l, const_iterator i2, BPRED less) {
     const iterator p1 = i.to_mutable();
     const iterator p2 = i2.to_mutable();
-    vec_t &v1 = ((p1 == nullptr) ? v : p1->v);
-    vec_t &v2 = ((p2 == nullptr) ? l.v : p2->v);
+    vec_t &v1 = ((p1 == iterator{}) ? v : p1.children().v);
+    vec_t &v2 = ((p2 == iterator{}) ? l.v : p2.children().v);
     for (auto &it : iters(v2))
       iterator(it).parent(p1);
 #ifndef RE_NOEXCEPT
@@ -38757,7 +38938,7 @@ public:
 
   template <class BPRED>
   void merge(const_iterator p, vector_type &l, BPRED less) {
-    vec_t &vv = ((p == nullptr) ? v : p.to_mutable()->v);
+    vec_t &vv = ((p == iterator{}) ? v : p.to_mutable().children().v);
     for (auto &it : iters(l))
       it.parent(p);
 #ifndef RE_NOEXCEPT
@@ -38792,16 +38973,16 @@ public:
   }
   template <class BPRED>
   void sort(const_iterator i, BPRED less) {
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
   void first_order_sort(const_iterator i, BPRED less) {
     sort(i, less);
-    vec_t &vv = ((i == nullptr) ? v : i.to_mutable()->v);
+    vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &x : iterator(it).first_order())
-        sort(x.iter(), less);
+      for (auto &it2 : iters(iterator(it).first_order()))
+        sort(it2.base(), less);
   }
   template <class BPRED>
   void first_order_sort(BPRED less) {
@@ -38820,13 +39001,14 @@ private:
   bool good() const {
     if (!good(v))
       return false;
-    if (const_iterator(v.end()).parent() != nullptr)
+    if (const_iterator(v.end()).parent() != iterator{})
       return false;
     for (auto &i : iters(v)) {
       const iterator it(i.to_mutable());
-      if (it.parent() != nullptr)
+      if (it.parent() != iterator{})
         return false;
-      for (auto &x : it.first_order()) {
+      for (auto &it2 : iters(it.first_order())) {
+        auto &x = it2.base().tree_node();
         if (!good(x.v))
           return false;
         if (x.v.get_allocator() != get_allocator())
@@ -38867,6 +39049,267 @@ template <class T, class AL = default_allocator<T>>
 using logn_tree = tree_adaptor<inner::lgtt<T, AL>>;
 template <class T, class AL = default_allocator<T>>
 using logn_tree_vector = tree_vector_adaptor<inner::lgtt<T, AL>>;
+
+}
+// dynamic_tree
+namespace re {
+
+struct store_this_iter {
+  template <class IT>
+  static void apply(IT) {}
+  template <class IT>
+  static void apply(IT it) requires requires {it->iter(it);} {
+    it->iter(it);
+  }
+};
+
+namespace inner {
+
+template <class T, class F = store_this_iter>
+struct dyn_gtt {
+  using value_type = inner::tree_node_impl<dyn_gtt>;
+  using allocator_type = default_allocator<value_type>;
+  using node_type = value_type;
+  using node_pointer = alloc_rebind_ptr<allocator_type, node_type>;
+  using node_base_type = inner::tree_base<alloc_void_ptr<allocator_type>>;
+  using node_base_pointer = alloc_rebind_ptr<allocator_type, node_base_type>;
+  using difference_type = alloc_dft<allocator_type>;
+  using size_type = alloc_szt<allocator_type>;
+
+  using id = size_constant<0>;
+  using store_node_allocator = true_type;
+  using store_allocator = true_type;
+
+  using node_base_pointer_pointer = alloc_rebind_ptr<allocator_type,
+                                                     node_base_pointer>;
+
+  static node_base_pointer_pointer index_iter(node_base_pointer p) {
+    return p->iter;
+  }
+  static void index_iter(node_base_pointer p, node_base_pointer_pointer x) {
+    p->iter = x;
+  }
+
+  static value_type *data(node_base_pointer p) {
+    return to_address(static_cast<node_pointer>(p));
+  }
+
+  template <class...S>
+  static node_base_pointer new_node(allocator_type &al, S &&...s) {
+    const node_base_pointer p
+      = allocator_wrapper<allocator_type>(al).new_1(forward<S>(s)...);
+    public_node_type &nd = *static_cast<public_node_type *>(data(p));
+    F::apply(nd.iter());
+    return p;
+  }
+  static void delete_node(allocator_type &al,
+                          node_base_pointer p) noexcept {
+    allocator_wrapper<allocator_type>(al)
+      .delete_1(static_cast<node_pointer>(p));
+  }
+
+  using key_type = dynamic<T, 0>;
+  using vector_type = stable_vector_adaptor<dyn_gtt>;
+  using hook_type = node_base_type;
+  using public_node_type = inner::tree_node<dyn_gtt>;
+  using public_node_pointer = alloc_rebind_ptr<allocator_type,
+                                               public_node_type>;
+  static node_base_pointer tree_parent(node_base_pointer p) {
+    return p->p;
+  }
+  static void tree_parent(node_base_pointer p, node_base_pointer pp) {
+    p->p = pp;
+  }
+
+  using dereference_to_public_node = false_type;
+  static T &dereference(typename vector_type::iterator it) {
+    return **static_cast<public_node_type &>(*it);
+  }
+  static const T &dereference(typename vector_type::const_iterator it) {
+    return **static_cast<public_node_type &>(*it);
+  }
+};
+
+template <class T, class F = store_this_iter>
+struct dyn_ltt {
+  using value_type = inner::tree_node_impl<dyn_ltt>;
+  using allocator_type = default_allocator<value_type>;
+  using node_type = value_type;
+  using node_pointer = alloc_rebind_ptr<allocator_type, node_type>;
+  using node_base_type
+    = inner::linked_tree_base<alloc_void_ptr<allocator_type>>;
+  using node_base_pointer = alloc_rebind_ptr<allocator_type, node_base_type>;
+  using difference_type = alloc_dft<allocator_type>;
+  using size_type = alloc_szt<allocator_type>;
+
+  using id = size_constant<0>;
+  using store_node_allocator = true_type;
+  using store_allocator = true_type;
+  using store_size = true_type;
+
+  using node_base_pointer_pointer
+    = alloc_rebind_ptr<allocator_type, node_base_pointer>;
+
+  static node_base_pointer prev(node_base_pointer p) {
+    return p->prev;
+  }
+  static void prev(node_base_pointer p, node_base_pointer prev_p) {
+    p->prev = prev_p;
+  }
+
+  static node_base_pointer next(node_base_pointer p) {
+    return p->next;
+  }
+  static void next(node_base_pointer p, node_base_pointer next_p) {
+    p->next = next_p;
+  }
+
+  static value_type *data(node_base_pointer p) {
+    return to_address(static_cast<node_pointer>(p));
+  }
+
+  using header_type = inner::linked_tree_header<node_base_type, size_type>;
+  static node_base_pointer end_node(const header_type &h) {
+    return pointer_traits<node_base_pointer>::pointer_to(h.ed);
+  }
+  static size_type size(const header_type &h) {
+    return h.sz;
+  }
+  static void size(header_type &h, size_type n) {
+    h.sz = n;
+  }
+
+  template <class...S>
+  static node_base_pointer new_node(allocator_type &a, S &&...s) {
+    return allocator_wrapper<allocator_type>(a).new_1(forward<S>(s)...);
+  }
+  static void delete_node(allocator_type &a, node_base_pointer p) noexcept {
+    allocator_wrapper<allocator_type>(a).delete_1(static_cast<node_pointer>(p));
+  }
+
+  using key_type = dynamic<T, 0>;
+  using vector_type = list_adaptor<dyn_ltt>;
+  using hook_type = node_base_type;
+  using public_node_type = inner::tree_node<dyn_ltt>;
+  using public_node_pointer = alloc_rebind_ptr<allocator_type,
+                                               public_node_type>;
+  static node_base_pointer tree_parent(node_base_pointer p) {
+    return p->p;
+  }
+  static void tree_parent(node_base_pointer p, node_base_pointer pp) {
+    p->p = pp;
+  }
+
+  using dereference_to_public_node = false_type;
+  static T &dereference(typename vector_type::iterator it) {
+    return **static_cast<public_node_type &>(*it);
+  }
+  static const T &dereference(typename vector_type::const_iterator it) {
+    return **static_cast<public_node_type &>(*it);
+  }
+};
+
+template <class T, class F = store_this_iter>
+struct dyn_lgtt {
+  using value_type = inner::tree_node_impl<dyn_lgtt>;
+  using allocator_type = default_allocator<value_type>;
+  using node_type = value_type;
+  using node_pointer = alloc_rebind_ptr<allocator_type, node_type>;
+  using node_base_type = inner::logn_tree_base<alloc_void_ptr<allocator_type>>;
+  using node_base_pointer = alloc_rebind_ptr<allocator_type, node_base_type>;
+  using difference_type = alloc_dft<allocator_type>;
+  using size_type = alloc_szt<allocator_type>;
+
+  using id = size_constant<0>;
+  using store_node_allocator = true_type;
+  using store_allocator = true_type;
+
+  static node_base_pointer left_child(node_base_pointer p) {
+    return p->left_child;
+  }
+  static void left_child(node_base_pointer p, node_base_pointer p2) {
+    p->left_child = p2;
+  }
+
+  static node_base_pointer right_child(node_base_pointer p) {
+    return p->right_child;
+  }
+  static void right_child(node_base_pointer p, node_base_pointer p2) {
+    p->right_child = p2;
+  }
+
+  static node_base_pointer parent(node_base_pointer p) {
+    return p->parent;
+  }
+  static void parent(node_base_pointer p, node_base_pointer p2) {
+    p->parent = p2;
+  }
+
+  static ptrdiff_t state(node_base_pointer p) {
+    return static_cast<inner::logn_tree_base2
+                       <alloc_void_ptr<allocator_type>> &>(*p).state;
+  }
+  static void state(node_base_pointer p, ptrdiff_t n) {
+    static_cast<inner::logn_tree_base2
+                <alloc_void_ptr<allocator_type>> &>(*p).state = n;
+  }
+
+  static value_type *data(node_base_pointer p) {
+    return to_address(static_cast<node_pointer>(p));
+  }
+
+  using header_type = typename node_base_type::header;
+  static node_base_pointer end_node(const header_type &h) {
+    return pointer_traits<node_base_pointer>::pointer_to(h.ed);
+  }
+
+  template <class...S>
+  static node_base_pointer new_node(allocator_type &al, S &&...s) {
+    return allocator_wrapper<allocator_type>(al).new_1(forward<S>(s)...);
+  }
+  static void delete_node(allocator_type &al,
+                          node_base_pointer p) noexcept {
+    allocator_wrapper<allocator_type>(al)
+      .delete_1(static_cast<node_pointer>(p));
+  }
+
+  using key_type = dynamic<T, 0>;
+  using vector_type = ranked_rbtree_adaptor<dyn_lgtt>;
+  using hook_type = inner::logn_tree_base2<alloc_void_ptr<allocator_type>>;
+  using public_node_type = inner::tree_node<dyn_lgtt>;
+  using public_node_pointer = alloc_rebind_ptr<allocator_type,
+                                               public_node_type>;
+  static node_base_pointer tree_parent(node_base_pointer p) {
+    return p->p;
+  }
+  static void tree_parent(node_base_pointer p, node_base_pointer pp) {
+    p->p = pp;
+  }
+
+  using dereference_to_public_node = false_type;
+  static T &dereference(typename vector_type::iterator it) {
+    return **static_cast<public_node_type &>(*it);
+  }
+  static const T &dereference(typename vector_type::const_iterator it) {
+    return **static_cast<public_node_type &>(*it);
+  }
+};
+
+}
+template <class T, class F = store_this_iter>
+using dynamic_tree = tree_adaptor<inner::dyn_gtt<T, F>>;
+template <class T, class F = store_this_iter>
+using dynamic_tree_vector = tree_vector_adaptor<inner::dyn_gtt<T, F>>;
+
+template <class T, class F = store_this_iter>
+using linked_dynamic_tree = tree_adaptor<inner::dyn_ltt<T, F>>;
+template <class T, class F = store_this_iter>
+using linked_dynamic_tree_vector = tree_vector_adaptor<inner::dyn_ltt<T, F>>;
+
+template <class T, class F = store_this_iter>
+using logn_dynamic_tree = tree_adaptor<inner::dyn_lgtt<T, F>>;
+template <class T, class F = store_this_iter>
+using logn_dynamic_tree_vector = tree_vector_adaptor<inner::dyn_lgtt<T, F>>;
 
 }
 
@@ -38928,33 +39371,19 @@ public:
   using difference_type = typename C::difference_type;
   using size_type = typename C::size_type;
 
-  iterator begin() noexcept {
-    return c.begin();
+  using range_type = iter_pair<typename C::iterator>;
+  using const_range_type = iter_pair<typename C::const_iterator>;
+  range_type range() noexcept {
+    return rng(c);
   }
-  iterator end() noexcept {
-    return c.end();
-  }
-  const_iterator begin() const noexcept {
-    return c.begin();
-  }
-  const_iterator end() const noexcept {
-    return c.end();
-  }
-  const_iterator cbegin() const noexcept {
-    return c.begin();
-  }
-  const_iterator cend() const noexcept {
-    return c.end();
-  }
-
-  size_type max_size() const noexcept {
-    return c.max_size();
-  }
-  size_type size() const noexcept {
-    return c.size();
+  const_range_type range() const noexcept {
+    return rng(c);
   }
   bool empty() const noexcept {
     return c.empty();
+  }
+  size_type range_size() const noexcept {
+    return c.size();
   }
 
   size_type width() const noexcept {
@@ -38962,27 +39391,6 @@ public:
   }
   size_type height() const noexcept {
     return h;
-  }
-
-  using reverse_iterator = typename C::reverse_iterator;
-  using const_reverse_iterator = typename C::const_reverse_iterator;
-  reverse_iterator rbegin() noexcept {
-    return c.rbegin();
-  }
-  reverse_iterator rend() noexcept {
-    return c.rend();
-  }
-  const_reverse_iterator rbegin() const noexcept {
-    return c.rbegin();
-  }
-  const_reverse_iterator rend() const noexcept {
-    return c.rend();
-  }
-  const_reverse_iterator crbegin() const noexcept {
-    return c.rbegin();
-  }
-  const_reverse_iterator crend() const noexcept {
-    return c.rend();
   }
 
   matrix() = default;
@@ -39385,7 +39793,7 @@ private:
     const size_type hei = min(v_cap, m.height());
     for (size_type &j : iters(y, y + hei)) {
       auto it = iter(x, j);
-      for (auto &a : rng(m.begin() + (j - y) * m.width(), wid)) {
+      for (auto &a : rng(m.range().begin() + (j - y) * m.width(), wid)) {
         *it = mix_f(*it, static_cast<copy_cvref_t<M &, value_type>>(a));
         ++it;
       }
@@ -39514,11 +39922,11 @@ public:
   auto row(size_type n) const {
     return rng(c.begin() + n * w, w);
   }
-  auto rows() {
+  auto rows() noexcept {
     return bind_rng(irng(0u, h),
                     [this](auto n) {return this->row(n);});
   }
-  auto rows() const {
+  auto rows() const noexcept {
     return bind_rng(irng(0u, h),
                     [this](auto n) {return this->row(n);});
   }
@@ -39526,20 +39934,20 @@ public:
   auto column(size_type n) {
     return bind_rng(irng(0u, h),
                     [this, n](auto i)->auto & {
-                      return *(begin() + to_signed(n + i * w));
+                      return *(range().begin() + to_signed(n + i * w));
                     });
   }
   auto column(size_type n) const {
     return bind_rng(irng(0u, h),
                     [this, n](auto i)->const auto & {
-                      return *(begin() + to_signed(n + i * w));
+                      return *(range().begin() + to_signed(n + i * w));
                     });
   }
-  auto columns() {
+  auto columns() noexcept {
     return bind_rng(irng(0u, w),
                     [this](auto n) {return this->column(n);});
   }
-  auto columns() const {
+  auto columns() const noexcept {
     return bind_rng(irng(0u, w),
                     [this](auto n) {return this->column(n);});
   }
@@ -39591,25 +39999,6 @@ public:
       re::fill(rng(it + k * width(), wid), z);
   }
 
-  value_type &front() {
-    return c.front();
-  }
-  const value_type &front() const {
-    return c.front();
-  }
-  value_type &back() {
-    return c.back();
-  }
-  const value_type &back() const {
-    return c.back();
-  }
-  value_type &operator [](size_type n) {
-    return c[n];
-  }
-  const value_type &operator [](size_type n) const {
-    return c[n];
-  }
-
   value_type &left_top() {
     return c.front();
   }
@@ -39635,10 +40024,10 @@ public:
     return *next(c.begin(), to_signed(w - 1u));
   }
   value_type &operator ()(size_type x, size_type y) {
-    return operator [](y * w + x);
+    return *(range().begin() + (y * w + x));
   }
   const value_type &operator ()(size_type x, size_type y) const {
-    return operator [](y * w + x);
+    return *(range().begin() + (y * w + x));
   }
   iterator iter(size_type x, size_type y) {
     return nth(c, y * w + x);
@@ -39682,7 +40071,7 @@ public:
   }
   matrix exchange(const_iterator it, const_iterator it2, matrix &&x) {
     const auto sz = c.size();
-    const auto x_sz = x.size();
+    const auto x_sz = x.c.size();
     matrix ret(c.exchange(it, it2, move(x.c)), x_sz, 1u);
     if (c.size() != sz)
       throw_or_terminate<logic_error>
@@ -39696,7 +40085,7 @@ public:
   }
   matrix operator -() const {
     matrix ret = *this;
-    for (auto &x : ret)
+    for (auto &x : ret.range())
       x = -x;
     return ret;
   }
@@ -39705,14 +40094,16 @@ public:
     if (!(w == x.w && h == x.h))
       throw_or_terminate<logic_error>
         ("re::matrix::operator +=(const matrix &): different size\n");
-    for_each(x, begin(), [](const value_type &a, value_type &b) {b += a;});
+    for_each(x.range(), range().begin(),
+             [](const value_type &a, value_type &b) {b += a;});
     return *this;
   }
   matrix &operator -=(const matrix &x) {
     if (!(w == x.w && h == x.h))
       throw_or_terminate<logic_error>
         ("re::matrix::operator -=(const matrix &): different size\n");
-    for_each(x, begin(), [](const value_type &a, value_type &b) {b -= a;});
+    for_each(x.range(), range().begin(),
+             [](const value_type &a, value_type &b) {b -= a;});
     return *this;
   }
   matrix operator +(const matrix &x) const {
@@ -39720,8 +40111,8 @@ public:
       throw_or_terminate<logic_error>
         ("re::matrix::operator +(const matrix &): different size\n");
     matrix ret(w, h);
-    auto it = ret.begin();
-    for_each(*this, x, [&it](const auto &a, const auto &b) {
+    auto it = ret.range().begin();
+    for_each(range(), x.range(), [&it](const auto &a, const auto &b) {
       *it = a + b;
       ++it;
     });
@@ -39732,21 +40123,22 @@ public:
       throw_or_terminate<logic_error>
         ("re::matrix::operator -(const matrix &): different size\n");
     matrix ret(w, h);
-    auto it = ret.begin();
-    for_each(*this, x, [&it](const auto &a, const auto &b) {
-      *it = a - b;
-      ++it;
-    });
+    auto it = ret.range().begin();
+    for_each(range(), x.range().begin(),
+             [&it](const auto &a, const auto &b) {
+               *it = a - b;
+               ++it;
+             });
     return ret;
   }
   matrix operator *(const value_type &k) const {
     matrix ret = *this;
-    for (auto &x : ret)
+    for (auto &x : ret.range())
       x = x * k;
     return ret;
   }
   matrix &operator *=(const value_type &k) {
-    for (auto &x : *this)
+    for (auto &x : range())
       x *= k;
     return *this;
   }
@@ -39755,12 +40147,12 @@ public:
   }
   matrix operator /(const value_type &k) const {
     matrix ret = *this;
-    for (auto &x : ret)
+    for (auto &x : ret.range())
       x = x / k;
     return ret;
   }
   matrix &operator /=(const value_type &k) {
-    for (auto &x : *this)
+    for (auto &x : range())
       x /= k;
     return *this;
   }

@@ -9560,35 +9560,38 @@ struct fo_b_xor {
 template <class T>
 inline constexpr fo_b_xor<T> b_xor{};
 
-struct fo_no_overflow_adding {
-  template <class T>
-  constexpr bool operator ()(T x, T y) const requires signed_integral<T> {
-    T zero{};
-    if (x >= zero) {
-      if (y >= zero)
-        return x <= numeric_limits<T>::max() - y;
-      else
-        return true;
-    }
-    else {
-      if (y >= zero)
-        return true;
-      else
-        return x >= numeric_limits<T>::min() - y;
-    }
-  }
-  template <class T>
-  constexpr bool operator ()(T x, T y) const requires unsigned_integral<T> {
-    return x <= numeric_limits<T>::max() - y;
-  }
-};
-inline constexpr fo_no_overflow_adding no_overflow_adding{};
+namespace inner::fns {
 
-struct fo_add_with_overflow_check {
+template <class T>
+constexpr bool no_overflow_after_adding(T x, T y)
+  requires signed_integral<T> {
+  T zero{};
+  if (x >= zero) {
+    if (y >= zero)
+      return x <= numeric_limits<T>::max() - y;
+    else
+      return true;
+  }
+  else {
+    if (y >= zero)
+      return true;
+    else
+      return x >= numeric_limits<T>::min() - y;
+  }
+}
+
+template <class T>
+constexpr bool no_overflow_after_adding(T x, T y)
+  requires unsigned_integral<T> {
+  return x <= numeric_limits<T>::max() - y;
+}
+
+}
+struct fo_add_with_check {
   template <class T, class...S>
   constexpr optional<T> operator ()(T x, T y, S...s) const
     requires (integral<T> && sizeof...(S) == 0u) {
-    if (!no_overflow_adding(x, y))
+    if (!inner::fns::no_overflow_after_adding(x, y))
       return nullopt;
     else
       return optional<T>(x + y);
@@ -9596,13 +9599,26 @@ struct fo_add_with_overflow_check {
   template <class T, class...S>
   constexpr optional<T> operator ()(T x, T y, S...s) const
     requires (integral<T> && sizeof...(S) != 0u) {
-    if (!no_overflow_adding(x, y))
+    if (!inner::fns::no_overflow_after_adding(x, y))
       return nullopt;
     else
       return operator ()(static_cast<T>(x + y), s...);
   }
 };
-inline constexpr fo_add_with_overflow_check add_with_overflow_check{};
+inline constexpr fo_add_with_check add_with_check{};
+
+struct fo_sub_to_zero_at_most {
+  template <class T>
+  constexpr T operator ()(T x, T y) const requires unsigned_integral<T> {
+    return (x > y) ? (x - y) : 0u;
+  }
+  template <class T, class...S>
+  constexpr T operator ()(T x, T y, S...s) const
+    requires unsigned_integral<T> {
+    return operator ()(operator ()(x, y), s...);
+  }
+};
+inline constexpr fo_sub_to_zero_at_most sub_to_zero_at_most{};
 
 template <size_t N>
 using max_uint_of_max_size
