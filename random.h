@@ -367,6 +367,15 @@ public:
     requires is_integral_v<result_type> {
     return rational_bernoulli_distribution<result_type>(num, den)(e);
   }
+  bool operator ()(double p) {
+    const uint64_t max_v1 = max();
+    const uint64_t max_v2
+      = 0b111'1111111111'1111111111'1111111111'1111111111'1111111111u;
+    const uint64_t den = max_v1 > max_v2 ? max_v2 : max_v1;
+    const uint64_t num
+      = static_cast<uint64_t>(round(static_cast<double>(den) * p));
+    return gen_bool(num, den);
+  }
 };
 
 template <class E = minstd_rand>

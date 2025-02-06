@@ -89,10 +89,24 @@ public:
 };
 
 template <class BASE>
-struct dynamic_default_buffer_traits {
-  static constexpr size_t align = RE_DEFAULT_NEW_ALIGNMENT;
-  static constexpr size_t size = 128u;
-};
+struct dynamic_default_buffer_size
+  : size_constant<(sizeof(BASE) <= 32u
+                   ? 64u
+                   : (sizeof(BASE) <= 64u
+                      ? 128u
+                      : (sizeof(BASE) <= 128u
+                         ? 256u
+                         : (sizeof(BASE) <= 256u
+                            ? 512u
+                            : (sizeof(BASE) <= 512u
+                               ? 1024u
+                               : ((numeric_limits<size_t>::max() - sizeof(BASE))
+                                  >= sizeof(BASE)
+                                  ? (sizeof(BASE) + sizeof(BASE))
+                                  : numeric_limits<size_t>::max()))))))> {};
+template <class BASE>
+struct dynamic_default_buffer_alignment
+  : size_constant<RE_DEFAULT_NEW_ALIGNMENT> {};
 
 struct bad_dynamic_access : public exception {
   virtual const char *what() const noexcept override {
@@ -145,11 +159,6 @@ public:
 
   using alloc_t = default_allocator<this_t>;
   using alw_t = allocator_wrapper<alloc_t>;
-  using uniform_t = dynamic_impl<BASE, T,
-                                 dynamic_default_buffer_traits<BASE>::size,
-                                 dynamic_default_buffer_traits<BASE>::align>;
-  using uniform_alloc_t = default_allocator<uniform_t>;
-  using uniform_alw_t = allocator_wrapper<uniform_alloc_t>;
   using impl2_t = dynamic_impl2<BASE, T>;
   using impl2_alloc_t = default_allocator<impl2_t>;
   using impl2_alw_t = allocator_wrapper<impl2_alloc_t>;
@@ -232,6 +241,12 @@ public:
   virtual void *re_dynamic_auto_move_to(void *bufp,
                                         size_t sz, size_t algn) override;
   virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
+    using uniform_t = dynamic_impl
+      <BASE, T,
+       dynamic_default_buffer_size<BASE>::value,
+       dynamic_default_buffer_alignment<BASE>::value>;
+    using uniform_alloc_t = default_allocator<uniform_t>;
+    using uniform_alw_t = allocator_wrapper<uniform_alloc_t>;
     if constexpr (is_copy_constructible_v<value_type>) {
       if constexpr (local_dynamic_impl<uniform_t>) {
         uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
@@ -250,6 +265,12 @@ public:
     }
   }
   virtual void *re_dynamic_move_to_uniform(void *bufp) override {
+    using uniform_t = dynamic_impl
+      <BASE, T,
+       dynamic_default_buffer_size<BASE>::value,
+       dynamic_default_buffer_alignment<BASE>::value>;
+    using uniform_alloc_t = default_allocator<uniform_t>;
+    using uniform_alw_t = allocator_wrapper<uniform_alloc_t>;
     if constexpr (is_move_constructible_v<value_type>) {
       if constexpr (local_dynamic_impl<uniform_t>) {
         uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
@@ -430,8 +451,8 @@ public:
   }
   virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
     if constexpr (is_copy_constructible_v<value_type>) {
-      if (local_for(dynamic_default_buffer_traits<BASE>::size,
-                    dynamic_default_buffer_traits<BASE>::align)) {
+      if (local_for(dynamic_default_buffer_size<BASE>::value,
+                    dynamic_default_buffer_alignment<BASE>::value)) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, value());
         p->local(true);
@@ -451,8 +472,8 @@ public:
   }
   virtual void *re_dynamic_move_to_uniform(void *bufp) override {
     if constexpr (is_move_constructible_v<value_type>) {
-      if (local_for(dynamic_default_buffer_traits<BASE>::size,
-                    dynamic_default_buffer_traits<BASE>::align)) {
+      if (local_for(dynamic_default_buffer_size<BASE>::value,
+                    dynamic_default_buffer_alignment<BASE>::value)) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, move(value()));
         p->local(true);
@@ -583,8 +604,8 @@ concept compatible_type_of_any
 
 }
 template <class T = void,
-          size_t BUFSZ = dynamic_default_buffer_traits<T>::size,
-          size_t BUFALIGN = dynamic_default_buffer_traits<T>::align>
+          size_t BUFSZ = dynamic_default_buffer_size<T>::value,
+          size_t BUFALIGN = dynamic_default_buffer_alignment<T>::value>
 class dynamic : inner::dynamic_optional_buf<BUFSZ, BUFALIGN> {
   static_assert(is_class_v<T>);
   static_assert(is_same_v<remove_cvref_t<T>, T>);
@@ -772,76 +793,62 @@ public:
 
   template <size_t SZ, size_t ALGN>
   dynamic(const dynamic<T, SZ, ALGN> &x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && BUFSZ == dynamic_default_buffer_traits<T>::size
-              && BUFALIGN == dynamic_default_buffer_traits<T>::align)
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN))
     : p(nullptr) {
-    uniform_copy_from(x);
+    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
+                  && BUFALIGN
+                  == dynamic_default_buffer_alignment<T>::value) {
+      uniform_copy_from(x);
+    }
+    else {
+      auto_copy_from_any(x);
+    }
   }
   template <size_t SZ, size_t ALGN>
   dynamic &operator =(const dynamic<T, SZ, ALGN> &x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && BUFSZ == dynamic_default_buffer_traits<T>::size
-              && BUFALIGN == dynamic_default_buffer_traits<T>::align) {
-    reset();
-    uniform_copy_from(x);
-    return *this;
-  }
-
-  template <size_t SZ, size_t ALGN>
-  dynamic(const dynamic<T, SZ, ALGN> &x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
-                   && BUFALIGN == dynamic_default_buffer_traits<T>::align))
-    : p(nullptr) {
-    auto_copy_from_any(x);
-  }
-  template <size_t SZ, size_t ALGN>
-  dynamic &operator =(const dynamic<T, SZ, ALGN> &x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
-                   && BUFALIGN
-                   == dynamic_default_buffer_traits<T>::align)) {
-    reset();
-    auto_copy_from_any(x);
-    return *this;
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)) {
+    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
+                  && BUFALIGN
+                  == dynamic_default_buffer_alignment<T>::value) {
+      reset();
+      uniform_copy_from(x);
+      return *this;
+    }
+    else {
+      reset();
+      auto_copy_from_any(x);
+      return *this;
+    }
   }
 
   template <size_t SZ, size_t ALGN>
   dynamic(dynamic<T, SZ, ALGN> &&x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && BUFSZ == dynamic_default_buffer_traits<T>::size
-              && BUFALIGN == dynamic_default_buffer_traits<T>::align)
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN))
     : p(nullptr) {
-    uniform_move_from(x);
+    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
+                  && BUFALIGN
+                  == dynamic_default_buffer_alignment<T>::value) {
+      uniform_move_from(x);
+    }
+    else {
+      auto_move_from_any(x);
+    }
   }
   template <size_t SZ, size_t ALGN>
   dynamic &operator =(dynamic<T, SZ, ALGN> &&x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && BUFSZ == dynamic_default_buffer_traits<T>::size
-              && BUFALIGN == dynamic_default_buffer_traits<T>::align) {
-    reset();
-    uniform_move_from(x);
-    return *this;
-  }
-
-  template <size_t SZ, size_t ALGN>
-  dynamic(dynamic<T, SZ, ALGN> &&x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
-                   && BUFALIGN == dynamic_default_buffer_traits<T>::align))
-    : p(nullptr) {
-    auto_move_from_any(x);
-  }
-  template <size_t SZ, size_t ALGN>
-  dynamic &operator =(dynamic<T, SZ, ALGN> &&x)
-    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)
-              && !(BUFSZ == dynamic_default_buffer_traits<T>::size
-                   && BUFALIGN
-                   == dynamic_default_buffer_traits<T>::align)) {
-    reset();
-    auto_move_from_any(x);
-    return *this;
+    requires (!(SZ == BUFSZ && ALGN == BUFALIGN)) {
+    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
+                  && BUFALIGN
+                  == dynamic_default_buffer_alignment<T>::value) {
+      reset();
+      uniform_move_from(x);
+      return *this;
+    }
+    else {
+      reset();
+      auto_move_from_any(x);
+      return *this;
+    }
   }
 
   T &operator *() noexcept {
@@ -996,11 +1003,11 @@ struct is_dynamic_void<dynamic<void, A, B>> : true_type {};
 
 }
 template <>
-struct dynamic_default_buffer_traits<void>
-  : dynamic_default_buffer_traits<void *> {};
+struct dynamic_default_buffer_size<void>
+  : size_constant<dynamic_default_buffer_size<void *>::value> {};
 template <>
-struct dynamic_default_buffer_traits<inner::any_wrapper_base>
-  : dynamic_default_buffer_traits<void> {};
+struct dynamic_default_buffer_alignment<inner::any_wrapper_base>
+  : size_constant<dynamic_default_buffer_alignment<void>::value> {};
 template <size_t BUFSZ, size_t ALIGN>
 class dynamic<void, BUFSZ, ALIGN> {
   using this_t = dynamic;
@@ -1033,8 +1040,8 @@ public:
   template <class T>
   dynamic(T &&x)
     requires (!is_same_v<decay_t<T>, dynamic>
-              && !(BUFSZ == dynamic_default_buffer_traits<void>::size
-                   && ALIGN == dynamic_default_buffer_traits<void>::align
+              && !(BUFSZ == dynamic_default_buffer_size<void>::value
+                   && ALIGN == dynamic_default_buffer_alignment<void>::value
                    && inner::is_dynamic_void<decay_t<T>>::value)
               && !is_in_place_type_v<decay_t<T>>
               && is_constructible_v<decay_t<T>, T &&>
@@ -1044,8 +1051,8 @@ public:
   template <class T>
   dynamic &operator =(T &&x)
     requires (!is_same_v<decay_t<T>, dynamic>
-              && !(BUFSZ == dynamic_default_buffer_traits<void>::size
-                   && ALIGN == dynamic_default_buffer_traits<void>::align
+              && !(BUFSZ == dynamic_default_buffer_size<void>::value
+                   && ALIGN == dynamic_default_buffer_alignment<void>::value
                    && inner::is_dynamic_void<decay_t<T>>::value)
               && is_constructible_v<decay_t<T>, T &&>
               && inner::compatible_type_of_any<decay_t<T>>) {
@@ -1286,10 +1293,10 @@ struct is_class_function_of<function<A, B, C>, A> : true_type {};
 
 }
 template <class F,
-          size_t BUFSZ = dynamic_default_buffer_traits
-          <inner::fn_caller_base<F>>::size,
-          size_t ALIGN = dynamic_default_buffer_traits
-          <inner::fn_caller_base<F>>::align>
+          size_t BUFSZ = dynamic_default_buffer_size
+          <inner::fn_caller_base<F>>::value,
+          size_t ALIGN = dynamic_default_buffer_alignment
+          <inner::fn_caller_base<F>>::value>
 class function;
 template <class R, class...S, size_t BUFSZ, size_t ALIGN>
 class function<R (S...), BUFSZ, ALIGN> {
@@ -1824,10 +1831,10 @@ struct is_class_unique_function_of<unique_function<A, B, C>, A> : true_type {};
 
 }
 template <class F,
-          size_t BUFSZ = dynamic_default_buffer_traits
-          <inner::unique_fn_caller_base<F>>::size,
-          size_t ALIGN = dynamic_default_buffer_traits
-          <inner::unique_fn_caller_base<F>>::align>
+          size_t BUFSZ = dynamic_default_buffer_size
+          <inner::unique_fn_caller_base<F>>::value,
+          size_t ALIGN = dynamic_default_buffer_alignment
+          <inner::unique_fn_caller_base<F>>::value>
 class unique_function;
 template <class R, class...S, size_t BUFSZ, size_t ALIGN>
 class unique_function<R (S...), BUFSZ, ALIGN> {
@@ -1839,10 +1846,10 @@ class unique_function<R (S...), BUFSZ, ALIGN> {
   dynamic<inner::unique_fn_caller_base<R (S...)>, BUFSZ, ALIGN> impl;
 
   using is_default
-    = bool_constant<BUFSZ == dynamic_default_buffer_traits
-                    <inner::unique_fn_caller_base<R (S...)>>::size
-                    && ALIGN == dynamic_default_buffer_traits
-                    <inner::unique_fn_caller_base<R (S...)>>::align>;
+    = bool_constant<BUFSZ == dynamic_default_buffer_size
+                    <inner::unique_fn_caller_base<R (S...)>>::value
+                    && ALIGN == dynamic_default_buffer_alignment
+                    <inner::unique_fn_caller_base<R (S...)>>::value>;
 
 public:
   unique_function() noexcept = default;

@@ -1974,7 +1974,7 @@ struct thread_stored_fn_impl : inner::thread_stored_fn_base {
 }
 namespace inner::fns {
 
-DWORD WINAPI win32_thread_entry_fn(void *p) {
+inline DWORD WINAPI win32_thread_entry_fn(void *p) {
   const auto guard = exit_fn([p]() {
     reinterpret_cast<inner::thread_stored_fn_base *>(p)->destroy();
   });
@@ -2071,6 +2071,9 @@ public:
     return get_id() != id{};
   }
   void join() {
+    if (h == INVALID_HANDLE_VALUE)
+      throw_or_terminate<runtime_error>
+        ("re::thread::join(): null thread\n");
     const auto x = WaitForSingleObject(h, INFINITE);
     if (x != WAIT_OBJECT_0)
       throw_or_terminate<runtime_error>
@@ -3160,6 +3163,14 @@ public:
     p->join(it);
     it = handle_t{};
     p = nullptr;
+  }
+  bool try_join() {
+    if (it == handle_t{})
+      return false;
+    p->join(it);
+    it = handle_t{};
+    p = nullptr;
+    return true;
   }
 
   thread_pool *pool() const noexcept {

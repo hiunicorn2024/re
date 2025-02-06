@@ -10,6 +10,18 @@
 //   RE_TO_DEFINE_SIGNED_INTEGRAL_TRAITS
 //   RE_TO_DEFINE_UNSIGNED_INTEGRAL_TRAITS
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifdef _MSC_VER
+#ifdef RE_WIN32_WINDOW_PROGRAM
+#pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
+#endif
+#endif
+
 #ifdef __MINGW32__
 #ifdef WINVER
 #undef WINVER
@@ -29,17 +41,6 @@ inline const int mingw_no_assertion_failure_popup
 }
 #endif
 
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#ifndef UNICODE
-#define UNICODE
-#endif
-#ifdef _MSC_VER
-#ifdef RE_WIN32_WINDOW_PROGRAM
-#pragma comment(linker, "/subsystem:windows /ENTRY:mainCRTStartup")
-#endif
-#endif
 #include <windows.h>
 #include <cstdio>
 #include <fcntl.h>
@@ -9606,6 +9607,35 @@ struct fo_add_with_check {
   }
 };
 inline constexpr fo_add_with_check add_with_check{};
+
+namespace inner::fns {
+
+template <class T>
+constexpr bool no_overflow_after_subtracting(T x, T y)
+  requires signed_integral<T> {
+  T zero{};
+  if (x >= zero)
+    return (y >= zero) || (x <= numeric_limits<T>::max() + y);
+  else
+    return (y <= zero) || (x >= numeric_limits<T>::min() + y);
+}
+template <class T>
+constexpr bool no_overflow_after_subtracting(T x, T y)
+  requires unsigned_integral<T> {
+  return x >= y;
+}
+
+}
+struct fo_sub_with_check {
+  template <class T, class...S>
+  constexpr optional<T> operator ()(T x, T y) const requires integral<T> {
+    if (!inner::fns::no_overflow_after_subtracting(x, y))
+      return nullopt;
+    else
+      return optional<T>(x - y);
+  }
+};
+inline constexpr fo_sub_with_check sub_with_check{};
 
 struct fo_sub_to_zero_at_most {
   template <class T>

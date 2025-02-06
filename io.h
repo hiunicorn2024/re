@@ -3209,15 +3209,15 @@ namespace re {
 struct read_file_t {
   explicit read_file_t() = default;
 };
-read_file_t read_file{};
+inline constexpr read_file_t read_file{};
 struct open_file_t {
   explicit open_file_t() = default;
 };
-open_file_t open_file{};
+inline constexpr open_file_t open_file{};
 struct create_file_t {
   explicit create_file_t() = default;
 };
-create_file_t create_file{};
+inline constexpr create_file_t create_file{};
 class file {
   HANDLE p;
 

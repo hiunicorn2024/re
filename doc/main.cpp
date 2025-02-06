@@ -2406,7 +2406,7 @@ void doc_miscl() {
   // b_xor<T>(x, y)
 
   // add_with_check(integrals...)->optional<integral>
-  //
+  // sub_with_check(integrals...)->optional<integral>
   // sub_to_zero_at_most(uint, uint, ...)->uint
 
   // max_uint_of_max_size<N>
@@ -4221,16 +4221,17 @@ void doc_dynamic_base() {
 void doc_dynamic() {
   // as_dynamic
   //
-  // dynamic_default_buffer_traits<BASE_TYPE>
-  //   align
-  //   size
+  // dynamic_default_buffer_size<BASE_TYPE>
+  //   value
+  // dynamic_default_buffer_alignment<BASE_TYPE>
+  //   value
   //
   // bad_dynamic_access : exception
   //   what()
   //
   // dynamic<T = void,
-  //         BUFSZ = dynamic_default_buffer_traits<T>::size,
-  //         ALIGN = dynamic_default_buffer_traits<T>::align>
+  //         BUFSZ = dynamic_default_buffer_size<T>::value,
+  //         ALIGN = dynamic_default_buffer_alignment<T>::value>
   //   special member functions
   //     full // copy may throw
   //
@@ -4278,8 +4279,10 @@ void doc_dynamic() {
   }
 }
 void doc_dynamic_void() {
-  // dynamic_default_buffer_traits<void>
-  //   // equal to dynamic_default_buffer_traits<void *>
+  // dynamic_default_buffer_size<void>
+  //   // equal to dynamic_default_buffer_size<void *>
+  // dynamic_default_buffer_alignment<void>
+  //   // equal to dynamic_default_buffer_alignment<void *>
   // dynamic<void, BUFSZ, ALIGN>
   //   special member functions
   //     full // copy may throw
@@ -4600,6 +4603,7 @@ void doc_random() {
   //     // den != 0
   //     // if num >= den, num means den
   //     // if num == 0, always return false
+  //   ()(prob)
   // make_rander<E = minstd_rand>()
 }
 
@@ -8827,19 +8831,15 @@ void doc_matrix() {
   //   iterator
   //   const_iterator
   //   difference_type
-  //   size_type
   //
   //   range_type = iter_pair<C::iterator>
-  //   range_type = iter_pair<C::const_iterator>
-  //   range()->iter_pair<C::iterator>
-  //   range()->iter_pair<C::const_iterator>
+  //   const_range_type = iter_pair<C::const_iterator>
+  //   range()->iter_pair<C::(const_)iterator>
   //
   //   empty() // width() == 0 || height() == 0
-  //   range_size()->size_type
   //
-  //   size_type = typename C::size_type
-  //   width()
-  //   height()
+  //   width()->int
+  //   height()->int
   //
   //   smf: full
   //
@@ -8863,38 +8863,22 @@ void doc_matrix() {
   //   matrix(m2, a) // dependent
   //   =(m2)
   //
-  //   matrix(w, h, m2_lv_or_rv)
-  //   matrix(w, h, m2, a) // dependent
+  //   matrix(w, h, m2)
+  //   matrix(w, h, m2, a)
   //   matrix(w, h, m2, fll)
-  //   matrix(w, h, m2, fll, a) // dependent
-  //   assign(w, h, m2, fll = value_type{})
+  //   matrix(w, h, m2, fll, a)
+  //   assign(w, h, m2)
+  //   assign(w, h, m2, fll)
   //
   //   clear()
   //   resize(w, h, fll = value_type{})
-  //
-  //   cover(x, y, m_ref_cref_or_rref)->pair<size_type, size_type>
-  //     // return relaced wid-hei // do nothing if out of range
-  //   cover(x, y, m_ref_cref_or_rref, mix_f)->pair<size_type, size_type>
-  //     // return relaced wid-hei // do nothing if out of range
-  //     // mix_f always eats lvalue references
-  //     // mix_f(old, new)
-  //
-  //   cover(x, y, m_ref_cref_or_rref, x2, y2, w, h)
-  //     ->pair<size_type, size_type>
-  //     // return relaced wid-hei // do nothing if out of range
-  //   cover(x, y, m_ref_cref_or_rref, x2, y2, w, h, mix_f)
-  //     ->pair<size_type, size_type>
-  //     // return relaced wid-hei // do nothing if out of range
-  //     // mix_f always eats lvalue references
-  //     // mix_f(old, new)
   //
   //   row(n)
   //   rows()
   //   column(n)
   //   columns()
   //   sub_range(x, y, w, h)
-  //   fill(x, y, w, h,
-  //        z)
+  //   fill(x, y, w, h, z) // rectangle of (x, y)-(w, h) belong to *this
   //
   //   left_top()
   //   left_bottom()
@@ -8905,8 +8889,8 @@ void doc_matrix() {
   //   includes_point(x, y)
   //
   //   capacity()
-  //   reserve(n)
-  //   reserve_more(n)
+  //   reserve(size_t)
+  //   reserve_more(size_t)
   //   shrink_to_fit()
   //
   //   swap(it, it2)
@@ -8927,6 +8911,20 @@ void doc_matrix() {
   //   /=(k)
   //
   //   *(m)
+  //
+  //   cover(x, y, m)->pair<int, int>
+  //     // return replaced width and height // negative x or y is acceptable
+  //   cover(x, y, m, mix_f)->pair<int, int>
+  //     // return replaced width and height // negative x or y is acceptable
+  //     // mix_f always eats lvalue references
+  //     // mix_f(old, new)->new_value
+  //
+  //   cover(x, y, m, x2, y2, w, h)->pair<int, int>
+  //     // return relaced width and height // w > 0, h > 0
+  //   cover(x, y, m, x2, y2, w, h, mix_f)->pair<int, int>
+  //     // return relaced width and height // w > 0, h > 0
+  //     // mix_f always eats lvalue references
+  //     // mix_f(old, new)->new_value
 }
 void doc_dup_compressed_array() {
   // dup_compressed_array<T, AL>

@@ -35247,7 +35247,7 @@ public:
       return *this;
     }
     else {
-      if (it->empty()) {
+      if (it.children().empty()) {
         for (IT parent;;) {
           if (it == root_it) {
             it = IT{};
@@ -35255,14 +35255,14 @@ public:
           }
           parent = it.parent();
           ++it;
-          if (it == parent->end())
+          if (it == parent.children().end())
             it = parent;
           else
             return *this;
         }
       }
       else {
-        it = it->begin();
+        it = it.children().begin();
         return *this;
       }
     }
@@ -35274,7 +35274,7 @@ public:
   this_t &operator --() {
     if (it == nullptr) {
       it = root_it;
-      while (!it->empty())
+      while (!it.children().empty())
         it = before_end(*it);
     }
     else {
@@ -35283,11 +35283,11 @@ public:
         it = IT{};
         return *this;
       }
-      if (it == parent->begin())
+      if (it == parent.children().begin())
         it = parent;
       else {
         --it;
-        while (!it->empty())
+        while (!it.children().empty())
           it = before_end(*it);
       }
     }
@@ -35307,7 +35307,7 @@ public:
       }
       parent = ret.it.parent();
       ++ret.it;
-      if (ret.it != parent->end())
+      if (ret.it != parent.children().end())
         break;
       ret.it = parent;
     }
@@ -35320,7 +35320,7 @@ public:
     }
     else {
       difference_type ret = 0;
-      if (it->empty())
+      if (it.children().empty())
         for (IT parent;;) {
           if (it == root_it) {
             it = IT{};
@@ -35329,7 +35329,7 @@ public:
           }
           parent = it.parent();
           ++it;
-          if (it == parent->end()) {
+          if (it == parent.children().end()) {
             it = parent;
             --ret;
           }
@@ -35337,7 +35337,7 @@ public:
             return ret;
         }
       else {
-        it = it->begin();
+        it = it.children().begin();
         ++ret;
         return ret;
       }
@@ -35404,8 +35404,8 @@ public:
     if (it == nullptr) {
       it = root_it;
       if (it != nullptr)
-        while (!it->empty())
-          it = it->begin();
+        while (!it.children().empty())
+          it = it.children().begin();
       return *this;
     }
     const auto parent = it.parent();
@@ -35413,11 +35413,11 @@ public:
       it = IT{};
     else {
       ++it;
-      if (it == parent->end())
+      if (it == parent.children().end())
         it = parent;
       else
-        while (!it->empty())
-          it = it->begin();
+        while (!it.children().empty())
+          it = it.children().begin();
     }
     return *this;
   }
@@ -35429,14 +35429,14 @@ public:
     if (it == nullptr)
       it = root_it;
     else {
-      if (it->empty())
+      if (it.children().empty())
         for (IT parent;;) {
           if (it == root_it) {
             it = IT{};
             return *this;
           }
           parent = it.parent();
-          if (it == parent->begin())
+          if (it == parent.children().begin())
             it = parent;
           else {
             --it;
@@ -35444,7 +35444,7 @@ public:
           }
         }
       else {
-        it = before_end(*it);
+        it = before_end(it.children());
         return *this;
       }
     }
@@ -35519,8 +35519,8 @@ private:
     if (d == 0)
       return x;
     else {
-      while (!x->empty())
-        x = x->begin();
+      while (!x.children().empty())
+        x = x.children().begin();
       return x;
     }
   }
@@ -35578,7 +35578,7 @@ private:
         else if (k > d)
           u = last_node_from_valid_tree(prev(u));
         else {
-          if (u == parent->begin()) {
+          if (u == parent.children().begin()) {
             u = parent;
             continue;
           }
@@ -35624,7 +35624,9 @@ public:
       if (n == 0)
         it = prev_node_before_valid_tree(it);
       else
-        it = last_node_from_valid_tree(prev(next(it->begin(), d, it->end())));
+        it = last_node_from_valid_tree(prev(next(it.children().begin(),
+                                                 d,
+                                                 it.children().end())));
     }
     return *this;
   }
@@ -35725,7 +35727,7 @@ public:
     return traits_t::dereference(i);
   }
   pointer operator ->() const {
-    return addressof(operator *());
+    return traits_t::get_address(i);
   }
   this_t &operator ++() {
     ++i;
@@ -35781,7 +35783,7 @@ public:
   first_order_iterator first_order_begin() const {
     const this_t p = (*this == nullptr) ? this_t{} : parent();
     return first_order_iterator
-      (*this, (p != nullptr && p->end() == *this) ? this_t{} : *this);
+      (*this, (p != nullptr && p.children().end() == *this) ? this_t{} : *this);
   }
   first_order_iterator first_order_end() const {
     return first_order_iterator(*this, this_t{});
@@ -35792,12 +35794,12 @@ public:
 
   last_order_iterator last_order_begin() const {
     if (const this_t p = (*this == nullptr) ? this_t{} : parent();
-        p != nullptr && p->end() == *this)
+        p != nullptr && p.children().end() == *this)
       return last_order_iterator(*this, this_t{});
     this_t it = *this;
     if (it != nullptr)
-      while (!it->empty())
-        it = it->begin();
+      while (!it.children().empty())
+        it = it.children().begin();
     return last_order_iterator(*this, it);
   }
   last_order_iterator last_order_end() const {
@@ -35809,15 +35811,15 @@ public:
 
   nth_order_iterator nth_order_begin(difference_type d) const {
     if (const this_t p = (*this == nullptr) ? this_t{} : parent();
-        p != nullptr && p->end() == *this)
+        p != nullptr && p.children().end() == *this)
       return nth_order_iterator(*this, this_t{}, d);
     if (d == 0)
       return nth_order_iterator(*this, *this, d);
     else {
       this_t j = *this;
       if (j != nullptr)
-        while (!j->empty())
-          j = j->begin();
+        while (!j.children().empty())
+          j = j.children().begin();
       return nth_order_iterator(*this, j, d);
     }
   }
@@ -36170,14 +36172,14 @@ bool operator ==(const tree_node<X> &xx, const tree_node<Y> &yy) {
   auto it2 = yy.begin();
   for (; it != xx.end(); ++it, (void)++it2) {
     auto x_parent = it;
-    auto x = it->begin();
+    auto x = it.children().begin();
     auto y_parent = it2;
-    auto y = it2->begin();
+    auto y = it2.children().begin();
     for (;;) {
       if (!(**x_parent == **y_parent
             && size(*x_parent) == size(*y_parent)))
         return false;
-      while (x == x_parent->end()) {
+      while (x == x_parent.children().end()) {
         if (x_parent == it)
           goto continue_label;
         x = x_parent;
@@ -36188,9 +36190,9 @@ bool operator ==(const tree_node<X> &xx, const tree_node<Y> &yy) {
         ++y;
       }
       x_parent = x;
-      x = x->begin();
+      x = x.children().begin();
       y_parent = y;
-      y = y->begin();
+      y = y.children().begin();
     }
   continue_label:
     ;
@@ -36339,12 +36341,21 @@ struct gtt {
   }
 
   using dereference_to_public_node = true_type;
-  static public_node_type &dereference(typename vector_type::iterator it) {
+  static public_node_type &
+  dereference(typename vector_type::iterator it) {
     return static_cast<public_node_type &>(*it);
   }
   static const public_node_type &
   dereference(typename vector_type::const_iterator it) {
     return static_cast<const public_node_type &>(*it);
+  }
+  static public_node_type *
+  get_address(typename vector_type::iterator it) {
+    return to_address(it);
+  }
+  static const public_node_type *
+  get_address(typename vector_type::const_iterator it) {
+    return to_address(it);
   }
 };
 
@@ -36448,12 +36459,21 @@ struct ltt {
   }
 
   using dereference_to_public_node = true_type;
-  static public_node_type &dereference(typename vector_type::iterator it) {
+  static public_node_type &
+  dereference(typename vector_type::iterator it) {
     return static_cast<public_node_type &>(*it);
   }
   static const public_node_type &
   dereference(typename vector_type::const_iterator it) {
     return static_cast<const public_node_type &>(*it);
+  }
+  static public_node_type *
+  get_address(typename vector_type::iterator it) {
+    return to_address(it);
+  }
+  static const public_node_type *
+  get_address(typename vector_type::const_iterator it) {
+    return to_address(it);
   }
 };
 
@@ -36570,12 +36590,21 @@ struct lgtt {
   }
 
   using dereference_to_public_node = true_type;
-  static public_node_type &dereference(typename vector_type::iterator it) {
+  static public_node_type &
+  dereference(typename vector_type::iterator it) {
     return static_cast<public_node_type &>(*it);
   }
   static const public_node_type &
   dereference(typename vector_type::const_iterator it) {
     return static_cast<const public_node_type &>(*it);
+  }
+  static public_node_type *
+  get_address(typename vector_type::iterator it) {
+    return to_address(it);
+  }
+  static const public_node_type *
+  get_address(typename vector_type::const_iterator it) {
+    return to_address(it);
   }
 };
 
@@ -37003,7 +37032,7 @@ public:
   }
 
   template <class...S>
-  value_type &emplace(S &&...s)
+  reference emplace(S &&...s)
     requires (sizeof...(s) == 0u
               || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
                   && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
@@ -37351,7 +37380,7 @@ public:
       auto it = x.v.begin();
       vv.splice(vv.end(), x.v);
       for (auto &it2 : iters(it, vv.end()))
-        it2.parent(i);
+        iterator(it2).parent(i);
     }
   }
   template <class R>
@@ -38462,7 +38491,7 @@ public:
               || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
                   && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
     reference ret = v.emplace_back(get_allocator(), forward<S>(s)...);
-    return ret;
+    return *ret.iter();
   }
   void push_back(const key_type &x) {
     emplace_back(x);
@@ -38526,7 +38555,7 @@ public:
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     auto &x = vv.emplace_back(get_allocator(), forward<S>(s)...);
     x.parent(i);
-    return x;
+    return *x.iter();
   }
   void push_back(const_iterator i, const key_type &x) {
     emplace_back(i, x);
@@ -38587,7 +38616,7 @@ public:
     requires (sizeof...(s) > 0u
               && !is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
               && !is_convertible_v<nth_type_t<0, S &&...>, iterator>) {
-    return v.emplace_front(get_allocator(), forward<S>(s)...);
+    return *v.emplace_front(get_allocator(), forward<S>(s)...).iter();
   }
   void push_front(const key_type &x) {
     emplace_front(x);
@@ -38647,7 +38676,7 @@ public:
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     auto &x = vv.emplace_front(get_allocator(), forward<S>(s)...);
     x.parent(i);
-    return x;
+    return *x.iter();
   }
   void push_front(const_iterator i, const key_type &x) {
     emplace_front(i, x);
@@ -39054,18 +39083,21 @@ using logn_tree_vector = tree_vector_adaptor<inner::lgtt<T, AL>>;
 // dynamic_tree
 namespace re {
 
-struct store_this_iter {
+namespace inner {
+
+struct dtt {
+  static constexpr size_t buffer_size = 0u;
+  static constexpr size_t buffer_alignment = RE_DEFAULT_NEW_ALIGNMENT;
+
   template <class IT>
-  static void apply(IT) {}
+  static void store_this_iter(IT) {}
   template <class IT>
-  static void apply(IT it) requires requires {it->iter(it);} {
+  static void store_this_iter(IT it) requires requires {it->iter(it);} {
     it->iter(it);
   }
 };
 
-namespace inner {
-
-template <class T, class F = store_this_iter>
+template <class T, class TRAITS = inner::dtt>
 struct dyn_gtt {
   using value_type = inner::tree_node_impl<dyn_gtt>;
   using allocator_type = default_allocator<value_type>;
@@ -39099,7 +39131,7 @@ struct dyn_gtt {
     const node_base_pointer p
       = allocator_wrapper<allocator_type>(al).new_1(forward<S>(s)...);
     public_node_type &nd = *static_cast<public_node_type *>(data(p));
-    F::apply(nd.iter());
+    TRAITS::store_this_iter(nd.iter());
     return p;
   }
   static void delete_node(allocator_type &al,
@@ -39108,7 +39140,7 @@ struct dyn_gtt {
       .delete_1(static_cast<node_pointer>(p));
   }
 
-  using key_type = dynamic<T, 0>;
+  using key_type = dynamic<T, TRAITS::buffer_size, TRAITS::buffer_alignment>;
   using vector_type = stable_vector_adaptor<dyn_gtt>;
   using hook_type = node_base_type;
   using public_node_type = inner::tree_node<dyn_gtt>;
@@ -39126,11 +39158,21 @@ struct dyn_gtt {
     return **static_cast<public_node_type &>(*it);
   }
   static const T &dereference(typename vector_type::const_iterator it) {
-    return **static_cast<public_node_type &>(*it);
+    return **static_cast<const public_node_type &>(*it);
+  }
+  static T *get_address(typename vector_type::iterator it) {
+    if (it != nullptr)
+      return (*static_cast<public_node_type &>(*it)).operator ->();
+    return nullptr;
+  }
+  static const T *get_address(typename vector_type::const_iterator it) {
+    if (it != nullptr)
+      return (*static_cast<const public_node_type &>(*it)).operator ->();
+    return nullptr;
   }
 };
 
-template <class T, class F = store_this_iter>
+template <class T, class TRAITS = inner::dtt>
 struct dyn_ltt {
   using value_type = inner::tree_node_impl<dyn_ltt>;
   using allocator_type = default_allocator<value_type>;
@@ -39181,13 +39223,17 @@ struct dyn_ltt {
 
   template <class...S>
   static node_base_pointer new_node(allocator_type &a, S &&...s) {
-    return allocator_wrapper<allocator_type>(a).new_1(forward<S>(s)...);
+    const node_base_pointer p
+      = allocator_wrapper<allocator_type>(a).new_1(forward<S>(s)...);
+    public_node_type &nd = *static_cast<public_node_type *>(data(p));
+    TRAITS::store_this_iter(nd.iter());
+    return p;
   }
   static void delete_node(allocator_type &a, node_base_pointer p) noexcept {
     allocator_wrapper<allocator_type>(a).delete_1(static_cast<node_pointer>(p));
   }
 
-  using key_type = dynamic<T, 0>;
+  using key_type = dynamic<T, TRAITS::buffer_size, TRAITS::buffer_alignment>;
   using vector_type = list_adaptor<dyn_ltt>;
   using hook_type = node_base_type;
   using public_node_type = inner::tree_node<dyn_ltt>;
@@ -39205,11 +39251,21 @@ struct dyn_ltt {
     return **static_cast<public_node_type &>(*it);
   }
   static const T &dereference(typename vector_type::const_iterator it) {
-    return **static_cast<public_node_type &>(*it);
+    return **static_cast<const public_node_type &>(*it);
+  }
+  static T *get_address(typename vector_type::iterator it) {
+    if (it != nullptr)
+      return (*static_cast<public_node_type &>(*it)).operator ->();
+    return nullptr;
+  }
+  static const T *get_address(typename vector_type::const_iterator it) {
+    if (it != nullptr)
+      return (*static_cast<const public_node_type &>(*it)).operator ->();
+    return nullptr;
   }
 };
 
-template <class T, class F = store_this_iter>
+template <class T, class TRAITS = inner::dtt>
 struct dyn_lgtt {
   using value_type = inner::tree_node_impl<dyn_lgtt>;
   using allocator_type = default_allocator<value_type>;
@@ -39265,7 +39321,11 @@ struct dyn_lgtt {
 
   template <class...S>
   static node_base_pointer new_node(allocator_type &al, S &&...s) {
-    return allocator_wrapper<allocator_type>(al).new_1(forward<S>(s)...);
+    const node_base_pointer p
+      = allocator_wrapper<allocator_type>(al).new_1(forward<S>(s)...);
+    public_node_type &nd = *static_cast<public_node_type *>(data(p));
+    TRAITS::store_this_iter(nd.iter());
+    return p;
   }
   static void delete_node(allocator_type &al,
                           node_base_pointer p) noexcept {
@@ -39273,7 +39333,7 @@ struct dyn_lgtt {
       .delete_1(static_cast<node_pointer>(p));
   }
 
-  using key_type = dynamic<T, 0>;
+  using key_type = dynamic<T, TRAITS::buffer_size, TRAITS::buffer_alignment>;
   using vector_type = ranked_rbtree_adaptor<dyn_lgtt>;
   using hook_type = inner::logn_tree_base2<alloc_void_ptr<allocator_type>>;
   using public_node_type = inner::tree_node<dyn_lgtt>;
@@ -39291,25 +39351,38 @@ struct dyn_lgtt {
     return **static_cast<public_node_type &>(*it);
   }
   static const T &dereference(typename vector_type::const_iterator it) {
-    return **static_cast<public_node_type &>(*it);
+    return **static_cast<const public_node_type &>(*it);
+  }
+  static T *get_address(typename vector_type::iterator it) {
+    if (it != nullptr)
+      return (*static_cast<public_node_type &>(*it)).operator ->();
+    return nullptr;
+  }
+  static const T *get_address(typename vector_type::const_iterator it) {
+    if (it != nullptr)
+      return (*static_cast<const public_node_type &>(*it)).operator ->();
+    return nullptr;
   }
 };
 
 }
-template <class T, class F = store_this_iter>
-using dynamic_tree = tree_adaptor<inner::dyn_gtt<T, F>>;
-template <class T, class F = store_this_iter>
-using dynamic_tree_vector = tree_vector_adaptor<inner::dyn_gtt<T, F>>;
 
-template <class T, class F = store_this_iter>
-using linked_dynamic_tree = tree_adaptor<inner::dyn_ltt<T, F>>;
-template <class T, class F = store_this_iter>
-using linked_dynamic_tree_vector = tree_vector_adaptor<inner::dyn_ltt<T, F>>;
+template <class T, class TRAITS = inner::dtt>
+using dynamic_tree = tree_adaptor<inner::dyn_gtt<T, TRAITS>>;
+template <class T, class TRAITS = inner::dtt>
+using dynamic_tree_vector = tree_vector_adaptor<inner::dyn_gtt<T, TRAITS>>;
 
-template <class T, class F = store_this_iter>
-using logn_dynamic_tree = tree_adaptor<inner::dyn_lgtt<T, F>>;
-template <class T, class F = store_this_iter>
-using logn_dynamic_tree_vector = tree_vector_adaptor<inner::dyn_lgtt<T, F>>;
+template <class T, class TRAITS = inner::dtt>
+using linked_dynamic_tree = tree_adaptor<inner::dyn_ltt<T, TRAITS>>;
+template <class T, class TRAITS = inner::dtt>
+using linked_dynamic_tree_vector = tree_vector_adaptor
+  <inner::dyn_ltt<T, TRAITS>>;
+
+template <class T, class TRAITS = inner::dtt>
+using logn_dynamic_tree = tree_adaptor<inner::dyn_lgtt<T, TRAITS>>;
+template <class T, class TRAITS = inner::dtt>
+using logn_dynamic_tree_vector = tree_vector_adaptor
+  <inner::dyn_lgtt<T, TRAITS>>;
 
 }
 
@@ -39342,8 +39415,8 @@ class matrix : public conditional_allocator_type<C> {
   friend class matrix;
 
   C c;
-  size_t w = 0;
-  size_t h = 0;
+  int w = 0;
+  int h = 0;
 
   using base_t = C;
   base_t &base() noexcept {
@@ -39360,7 +39433,7 @@ class matrix : public conditional_allocator_type<C> {
   }
   using alloc_t = decltype(alloc_val());
 
-  matrix(C &&cc, size_t ww, size_t hh) : c(move(cc)), w(ww), h(hh) {}
+  matrix(C &&cc, int ww, int hh) : c(move(cc)), w(ww), h(hh) {}
 
 public:
   using value_type = typename C::value_type;
@@ -39369,7 +39442,6 @@ public:
   using iterator = typename C::iterator;
   using const_iterator = typename C::const_iterator;
   using difference_type = typename C::difference_type;
-  using size_type = typename C::size_type;
 
   using range_type = iter_pair<typename C::iterator>;
   using const_range_type = iter_pair<typename C::const_iterator>;
@@ -39382,14 +39454,11 @@ public:
   bool empty() const noexcept {
     return c.empty();
   }
-  size_type range_size() const noexcept {
-    return c.size();
-  }
 
-  size_type width() const noexcept {
+  int width() const noexcept {
     return w;
   }
-  size_type height() const noexcept {
+  int height() const noexcept {
     return h;
   }
 
@@ -39503,31 +39572,35 @@ public:
 #endif
 
 private:
-  static bool check_wh(size_type ww, size_type hh) noexcept {
-    if (hh == 0u)
-      return true;
-    return numeric_limits<size_type>::max() / hh >= ww;
+  static bool check_wh(int ww, int hh) noexcept {
+    if (ww == 0)
+      return hh <= numeric_limits<int>::max();
+    else if (hh == 0)
+      return ww <= numeric_limits<int>::max();
+    else
+      return ww > 0 && hh > 0
+        && (numeric_limits<int>::max() / hh >= ww);
   }
 public:
-  matrix(size_type ww, size_type hh) : c(ww * hh), w(ww), h(hh) {
+  matrix(int ww, int hh) : c(ww * hh), w(ww), h(hh) {
     if (!check_wh(ww, hh))
       throw_or_terminate<length_error>
         ("re::matrix::matrix(w, h): size error\n");
   }
-  matrix(size_type ww, size_type hh, const alloc_t &a)
+  matrix(int ww, int hh, const alloc_t &a)
     requires has_allocator_type<base_t> : c(ww * hh, a), w(ww), h(hh) {
     if (!check_wh(ww, hh))
       throw_or_terminate<length_error>
         ("re::matrix::matrix(w, h, a): size error\n");
   }
 
-  matrix(size_type ww, size_type hh, const value_type &v)
+  matrix(int ww, int hh, const value_type &v)
     : c(ww * hh, v), w(ww), h(hh) {
     if (!check_wh(ww, hh))
       throw_or_terminate<length_error>
         ("re::matrix::matrix(w, h, v): size error\n");
   }
-  matrix(size_type ww, size_type hh, const value_type &v, const alloc_t &a)
+  matrix(int ww, int hh, const value_type &v, const alloc_t &a)
     requires has_allocator_type<base_t> : c(ww * hh, v, a), w(ww), h(hh) {
     if (!check_wh(ww, hh))
       throw_or_terminate<length_error>
@@ -39538,7 +39611,7 @@ private:
   template <class R>
   void assign_range(R &&r) {
     if constexpr (rng_is_sized<R>) {
-      const auto sz = w * h;
+      const auto sz = to_unsigned(w * h);
       const auto r_sz = re::size(r);
       if (sz <= r_sz)
         copy_from(c, re::begin(r));
@@ -39558,20 +39631,26 @@ private:
   }
 public:
   template <class R>
-  matrix(size_type ww, size_type hh, R &&r)
+  matrix(int ww, int hh, R &&r)
     requires (!is_matrix<remove_reference_t<R>>
               && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
               && !is_convertible_v<R &&, const value_type &>)
     : c(ww * hh), w(ww), h(hh) {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::matrix(w, h, r): size error\n");
     assign_range(r);
   }
   template <class R>
-  matrix(size_type ww, size_type hh, R &&r, const alloc_t &a)
+  matrix(int ww, int hh, R &&r, const alloc_t &a)
     requires (has_allocator_type<base_t>
               && !is_matrix<remove_reference_t<R>>
               && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
               && !is_convertible_v<R &&, const value_type &>)
     : c(ww * hh, a), w(ww), h(hh) {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::matrix(w, h, r, a): size error\n");
     assign_range(r);
   }
 
@@ -39663,18 +39742,18 @@ public:
 
 private:
   template <class T2, class C2>
-  void keep_size_assign(const matrix<T2, C2> &x) {
-    for (size_type i : irng(0u, min(w, x.width())))
-      for (size_type j : irng(0u, min(h, x.height())))
+  void keep_layout_assign(const matrix<T2, C2> &x) {
+    for (int i : irng(0, min(w, x.width())))
+      for (int j : irng(0, min(h, x.height())))
         (*this)(i, j) = x(i, j);
   }
   template <class T2, class C2>
-  void keep_size_assign(matrix<T2, C2> &&x) {
+  void keep_layout_assign(matrix<T2, C2> &&x) {
 #ifndef RE_NOEXCEPT
     try {
 #endif
-      for (size_type i : irng(0u, min(w, x.width())))
-        for (size_type j : irng(0u, min(h, x.height())))
+      for (int i : irng(0, min(w, x.width())))
+        for (int j : irng(0, min(h, x.height())))
           (*this)(i, j) = move(x(i, j));
       if (reinterpret_cast<const void *>(addressof(x))
           != reinterpret_cast<const void *>(this))
@@ -39691,69 +39770,69 @@ private:
 
 public:
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          const matrix<T2, C2> &x) : matrix(ww, hh) {
-    keep_size_assign(x);
+    keep_layout_assign(x);
   }
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          const matrix<T2, C2> &x, const value_type &fll)
     : matrix(ww, hh, fll) {
-    keep_size_assign(x);
+    keep_layout_assign(x);
   }
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          const matrix<T2, C2> &x, const alloc_t &a)
     requires has_allocator_type<base_t>
     : matrix(ww, hh, a) {
-    keep_size_assign(x);
+    keep_layout_assign(x);
   }
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          const matrix<T2, C2> &x, const value_type &fll, const alloc_t &a)
     requires has_allocator_type<base_t>
     : matrix(ww, hh, fll, a) {
-    keep_size_assign(x);
-  }
-  template <class T2, class C2>
-  void assign(size_type ww, size_type hh,
-              const matrix<T2, C2> &x,
-              const value_type &fll = value_type{}) {
-    resize(ww, hh, fll);
-    keep_size_assign(x);
+    keep_layout_assign(x);
   }
 
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
-         matrix<T2, C2> &&x) : matrix(ww, hh) {
-    keep_size_assign(move(x));
+  matrix(int ww, int hh,
+         matrix<T2, C2> &&x)
+    : matrix(ww, hh) {
+    keep_layout_assign(move(x));
   }
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          matrix<T2, C2> &&x, const value_type &fll)
     : matrix(ww, hh, fll) {
-    keep_size_assign(move(x));
+    keep_layout_assign(move(x));
   }
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          matrix<T2, C2> &&x, const alloc_t &a)
     requires has_allocator_type<base_t>
     : matrix(ww, hh, a) {
-    keep_size_assign(move(x));
+    keep_layout_assign(move(x));
   }
   template <class T2, class C2>
-  matrix(size_type ww, size_type hh,
+  matrix(int ww, int hh,
          matrix<T2, C2> &&x, const value_type &fll, const alloc_t &a)
     requires has_allocator_type<base_t>
     : matrix(ww, hh, fll, a) {
-    keep_size_assign(move(x));
+    keep_layout_assign(move(x));
   }
+
   template <class T2, class C2>
-  void assign(size_type ww, size_type hh,
-              matrix<T2, C2> &&x,
+  void assign(int ww, int hh, const matrix<T2, C2> &x,
               const value_type &fll = value_type{}) {
     resize(ww, hh, fll);
-    keep_size_assign(move(x));
+    keep_layout_assign(x);
+  }
+  template <class T2, class C2>
+  void assign(int ww, int hh, matrix<T2, C2> &&x,
+              const value_type &fll = value_type{}) {
+    resize(ww, hh, fll);
+    keep_layout_assign(move(x));
   }
 
   void clear() noexcept {
@@ -39761,199 +39840,60 @@ public:
     w = 0;
     h = 0;
   }
-  void resize(size_type ww, size_type hh,
-              const value_type &fll = value_type{}) {
+  void resize(int ww, int hh, const value_type &fll = value_type{}) {
     if constexpr (has_allocator_type<base_t>) {
       if (!(ww == w && hh == h)) {
         matrix tmp(ww, hh, fll, get_allocator());
-        tmp.keep_size_assign(move(*this));
+        tmp.keep_layout_assign(move(*this));
         *this = move(tmp);
       }
     }
     else {
       if (!(ww == w && hh == h)) {
         matrix tmp(ww, hh, fll);
-        tmp.keep_size_assign(move(*this));
+        tmp.keep_layout_assign(move(*this));
         *this = move(tmp);
       }
     }
   }
 
-private:
-  template <class M, class F>
-  pair<size_type, size_type>
-  cover_impl(size_type x, size_type y, M &&m, F mix_f) {
-    if (x > width() || y > height()) {
-      x = width();
-      y = height();
-    }
-    const size_type h_cap = width() - x;
-    const size_type v_cap = height() - y;
-    const size_type wid = min(h_cap, m.width());
-    const size_type hei = min(v_cap, m.height());
-    for (size_type &j : iters(y, y + hei)) {
-      auto it = iter(x, j);
-      for (auto &a : rng(m.range().begin() + (j - y) * m.width(), wid)) {
-        *it = mix_f(*it, static_cast<copy_cvref_t<M &, value_type>>(a));
-        ++it;
-      }
-    }
-    return pair(wid, hei);
-  }
-public:
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, const matrix &m, F mix_f) {
-    return cover_impl(x, y, m, mix_f);
-  }
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, matrix &&m, F mix_f) {
-    return cover_impl(x, y, move(m), mix_f);
-  }
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, matrix &m, F mix_f) {
-    return cover_impl(x, y, m, mix_f);
-  }
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, const matrix &m) {
-    return cover_impl(x, y, m,
-                      [](value_type &,
-                         const value_type &z)->const value_type & {return z;});
-  }
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, matrix &&m) {
-    return cover_impl(x, y, move(m),
-                      [](value_type &,
-                         value_type &z)->value_type && {return move(z);});
-  }
-  pair<size_type, size_type>
-  cover(size_type x, size_type y, matrix &m) {
-    return cover_impl(x, y, move(m),
-                      [](value_type &,
-                         value_type &z)->value_type & {return z;});
-  }
-
-private:
-  template <class M, class F>
-  pair<size_type, size_type>
-  cover_impl(size_type x, size_type y,
-             M &&m, size_type x2, size_type y2, size_type ww, size_type hh,
-             F mix_f) {
-    if (x > width() || y > height()) {
-      x = width();
-      y = height();
-    }
-    if (x2 > m.width() || y2 > m.height()) {
-      x2 = m.width();
-      y2 = m.height();
-    }
-    const size_type h_cap = width() - x;
-    const size_type v_cap = height() - y;
-    const size_type h_cap2 = m.width() - x2;
-    const size_type v_cap2 = m.height() - y2;
-    const size_type wid = min({h_cap, h_cap2, ww});
-    const size_type hei = min({v_cap, v_cap2, hh});
-
-    const auto m_begin = m.iter(x2, y2);
-    for (size_type &j : iters(y, y + hei)) {
-      auto it = iter(x, j);
-      for (auto &z : rng(m_begin + (j - y) * m.width(), wid)) {
-        *it = mix_f(*it, static_cast<copy_cvref_t<M &, value_type>>(z));
-        ++it;
-      }
-    }
-    return pair(wid, hei);
-  }
-public:
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y,
-        const matrix &m, size_type x2, size_type y2,
-        size_type ww, size_type hh,
-        F mix_f) {
-    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
-  }
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y,
-        matrix &&m,
-        size_type x2, size_type y2, size_type ww, size_type hh,
-        F mix_f) {
-    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
-  }
-  template <class F>
-  pair<size_type, size_type>
-  cover(size_type x, size_type y,
-        matrix &m,
-        size_type x2, size_type y2, size_type ww, size_type hh,
-        F mix_f) {
-    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
-  }
-  pair<size_type, size_type>
-  cover(size_type x, size_type y,
-        const matrix &m, size_type x2, size_type y2,
-        size_type ww, size_type hh) {
-    return cover_impl(x, y, m, x2, y2, ww, hh,
-                      [](value_type &,
-                         const value_type &b)->const value_type & {return b;});
-  }
-  pair<size_type, size_type>
-  cover(size_type x, size_type y,
-        matrix &&m,
-        size_type x2, size_type y2, size_type ww, size_type hh) {
-    return cover_impl(x, y, m, x2, y2, ww, hh,
-                      [](value_type &,
-                         value_type &b)->value_type && {return move(b);});
-  }
-  pair<size_type, size_type>
-  cover(size_type x, size_type y,
-        matrix &m,
-        size_type x2, size_type y2, size_type ww, size_type hh) {
-    return cover_impl(x, y, m, x2, y2, ww, hh,
-                      [](value_type &,
-                         value_type &b)->value_type & {return b;});
-  }
-
-  auto row(size_type n) {
+  auto row(int n) {
     return rng(c.begin() + n * w, w);
   }
-  auto row(size_type n) const {
+  auto row(int n) const {
     return rng(c.begin() + n * w, w);
   }
   auto rows() noexcept {
-    return bind_rng(irng(0u, h),
-                    [this](auto n) {return this->row(n);});
+    return bind_rng(irng(0, h),
+                    [this](int n) {return this->row(n);});
   }
   auto rows() const noexcept {
-    return bind_rng(irng(0u, h),
-                    [this](auto n) {return this->row(n);});
+    return bind_rng(irng(0, h),
+                    [this](int n) {return this->row(n);});
   }
 
-  auto column(size_type n) {
-    return bind_rng(irng(0u, h),
-                    [this, n](auto i)->auto & {
-                      return *(range().begin() + to_signed(n + i * w));
+  auto column(size_t n) {
+    return bind_rng(irng(0, h),
+                    [this, n](int i)->auto & {
+                      return *(range().begin() + (n + i * w));
                     });
   }
-  auto column(size_type n) const {
-    return bind_rng(irng(0u, h),
-                    [this, n](auto i)->const auto & {
-                      return *(range().begin() + to_signed(n + i * w));
+  auto column(size_t n) const {
+    return bind_rng(irng(0, h),
+                    [this, n](int i)->const auto & {
+                      return *(range().begin() + (n + i * w));
                     });
   }
   auto columns() noexcept {
-    return bind_rng(irng(0u, w),
-                    [this](auto n) {return this->column(n);});
+    return bind_rng(irng(0, w),
+                    [this](int n) {return this->column(n);});
   }
   auto columns() const noexcept {
-    return bind_rng(irng(0u, w),
-                    [this](auto n) {return this->column(n);});
+    return bind_rng(irng(0, w),
+                    [this](int n) {return this->column(n);});
   }
 
-  auto sub_range(size_type x, size_type y,
-                 size_type wid, size_type hei) {
+  auto sub_range(int x, int y, int wid, int hei) {
     if (!(x < width() && y < height())) {
       x = 0;
       y = 0;
@@ -39965,13 +39905,12 @@ public:
     const auto it = iter(x, y);
     wid = min(wid, width() - x);
     hei = min(hei, height() - y);
-    return join_rng(bind_rng(irng(0u, hei),
-                             [it, ww = width(), wid](size_type k) {
+    return join_rng(bind_rng(irng(0, hei),
+                             [it, ww = width(), wid](int k) {
                                return rng(it + k * ww, wid);
                              }));
   }
-  auto sub_range(size_type x, size_type y,
-                 size_type wid, size_type hei) const {
+  auto sub_range(int x, int y, int wid, int hei) const {
     if (!(x < width() && y < height())) {
       x = 0;
       y = 0;
@@ -39981,21 +39920,19 @@ public:
     const auto it = iter(x, y);
     wid = min(wid, width() - x);
     hei = min(hei, height() - y);
-    return join_rng(bind_rng(irng(0u, hei),
-                             [it, ww = width(), wid](size_type k) {
+    return join_rng(bind_rng(irng(0, hei),
+                             [it, ww = width(), wid](int k) {
                                return rng(it + k * ww, wid);
                              }));
   }
 
-  void fill(size_type x, size_type y,
-            size_type wid, size_type hei,
-            const value_type &z) {
+  void fill(int x, int y, int wid, int hei, const value_type &z) {
     x = min(x, width());
     y = min(y, height());
     const auto it = iter(x, y);
     wid = min(wid, width() - x);
     hei = min(hei, height() - y);
-    for (size_type k : irng(0u, hei))
+    for (int k : irng(0, hei))
       re::fill(rng(it + k * width(), wid), z);
   }
 
@@ -40006,10 +39943,10 @@ public:
     return c.front();
   }
   value_type &left_bottom() {
-    return *prev(c.end(), to_signed(w));
+    return *prev(c.end(), w);
   }
   const value_type &left_bottom() const {
-    return *prev(c.end(), to_signed(w));
+    return *prev(c.end(), w);
   }
   value_type &right_bottom() {
     return c.back();
@@ -40018,34 +39955,34 @@ public:
     return c.back();
   }
   value_type &right_top() {
-    return *next(c.begin(), to_signed(w - 1u));
+    return *next(c.begin(), w - 1);
   }
   const value_type &right_top() const {
-    return *next(c.begin(), to_signed(w - 1u));
+    return *next(c.begin(), w - 1);
   }
-  value_type &operator ()(size_type x, size_type y) {
+  value_type &operator ()(int x, int y) {
     return *(range().begin() + (y * w + x));
   }
-  const value_type &operator ()(size_type x, size_type y) const {
+  const value_type &operator ()(int x, int y) const {
     return *(range().begin() + (y * w + x));
   }
-  iterator iter(size_type x, size_type y) {
+  iterator iter(int x, int y) {
     return nth(c, y * w + x);
   }
-  const_iterator iter(size_type x, size_type y) const {
+  const_iterator iter(int x, int y) const {
     return nth(c, y * w + x);
   }
-  bool includes_point(size_type x, size_type y) const noexcept {
+  bool includes_point(int x, int y) const noexcept {
     return x < width() && y < height();
   }
 
-  size_type capacity() const noexcept {
+  size_t capacity() const noexcept {
     return c.capacity();
   }
-  void reserve(size_type n) {
+  void reserve(size_t n) {
     c.reserve(n);
   }
-  void reserve_more(size_type n) {
+  void reserve_more(size_t n) {
     c.reserve_more(n);
   }
   void shrink_to_fit() {
@@ -40162,8 +40099,8 @@ public:
       throw_or_terminate<logic_error>
         ("re::matrix::operator *(const matrix &): unmatched\n");
     matrix ret(x.w, h);
-    for (size_type i : irng(0u, x.w))
-      for (size_type j : irng(0u, h)) {
+    for (int i : irng(0, x.w))
+      for (int j : irng(0, h)) {
         auto &z = ret(i, j);
         for_each(row(j), x.column(i),
                  [&z](const value_type &a, const value_type &b) {
@@ -40171,6 +40108,160 @@ public:
                  });
       }
     return ret;
+  }
+
+private:
+  template <class M, class F>
+  pair<int, int> cover_impl(int x0, int y0, M &&m, F mix_f) {
+    if ((x0 >= width() || y0 >= height())
+        || !(x0 > -m.width() && y0 > -m.height()))
+      return {};
+    const int m_x = (x0 < 0) ? -x0 : 0;
+    const int m_y = (y0 < 0) ? -y0 : 0;
+    const int x = max(0, x0);
+    const int y = max(0, y0);
+    const int x_dif = min(width() - x, m.width() - m_x);
+    const int y_dif = min(height() - y, m.height() - m_x);
+    for (int &j : iters(y, y + y_dif)) {
+      for_each(rng((m.range().begin()
+                    + (m_y + (j - y)) * m.width()
+                    + m_x),
+                   x_dif),
+               iter(x, j),
+               [&](auto &a, value_type &b) {
+                 b = mix_f(b, a);
+               });
+    }
+    return pair(x_dif, y_dif);
+  }
+public:
+  template <class F>
+  pair<int, int> cover(int x, int y, const matrix &m, F mix_f) {
+    return cover_impl(x, y, m, mix_f);
+  }
+  template <class F>
+  pair<int, int> cover(int x, int y, matrix &&m, F mix_f) {
+    return cover_impl(x, y, move(m), mix_f);
+  }
+  template <class F>
+  pair<int, int> cover(int x, int y, matrix &m, F mix_f) {
+    return cover_impl(x, y, m, mix_f);
+  }
+  pair<int, int> cover(int x, int y, const matrix &m) {
+    return cover_impl(x, y, m,
+                      [](value_type &,
+                         const value_type &z)->const value_type & {return z;});
+  }
+  pair<int, int> cover(int x, int y, matrix &&m) {
+    return cover_impl(x, y, move(m),
+                      [](value_type &,
+                         value_type &z)->value_type && {return move(z);});
+  }
+  pair<int, int> cover(int x, int y, matrix &m) {
+    return cover_impl(x, y, move(m),
+                      [](value_type &,
+                         value_type &z)->value_type & {return z;});
+  }
+
+private:
+  template <class M, class F>
+  pair<int, int>
+  cover_impl(int x0, int y0,
+             M &&m, int x2, int y2, int ww, int hh,
+             F mix_f) {
+    if ((x2 >= m.width() || y2 >= m.height())
+        || !(x2 > -ww && y2 > -hh))
+      return {};
+    int m_x{}, m_y{};
+    int x_dif{}, y_dif{};
+    if (x2 < 0) {
+      m_x = 0;
+      x_dif = min(ww + x2, m.width());
+    }
+    else {
+      m_x = x2;
+      x_dif = min(ww, m.width() - x2);
+    }
+    if (y2 < 0) {
+      m_y = 0;
+      y_dif = min(hh + y2, m.height());
+    }
+    else {
+      m_y = y2;
+      y_dif = min(hh, m.height() - y2);
+    }
+
+    if ((x0 >= width() || y0 >= height())
+        || !(x0 > -x_dif && y0 > -y_dif))
+      return {};
+    int x = x0;
+    int y = y0;
+    if (x0 < 0) {
+      m_x = (x0 < 0) ? (m_x - x0) : m_x;
+      x_dif += x0;
+      x = 0;
+    }
+    if (y0 < 0) {
+      m_y = (y0 < 0) ? (m_y - y0) : m_y;
+      y_dif += y0;
+      y = 0;
+    }
+    x_dif = min(x_dif, width() - x);
+    y_dif = min(y_dif, height() - y);
+    for (int &j : iters(y, y + y_dif)) {
+      for_each(rng((m.range().begin()
+                    + (m_y + (j - y)) * m.width()
+                    + m_x),
+                   x_dif),
+               iter(x, j),
+               [&](auto &a, value_type &b) {
+                 b = mix_f(b, a);
+               });
+    }
+    return pair(x_dif, y_dif);
+  }
+public:
+  template <class F>
+  pair<int, int>
+  cover(int x, int y,
+        const matrix &m, int x2, int y2, int ww, int hh,
+        F mix_f) {
+    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
+  }
+  template <class F>
+  pair<int, int>
+  cover(int x, int y,
+        matrix &&m, int x2, int y2, int ww, int hh,
+        F mix_f) {
+    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
+  }
+  template <class F>
+  pair<int, int>
+  cover(int x, int y,
+        matrix &m, int x2, int y2, int ww, int hh,
+        F mix_f) {
+    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
+  }
+  pair<int, int>
+  cover(int x, int y,
+        const matrix &m, int x2, int y2, int ww, int hh) {
+    return cover_impl(x, y, m, x2, y2, ww, hh,
+                      [](value_type &,
+                         const value_type &b)->const value_type & {return b;});
+  }
+  pair<int, int>
+  cover(int x, int y,
+        matrix &&m, int x2, int y2, int ww, int hh) {
+    return cover_impl(x, y, m, x2, y2, ww, hh,
+                      [](value_type &,
+                         value_type &b)->value_type && {return move(b);});
+  }
+  pair<int, int>
+  cover(int x, int y,
+        matrix &m, int x2, int y2, int ww, int hh) {
+    return cover_impl(x, y, m, x2, y2, ww, hh,
+                      [](value_type &,
+                         value_type &b)->value_type & {return b;});
   }
 };
 
