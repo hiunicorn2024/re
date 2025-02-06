@@ -23,16 +23,16 @@ void test_matrix0() {
     assert(m0.range().size() == 0u);
     assert(m0.range().empty());
     assert(m0.empty());
-    assert(m0.width() == 0u && m0.height() == 0u);
+    assert(m0.width() == 0 && m0.height() == 0);
 
     matrix<int> m(3, 2, seq(1, 2, 3, 4, 5, 6));
     assert(equal(m.range(), irng(1, 7)));
     assert(m.range().begin() != m.range().end());
     assert(as_const(m).range().begin() != as_const(m).range().end());
-    assert(m.range().size() == 6u);
+    assert(m.range().size() == 6);
     assert(!m.range().empty());
     assert(!m.empty());
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
   }
 
   // smf
@@ -40,9 +40,9 @@ void test_matrix0() {
     matrix<int> m1, m2(m1), m3(move(m1));
     (m1 = m2) = move(m3);
     adl_swap(m2, m3);
-    assert(m1.empty() && m1.width() == 0u && m1.height() == 0u);
-    assert(m2.empty() && m2.width() == 0u && m2.height() == 0u);
-    assert(m3.empty() && m3.width() == 0u && m3.height() == 0u);
+    assert(m1.empty() && m1.width() == 0 && m1.height() == 0);
+    assert(m2.empty() && m2.width() == 0 && m2.height() == 0);
+    assert(m3.empty() && m3.width() == 0 && m3.height() == 0);
   }
 
   // ==
@@ -79,14 +79,14 @@ void test_matrix0() {
     mat_t m3(move(m), a);
     assert(m3.get_allocator() == a);
     assert(equal(m3.range(), rng(9, 1)));
-    assert(m.empty() && m.width() == 0u && m.height() == 0u);
+    assert(m.empty() && m.width() == 0 && m.height() == 0);
   }
 
   // matrix(w, h)
   {
     matrix<int> m(3, 2);
     assert(equal(m.range(), rng(6, 0)));
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
   }
   // matrix(w, h, a)
   {
@@ -95,14 +95,14 @@ void test_matrix0() {
     matrix<int, vector<int, alloc_t>> m(3, 2, a);
     assert(m.get_allocator() == a);
     assert(equal(m.range(), rng(6, 0)));
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
   }
 
   // matrix(w, h, v)
   {
     matrix<int> m(3, 2, 1);
     assert(equal(m.range(), rng(6, 1)));
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
   }
   // matrix(w, h, v, a)
   {
@@ -111,7 +111,7 @@ void test_matrix0() {
     matrix<int, vector<int, alloc_t>> m(3, 2, 1, a);
     assert(m.get_allocator() == a);
     assert(equal(m.range(), rng(6, 1)));
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
   }
 
   // matrix(w, h, r)
@@ -119,9 +119,9 @@ void test_matrix0() {
     matrix<int> m(3, 2, seq(1, 2, 3));
     matrix<int> m2(3, 2, seq(1, 2, 3, 4, 5, 6));
     matrix<int> m3(3, 2, seq(1, 2, 3, 4, 5, 6, 7, 8));
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
     assert(equal(m.range(), seq(1, 2, 3, 0, 0, 0)));
-    assert(m2.width() == 3u && m2.height() == 2u);
+    assert(m2.width() == 3 && m2.height() == 2);
     assert(equal(m2.range(), irng(1, 7)));
     assert(m3 == m2);
   }
@@ -132,9 +132,9 @@ void test_matrix0() {
     matrix<int, vector<int, alloc_t>> m(3, 2, seq(1, 2, 3), a);
     matrix<int, vector<int, alloc_t>> m2(3, 2, seq(1, 2, 3, 4, 5, 6), a);
     matrix<int, vector<int, alloc_t>> m3(3, 2, seq(1, 2, 3, 4, 5, 6, 7, 8), a);
-    assert(m.width() == 3u && m.height() == 2u);
+    assert(m.width() == 3 && m.height() == 2);
     assert(equal(m.range(), seq(1, 2, 3, 0, 0, 0)));
-    assert(m2.width() == 3u && m2.height() == 2u);
+    assert(m2.width() == 3 && m2.height() == 2);
     assert(equal(m2.range(), irng(1, 7)));
     assert(m3 == m2);
     assert(m.get_allocator() == a);
@@ -147,11 +147,11 @@ void test_matrix0() {
   {
     matrix<int> m(3, 2, 1);
     matrix<long> m2(m);
-    assert(m2.width() == 3u && m2.height() == 2u);
+    assert(m2.width() == 3 && m2.height() == 2);
     assert(equal(m2.range(), rng(6, 1)));
     matrix<long> m3;
     m3 = m;
-    assert(m3.width() == 3u && m3.height() == 2u);
+    assert(m3.width() == 3 && m3.height() == 2);
     assert(equal(m3.range(), rng(6, 1)));
   }
   // matrix(const matrix<T2, C2> &, const alloc_t &)
@@ -201,28 +201,28 @@ void test_matrix0() {
                             4, 5, 6,
                             7, 8, 9));
     matrix<int> m2(2, 2, m);
-    assert(m2.width() == 2u && m2.height() == 2u);
+    assert(m2.width() == 2 && m2.height() == 2);
     assert(equal(m2.range(), seq(1, 2, 4, 5)));
     matrix<int> m3(3, 3, m);
     assert(m3 == m);
     matrix<int> m4(4, 4, m);
-    assert(m4.width() == 4u && m4.height() == 4u);
+    assert(m4.width() == 4 && m4.height() == 4);
     assert(equal(m4.range(), seq(1, 2, 3, 0,
                                  4, 5, 6, 0,
                                  7, 8, 9, 0,
                                  0, 0, 0, 0)));
     matrix<int> m44(4, 4, m, -1);
-    assert(m44.width() == 4u && m44.height() == 4u);
+    assert(m44.width() == 4 && m44.height() == 4);
     assert(equal(m44.range(), seq(1, 2, 3, -1,
                                   4, 5, 6, -1,
                                   7, 8, 9, -1,
                                   -1, -1, -1, -1)));
     m44.assign(2, 2, m44);
-    assert(m44.width() == 2u && m44.height() == 2u);
+    assert(m44.width() == 2 && m44.height() == 2);
     assert(equal(m44.range(), seq(1, 2,
                                   4, 5)));
     m44.assign(3, 3, m44, -1);
-    assert(m44.width() == 3u && m44.height() == 3u);
+    assert(m44.width() == 3 && m44.height() == 3);
     assert(equal(m44.range(), seq(1, 2, -1,
                                   4, 5, -1,
                                   -1, -1, -1)));
@@ -234,12 +234,12 @@ void test_matrix0() {
     alloc_t a;
     matrix<int, vector<int, alloc_t>> m(3, 2, 1);
     matrix<int, vector<int, alloc_t>> m2(1, 1, m, a);
-    assert(m2.width() == 1u && m2.height() == 1u);
+    assert(m2.width() == 1 && m2.height() == 1);
     assert(equal(m2.range(), single_rng(1)));
     assert(m2.get_allocator() == a);
 
     matrix<int, vector<int, alloc_t>> m3(3, 3, m, -1, a);
-    assert(m3.width() == 3u && m3.height() == 3u);
+    assert(m3.width() == 3 && m3.height() == 3);
     assert(equal(m3.range(), seq(1, 1, 1,
                                  1, 1, 1,
                                  -1, -1, -1)));
@@ -255,9 +255,9 @@ void test_matrix0() {
                               4, 5, 6,
                               7, 8, 9));
       matrix<int> m2(2, 2, move(m));
-      assert(m2.width() == 2u && m2.height() == 2u);
+      assert(m2.width() == 2 && m2.height() == 2);
       assert(equal(m2.range(), seq(1, 2, 4, 5)));
-      assert(m.empty() && m.width() == 0u && m.height() == 0u);
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
     }
     {
       matrix<int> m(3, 3, seq(1, 2, 3,
@@ -267,37 +267,37 @@ void test_matrix0() {
       assert(m3 == matrix<int>(3, 3, seq(1, 2, 3,
                                          4, 5, 6,
                                          7, 8, 9)));
-      assert(m.empty() && m.width() == 0u && m.height() == 0u);
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
     }
     {
       matrix<int> m(3, 3, seq(1, 2, 3,
                               4, 5, 6,
                               7, 8, 9));
       matrix<int> m4(4, 4, move(m));
-      assert(m4.width() == 4u && m4.height() == 4u);
+      assert(m4.width() == 4 && m4.height() == 4);
       assert(equal(m4.range(), seq(1, 2, 3, 0,
                                    4, 5, 6, 0,
                                    7, 8, 9, 0,
                                    0, 0, 0, 0)));
-      assert(m.empty() && m.width() == 0u && m.height() == 0u);
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
     }
     {
       matrix<int> m(3, 3, seq(1, 2, 3,
                               4, 5, 6,
                               7, 8, 9));
       matrix<int> m44(4, 4, move(m), -1);
-      assert(m44.width() == 4u && m44.height() == 4u);
+      assert(m44.width() == 4 && m44.height() == 4);
       assert(equal(m44.range(), seq(1, 2, 3, -1,
                                     4, 5, 6, -1,
                                     7, 8, 9, -1,
                                     -1, -1, -1, -1)));
-      assert(m.empty() && m.width() == 0u && m.height() == 0u);
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
     }
     {
       matrix<int> m(2, 2, seq(1, 2,
                               3, 4));
       m.assign(3, 3, move(m), -1);
-      assert(m.width() == 3u && m.height() == 3u);
+      assert(m.width() == 3 && m.height() == 3);
       assert(equal(m.range(), seq(1, 2, -1,
                                   3, 4, -1,
                                   -1, -1, -1)));
@@ -305,11 +305,11 @@ void test_matrix0() {
                                4, 5, 6,
                                7, 8, 9));
       m.assign(3, 3, move(m2), -1);
-      assert(m.width() == 3u && m.height() == 3u);
+      assert(m.width() == 3 && m.height() == 3);
       assert(equal(m.range(), seq(1, 2, 3,
                                   4, 5, 6,
                                   7, 8, 9)));
-      assert(m2.empty() && m2.width() == 0u && m2.height() == 0u);
+      assert(m2.empty() && m2.width() == 0 && m2.height() == 0);
     }
   }
   // matrix(w, h, m_rv, a)
@@ -320,20 +320,20 @@ void test_matrix0() {
     {
       matrix<int, vector<int, alloc_t>> m(3, 2, 1);
       matrix<int, vector<int, alloc_t>> m2(1, 1, move(m), a);
-      assert(m2.width() == 1u && m2.height() == 1u);
+      assert(m2.width() == 1 && m2.height() == 1);
       assert(equal(m2.range(), single_rng(1)));
       assert(m2.get_allocator() == a);
-      assert(m.empty() && m.width() == 0u && m.height() == 0u);
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
     }
     {
       matrix<int, vector<int, alloc_t>> m(3, 2, 1);
       matrix<int, vector<int, alloc_t>> m3(3, 3, move(m), -1, a);
-      assert(m3.width() == 3u && m3.height() == 3u);
+      assert(m3.width() == 3 && m3.height() == 3);
       assert(equal(m3.range(), seq(1, 1, 1,
                                    1, 1, 1,
                                    -1, -1, -1)));
       assert(m3.get_allocator() == a);
-      assert(m.empty() && m.width() == 0u && m.height() == 0u);
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
     }
   }
 
@@ -342,112 +342,13 @@ void test_matrix0() {
   {
     matrix<int> m(3, 2, 1);
     m.clear();
-    assert(m.empty() && m.width() == 0u && m.height() == 0u);
+    assert(m.empty() && m.width() == 0 && m.height() == 0);
     m.resize(2, 2, 1);
-    assert(m.width() == 2u && m.height() == 2u);
+    assert(m.width() == 2 && m.height() == 2);
     assert(equal(m.range(), rng(4, 1)));
     m.resize(1, 1);
-    assert(m.width() == 1u && m.height() == 1u);
+    assert(m.width() == 1 && m.height() == 1);
     assert(equal(m.range(), single_rng(1)));
-  }
-
-  // cover(x, y, m)
-  // cover(x, y, m, mix_f)
-  {
-    {
-      matrix<int> m0;
-      assert(m0.cover(0u, 0u, matrix<int>{}) == pair(0u, 0u));
-      assert(m0.cover(0, 0, matrix<int>(1, 1, seq(1))) == pair(0u, 0u));
-      matrix<int> m(3, 3, seq(1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9));
-      assert(m.cover(2, 0, matrix<int>(1, 3, seq(-1, -2, -3)))
-             == pair(1u, 3u));
-      assert(m == matrix<int>(3, 3, seq(1, 2, -1,
-                                        4, 5, -2,
-                                        7, 8, -3)));
-      assert(m.cover(2, 0, matrix<int>(1, 2, seq(10, 100)))
-             == pair(1u, 2u));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
-                                        4, 5, 100,
-                                        7, 8, -3)));
-      assert(m.cover(1, 1, matrix<int>(1, 1, single_rng(999)))
-             == pair(1u, 1u));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
-                                        4, 999, 100,
-                                        7, 8, -3)));
-
-      assert(m.cover(1, 1, matrix<int>(2, 2, seq(1, 2,
-                                                 3, 4)),
-                     [](auto x, auto y) {return x * 10 + y;})
-             == pair(2u, 2u));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
-                                        4, 9991, 1002,
-                                        7, 83, -26)));
-    }
-    {
-      matrix<int> m(3, 3, seq(1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9));
-      matrix<int> m2(2, 2, seq(10, 11,
-                               12, 13));
-      assert(m.cover(1, 1, move(m2)) == pair(2u, 2u));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                        4, 10, 11,
-                                        7, 12, 13)));
-    }
-  }
-
-  // cover(x, y, m, x2, y2, ww, hh)
-  // cover(x, y, m, x2, y2, ww, hh, mix_f)
-  {
-    matrix<int> m(3, 3, seq(1, 2, 3,
-                            4, 5, 6,
-                            7, 8, 9));
-    matrix<int> m2(2, 2, seq(10, 11,
-                             12, 13));
-    m.cover(1, 1, m2, 0, 0, 2, 2);
-    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                      4, 10, 11,
-                                      7, 12, 13)));
-    m.cover(1, 1,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            1, 1, 0, 1);
-    m.cover(1, 1,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            1, 1, 1, 0);
-    m.cover(3, 3,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            3, 3, 3, 3);
-    m.cover(4, 4,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            4, 4, 4, 4);
-    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                      4, 10, 11,
-                                      7, 12, 13)));
-    m2 = matrix<int>(3, 3, seq(0, 0, 0,
-                               0, 99, 99,
-                               0, 99, 99));
-    m.cover(1, 1, m2, 1, 1, 2, 2,
-            [](int &a, int &b)->int {return exchange(b, 0);});
-    assert(equal(m2.range(), rng(9, 0)));
-    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                      4, 99, 99,
-                                      7, 99, 99)));
-    m2 = matrix<int>(3, 0);
-    m = matrix<int>(3, 0);
-    m.cover(3, 3, m2, 3, 3, 3, 3);
-    assert(m2.width() == 3u && m2.height() == 0u);
-    assert(m.width() == 3u && m2.height() == 0u);
-    assert(m2.empty() && m.empty());
   }
 
   // row(n)
@@ -667,6 +568,146 @@ void test_matrix0() {
                 inner_product(seq(1, 2, 3), seq(10, 12, 14).begin(), 0),
                 inner_product(seq(4, 5, 6), seq(9, 11, 13).begin(), 0),
                 inner_product(seq(4, 5, 6), seq(10, 12, 14).begin(), 0))));
+  }
+
+  // cover(x, y, m)
+  // cover(x, y, m, mix_f)
+  {
+    {
+      matrix<int> m0;
+      assert(m0.cover(0, 0, matrix<int>{}) == pair(0, 0));
+      assert(m0.cover(0, 0, matrix<int>(1, 1, seq(1))) == pair(0, 0));
+        matrix<int> m(3, 3, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9));
+      assert(m.cover(2, 0, matrix<int>(1, 3, seq(-1, -2, -3)))
+             == pair(1, 3));
+      assert(m == matrix<int>(3, 3, seq(1, 2, -1,
+                                        4, 5, -2,
+                                        7, 8, -3)));
+      assert(m.cover(2, 0, matrix<int>(1, 2, seq(10, 100)))
+             == pair(1, 2));
+      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
+                                        4, 5, 100,
+                                        7, 8, -3)));
+      assert(m.cover(1, 1, matrix<int>(1, 1, single_rng(999)))
+             == pair(1, 1));
+      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
+                                        4, 999, 100,
+                                        7, 8, -3)));
+
+      assert(m.cover(1, 1, matrix<int>(2, 2, seq(1, 2,
+                                                 3, 4)),
+                     [](auto x, auto y) {return x * 10 + y;})
+             == pair(2, 2));
+      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
+                                        4, 9991, 1002,
+                                        7, 83, -26)));
+    }
+    {
+      matrix<int> m(3, 3, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9));
+      matrix<int> m2(2, 2, seq(10, 11,
+                               12, 13));
+      assert(m.cover(1, 1, move(m2)) == pair(2, 2));
+      assert(m == matrix<int>(3, 3, seq(1, 2, 3,
+                                        4, 10, 11,
+                                        7, 12, 13)));
+    }
+    {
+      matrix<int> m0(0, 0);
+      matrix<int> m(3, 3, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9));
+      matrix<int> m2(3, 3, seq(10, 20, 30,
+                               40, 50, 60,
+                               70, 80, 90));
+      assert(m.cover(0, 0, m0) == pair(0, 0));
+      assert(m.cover(-3, -3, m2) == pair(0, 0));
+      assert(m.cover(-4, 0, m2) == pair(0, 0));
+      assert(m.cover(0, -4, m2) == pair(0, 0));
+      assert(m.cover(3, 0, m2) == pair(0, 0));
+      assert(m.cover(0, 3, m2) == pair(0, 0));
+      assert(m.cover(-2, -2, m2) == pair(1, 1));
+      assert(m == matrix<int>(3, 3, seq(90, 2, 3,
+                                        4, 5, 6,
+                                        7, 8, 9)));
+    }
+  }
+
+  // cover(x, y, m, x2, y2, ww, hh)
+  // cover(x, y, m, x2, y2, ww, hh, mix_f)
+  {
+    matrix<int> m(3, 3, seq(1, 2, 3,
+                            4, 5, 6,
+                            7, 8, 9));
+    matrix<int> m2(2, 2, seq(10, 11,
+                             12, 13));
+    m.cover(1, 1, m2, 0, 0, 2, 2);
+    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
+                                      4, 10, 11,
+                                      7, 12, 13)));
+    m.cover(1, 1,
+            matrix<int>(3, 3, seq(0, 0, 0,
+                                  0, 99, 99,
+                                  0, 0, 0)),
+            1, 1, 0, 1);
+    m.cover(1, 1,
+            matrix<int>(3, 3, seq(0, 0, 0,
+                                  0, 99, 99,
+                                  0, 0, 0)),
+            1, 1, 1, 0);
+    m.cover(3, 3,
+            matrix<int>(3, 3, seq(0, 0, 0,
+                                  0, 99, 99,
+                                  0, 0, 0)),
+            3, 3, 3, 3);
+    m.cover(4, 4,
+            matrix<int>(3, 3, seq(0, 0, 0,
+                                  0, 99, 99,
+                                  0, 0, 0)),
+            4, 4, 4, 4);
+    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
+                                      4, 10, 11,
+                                      7, 12, 13)));
+    m2 = matrix<int>(3, 3, seq(0, 0, 0,
+                               0, 99, 99,
+                               0, 99, 99));
+    m.cover(1, 1, m2, 1, 1, 2, 2,
+            [](int &a, int &b)->int {return exchange(b, 0);});
+    assert(equal(m2.range(), rng(9, 0)));
+    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
+                                      4, 99, 99,
+                                      7, 99, 99)));
+    m2 = matrix<int>(3, 0);
+    m = matrix<int>(3, 0);
+    m.cover(3, 3, m2, 3, 3, 3, 3);
+    assert(m2.width() == 3 && m2.height() == 0);
+    assert(m.width() == 3 && m2.height() == 0);
+    assert(m2.empty() && m.empty());
+
+    m = matrix<int>(3, 3, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9));
+    m2 = matrix<int>(4, 4, seq(10, 20, 30, 40,
+                               50, 60, 70, 80,
+                               90, 100, 110, 120,
+                               130, 140, 150, 160));
+    assert(m.cover(0, 0, m2, 4, 0, 4, 4) == pair(0, 0));
+    assert(m.cover(0, 0, m2, 0, 4, 4, 4) == pair(0, 0));
+    assert(m.cover(0, 0, m2, -4, 0, 4, 4) == pair(0, 0));
+    assert(m.cover(0, 0, m2, 0, -4, 4, 4) == pair(0, 0));
+    assert(m.cover(-2, 0, m2, 2, 2, 2, 2) == pair(0, 0));
+    assert(m.cover(0, -2, m2, 2, 2, 2, 2) == pair(0, 0));
+    assert(m.cover(0, 0, m2, -2, -2, 4, 4) == pair(2, 2));
+    assert(m == matrix<int>(3, 3, seq(10, 20, 3,
+                                      50, 60, 6,
+                                      7, 8, 9)));
+    assert(m.cover(1, 1, m2, -2, -2, 4, 4) == pair(2, 2));
+    assert(m == matrix<int>(3, 3, seq(10, 20, 3,
+                                      50, 10, 20,
+                                      7, 50, 60)));
   }
 }
 

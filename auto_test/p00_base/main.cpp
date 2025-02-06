@@ -13246,6 +13246,29 @@ void test_miscl() {
     assert(add_with_check(c, a, a).value() == 255u);
   }
 
+  // sub_with_check
+  {
+    assert(sub_with_check(3, 1).value() == 2);
+    assert(sub_with_check(3, 3).value() == 0);
+    assert(!sub_with_check((int8_t)1, (int8_t)-128));
+    assert(!sub_with_check((int8_t)1, (int8_t)-127));
+    assert(sub_with_check((int8_t)1, (int8_t)-126).value() == 127);
+
+    assert(!sub_with_check((int8_t)0, (int8_t)-128));
+    assert(sub_with_check((int8_t)0, (int8_t)127).value() == -127);
+    assert(sub_with_check((int8_t)0, (int8_t)-127).value() == 127);
+
+    assert(sub_with_check((int8_t)-1, (int8_t)-128).value() == 127);
+    assert(sub_with_check((int8_t)-1, (int8_t)-127).value() == 126);
+    assert(sub_with_check((int8_t)-1, (int8_t)-126).value() == 125);
+    assert(sub_with_check((int8_t)-1, (int8_t)126).value() == -127);
+    assert(sub_with_check((int8_t)-1, (int8_t)127).value() == -128);
+    assert(!sub_with_check((int8_t)-2, (int8_t)127));
+
+    assert(sub_with_check(3u, 1u).value() == 2u);
+    assert(!sub_with_check(1u, 3u));
+  }
+
   // sub_to_zero_at_most
   {
     assert(sub_to_zero_at_most(5u, 4u) == 1u);
