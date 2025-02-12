@@ -140,8 +140,7 @@ template <class IMPL_T>
 concept local_dynamic_impl = (sizeof(IMPL_T) <= IMPL_T::bufsz
                               && alignof(IMPL_T) <= IMPL_T::bufalign)
 #ifndef RE_NOEXCEPT
-  && (!is_move_constructible_v<typename IMPL_T::value_type>
-      || is_nothrow_move_constructible_v<typename IMPL_T::value_type>)
+  && is_nothrow_move_constructible_v<typename IMPL_T::value_type>
 #endif
   ;
 
@@ -599,8 +598,10 @@ template <class U, class T>
 concept compatible_type_of_dynamic
   = is_base_of_v<T, U> && is_convertible_v<U &, T &>;
 template <class U>
-concept compatible_type_of_any
-  = is_move_constructible_v<U> && is_copy_constructible_v<U>;
+concept compatible_type_of_any = is_move_constructible_v<U>;
+// use a relaxed rule than the standard requirement:
+//   is_move_constructible_v<U> && is_copy_constructible_v<U>;
+// suicide when move a unmovable object
 
 }
 template <class T = void,
