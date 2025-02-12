@@ -1,6 +1,6 @@
 25/2/12
 
-any (= dynamic< void >) support only move-constructible object, but suicide if you do copy
+any (= dynamic< void >) supports move-constructible-only object, but suicide if you do copy
 
 
 25/2/6
