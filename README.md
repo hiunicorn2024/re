@@ -1,3 +1,9 @@
+25/2/14
+
+minor changes
+
+add object pool and memory pool
+
 25/2/12
 
 any (= dynamic< void >) supports move-constructible-only object, but suicide if you do copy
