@@ -870,10 +870,10 @@ public:
     }
   }
 
-  size_type max_size() const {
+  size_type max_size() const noexcept {
     return to_unsigned(integral_traits<ptrdiff_t>::max()) / sizeof(value_type);
   }
-  size_t min_alignment() const {
+  size_t min_alignment() const noexcept {
     return max_value(alignof(value_type),
                      static_cast<size_t>(RE_DEFAULT_NEW_ALIGNMENT));
   }
@@ -1470,15 +1470,15 @@ public:
     const size_t max_align = max_value(alignof(H), alignof(U));
     if (numeric_limits<alloc_szt<AL>>::max() - max_align < sizeof(H))
       throw_or_terminate<length_error>
-        ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...): "
-         "too big size\n");
+        ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...):\n"
+         "  too big size\n");
     const alloc_szt<AL> tmp = sizeof(H) + max_align;
 
     const alloc_szt<AL> k = sizeof(U) * max_value(1u, n);
     if (numeric_limits<alloc_szt<AL>>::max() - tmp < k)
       throw_or_terminate<length_error>
-        ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...): "
-         "too big size\n");
+        ("re::allocator_wrapper<byte>::allocate_headed_buffer(n, s...):\n"
+         "  too big size\n");
     const alloc_szt<AL> nn = tmp + k;
     const auto p = allocate_alignas(alignof(H), nn);
 
@@ -1505,6 +1505,140 @@ public:
     requires is_same_v<alloc_vt<AL>, byte> {
     p.head().~H();
     deallocate_alignas(alignof(H), p.p, p.n);
+  }
+
+  template <class H>
+  requires is_same_v<alloc_vt<AL>, byte>
+  class headed_bytebuf_ptr {
+    friend class allocator_wrapper;
+
+    friend struct inner::fo_good;
+    bool good() const {
+      const auto ptr_is_aligned_as = [](void *pp, size_t k) {
+        return to_unsigned(static_cast<char *>(pp)
+                           - static_cast<char *>(static_cast<void *>(nullptr)))
+          % k == 0u;
+      };
+      return alignof(H) <= algn
+        && ptr_is_aligned_as(p.first, algn)
+        && ptr_is_aligned_as(op, algn)
+        && op >= p.first + to_signed(sizeof(H))
+        && to_unsigned(p.first + to_signed(n) - op) >= sz;
+    }
+
+    pair<alloc_ptr<AL>, alloc_ptr<AL>> p{};
+    alloc_szt<AL> n{};
+    alloc_ptr<AL> op{};
+    alloc_szt<AL> sz{};
+    alloc_szt<AL> algn = alignof(H);
+
+    headed_bytebuf_ptr(pair<alloc_ptr<AL>, alloc_ptr<AL>> p2,
+                       alloc_szt<AL> n2,
+                       alloc_ptr<AL> op2,
+                       alloc_szt<AL> sz2,
+                       alloc_szt<AL> algn2)
+      : p(p2), n(n2), op(op2), sz(sz2), algn(algn2) {}
+
+  public:
+    using head_type = H;
+    using value_type = byte;
+
+    headed_bytebuf_ptr() = default;
+    ~headed_bytebuf_ptr() = default;
+    headed_bytebuf_ptr(const headed_bytebuf_ptr &) = default;
+    headed_bytebuf_ptr &operator =(const headed_bytebuf_ptr &) = default;
+    headed_bytebuf_ptr(headed_bytebuf_ptr &&) = default;
+    headed_bytebuf_ptr &operator =(headed_bytebuf_ptr &&) = default;
+    friend void swap(headed_bytebuf_ptr &x,
+                     headed_bytebuf_ptr &y) noexcept {
+      adl_swap(x.p, y.p);
+      adl_swap(x.n, y.n);
+      adl_swap(x.op, y.op);
+      adl_swap(x.sz, y.sz);
+      adl_swap(x.algn, y.algn);
+    }
+
+    headed_bytebuf_ptr(nullptr_t) : headed_bytebuf_ptr() {}
+    headed_bytebuf_ptr &operator =(nullptr_t) {
+      return *this = headed_bytebuf_ptr{};
+    }
+    bool operator ==(nullptr_t) const {
+      return p == pair<alloc_ptr<AL>, alloc_ptr<AL>>{};
+    }
+
+    H &head() const {
+      return reinterpret_cast<H &>(*p.first);
+    }
+    alloc_ptr<AL> data() const {
+      return op;
+    }
+    alloc_szt<AL> size() const {
+      return sz;
+    }
+    alloc_szt<AL> align() const {
+      return algn;
+    }
+
+    void refer_to_only_head(H &x) {
+      p.first = pointer_to<alloc_ptr<AL>>(reinterpret_cast<byte &>(x));
+      p.second = nullptr;
+      n = 0;
+      op = nullptr;
+      sz = 0;
+      algn = alignof(H);
+    }
+  };
+  template <class H, class...S>
+  headed_bytebuf_ptr<H>
+  allocate_headed_bytebuf_alignas(alloc_szt<AL> algn2,
+                                  alloc_szt<AL> n,
+                                  S &&...s)
+    requires is_same_v<alloc_vt<AL>, byte> {
+    const size_t algn = max_value(alignof(H), algn2);
+    if (numeric_limits<alloc_szt<AL>>::max() - algn < sizeof(H))
+      throw_or_terminate<length_error>
+        ("re::allocator_wrapper<byte>::allocate_headed_bytebuf(n, s...):\n"
+         "  too big size\n");
+    const alloc_szt<AL> tmp = sizeof(H) + algn;
+
+    const alloc_szt<AL> k = max_value(1u, n);
+    if (numeric_limits<alloc_szt<AL>>::max() - tmp < k)
+      throw_or_terminate<length_error>
+        ("re::allocator_wrapper<byte>::allocate_headed_bytebuf(n, s...):\n"
+         "  too big size\n");
+    const alloc_szt<AL> nn = tmp + k;
+    const auto p = allocate_alignas(algn, nn);
+
+    void *data_p = to_address(p.first)
+      + ((sizeof(H) % algn) == 0u
+         ? sizeof(H)
+         : (sizeof(H) + (algn - sizeof(H) % algn)));
+#ifndef RE_NOEXCEPT
+    try {
+#endif
+      new(reinterpret_cast<H *>(to_address(p.first))) H(forward<S>(s)...);
+#ifndef RE_NOEXCEPT
+    }
+    catch (...) {
+      deallocate_alignas(algn, p);
+      throw;
+    }
+#endif
+    return headed_bytebuf_ptr<H>
+      (p, nn, pointer_to<alloc_ptr<AL>>(*static_cast<byte *>(data_p)), n, algn);
+  }
+  template <class H, class...S>
+  headed_bytebuf_ptr<H>
+  allocate_headed_bytebuf(alloc_szt<AL> n,
+                          S &&...s)
+    requires is_same_v<alloc_vt<AL>, byte> {
+    allocate_headed_bytebuf_alignas<H>(min_alignment(), n, forward<S>(s)...);
+  }
+  template <class H>
+  void deallocate_headed_bytebuf(headed_bytebuf_ptr<H> p)
+    requires is_same_v<alloc_vt<AL>, byte> {
+    p.head().~H();
+    deallocate_alignas(p.algn, p.p, p.n);
   }
 
   using pointer_pair = iter_pair<alloc_ptr<AL>>;
@@ -2627,6 +2761,12 @@ public:
     return *(begin() + n);
   }
 
+  template <class...S>
+  value_type &emplace_front(S &&...s) {
+    allocator_traits<AL>::construct(alloc_ref(), p - 1, forward<S>(s)...);
+    --p;
+    return *p;
+  }
   void push_front(const value_type &x) {
     allocator_traits<AL>::construct(alloc_ref(), p - 1, x);
     --p;
@@ -2634,6 +2774,13 @@ public:
   void push_front(value_type &&x) {
     allocator_traits<AL>::construct(alloc_ref(), p - 1, move(x));
     --p;
+  }
+  template <class...S>
+  value_type &emplace_back(S &&...s) {
+    allocator_traits<AL>::construct(alloc_ref(), pp, forward<S>(s)...);
+    const auto ret = pp;
+    ++pp;
+    return *ret;
   }
   void push_back(const value_type &x) {
     allocator_traits<AL>::construct(alloc_ref(), pp, x);
@@ -3189,6 +3336,591 @@ private:
 public:
   static void swap(T &x, T &y) {
     swap_impl(x, y);
+  }
+};
+
+}
+
+// object_pool
+namespace re {
+
+template <class T, class AL = default_allocator<byte>>
+class pool_object;
+template <class T, class AL = default_allocator<byte>>
+class object_pool : allocator_wrapper<AL> {
+  static_assert(is_same_v<alloc_vt<AL>, byte>);
+
+  using alw_t = allocator_wrapper<AL>;
+  using pointer = alloc_ptr<AL>;
+public:
+  using size_type = alloc_szt<AL>;
+
+private:
+  static constexpr size_type sz = max_value(sizeof(T), sizeof(void *));
+  static constexpr size_type algn = max_value(alignof(T), alignof(void *));
+  struct t {
+    alignas(algn) byte a[sz];
+  };
+
+  struct head_t {
+    head_t *lst_p;
+    typename alw_t::template headed_buffer_ptr<head_t, t> mem_p;
+
+    size_type n() const noexcept {
+      return mem_p.size();
+    }
+  };
+  head_t *lst_p;
+  head_t *lst_last_p;
+  head_t *cur_node;
+  size_type cur_node_dif; // cur_node_dif may equal to cur_node->n
+  void *freelst;
+
+  size_type start_n() {
+    const size_type max_n = numeric_limits<size_type>::max() / sizeof(t);
+    if (max_n >= 16u)
+      return 16u;
+    else {
+      if (max_n < 2u)
+        print_then_terminate("re::object_pool::start_n(): too big object\n");
+      return 2u;
+    }
+  }
+  size_type next_n(size_type n) {
+    const size_type nn = n / 2u;
+    if (numeric_limits<size_type>::max() - n < nn)
+      print_then_terminate("re::object_pool::next_n(n): size overflow\n");
+    return n + nn;
+  }
+
+public:
+  object_pool() : object_pool(AL{}) {}
+  ~object_pool() {
+    while (lst_p != nullptr) {
+      const auto next_p = lst_p->lst_p;
+      alw_t::deallocate_headed_buffer(lst_p->mem_p);
+      lst_p = next_p;
+    }
+  }
+  object_pool(const object_pool &) = delete;
+  object_pool &operator =(const object_pool &) = delete;
+  object_pool(object_pool &&) = delete;
+  object_pool &operator =(object_pool &&) = delete;
+
+  explicit object_pool(const AL &a)
+    : alw_t(a)
+    , lst_p{}
+    , lst_last_p{}
+    , cur_node{}
+    , cur_node_dif(0)
+    , freelst{} {}
+
+private:
+  void add_chunk() {
+    if (cur_node == nullptr) {
+      const size_type n = start_n();
+      const auto h = alw_t::template allocate_headed_buffer<head_t, t>(n);
+      lst_last_p = lst_p = addressof(h.head());
+      lst_last_p->lst_p = nullptr;
+      lst_last_p->mem_p = h;
+      cur_node = lst_last_p;
+    }
+    else {
+      const size_type n = next_n(lst_last_p->n());
+      const auto h = alw_t::template allocate_headed_buffer<head_t, t>(n);
+      lst_last_p->lst_p = addressof(h.head());
+      lst_last_p = lst_last_p->lst_p;
+      lst_last_p->lst_p = nullptr;
+      lst_last_p->mem_p = h;
+    }
+  }
+public:
+  size_type capacity() const noexcept {
+    size_type c = 0;
+    for (auto p = lst_p; p != nullptr; p = p->lst_p)
+      c += p->n();
+    return c;
+  }
+  size_type used_size() const noexcept {
+    size_type idle_c = 0;
+    for (auto p = freelst; p != nullptr; p = *reinterpret_cast<void **>(p))
+      ++idle_c;
+    size_type c = 0;
+    for (auto p = lst_p; p != cur_node; p = p->lst_p)
+      c += p->n();
+    if (cur_node != nullptr)
+      c += cur_node_dif;
+    return c - idle_c;
+  }
+  size_type idle_size() const noexcept {
+    size_type idle_c = 0;
+    for (auto p = freelst; p != nullptr; p = *reinterpret_cast<void **>(p))
+      ++idle_c;
+    if (cur_node != nullptr) {
+      idle_c += cur_node->n() - cur_node_dif;
+      for (auto p = cur_node->lst_p; p != nullptr; p = p->lst_p)
+        idle_c += p->n();
+    }
+    return idle_c;
+  }
+  void reserve_more(size_type n) {
+    const size_type idle_sz = idle_size();
+    if (n <= idle_sz)
+      return;
+    n -= idle_sz;
+    for (;;) {
+      add_chunk();
+      if (lst_last_p->n() >= n)
+        break;
+      n -= lst_last_p->n();
+    }
+  }
+  template <class...S>
+  T *fetch_pointer(S &&...s) {
+    if (freelst != nullptr) {
+      void *const tmp = *reinterpret_cast<void **>(freelst);
+      T *const p = reinterpret_cast<T *>(freelst);
+      alw_t::template rebind<T>().construct(p, forward<S>(s)...);
+      freelst = tmp;
+      return p;
+    }
+    else {
+      if (cur_node == nullptr)
+        add_chunk();
+      else {
+        if (cur_node_dif == cur_node->n()) {
+          if (cur_node == lst_last_p)
+            add_chunk();
+          cur_node = cur_node->lst_p;
+          cur_node_dif = 0;
+        }
+      }
+      t *const p0 = to_address(cur_node->mem_p.data()
+                               + to_signed(cur_node_dif));
+      T *const p = reinterpret_cast<T *>(addressof(p0->a));
+      alw_t::template rebind<T>().construct(p, forward<S>(s)...);
+      ++cur_node_dif;
+      return p;
+    }
+  }
+  void free_pointer(T *p) noexcept {
+    void *const pp = reinterpret_cast<void *>(p);
+    alw_t::template rebind<T>().destroy(p);
+    void *const tmp = freelst;
+    freelst = pp;
+    *reinterpret_cast<void **>(freelst) = tmp;
+  }
+
+  template <class...S>
+  pool_object<T, AL> fetch(S &&...s) {
+    pool_object<T, AL> ret;
+    T *p = fetch_pointer(forward<S>(s)...);
+    ret.p = p;
+    ret.pl = this;
+    return ret;
+  }
+};
+template <class T, class AL>
+class pool_object {
+  template <class, class>
+  friend class object_pool;
+
+  T *p;
+  object_pool<T, AL> *pl;
+
+public:
+  pool_object() : p{}, pl{} {}
+  ~pool_object() {
+    if (p != nullptr)
+      pl->free_pointer(p);
+  }
+  pool_object(const pool_object &) = delete;
+  pool_object &operator =(const pool_object &) = delete;
+  pool_object(pool_object &&x) noexcept : p(x.p), pl(x.pl) {
+    x.p = nullptr;
+    x.pl = nullptr;
+  }
+  pool_object &operator =(pool_object &&x) noexcept {
+    pool_object tmp(move(x));
+    adl_swap(*this, tmp);
+    return *this;
+  }
+  friend void swap(pool_object &a, pool_object &b) noexcept {
+    adl_swap(a.p, b.p);
+    adl_swap(a.pl, b.pl);
+  }
+
+  bool empty() const noexcept {
+    return p == nullptr;
+  }
+  T &value() {
+    if (p == nullptr)
+      throw_or_terminate<logic_error>("re::pool_object::value(): no value\n");
+    return *p;
+  }
+  const T &value() const {
+    if (p == nullptr)
+      throw_or_terminate<logic_error>("re::pool_object::value(): no value\n");
+    return *p;
+  }
+
+  T *operator ->() noexcept {
+    return p;
+  }
+  T &operator *() noexcept {
+    return *p;
+  }
+  const T *operator ->() const noexcept {
+    return p;
+  }
+  const T &operator *() const noexcept {
+    return *p;
+  }
+};
+
+}
+
+// raw_object_pool
+// memory_pool
+namespace re {
+
+template <class AL = default_allocator<byte>>
+class raw_object_pool : allocator_wrapper<AL> {
+  static_assert(is_same_v<alloc_vt<AL>, byte>);
+
+  using alw_t = allocator_wrapper<AL>;
+  using pointer = alloc_ptr<AL>;
+public:
+  using size_type = alloc_szt<AL>;
+
+private:
+  size_type obj_sz;
+  size_type obj_algn;
+
+  struct head_t {
+    head_t *lst_p;
+    size_type n;
+    typename alw_t::template headed_bytebuf_ptr<head_t> mem_p;
+  };
+  head_t *lst_p;
+  head_t *lst_last_p;
+  head_t *cur_node;
+  size_type cur_node_dif; // cur_node_dif may equal to cur_node->n
+  void *freelst;
+
+  size_type start_n() {
+    const size_type max_n = numeric_limits<size_type>::max() / obj_sz;
+    if (max_n >= 16u)
+      return 16u;
+    else {
+      if (max_n < 2u)
+        throw_or_terminate<length_error>
+          ("re::raw_object_pool::start_n(): too big object\n");
+      return 2u;
+    }
+  }
+  size_type next_n(size_type n) {
+    const size_type nn = n / 2u;
+    if (numeric_limits<size_type>::max() - n < nn)
+      throw_or_terminate<length_error>
+        ("re::raw_object_pool::next_n(n): size overflow\n");
+    const size_type ret = n + nn;
+    if (numeric_limits<size_type>::max() / obj_sz < ret)
+      throw_or_terminate<length_error>
+        ("re::raw_object_pool::next_n(n): size overflow\n");
+    return ret;
+  }
+
+public:
+  raw_object_pool() = delete;
+  ~raw_object_pool() {
+    while (lst_p != nullptr) {
+      const auto next_p = lst_p->lst_p;
+      alw_t::deallocate_headed_bytebuf(lst_p->mem_p);
+      lst_p = next_p;
+    }
+  }
+  raw_object_pool(const raw_object_pool &) = delete;
+  raw_object_pool &operator =(const raw_object_pool &) = delete;
+  raw_object_pool(raw_object_pool &&) = delete;
+  raw_object_pool &operator =(raw_object_pool &&) = delete;
+
+  raw_object_pool(size_type sz, size_type algn, const AL &a = AL{})
+    : alw_t(a)
+    , obj_sz(sz)
+    , obj_algn(algn)
+    , lst_p{}
+    , lst_last_p{}
+    , cur_node{}
+    , cur_node_dif(0)
+    , freelst{} {
+    obj_algn = max_value(max_value(obj_algn, alw_t::min_alignment()),
+                         alignof(void *));
+    obj_sz = max_value(obj_sz, sizeof(void *));
+    if ((obj_sz % obj_algn) != 0u)
+      obj_sz = obj_sz - (obj_sz % obj_algn) + obj_algn;
+  }
+
+private:
+  void add_chunk() {
+    if (cur_node == nullptr) {
+      const size_type n = start_n();
+      const auto h
+        = alw_t::template allocate_headed_bytebuf_alignas<head_t>(obj_algn,
+                                                                  n * obj_sz);
+      lst_last_p = lst_p = addressof(h.head());
+      lst_last_p->lst_p = nullptr;
+      lst_last_p->n = n;
+      lst_last_p->mem_p = h;
+      cur_node = lst_last_p;
+    }
+    else {
+      const size_type n = next_n(lst_last_p->n);
+      const auto h
+        = alw_t::template allocate_headed_bytebuf_alignas<head_t>(obj_algn,
+                                                                  n * obj_sz);
+      lst_last_p->lst_p = addressof(h.head());
+      lst_last_p = lst_last_p->lst_p;
+      lst_last_p->lst_p = nullptr;
+      lst_last_p->n = n;
+      lst_last_p->mem_p = h;
+    }
+  }
+public:
+  size_type object_size() const noexcept {
+    return obj_sz;
+  }
+  size_type object_align() const noexcept {
+    return obj_algn;
+  }
+  size_type capacity() const noexcept {
+    size_type c = 0;
+    for (auto p = lst_p; p != nullptr; p = p->lst_p)
+      c += p->n;
+    return c;
+  }
+  size_type used_size() const noexcept {
+    size_type idle_c = 0;
+    for (auto p = freelst; p != nullptr; p = *reinterpret_cast<void **>(p))
+      ++idle_c;
+    size_type c = 0;
+    for (auto p = lst_p; p != cur_node; p = p->lst_p)
+      c += p->n;
+    if (cur_node != nullptr)
+      c += cur_node_dif;
+    return c - idle_c;
+  }
+  size_type idle_size() const noexcept {
+    size_type idle_c = 0;
+    for (auto p = freelst; p != nullptr; p = *reinterpret_cast<void **>(p))
+      ++idle_c;
+    if (cur_node != nullptr) {
+      idle_c += (cur_node->n - cur_node_dif);
+      for (auto p = cur_node->lst_p; p != nullptr; p = p->lst_p)
+        idle_c += p->n;
+    }
+    return idle_c;
+  }
+  void reserve_more(size_type n) {
+    const size_type idle_sz = idle_size();
+    if (n <= idle_sz)
+      return;
+    n -= idle_sz;
+    for (;;) {
+      add_chunk();
+      if (lst_last_p->n >= n)
+        break;
+      n -= lst_last_p->n;
+    }
+  }
+  void *allocate() {
+    if (freelst != nullptr) {
+      void *const tmp = *reinterpret_cast<void **>(freelst);
+      void *const p = reinterpret_cast<void *>(freelst);
+      freelst = tmp;
+      return p;
+    }
+    else {
+      if (cur_node == nullptr)
+        add_chunk();
+      else {
+        if (cur_node_dif == cur_node->n) {
+          if (cur_node == lst_last_p)
+            add_chunk();
+          cur_node = cur_node->lst_p;
+          cur_node_dif = 0;
+        }
+      }
+      void *const ret = to_address(cur_node->mem_p.data()
+                                   + to_signed(cur_node_dif * obj_sz));
+      ++cur_node_dif;
+      return ret;
+    }
+  }
+  void deallocate(void *p) noexcept {
+    void *const pp = reinterpret_cast<void *>(p);
+    void *const tmp = freelst;
+    freelst = pp;
+    *reinterpret_cast<void **>(freelst) = tmp;
+  }
+};
+
+template <class AL = default_allocator<byte>>
+class memory_pool : allocator_wrapper<AL> {
+  using alw_t = allocator_wrapper<AL>;
+  using pool_t = raw_object_pool<AL>;
+  buffer<pool_t> v;
+  alloc_szt<AL> algn;
+  alloc_szt<AL> max_sz;
+
+  template <class FR, class UF>
+  static rng_itr<FR> partition_point(FR &&r, UF eq) {
+    auto p = begin(r);
+    auto sz = size(r);
+    decltype(sz) i;
+    while (sz != 0) {
+      auto it = next(p, (i = sz / 2));
+      if (eq(*it)) {
+        p = ++it;
+        sz -= i + 1;
+      }
+      else
+        sz = i;
+    }
+    return p;
+  }
+
+public:
+  using size_type = alloc_szt<AL>;
+  using difference_type = alloc_dft<AL>;
+
+  memory_pool()
+    : memory_pool(max_value(alignof(max_align_t), sizeof(void *)), AL{}) {}
+  ~memory_pool() = default;
+  memory_pool(const memory_pool &) = delete;
+  memory_pool &operator =(const memory_pool &) = delete;
+  memory_pool(memory_pool &&) = delete;
+  memory_pool &operator =(memory_pool &&) = delete;
+
+  explicit memory_pool(size_type algn2, const AL &a = AL{})
+    : alw_t(a), v(23), algn{}, max_sz{} {
+    const auto r = seq((size_type)1, 2, 3, 4, 6, 9, 13, 19,
+                       28, 42, 63, 94, 141, 211, 316, 474, 711,
+                       1066, 1599, 2398, 3597, 5395, 8092);
+
+    if (numeric_limits<size_type>::max() / r.front() < algn)
+      print_then_terminate
+          ("re::memory_pool::memory_pool(algn, a): size overflow\n");
+    auto &pl0 = v.emplace_back(r.front() * algn, algn, a);
+    algn = pl0.object_align();
+
+    for (size_type i : rng(next(r.begin()), r.end())) {
+      if (numeric_limits<size_type>::max() / i < algn)
+        print_then_terminate
+          ("re::memory_pool::memory_pool(algn, a): size overflow\n");
+      auto &pl = v.emplace_back(i * algn, algn, a);
+      if (prev(v.end(), 2)->object_size() >= pl.object_size())
+        v.pop_back();
+    }
+
+    max_sz = v.back().object_size();
+  }
+  template <class FR>
+  memory_pool(FR &&r, size_type algn2, const AL &a = AL{})
+    requires is_frng<FR> && is_constructible_v<size_type, rng_ref<FR>>
+    : alw_t(a), v(size(r)), algn{}, max_sz{} {
+    if (empty(r))
+      print_then_terminate
+        ("re::memory_pool::memory_pool(r, algn, al): empty r\n");
+
+    auto &pl0 = v.emplace_back(size_type(*r.begin()), algn, a);
+    algn = pl0.object_align();
+
+    for (auto &it : iters(next(r.begin()), r.end())) {
+      auto &pl = v.emplace_back(size_type(*it), algn, a);
+      if (prev(v.end(), 2)->object_size() >= pl->object_size())
+        v.pop_back();
+    }
+
+    max_sz = v.back().object_size();
+  }
+
+  template <class T>
+  T *allocate(size_type n) {
+    if (numeric_limits<size_type>::max() / n < sizeof(T))
+      print_then_terminate("re::memory_pool::allocate(n): size overflow\n");
+    const size_type sz = n * sizeof(T);
+    if (sz > max_sz || alignof(T) > algn)
+      return to_address(alw_t::template rebind<T>().allocate(n));
+    else {
+      const auto it = partition_point
+        (v, [sz](const pool_t &x) {return !(x.object_size() >= sz);});
+      return reinterpret_cast<T *>(it->allocate());
+    }
+  }
+  template <class T>
+  void deallocate(T *p, size_type n) {
+    const size_type sz = sizeof(T) * n;
+    if (sz > max_sz || alignof(T) > algn)
+      alw_t::template rebind<T>()
+        .deallocate(pointer_traits<alloc_rebind_ptr<AL, T>>::pointer_to(*p), n);
+    else {
+      const auto it = partition_point
+        (v, [sz](const pool_t &x) {return !(x.object_size() >= sz);});
+      return it->deallocate(p);
+    }
+  }
+
+  size_type min_alignment() const noexcept {
+    return min_value(v.front().object_align(), alw_t::min_alignment());
+  }
+};
+
+template <class T, class POOL = memory_pool<>>
+class pool_allocator {
+  POOL *pl;
+
+public:
+  using value_type = T;
+  using size_type = typename POOL::size_type;
+  using difference_type = typename POOL::difference_type;
+  size_type max_size() const {
+    return to_unsigned(integral_traits<ptrdiff_t>::max()) / sizeof(value_type);
+  }
+  size_type min_alignment() const {
+    return pl->min_alignment();
+  }
+  template <class U>
+  struct rebind {
+    using other = pool_allocator<U, POOL>;
+  };
+
+  pool_allocator() = delete;
+  ~pool_allocator() = default;
+  pool_allocator(const pool_allocator &) = default;
+  pool_allocator &operator =(const pool_allocator &) = default;
+  pool_allocator(pool_allocator &&) = default;
+  pool_allocator &operator =(pool_allocator &&) = default;
+
+  explicit pool_allocator(POOL &x) noexcept : pl(addressof(x)) {}
+
+  template <class U>
+  operator pool_allocator<U, POOL>() const noexcept
+    requires (!same_as<U, T>) {
+    return pool_allocator<U, POOL>(*pl);
+  }
+
+  template <class U>
+  constexpr bool operator ==(const pool_allocator<U, POOL> &x)
+    const noexcept {
+    return pl == x.pl;
+  }
+
+  T *allocate(size_t n) {
+    return pl->template allocate<T>(n);
+  }
+  void deallocate(T *p, size_t n) noexcept {
+    pl->deallocate(p, n);
   }
 };
 

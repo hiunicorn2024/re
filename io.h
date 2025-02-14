@@ -1240,6 +1240,15 @@ public:
   }
 };
 inline constexpr fo_sprint sprint{};
+struct fo_to_string {
+  template <class...S>
+  string operator ()(S &&...s) const {
+    string ret;
+    sprint(ret, forward<S>(s)...);
+    return ret;
+  }
+};
+inline constexpr fo_to_string to_string{};
 
 struct fo_put {
   template <class...S>

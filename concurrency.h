@@ -2,6 +2,7 @@
 #define RE_DEFINED_CONCURRENCY_H
 
 #include "base.h"
+#include "allocator.h"
 
 // atomic
 namespace re {
@@ -3356,6 +3357,126 @@ public:
         x->thrd = thread(thread_function(before_end(a->sleeping_threads)));
       }
     });
+  }
+};
+
+}
+
+// sync_object_pool
+namespace re {
+
+template <class T, class AL = default_allocator<byte>>
+class sync_pool_object;
+template <class T, class AL = default_allocator<byte>>
+class sync_object_pool {
+  object_pool<T, AL> pl;
+  mutex mtx;
+
+public:
+  using size_type = typename object_pool<T, AL>::size_type;
+
+  sync_object_pool() : sync_object_pool(AL{}) {}
+  ~sync_object_pool() = default;
+  sync_object_pool(const sync_object_pool &) = delete;
+  sync_object_pool &operator =(const sync_object_pool &) = delete;
+  sync_object_pool(sync_object_pool &&) = delete;
+  sync_object_pool &operator =(sync_object_pool &&) = delete;
+
+  explicit sync_object_pool(const AL &a) : pl(a) {}
+
+  size_type capacity() noexcept {
+    lock_guard g(mtx);
+    return pl.capacity();
+  }
+  size_type used_size() noexcept {
+    lock_guard g(mtx);
+    return pl.used_size();
+  }
+  size_type idle_size() noexcept {
+    lock_guard g(mtx);
+    return pl.idle_size();
+  }
+  void reserve_more(size_type n) {
+    lock_guard g(mtx);
+    pl.reserve_more(n);
+  }
+  template <class...S>
+  T *fetch_pointer(S &&...s) {
+    lock_guard g(mtx);
+    return pl.fetch_pointer(forward<S>(s)...);
+  }
+  void free_pointer(T *p) noexcept {
+    lock_guard g(mtx);
+    pl.free_pointer(p);
+  }
+
+  template <class...S>
+  sync_pool_object<T, AL> fetch(S &&...s) {
+    lock_guard g(mtx);
+    sync_pool_object<T, AL> ret;
+    T *p = fetch_pointer(forward<S>(s)...);
+    ret.p = p;
+    ret.pl = this;
+    return ret;
+  }
+};
+template <class T, class AL>
+class sync_pool_object {
+  template <class, class>
+  friend class sync_object_pool;
+
+  T *p;
+  sync_object_pool<T, AL> *pl;
+
+public:
+  sync_pool_object() : p{}, pl{} {}
+  ~sync_pool_object() {
+    if (p != nullptr)
+      pl->free_pointer(p);
+  }
+  sync_pool_object(const sync_pool_object &) = delete;
+  sync_pool_object &operator =(const sync_pool_object &) = delete;
+  sync_pool_object(sync_pool_object &&x) noexcept : p(x.p), pl(x.pl) {
+    x.p = nullptr;
+    x.pl = nullptr;
+  }
+  sync_pool_object &operator =(sync_pool_object &&x) noexcept {
+    sync_pool_object tmp(move(x));
+    adl_swap(*this, tmp);
+    return *this;
+  }
+  friend void swap(sync_pool_object &a, sync_pool_object &b) noexcept {
+    adl_swap(a.p, b.p);
+    adl_swap(a.pl, b.pl);
+  }
+
+  bool empty() const noexcept {
+    return p == nullptr;
+  }
+  T &value() {
+    if (p == nullptr)
+      throw_or_terminate<logic_error>
+        ("re::sync_pool_object::value(): no value\n");
+    return *p;
+  }
+  const T &value() const {
+    if (p == nullptr)
+      throw_or_terminate<logic_error>
+        ("re::sync_pool_object::value(): no value\n");
+    return *p;
+  }
+
+  T *operator ->() noexcept {
+    return p;
+  }
+  T &operator *() noexcept {
+    return *p;
+  }
+  const T *operator ->() const noexcept {
+    return p;
+  }
+  const T &operator *() const noexcept {
+    return *p;
   }
 };
 

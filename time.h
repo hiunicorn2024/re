@@ -411,6 +411,7 @@ constexpr duration<double, nano> operator""_ns(long double x) {
 // time_point
 // system_clock
 // steady_clock
+// scoped_timer
 namespace re {
 
 template <class C, class D = typename C::duration>
@@ -562,6 +563,8 @@ operator -(const time_point<C, D> &x, const time_point<C, D2> &y) {
   return x.time_since_epoch() - y.time_since_epoch();
 }
 
+template <class>
+class scoped_timer;
 class system_clock {
 public:
   using rep = long long;
@@ -570,13 +573,14 @@ public:
   using time_point = time_point<system_clock>;
   static constexpr bool is_steady = false;
 
+  using timer = scoped_timer<system_clock>;
+
   static time_point now() noexcept {
     return time_point
       (duration(to_signed
                 (inner::fns::win32_get_system_time_precise_as_file_time())));
   }
 };
-
 class steady_clock {
   struct freq_cache_t {
     long long value;
@@ -598,6 +602,8 @@ public:
   using time_point = time_point<steady_clock>;
   static constexpr bool is_steady = true;
 
+  using timer = scoped_timer<steady_clock>;
+
   inline static time_point now() noexcept {
     static const freq_cache_t f{};
     const auto c = static_cast<long long>
@@ -607,6 +613,25 @@ public:
                        ? c
                        : static_cast<long long>(c * (10000000.0 / f.value))));
   }
+};
+template <class CLOCK>
+class scoped_timer {
+  typename CLOCK::time_point t;
+  double &d;
+
+public:
+  scoped_timer() = delete;
+  ~scoped_timer() {
+    const auto dur = CLOCK::now() - t;
+    constexpr ratio r = decltype(dur)::period;
+    d += (double)dur.count() / r.den * r.num;
+  }
+  scoped_timer(const scoped_timer &) = delete;
+  scoped_timer &operator =(const scoped_timer &) = delete;
+  scoped_timer(scoped_timer &&) = delete;
+  scoped_timer &operator =(scoped_timer &&) = delete;
+
+  explicit scoped_timer(double &d2) : t(CLOCK::now()), d(d2) {}
 };
 
 }
