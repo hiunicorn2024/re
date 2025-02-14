@@ -871,6 +871,33 @@ void test_allocator_wrapper() {
     }
   }
 
+  // headed_bytebuf_ptr
+  // allocate_headed_bytebuf
+  // deallocate_headed_bytebuf
+  {
+    allocator_wrapper<test_allocator<byte>> a;
+    {
+      auto p = a.allocate_headed_bytebuf_alignas<int>(128, 0, 1);
+      assert(p.head() == 1);
+      assert(p.size() == 0u);
+      assert(good(p));
+      a.deallocate_headed_bytebuf(p);
+    }
+    {
+      auto p = a.allocate_headed_bytebuf_alignas<int>(128, 3, 1);
+      assert(p.head() == 1);
+      assert(p.size() == 3u);
+      assert(good(p));
+      a.deallocate_headed_bytebuf(p);
+    }
+    allocator_wrapper<test_allocator<byte>>::headed_bytebuf_ptr<int> p;
+    int x = 2;
+    p.refer_to_only_head(x);
+    assert(p.head() == 2);
+    assert(p.data() == nullptr);
+    assert(p.size() == 0);
+  }
+
   // allocate
   // construct_at
   // destroy_at
@@ -3047,6 +3074,200 @@ void test_scoped_allocator_adaptor() {
     }
   }
 }
+void test_object_pool() {
+  {
+    object_pool<int, test_allocator<byte>> pl;
+    assert(pl.capacity() == 0u);
+    assert(pl.used_size() == 0u);
+    assert(pl.idle_size() == 0u);
+    ez_vector<int *> v;
+    v.insert(v.end(), pl.fetch_pointer(1));
+    pl.free_pointer(back(v));
+    assert(pl.capacity() != 0u);
+    assert(pl.used_size() == 0u);
+    assert(pl.idle_size() == pl.capacity());
+  }
+  {
+    object_pool<int, test_allocator<byte>> pl;
+    ez_vector<int *> v;
+    for (int repeat_c : irng(0, 5)) {
+      const auto r = irng(0, 10000);
+      for (int i : r)
+        v.insert(v.end(), pl.fetch_pointer(i));
+      test_rng(deref_rng(v), r);
+      for (int *p : v)
+        pl.free_pointer(p);
+      v.erase(v.begin(), v.end());
+      assert(pl.capacity() != 0u);
+      assert(pl.used_size() == 0u);
+      assert(pl.idle_size() == pl.capacity());
+    }
+  }
+  {
+    object_pool<int, test_allocator<byte>> pl;
+    ez_vector<int *> v;
+    for (int i : irng(0, 5000))
+      v.insert(v.end(), pl.fetch_pointer(i));
+    test_rng(deref_rng(v), irng(0, 5000));
+    for (int repeat_c : irng(0, 5)) {
+      const auto r = irng(5000, 10000);
+      for (int i : r)
+        v.insert(v.end(), pl.fetch_pointer(i));
+      test_rng(deref_rng(v), irng(0, 10000));
+      for (int repeat_cc : irng(0, 5000)) {
+        pl.free_pointer(back(v));
+        v.erase(prev(v.end()));
+      }
+      test_rng(deref_rng(v), irng(0, 5000));
+      assert(pl.capacity() >= 5000);
+      assert(pl.used_size() == 5000);
+      assert(pl.used_size() + pl.idle_size() == pl.capacity());
+    }
+  }
+
+  {
+    object_pool<int, test_allocator<byte>> pl;
+    buffer<pool_object<int, test_allocator<byte>>> v(1000);
+    for (int i : irng(0, 1000))
+      v.push_back(pl.fetch(i));
+    test_rng(deref_rng(v), irng(0, 1000));
+  }
+}
+namespace help_memory_pool {
+
+constexpr auto to_vec = [](int i) {
+  ez_vector<int> v;
+  while (i != 0) {
+    const int r = i % 10;        
+    const int d = i / 10;
+    v.insert(v.end(), r);
+    i = d;
+  }
+  for (auto it = v.begin(), it2 = v.end(); it < it2;) {
+    adl_swap(*it, *--it2);
+    ++it;
+  }
+  return v;
+};
+
+}
+void test_raw_object_pool() {
+  using help_memory_pool::to_vec;
+  {
+    raw_object_pool<test_allocator<byte>> pl(sizeof(ez_vector<int>), 128u);
+    assert(pl.object_size() == 128u);
+    assert(pl.object_align() == 128u);
+    ez_vector<ez_vector<int> *> v;
+    for (int i : irng(0, 100000)) {
+      ez_vector<int> *p = reinterpret_cast<ez_vector<int> *>(pl.allocate());
+      assert(p != nullptr);
+      ::new(p) ez_vector<int>(to_vec(i));
+      v.insert(v.end(), p);
+    }
+    test_rng(deref_rng(v), bind_rng(irng(0, ssize(v)), to_vec));
+    assert(pl.used_size() == 100000u);
+    assert(pl.capacity() >= pl.used_size());
+    assert(pl.capacity() == pl.idle_size() + pl.used_size());
+    for (auto p : v) {
+      p->~ez_vector<int>();
+      pl.deallocate(p);
+    }
+  }
+  {
+    raw_object_pool<test_allocator<byte>> pl(sizeof(ez_vector<int>), 128u);
+    pl.reserve_more(10000);
+    ez_vector<ez_vector<int> *> v;
+    for (int i : irng(0, 100000)) {
+      ez_vector<int> *p = reinterpret_cast<ez_vector<int> *>(pl.allocate());
+      assert(p != nullptr);
+      ::new(p) ez_vector<int>(to_vec(i));
+      v.insert(v.end(), p);
+    }
+    test_rng(deref_rng(v), bind_rng(irng(0, ssize(v)), to_vec));
+    assert(pl.used_size() == 100000u);
+    assert(pl.capacity() >= pl.used_size());
+    assert(pl.capacity() == pl.idle_size() + pl.used_size());
+
+    const auto tmp_z = pl.idle_size() + 100u;
+    pl.reserve_more(tmp_z);
+    assert(pl.idle_size() >= tmp_z);
+    const auto idle_sz = pl.idle_size();
+    for (int i : irng(100000, 100000 + idle_sz)) {
+      ez_vector<int> *p = reinterpret_cast<ez_vector<int> *>(pl.allocate());
+      assert(p != nullptr);
+      ::new(p) ez_vector<int>(to_vec(i));
+      v.insert(v.end(), p);
+    }
+    test_rng(deref_rng(v), bind_rng(irng(0, ssize(v)), to_vec));
+    assert(pl.used_size() == 100000u + idle_sz);
+    assert(pl.capacity() == pl.used_size());
+    assert(pl.idle_size() == 0u);
+
+    for (auto p : v) {
+      p->~ez_vector<int>();
+      pl.deallocate(p);
+    }
+  }
+}
+void test_memory_pool() {
+  using help_memory_pool::to_vec;
+  {
+    using pool_t = memory_pool<test_allocator<byte>>;
+    using pool_alloc_t = pool_allocator<byte, pool_t>;
+    pool_t pl;
+    allocator_wrapper<pool_alloc_t> alw0(pool_alloc_t{pl});
+
+    {
+      auto alw = alw0.rebind<int>();
+      int *const p = alw.new_1(1);
+      assert(*p == 1);
+      alw.delete_1(p);
+    }
+
+    {
+      auto alw = alw0.rebind<int>();
+      ez_vector<int *> v;
+      for (int i : irng(0, 10000))
+        v.insert(v.end(), alw.new_1(i));
+      test_rng(deref_rng(v), irng(0, 10000));
+      for (auto p : v)
+        alw.delete_1(p);
+    }
+    {
+      auto alw = alw0.rebind<test_object<int>>();
+      ez_vector<test_object<int> *> v;
+      for (int i : irng(0, 10000))
+        v.insert(v.end(), alw.new_1(i));
+      test_rng(deref_rng(deref_rng(v)), irng(0, 10000));
+      for (auto p : v)
+        alw.delete_1(p);
+    }
+    {
+      auto alw = alw0.rebind<ez_vector<int>>();
+      ez_vector<ez_vector<int> *> v;
+      for (int i : irng(0, 10000))
+        v.insert(v.end(), alw.new_1(to_vec(i)));
+      test_rng(deref_rng(v), bind_rng(irng(0, 10000), to_vec));
+      for (auto p : v)
+        alw.delete_1(p);
+    }
+    {
+      struct t {
+        int a[1000000] = {};
+        ez_vector<int> v;
+      };
+      auto alw = alw0.rebind<t>();
+      auto p1 = alw.new_1();
+      auto p2 = alw.new_1();
+      p1->v = to_vec(123);
+      assert(p1->v == to_vec(123));
+      p2->v = to_vec(123);
+      assert(p2->v == to_vec(123));
+      alw.delete_1(p1);
+      alw.delete_1(p2);
+    }
+  }
+}
 void test_allocator() {
   printf("allocator: ");
 
@@ -3060,6 +3281,9 @@ void test_allocator() {
   inner::test::test_copyable_array();
   inner::test::test_buffer();
   inner::test::test_scoped_allocator_adaptor();
+  inner::test::test_object_pool();
+  inner::test::test_raw_object_pool();
+  inner::test::test_memory_pool();
 
   printf("ok\n");
 }
