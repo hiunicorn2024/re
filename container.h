@@ -40121,16 +40121,14 @@ private:
     const int x = max(0, x0);
     const int y = max(0, y0);
     const int x_dif = min(width() - x, m.width() - m_x);
-    const int y_dif = min(height() - y, m.height() - m_x);
+    const int y_dif = min(height() - y, m.height() - m_y);
     for (int &j : iters(y, y + y_dif)) {
       for_each(rng((m.range().begin()
                     + (m_y + (j - y)) * m.width()
                     + m_x),
                    x_dif),
                iter(x, j),
-               [&](auto &a, value_type &b) {
-                 b = mix_f(b, a);
-               });
+               [&](auto &a, value_type &b) {b = mix_f(b, a);});
     }
     return pair(x_dif, y_dif);
   }
@@ -40172,11 +40170,14 @@ private:
     if ((x2 >= m.width() || y2 >= m.height())
         || !(x2 > -ww && y2 > -hh))
       return {};
+    int x = x0;
+    int y = y0;
     int m_x{}, m_y{};
     int x_dif{}, y_dif{};
     if (x2 < 0) {
       m_x = 0;
       x_dif = min(ww + x2, m.width());
+      x = add_with_check(x0, -x2).value();
     }
     else {
       m_x = x2;
@@ -40185,29 +40186,30 @@ private:
     if (y2 < 0) {
       m_y = 0;
       y_dif = min(hh + y2, m.height());
+      y = add_with_check(y0, -y2).value();
     }
     else {
       m_y = y2;
       y_dif = min(hh, m.height() - y2);
     }
 
-    if ((x0 >= width() || y0 >= height())
-        || !(x0 > -x_dif && y0 > -y_dif))
+    if ((x >= width() || y >= height())
+        || !(x > -x_dif && y > -y_dif))
       return {};
-    int x = x0;
-    int y = y0;
-    if (x0 < 0) {
-      m_x = (x0 < 0) ? (m_x - x0) : m_x;
-      x_dif += x0;
+    if (x < 0) {
+      m_x = m_x - x;
+      x_dif += x;
       x = 0;
     }
-    if (y0 < 0) {
-      m_y = (y0 < 0) ? (m_y - y0) : m_y;
-      y_dif += y0;
+    if (y < 0) {
+      m_y = m_y - y;
+      y_dif += y;
       y = 0;
     }
-    x_dif = min(x_dif, width() - x);
-    y_dif = min(y_dif, height() - y);
+    if (x >= width() - x_dif)
+      x_dif = width() - x;
+    if (y >= height() - y_dif)
+      y_dif = height() - y;
     for (int &j : iters(y, y + y_dif)) {
       for_each(rng((m.range().begin()
                     + (m_y + (j - y)) * m.width()
