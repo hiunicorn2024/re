@@ -4294,7 +4294,7 @@ void doc_memory_pool() {
   //   size_type
   //   difference_type
   //
-  //   smf: no default constructor
+  //   smf: full
   //   explicit pool_allocator(POOL &)
   //   operator pool_allocator<U, POOL>()
   //   ==
