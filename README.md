@@ -4,6 +4,8 @@ minor changes
 
 add simple object/memory pool
 
+improved matrix::cover()
+
 25/2/12
 
 any (= dynamic< void >) supports move-constructible-only object, but suicide if you do copy
