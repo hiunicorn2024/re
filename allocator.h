@@ -3582,6 +3582,7 @@ public:
 
 // raw_object_pool
 // memory_pool
+// pool_allocator
 namespace re {
 
 template <class AL = default_allocator<byte>>
@@ -3876,8 +3877,20 @@ public:
   }
 };
 
+namespace inner::fns {
+
+template <class POOL>
+POOL *get_static_pool() {
+  static POOL pl;
+  return addressof(pl);
+}
+
+}
 template <class T, class POOL = memory_pool<>>
 class pool_allocator {
+  template <class, class>
+  friend class pool_allocator;
+
   POOL *pl;
 
 public:
@@ -3895,7 +3908,7 @@ public:
     using other = pool_allocator<U, POOL>;
   };
 
-  pool_allocator() = delete;
+  pool_allocator() noexcept : pl(inner::fns::get_static_pool<POOL>()) {}
   ~pool_allocator() = default;
   pool_allocator(const pool_allocator &) = default;
   pool_allocator &operator =(const pool_allocator &) = default;
