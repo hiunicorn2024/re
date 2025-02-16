@@ -140,8 +140,7 @@ template <class IMPL_T>
 concept local_dynamic_impl = (sizeof(IMPL_T) <= IMPL_T::bufsz
                               && alignof(IMPL_T) <= IMPL_T::bufalign)
 #ifndef RE_NOEXCEPT
-  && (!is_move_constructible_v<typename IMPL_T::value_type>
-      || is_nothrow_move_constructible_v<typename IMPL_T::value_type>)
+  && is_nothrow_move_constructible_v<typename IMPL_T::value_type>
 #endif
   ;
 
