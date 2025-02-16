@@ -139,10 +139,7 @@ using dynamic_data = conditional_t<is_base_of_v<as_dynamic, T>,
 template <class IMPL_T>
 concept local_dynamic_impl = (sizeof(IMPL_T) <= IMPL_T::bufsz
                               && alignof(IMPL_T) <= IMPL_T::bufalign)
-#ifndef RE_NOEXCEPT
-  && is_nothrow_move_constructible_v<typename IMPL_T::value_type>
-#endif
-  ;
+  && is_nothrow_move_constructible_v<typename IMPL_T::value_type>;
 
 template <class BASE, class T>
 class dynamic_impl2;
@@ -231,8 +228,7 @@ public:
 private:
   static bool impl2_local_for(size_t sz, size_t algn) noexcept {
     return sizeof(impl2_t) <= sz && alignof(impl2_t) <= algn
-      && (!is_move_constructible_v<value_type>
-          || is_nothrow_move_constructible_v<value_type>);
+      && is_nothrow_move_constructible_v<value_type>;
   }
 public:
   virtual void *re_dynamic_auto_copy_to(void *bufp,
@@ -394,8 +390,7 @@ public:
 private:
   static bool local_for(size_t sz, size_t algn) noexcept {
     return sizeof(this_t) <= sz && alignof(this_t) <= algn
-      && (!is_move_constructible_v<value_type>
-          || is_nothrow_move_constructible_v<value_type>);
+      && is_nothrow_move_constructible_v<value_type>;
   }
 public:
   virtual void *re_dynamic_auto_copy_to(void *bufp,
