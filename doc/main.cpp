@@ -80,37 +80,37 @@ void doc_std_dependence() {
     static_assert(is_same_v<decltype(typeid(int)), const std::type_info &>);
   }
 
-  // std::exception; // <exception>
-  // std::bad_exception; // <exception>
-  // std::terminate_handler; // <exception>
-  // std::get_terminate; // <exception>
-  // std::set_terminate; // <exception>
-  // std::terminate; // <exception>
-  // std::uncaught_exceptions; // <exception>
-  // std::current_exception; // <exception>
-  // std::rethrow_exception; // <exception>
-  // std::exception_ptr; // <exception>
-  // std::make_exception_ptr; // <exception> // wrapped to avoid adl
+  // std::exception // <exception>
+  // std::bad_exception // <exception>
+  // std::terminate_handler // <exception>
+  // std::get_terminate // <exception>
+  // std::set_terminate // <exception>
+  // std::terminate // <exception>
+  // std::uncaught_exceptions // <exception>
+  // std::current_exception // <exception>
+  // std::rethrow_exception // <exception>
+  // std::exception_ptr // <exception>
+  // std::make_exception_ptr // <exception> // wrapped to avoid adl
 
   // std::nested_exception // <exception>
   // std::throw_with_nested // <exception> // wrapped to avoid adl
   // std::rethrow_if_nested // <exception> // wrapped to avoid adl
 
-  // std::bad_alloc; // <new>
-  // std::bad_array_new_length; // <new>
-  // std::bad_typeid; // <typeinfo>
-  // std::bad_cast; // <typeinfo
+  // std::bad_alloc // <new>
+  // std::bad_array_new_length // <new>
+  // std::bad_typeid // <typeinfo>
+  // std::bad_cast // <typeinfo
 
-  // std::logic_error; // <stdexcept>
-  // std::domain_error; // <stdexcept>
-  // std::invalid_argument; // <stdexcept>
-  // std::length_error; // <stdexcept>
-  // std::out_of_range; // <stdexcept>
+  // std::logic_error // <stdexcept>
+  // std::domain_error // <stdexcept>
+  // std::invalid_argument // <stdexcept>
+  // std::length_error // <stdexcept>
+  // std::out_of_range // <stdexcept>
 
-  // std::runtime_error; // <stdexcept>
-  // std::range_error; // <stdexcept>
-  // std::overflow_error; // <stdexcept>
-  // std::underflow_error; // <stdexcept>
+  // std::runtime_error // <stdexcept>
+  // std::range_error // <stdexcept>
+  // std::overflow_error // <stdexcept>
+  // std::underflow_error // <stdexcept>
 
   // std::malloc // <cstdlib>
   // std::free // <cstdlib>
@@ -121,12 +121,12 @@ void doc_std_dependence() {
 
   // std::nothrow_t // <new>
   // std::nothrow // <new>
-  // std::align_val_t; // <new>
-  // std::destroying_delete_t; // <new>
+  // std::align_val_t // <new>
+  // std::destroying_delete_t // <new>
 
-  // new_handler = void (*)(); // <new>
-  // std::get_new_handler; // <new>
-  // std::set_new_handler; // <new>
+  // new_handler = void (*)() // <new>
+  // std::get_new_handler // <new>
+  // std::set_new_handler // <new>
 
   // FILE = std::FILE // <cstdio>
   // fpos_t = std::fpos_t // <cstdio>
@@ -2453,9 +2453,9 @@ void doc_floating_point_traits() {
   //   static constexpr bool is_specialized = true
   //   static constexpr bool is_signed = true
   //   static constexpr bool is_integer = false
-  //   static float_t lowest()
-  //   static float_t denorm_min()
-  //   static float_t min()
+  //   static float_t lowest() // min negative value
+  //   static float_t denorm_min() // positive denorm_min
+  //   static float_t min() // positive norm_min
   //   static float_t max()
   //
   // float_traits = floating_point_traits<float>
@@ -9920,6 +9920,9 @@ void doc_thread_pool() {
   //   explicit pool_thread(f) // if pool is full, just call f
   //   joinable()
   //   join()
+  //   try_join()
+  //     // always call try_join because join() can not work if no real thread
+  //     // is getted
   //   pool()->thread_pool *
   //   id = thread::id
   //   get_id()->id
