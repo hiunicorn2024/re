@@ -3507,7 +3507,6 @@ public:
   }
 };
 
-
 namespace inner::fns {
 
 template <class V, class S>
