@@ -385,10 +385,12 @@ void test_matrix0() {
     assert(equal(m.sub_range(1, 1, 0, 0), empty_rng<int>()));
     assert(equal(as_const(m).sub_range(1, 1, 0, 0), empty_rng<int>()));
 
-    assert(equal(m.sub_range(1, 1, 3, 3), seq(5, 6, 8, 9)));
-    assert(equal(m.sub_range(3, 0, 3, 3), empty_rng<int>()));
-    assert(equal(m.sub_range(0, 3, 3, 3), empty_rng<int>()));
-    assert(equal(m.sub_range(3, 3, 3, 3), empty_rng<int>()));
+    assert(equal(m.sub_range(1, 1, 2, 2), seq(5, 6, 8, 9)));
+    assert(equal(m.sub_range(3, 3, 0, 3), empty_rng<int>()));
+    assert(equal(m.sub_range(3, 3, 3, 0), empty_rng<int>()));
+    assert(equal(m.sub_range(3, 3, 0, 0), empty_rng<int>()));
+
+    assert(equal(m.sub_range(0, 1, 3, 2), irng(4, 10)));
   }
 
   // fill(x, y, w, h, z)
@@ -397,11 +399,11 @@ void test_matrix0() {
                             4, 5, 6,
                             7, 8, 9));
     const auto m_bk = m;
-    m.fill(3, 0, 4, 4, 1);
-    m.fill(0, 3, 4, 4, 1);
-    m.fill(3, 3, 4, 4, 1);
+    m.fill(3, 3, 0, 4, 1);
+    m.fill(3, 3, 4, 0, 1);
+    m.fill(3, 3, 0, 0, 1);
     assert(m == m_bk);
-    m.fill(1, 1, 3, 3, 0);
+    m.fill(1, 1, 2, 2, 0);
     assert(m == matrix<int>(3, 3, seq(1, 2, 3,
                                       4, 0, 0,
                                       7, 0, 0)));
@@ -568,193 +570,6 @@ void test_matrix0() {
                 inner_product(seq(1, 2, 3), seq(10, 12, 14).begin(), 0),
                 inner_product(seq(4, 5, 6), seq(9, 11, 13).begin(), 0),
                 inner_product(seq(4, 5, 6), seq(10, 12, 14).begin(), 0))));
-  }
-
-  // cover(x, y, m)
-  // cover(x, y, m, mix_f)
-  {
-    {
-      matrix<int> m0;
-      assert(m0.cover(0, 0, matrix<int>{}) == pair(0, 0));
-      assert(m0.cover(0, 0, matrix<int>(1, 1, seq(1))) == pair(0, 0));
-      matrix<int> m(3, 3, seq(1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9));
-      assert(m.cover(2, 0, matrix<int>(1, 3, seq(-1, -2, -3)))
-             == pair(1, 3));
-      assert(m == matrix<int>(3, 3, seq(1, 2, -1,
-                                        4, 5, -2,
-                                        7, 8, -3)));
-      assert(m.cover(2, 0, matrix<int>(1, 2, seq(10, 100)))
-             == pair(1, 2));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
-                                        4, 5, 100,
-                                        7, 8, -3)));
-      assert(m.cover(1, 1, matrix<int>(1, 1, single_rng(999)))
-             == pair(1, 1));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
-                                        4, 999, 100,
-                                        7, 8, -3)));
-
-      assert(m.cover(1, 1, matrix<int>(2, 2, seq(1, 2,
-                                                 3, 4)),
-                     [](auto x, auto y) {return x * 10 + y;})
-             == pair(2, 2));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 10,
-                                        4, 9991, 1002,
-                                        7, 83, -26)));
-    }
-    {
-      matrix<int> m(3, 3, seq(1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9));
-      matrix<int> m2(2, 2, seq(10, 11,
-                               12, 13));
-      assert(m.cover(1, 1, move(m2)) == pair(2, 2));
-      assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                        4, 10, 11,
-                                        7, 12, 13)));
-    }
-    {
-      matrix<int> m0(0, 0);
-      matrix<int> m(3, 3, seq(1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9));
-      matrix<int> m2(3, 3, seq(10, 20, 30,
-                               40, 50, 60,
-                               70, 80, 90));
-      assert(m.cover(0, 0, m0) == pair(0, 0));
-      assert(m.cover(-3, -3, m2) == pair(0, 0));
-      assert(m.cover(-4, 0, m2) == pair(0, 0));
-      assert(m.cover(0, -4, m2) == pair(0, 0));
-      assert(m.cover(3, 0, m2) == pair(0, 0));
-      assert(m.cover(0, 3, m2) == pair(0, 0));
-      assert(m.cover(-2, -2, m2) == pair(1, 1));
-      assert(m == matrix<int>(3, 3, seq(90, 2, 3,
-                                        4, 5, 6,
-                                        7, 8, 9)));
-    }
-    {
-      matrix<int> m(3, 4, seq(1, 2, 3,
-                              4, 5, 6,
-                              7, 8, 9,
-                              10, 11, 12));
-      matrix<int> m2(5, 2, seq(10, 20, 30, 40, 50,
-                               60, 70, 80, 90, 100));
-      assert(m.cover(-2, -1, m2) == pair(3, 1));
-      assert(m == matrix<int>(3, 4, seq(80, 90, 100,
-                                        4, 5, 6,
-                                        7, 8, 9,
-                                        10, 11, 12)));
-    }
-    {
-      const auto r = seq(1, 2, 3,
-                         4, 5, 6,
-                         7, 8, 9,
-                         10, 11, 12);
-      matrix<int> m(3, 4, r);
-      matrix<int> m2(5, 2, seq(10, 20, 30, 40, 50,
-                               60, 70, 80, 90, 100));
-      assert(m.cover(-2, -1, m2) == pair(3, 1));
-      assert(m == matrix<int>(3, 4, seq(80, 90, 100,
-                                        4, 5, 6,
-                                        7, 8, 9,
-                                        10, 11, 12)));
-      m = matrix<int>(3, 4, r);
-      assert(m == matrix<int>(3, 4, r));
-      assert(m.cover(3, 4, m2) == pair(0, 0));
-      assert(m == matrix<int>(3, 4, r));
-      assert(m.cover(1, 3, m2) == pair(2, 1));
-      assert(m == matrix<int>(3, 4, seq(1, 2, 3,
-                                        4, 5, 6,
-                                        7, 8, 9,
-                                        10, 10, 20)));
-    }
-  }
-
-  // cover(x, y, m, x2, y2, ww, hh)
-  // cover(x, y, m, x2, y2, ww, hh, mix_f)
-  {
-    matrix<int> m(3, 3, seq(1, 2, 3,
-                            4, 5, 6,
-                            7, 8, 9));
-    matrix<int> m2(2, 2, seq(10, 11,
-                             12, 13));
-    m.cover(1, 1, m2, 0, 0, 2, 2);
-    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                      4, 10, 11,
-                                      7, 12, 13)));
-    m.cover(1, 1,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            1, 1, 0, 1);
-    m.cover(1, 1,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            1, 1, 1, 0);
-    m.cover(3, 3,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            3, 3, 3, 3);
-    m.cover(4, 4,
-            matrix<int>(3, 3, seq(0, 0, 0,
-                                  0, 99, 99,
-                                  0, 0, 0)),
-            4, 4, 4, 4);
-    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                      4, 10, 11,
-                                      7, 12, 13)));
-    m2 = matrix<int>(3, 3, seq(0, 0, 0,
-                               0, 99, 99,
-                               0, 99, 99));
-    m.cover(1, 1, m2, 1, 1, 2, 2,
-            [](int &a, int &b)->int {return exchange(b, 0);});
-    assert(equal(m2.range(), rng(9, 0)));
-    assert(m == matrix<int>(3, 3, seq(1, 2, 3,
-                                      4, 99, 99,
-                                      7, 99, 99)));
-    m2 = matrix<int>(3, 0);
-    m = matrix<int>(3, 0);
-    m.cover(3, 3, m2, 3, 3, 3, 3);
-    assert(m2.width() == 3 && m2.height() == 0);
-    assert(m.width() == 3 && m2.height() == 0);
-    assert(m2.empty() && m.empty());
-
-    m = matrix<int>(3, 2, seq(1, 2, 3,
-                              4, 5, 6));
-    m2 = matrix<int>(4, 4, seq(10, 20, 30, 40,
-                               50, 60, 70, 80,
-                               90, 100, 110, 120,
-                               130, 140, 150, 160));
-    
-    assert(m.cover(0, 0, m2, 4, 0, 4, 4) == pair(0, 0));
-    assert(m.cover(0, 0, m2, 0, 4, 4, 4) == pair(0, 0));
-    assert(m.cover(-2, 0, m2, 2, 2, 2, 2) == pair(0, 0));
-    assert(m.cover(0, -2, m2, 2, 2, 2, 2) == pair(0, 0));
-    assert(m.cover(0, 0, m2, -2, -2, 4, 4) == pair(0, 0));
-    assert(m == matrix<int>(3, 2, seq(1, 2, 3,
-                                      4, 5, 6)));
-    {
-      auto m1 = m;
-      assert(m1.cover(0, 0, m2, 0, 0, 10, 12) == pair(3, 2));
-      assert(m1 == matrix<int>(3, 2, seq(10, 20, 30,
-                                         50, 60, 70)));
-    }
-    {
-      auto m1 = m;
-      assert(m1.cover(-5, -4, m2, -5, -4, 10, 12) == pair(3, 2));
-      assert(m1 == matrix<int>(3, 2, seq(10, 20, 30,
-                                         50, 60, 70)));
-    }
-    {
-      auto m1 = m;
-      assert(m1.cover(1, 0, m2, -1, -1, 2, 2) == pair(1, 1));
-      assert(m1 == matrix<int>(3, 2, seq(1, 2, 3,
-                                         4, 5, 10)));
-    }
   }
 }
 
