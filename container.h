@@ -39581,31 +39581,23 @@ private:
       return ww > 0 && hh > 0
         && (numeric_limits<int>::max() / hh >= ww);
   }
+  static int get_w_mul_h(int ww, int hh) noexcept {
+    if (!check_wh(ww, hh))
+      throw_or_terminate<length_error>
+        ("re::matrix::get_w_mul_h(w, h): size overflow\n");
+    return ww * hh;
+  }
 public:
-  matrix(int ww, int hh) : c(ww * hh), w(ww), h(hh) {
-    if (!check_wh(ww, hh))
-      throw_or_terminate<length_error>
-        ("re::matrix::matrix(w, h): size error\n");
-  }
+  matrix(int ww, int hh) : c(get_w_mul_h(ww, hh)), w(ww), h(hh) {}
   matrix(int ww, int hh, const alloc_t &a)
-    requires has_allocator_type<base_t> : c(ww * hh, a), w(ww), h(hh) {
-    if (!check_wh(ww, hh))
-      throw_or_terminate<length_error>
-        ("re::matrix::matrix(w, h, a): size error\n");
-  }
+    requires has_allocator_type<base_t>
+    : c(get_w_mul_h(ww, hh), a), w(ww), h(hh) {}
 
   matrix(int ww, int hh, const value_type &v)
-    : c(ww * hh, v), w(ww), h(hh) {
-    if (!check_wh(ww, hh))
-      throw_or_terminate<length_error>
-        ("re::matrix::matrix(w, h, v): size error\n");
-  }
+    : c(get_w_mul_h(ww, hh), v), w(ww), h(hh) {}
   matrix(int ww, int hh, const value_type &v, const alloc_t &a)
-    requires has_allocator_type<base_t> : c(ww * hh, v, a), w(ww), h(hh) {
-    if (!check_wh(ww, hh))
-      throw_or_terminate<length_error>
-        ("re::matrix::matrix(w, h, v, a): size error\n");
-  }
+    requires has_allocator_type<base_t>
+    : c(get_w_mul_h(ww, hh), v, a), w(ww), h(hh) {}
 
 private:
   template <class R>
@@ -39635,10 +39627,7 @@ public:
     requires (!is_matrix<remove_reference_t<R>>
               && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
               && !is_convertible_v<R &&, const value_type &>)
-    : c(ww * hh), w(ww), h(hh) {
-    if (!check_wh(ww, hh))
-      throw_or_terminate<length_error>
-        ("re::matrix::matrix(w, h, r): size error\n");
+    : c(get_w_mul_h(ww, hh)), w(ww), h(hh) {
     assign_range(r);
   }
   template <class R>
@@ -39647,10 +39636,7 @@ public:
               && !is_matrix<remove_reference_t<R>>
               && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
               && !is_convertible_v<R &&, const value_type &>)
-    : c(ww * hh, a), w(ww), h(hh) {
-    if (!check_wh(ww, hh))
-      throw_or_terminate<length_error>
-        ("re::matrix::matrix(w, h, r, a): size error\n");
+    : c(get_w_mul_h(ww, hh), a), w(ww), h(hh) {
     assign_range(r);
   }
 
@@ -39894,32 +39880,26 @@ public:
   }
 
   auto sub_range(int x, int y, int wid, int hei) {
-    if (!(x < width() && y < height())) {
+    if (wid == 0 || hei == 0) {
       x = 0;
       y = 0;
       wid = 0;
       hei = 0;
     }
-    x = min(x, width());
-    y = min(y, width());
     const auto it = iter(x, y);
-    wid = min(wid, width() - x);
-    hei = min(hei, height() - y);
     return join_rng(bind_rng(irng(0, hei),
                              [it, ww = width(), wid](int k) {
                                return rng(it + k * ww, wid);
                              }));
   }
   auto sub_range(int x, int y, int wid, int hei) const {
-    if (!(x < width() && y < height())) {
+    if (wid == 0 || hei == 0) {
       x = 0;
       y = 0;
       wid = 0;
       hei = 0;
     }
     const auto it = iter(x, y);
-    wid = min(wid, width() - x);
-    hei = min(hei, height() - y);
     return join_rng(bind_rng(irng(0, hei),
                              [it, ww = width(), wid](int k) {
                                return rng(it + k * ww, wid);
@@ -39927,11 +39907,9 @@ public:
   }
 
   void fill(int x, int y, int wid, int hei, const value_type &z) {
-    x = min(x, width());
-    y = min(y, height());
+    if (wid == 0 || hei == 0)
+      return;
     const auto it = iter(x, y);
-    wid = min(wid, width() - x);
-    hei = min(hei, height() - y);
     for (int k : irng(0, hei))
       re::fill(rng(it + k * width(), wid), z);
   }
@@ -40108,162 +40086,6 @@ public:
                  });
       }
     return ret;
-  }
-
-private:
-  template <class M, class F>
-  pair<int, int> cover_impl(int x0, int y0, M &&m, F mix_f) {
-    if ((x0 >= width() || y0 >= height())
-        || !(x0 > -m.width() && y0 > -m.height()))
-      return {};
-    const int m_x = (x0 < 0) ? -x0 : 0;
-    const int m_y = (y0 < 0) ? -y0 : 0;
-    const int x = max(0, x0);
-    const int y = max(0, y0);
-    const int x_dif = min(width() - x, m.width() - m_x);
-    const int y_dif = min(height() - y, m.height() - m_y);
-    for (int &j : iters(y, y + y_dif)) {
-      for_each(rng((m.range().begin()
-                    + (m_y + (j - y)) * m.width()
-                    + m_x),
-                   x_dif),
-               iter(x, j),
-               [&](auto &a, value_type &b) {b = mix_f(b, a);});
-    }
-    return pair(x_dif, y_dif);
-  }
-public:
-  template <class F>
-  pair<int, int> cover(int x, int y, const matrix &m, F mix_f) {
-    return cover_impl(x, y, m, mix_f);
-  }
-  template <class F>
-  pair<int, int> cover(int x, int y, matrix &&m, F mix_f) {
-    return cover_impl(x, y, move(m), mix_f);
-  }
-  template <class F>
-  pair<int, int> cover(int x, int y, matrix &m, F mix_f) {
-    return cover_impl(x, y, m, mix_f);
-  }
-  pair<int, int> cover(int x, int y, const matrix &m) {
-    return cover_impl(x, y, m,
-                      [](value_type &,
-                         const value_type &z)->const value_type & {return z;});
-  }
-  pair<int, int> cover(int x, int y, matrix &&m) {
-    return cover_impl(x, y, move(m),
-                      [](value_type &,
-                         value_type &z)->value_type && {return move(z);});
-  }
-  pair<int, int> cover(int x, int y, matrix &m) {
-    return cover_impl(x, y, move(m),
-                      [](value_type &,
-                         value_type &z)->value_type & {return z;});
-  }
-
-private:
-  template <class M, class F>
-  pair<int, int>
-  cover_impl(int x0, int y0,
-             M &&m, int x2, int y2, int ww, int hh,
-             F mix_f) {
-    if ((x2 >= m.width() || y2 >= m.height())
-        || !(x2 > -ww && y2 > -hh))
-      return {};
-    int x = x0;
-    int y = y0;
-    int m_x{}, m_y{};
-    int x_dif{}, y_dif{};
-    if (x2 < 0) {
-      m_x = 0;
-      x_dif = min(ww + x2, m.width());
-      x = add_with_check(x0, -x2).value();
-    }
-    else {
-      m_x = x2;
-      x_dif = min(ww, m.width() - x2);
-    }
-    if (y2 < 0) {
-      m_y = 0;
-      y_dif = min(hh + y2, m.height());
-      y = add_with_check(y0, -y2).value();
-    }
-    else {
-      m_y = y2;
-      y_dif = min(hh, m.height() - y2);
-    }
-
-    if ((x >= width() || y >= height())
-        || !(x > -x_dif && y > -y_dif))
-      return {};
-    if (x < 0) {
-      m_x = m_x - x;
-      x_dif += x;
-      x = 0;
-    }
-    if (y < 0) {
-      m_y = m_y - y;
-      y_dif += y;
-      y = 0;
-    }
-    if (x >= width() - x_dif)
-      x_dif = width() - x;
-    if (y >= height() - y_dif)
-      y_dif = height() - y;
-    for (int &j : iters(y, y + y_dif)) {
-      for_each(rng((m.range().begin()
-                    + (m_y + (j - y)) * m.width()
-                    + m_x),
-                   x_dif),
-               iter(x, j),
-               [&](auto &a, value_type &b) {
-                 b = mix_f(b, a);
-               });
-    }
-    return pair(x_dif, y_dif);
-  }
-public:
-  template <class F>
-  pair<int, int>
-  cover(int x, int y,
-        const matrix &m, int x2, int y2, int ww, int hh,
-        F mix_f) {
-    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
-  }
-  template <class F>
-  pair<int, int>
-  cover(int x, int y,
-        matrix &&m, int x2, int y2, int ww, int hh,
-        F mix_f) {
-    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
-  }
-  template <class F>
-  pair<int, int>
-  cover(int x, int y,
-        matrix &m, int x2, int y2, int ww, int hh,
-        F mix_f) {
-    return cover_impl(x, y, m, x2, y2, ww, hh, mix_f);
-  }
-  pair<int, int>
-  cover(int x, int y,
-        const matrix &m, int x2, int y2, int ww, int hh) {
-    return cover_impl(x, y, m, x2, y2, ww, hh,
-                      [](value_type &,
-                         const value_type &b)->const value_type & {return b;});
-  }
-  pair<int, int>
-  cover(int x, int y,
-        matrix &&m, int x2, int y2, int ww, int hh) {
-    return cover_impl(x, y, m, x2, y2, ww, hh,
-                      [](value_type &,
-                         value_type &b)->value_type && {return move(b);});
-  }
-  pair<int, int>
-  cover(int x, int y,
-        matrix &m, int x2, int y2, int ww, int hh) {
-    return cover_impl(x, y, m, x2, y2, ww, hh,
-                      [](value_type &,
-                         value_type &b)->value_type & {return b;});
   }
 };
 

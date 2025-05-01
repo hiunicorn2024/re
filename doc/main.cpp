@@ -159,7 +159,7 @@ void doc_std_dependence() {
   // std::fseek // <cstdio>
   // std::fsetpos // <cstdio>
   // std::rewind // <cstdio>
-  // std::clearerr // <cstdio>
+  // std::clear // <cstdio>
   // std::feof // <cstdio>
   // std::ferror // <cstdio>
   // std::perror // <cstdio>
@@ -8530,6 +8530,8 @@ void doc_tree_adaptor() {
   //   vector_type
   //
   //   key_type
+  //   children_type
+  //   tree_node_type
   //   value_type
   //     ... // range operations
   //     key_type
@@ -8601,8 +8603,8 @@ void doc_tree_adaptor() {
   //   emplace(s...)
   //   clear()
   //
-  //   swap(i, j)
-  //   swap(i, tree/vec_ref, j)
+  //   swap(i, j) // sub-tree of i and j share no node
+  //   swap(i, tree/vec_ref, j) // sub-tree of i and j share no node
   //
   //   extract(i)->tree_type
   //   insert(next, tree_type &&)->iterator
@@ -8688,6 +8690,8 @@ void doc_tree_vector_adaptor() {
   //   vector_type
   //
   //   key_type
+  //   children_type
+  //   tree_node_type
   //   value_type
   //     ... // range operations
   //     key_type
@@ -8970,8 +8974,9 @@ void doc_matrix() {
   //   rows()
   //   column(n)
   //   columns()
-  //   sub_range(x, y, w, h)
-  //   fill(x, y, w, h, z) // rectangle of (x, y)-(w, h) belong to *this
+  //   sub_range(x, y, w, h) // overflowed part are removed
+  //   fill(x, y, w, h, z)
+  //     // rectangle of (x, y)-(w, h) belong to *this or empty rectangle
   //
   //   left_top()
   //   left_bottom()
@@ -9004,41 +9009,6 @@ void doc_matrix() {
   //   /=(k)
   //
   //   *(m)
-  //
-  //   cover(x, y, m)->pair<int, int>
-  //     // return replaced width and height // negative x or y is acceptable
-  //   cover(x, y, m, mix_f)->pair<int, int>
-  //     // return replaced width and height // negative x or y is acceptable
-  //     // mix_f always eats lvalue references
-  //     // mix_f(old, new)->new_value
-  //
-  //   cover(x, y, m, x2, y2, w, h)->pair<int, int>
-  //     // return relaced width and height // w > 0, h > 0
-  //   cover(x, y, m, x2, y2, w, h, mix_f)->pair<int, int>
-  //     // return relaced width and height // w > 0, h > 0
-  //     // mix_f always eats lvalue references
-  //     // mix_f(old, new)->new_value
-
-
-  // matirx::cover(x, y, m, x2, y2, w, h)
-  {
-    const auto m = matrix<int>(2, 2, seq(1, 2,
-                                         3, 4));
-    const auto m2 = matrix<int>(2, 2, seq(10, 20,
-                                          30, 40));
-    {
-      auto m1 = m;
-      assert(m1.cover(-2, -2, m2, -2, -2, 4, 4) == pair(2, 2));
-      assert(m1 == matrix<int>(2, 2, seq(10, 20,
-                                         30, 40)));
-    }
-    {
-      auto m1 = m;
-      assert(m1.cover(-2, -2, m2, -2, -2, 3, 3) == pair(1, 1));
-      assert(m1 == matrix<int>(2, 2, seq(10, 2,
-                                         3, 4)));
-    }
-  }
 }
 void doc_dup_compressed_array() {
   // dup_compressed_array<T, AL>
@@ -9351,6 +9321,10 @@ void doc_sscan() {
   // sscan(sv_ref, int_ref, oct)->bool
   // sscan(sv_ref, int_ref, hex)->bool
   // sscan(sv_ref, float_ref)->bool
+  //
+  // sscan_single(sv_ref, char &)->bool
+  //
+  // sscan_while(sv_ref, f)->sview
 }
 void doc_sprint() {
   // print_args
@@ -9510,11 +9484,14 @@ void doc_file() {
   // file
   //   special member functions: only movable
   //   explicit file(sv) // sview, wsview, u16sview or u32sview
+  //   explicit file(sv, read_file)
+  //   explicit file(sv, open_file)
+  //   explicit file(sv, create_file)
   //   empty()->bool
   //   open(sv)
   //   close()
-  //   get<S = string>()->S
-  //   put(contiguous_r)
+  //   read<S = string>()->S
+  //   write(contiguous_r)
   //
   // to_full_path(sv)->s
   // simplify_path(sv)->s

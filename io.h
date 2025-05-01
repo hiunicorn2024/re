@@ -712,6 +712,35 @@ public:
 };
 inline constexpr fo_sscan sscan{};
 
+struct fo_sscan_single {
+  bool operator ()(sview &v, char &c) const {
+    if (v.empty())
+      return false;
+    else {
+      c = *v.begin();
+      v = {v.begin() + 1, v.end()};
+      return true;
+    }
+  }
+};
+inline constexpr fo_sscan_single sscan_single{};
+
+struct fo_sscan_while {
+  template <class F>
+  sview operator ()(sview &v, F f) const {
+    const auto op = v.begin();
+    const auto ed = v.end();
+
+    auto it = v.begin();
+    for (; it != ed && f(*it); ++it)
+      ;
+
+    v = {it, ed};
+    return sview(op, it);
+  }
+};
+inline constexpr fo_sscan_while sscan_while{};
+
 }
 
 // sprint
