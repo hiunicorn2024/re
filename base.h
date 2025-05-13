@@ -9639,12 +9639,12 @@ inline constexpr fo_sub_with_check sub_with_check{};
 
 struct fo_sub_to_zero_at_most {
   template <class T>
-  constexpr T operator ()(T x, T y) const requires unsigned_integral<T> {
-    return (x > y) ? (x - y) : 0u;
+  constexpr T operator ()(T x, T y) const requires integral<T> {
+    return (x > y) ? (x - y) : T(0);
   }
   template <class T, class...S>
   constexpr T operator ()(T x, T y, S...s) const
-    requires unsigned_integral<T> {
+    requires integral<T> {
     return operator ()(operator ()(x, y), s...);
   }
 };

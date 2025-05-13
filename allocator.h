@@ -2628,6 +2628,102 @@ synth_3way_result<T1> operator <=>(const copyable_array<T1> &x,
 
 }
 
+// maybe_owner_ptr
+namespace re {
+
+template <class T>
+class maybe_owner_ptr {
+  T *p = nullptr;
+  bool owns_y = false;
+
+  void clear_impl() {
+    if (owns_y)
+      ::delete p;
+  }
+  void reset_impl() {
+    p = nullptr;
+    owns_y = false;
+  }
+
+public:
+  using pointer = T *;
+  using element_type = T;
+
+  maybe_owner_ptr() = default;
+  ~maybe_owner_ptr() {
+    clear_impl();
+  }
+  maybe_owner_ptr(const maybe_owner_ptr &x) : p(x.p), owns_y(false) {}
+  maybe_owner_ptr &operator =(const maybe_owner_ptr &x) {
+    if (p != x.p) {
+      p = x.p;
+      owns_y = false;
+    }
+    return *this;
+  }
+  maybe_owner_ptr(maybe_owner_ptr &&x) : p(x.p), owns_y(x.owns_y) {
+    x.reset_impl();
+  }
+  maybe_owner_ptr &operator =(maybe_owner_ptr &&x) {
+    if (p != x.p) {
+      p = x.p;
+      owns_y = x.owns_y;
+      x.reset_impl();
+    }
+    else {
+      if (!owns_y && x.owns_y) {
+        p = x.p;
+        owns_y = true;
+        x.reset_impl();
+      }
+    }
+    return *this;
+  }
+  friend void swap(maybe_owner_ptr &a, maybe_owner_ptr &b) noexcept {
+    adl_swap(a.p, b.p);
+    adl_swap(a.owns_y, b.owns_y);
+  }
+
+  maybe_owner_ptr(nullptr_t) noexcept : maybe_owner_ptr() {}
+  maybe_owner_ptr &operator =(nullptr_t) noexcept {
+    clear();
+    return *this;
+  }
+  bool operator ==(nullptr_t) const noexcept {
+    return p == nullptr;
+  }
+
+  template <class...S>
+  explicit(sizeof...(S) == 0) maybe_owner_ptr(in_place_t, S &&...s)
+    : p(::new T(forward<S>(s)...)), owns_y(true) {}
+
+  T *operator ->() const noexcept {
+    return p;
+  }
+  T &operator *() const noexcept {
+    return *p;
+  }
+  T *get() const noexcept {
+    return p;
+  }
+
+  bool empty() const noexcept {
+    return p == nullptr;
+  }
+  bool owns() const noexcept {
+    return owns_y;
+  }
+  void clear() noexcept {
+    clear_impl();
+    reset_impl();
+  }
+  void reset() noexcept {
+    clear();
+  }
+};
+
+}
+
 // buffer - minimized dynamic array with fixed storage
 namespace re {
 

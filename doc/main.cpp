@@ -2407,7 +2407,7 @@ void doc_miscl() {
 
   // add_with_check(integrals...)->optional<integral>
   // sub_with_check(integrals...)->optional<integral>
-  // sub_to_zero_at_most(uint, uint, ...)->uint
+  // sub_to_zero_at_most(INT, INT, ...)->INT // all args greater than zero
 
   // max_uint_of_max_size<N>
   {
@@ -4103,6 +4103,28 @@ void doc_copyable_array() {
   //   front()
   //   back()
   //   [](n)
+}
+void doc_maybe_owner_ptr() {
+  // maybe_owner_ptr<T>
+  //   pointer = T *
+  //   element_type = T
+  //
+  //   smf: full
+  //
+  //   maybe_owner_ptr(nullptr)
+  //   =(nullptr)
+  //   ==(nullptr)
+  //
+  //   explicit(sizeof...(s) == 0) maybe_owner_ptr(in_place, s...)
+  //
+  //   ->
+  //   *
+  //   get()->T *
+  //
+  //   empty()->bool
+  //   owns()->bool
+  //   clear()
+  //   reset()
 }
 void doc_buffer() {
   // buffer<T, AL = default_allocator<T>>
@@ -5829,6 +5851,9 @@ void doc_loop_range() {
 
 // container
 void doc_string() {
+  // from_unicode_t
+  // from_unicode
+  //
   // basic_string<T, AL = default_allocator<T>>
   // sso_string<T, size_t N, AL = default_allocator<T>>
   //   pointer
@@ -5905,7 +5930,9 @@ void doc_string() {
   //   remove(x) // may throw
   //   replace(i1, i2, r) // may throw
   //
-  //   assign_unicode(s)->bool // strong exception-guarantee
+  //   this_t(from_unicode_t, r) // may throw
+  //   try_assign_unicode(s)->bool
+  //   assign_unicode(s) // throw or terminate if !try_assign_unicode(s)
   //
   //   this_t(from_range, r, a = {}) // may throw
   //   this_t(array) // may throw
@@ -10005,6 +10032,7 @@ int main() {
   re::inner::test::doc_unique_array();
   re::inner::test::doc_copyable_ptr();
   re::inner::test::doc_copyable_array();
+  re::inner::test::doc_maybe_owner_ptr();
   re::inner::test::doc_buffer();
   re::inner::test::doc_scoped_allocator_adaptor();
   re::inner::test::doc_allocator_aware_container_ownership();

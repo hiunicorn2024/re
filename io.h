@@ -3338,7 +3338,7 @@ private:
   template <class V>
   static void file_open_impl(V v, HANDLE &p) {
     wstring s;
-    if (!s.assign_unicode(v))
+    if (!s.try_assign_unicode(v))
       throw_or_terminate<logic_error>
         ("re::file::open(sv): invalid unicode string\n");
     p = CreateFile(s.data(),
@@ -3355,7 +3355,7 @@ private:
   template <class V>
   static void file_open_impl_read(V v, HANDLE &p) {
     wstring s;
-    if (!s.assign_unicode(v))
+    if (!s.try_assign_unicode(v))
       throw_or_terminate<logic_error>
         ("re::file::open(sv, read_file): invalid unicode string\n");
     p = CreateFile(s.data(),
@@ -3368,7 +3368,7 @@ private:
   template <class V>
   static void file_open_impl_open(V v, HANDLE &p) {
     wstring s;
-    if (!s.assign_unicode(v))
+    if (!s.try_assign_unicode(v))
       throw_or_terminate<logic_error>
         ("re::file::open(sv, open_file): invalid unicode string\n");
     p = CreateFile(s.data(),
@@ -3385,7 +3385,7 @@ private:
   template <class V>
   static void file_open_impl_create(V v, HANDLE &p) {
     wstring s;
-    if (!s.assign_unicode(v))
+    if (!s.try_assign_unicode(v))
       throw_or_terminate<logic_error>
         ("re::file::open(sv, create_file): invalid unicode string\n");
     p = CreateFile(s.data(),
@@ -3541,7 +3541,7 @@ namespace inner::fns {
 template <class V, class S>
 void to_full_path_impl(V v, S &o2) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::to_full_path(sv): invalid unicode input\n");
 
@@ -3563,7 +3563,7 @@ void to_full_path_impl(V v, S &o2) {
     o.append_range(rng(o.size(), L'\0'));
   }
 
-  if (!o2.assign_unicode(o))
+  if (!o2.try_assign_unicode(o))
     throw_or_terminate<logic_error>
       ("re::to_full_path(sv): invalid unicode result\n");
 }
@@ -3598,7 +3598,7 @@ namespace inner::fns {
 template <class S, class V>
 S simplify_path_impl(V v) {
   S s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::simplify_path(sv): invalid unicode input\n");
 
@@ -3638,7 +3638,7 @@ namespace inner::fns {
 template <class S, class V>
 S path_last_name_impl(V v) {
   S s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::path_last_name(sv): invalid unicode input\n");
 
@@ -3685,7 +3685,7 @@ namespace inner::fns {
 template <class S, class V>
 S remove_path_last_name_impl(V v) {
   S s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::remove_path_last_name(sv): invalid unicode input\n");
   if (s.empty())
@@ -3732,7 +3732,7 @@ namespace inner::fns {
 template <class S, class V>
 S replace_path_last_name_impl(V v, V v2) {
   S s, s2;
-  if (!s.assign_unicode(v) || !s2.assign_unicode(v2))
+  if (!s.try_assign_unicode(v) || !s2.try_assign_unicode(v2))
     throw_or_terminate<logic_error>
       ("re::replace_path_last_name(v, v2): invalid unicode string\n");
   S ss = remove_path_last_name(s);
@@ -3766,7 +3766,7 @@ namespace inner::fns {
 template <class V>
 bool is_file_impl(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::is_file(sv): invalid unicode string\n");
   const DWORD a = GetFileAttributes(s.data());
@@ -3795,7 +3795,7 @@ namespace inner::fns {
 template <class V>
 bool is_directory_impl(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::is_directory(sv): invalid unicode string\n");
   DWORD a = GetFileAttributes(s.data());
@@ -3826,7 +3826,7 @@ namespace inner::fns {
 template <class V>
 bool try_create_directory_impl(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::is_directory(sv): invalid unicode string\n");
   return CreateDirectory(s.data(), NULL) != 0;
@@ -3896,7 +3896,7 @@ namespace inner::fns {
 template <class V>
 time_point<system_clock> file_time_impl(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::file_time(sv): invalid unicode string\n");
   WIN32_FILE_ATTRIBUTE_DATA a;
@@ -3928,7 +3928,7 @@ namespace inner::fns {
 template <class V>
 bool try_remove_file_impl(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::try_remove_file(sv): invalid unicode string\n");
 
@@ -4044,7 +4044,7 @@ namespace inner::fns {
 template <class V>
 bool try_rename_file_impl(V v, V v2) {
   wstring s, s2;
-  if (!s.assign_unicode(v) || !s2.assign_unicode(v2))
+  if (!s.try_assign_unicode(v) || !s2.try_assign_unicode(v2))
     throw_or_terminate<logic_error>
       ("re::try_rename_file(v, v2): invalid unicode string\n");
   if (contains(s2, L'\\') || contains(s2, L'/'))
@@ -4079,13 +4079,13 @@ namespace inner::fns {
 template <class S, class V>
 file_info<S> view_file_impl0(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::view_file(sv): invalid unicode string as input\n");
   s = simplify_path(to_full_path(s));
 
   S s2;
-  if (!s2.assign_unicode(s))
+  if (!s2.try_assign_unicode(s))
     throw_or_terminate<logic_error>
       ("re::view_file(sv): invalid unicode string as input\n");
 
@@ -4188,7 +4188,7 @@ tree<file_info<S>> view_directory_impl(V v) {
     }
   };
   const auto read_find_data = [](const WIN32_FIND_DATA &x, key_t &o) {
-    if (o.name.assign_unicode(wsview(begin(x.cFileName))) == false)
+    if (o.name.try_assign_unicode(wsview(begin(x.cFileName))) == false)
       throw_or_terminate<logic_error>
         ("re::view_directory(sv): invalid unicode string from find data\n");
 
@@ -4210,7 +4210,7 @@ tree<file_info<S>> view_directory_impl(V v) {
   for (tree_vt &x : t.root().first_order()) {
     if ((*x).is_dir) {
       const auto it = x.iter();
-      if (tmp_ws.assign_unicode((*x).path) == false)
+      if (tmp_ws.try_assign_unicode((*x).path) == false)
         throw_or_terminate<logic_error>
           ("re::view_directory(sv): invalid unicode string\n");
       tmp_ws.append(L'\\');
@@ -4246,7 +4246,7 @@ tree<file_info<S>> view_directory_impl(V v) {
 template <class V>
 unsigned long long file_size_impl(V v) {
   wstring s;
-  if (!s.assign_unicode(v))
+  if (!s.try_assign_unicode(v))
     throw_or_terminate<logic_error>
       ("re::file_size(sv): invalid unicode string\n");
   WIN32_FILE_ATTRIBUTE_DATA a;

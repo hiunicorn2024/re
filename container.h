@@ -449,6 +449,11 @@ concept arg_can_be_utf32string
 
 }
 
+struct from_unicode_t {
+  explicit from_unicode_t() = default;
+};
+inline constexpr from_unicode_t from_unicode{};
+
 namespace inner::fns {
 
 template <class T>
@@ -1187,7 +1192,7 @@ public:
   }
 
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf8string<R>
               && inner::arg_can_be_utf8string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1197,7 +1202,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf8string<R>
               && inner::arg_can_be_utf16string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1207,7 +1212,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf8string<R>
               && inner::arg_can_be_utf32string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1218,7 +1223,7 @@ public:
   }
 
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf16string<R>
               && inner::arg_can_be_utf8string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1228,7 +1233,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf16string<R>
               && inner::arg_can_be_utf16string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1238,7 +1243,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf16string<R>
               && inner::arg_can_be_utf32string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1249,7 +1254,7 @@ public:
   }
 
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf32string<R>
               && inner::arg_can_be_utf8string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1259,7 +1264,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf32string<R>
               && inner::arg_can_be_utf16string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1269,7 +1274,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf32string<R>
               && inner::arg_can_be_utf32string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -1277,6 +1282,20 @@ public:
       return false;
     *this = move(tmp);
     return true;
+  }
+
+  template <class R>
+  void assign_unicode(R &&r) {
+    if (!try_assign_unicode(r))
+      throw_or_terminate<logic_error>
+        ("re::basic_string::assign_unicode(r) failed\n");
+  }
+
+  template <class R>
+  basic_string(from_unicode_t, R &&r) : basic_string() {
+    if (!try_assign_unicode(r))
+      throw_or_terminate<logic_error>
+        ("basic_string::basic_string(from_unicode, s): invalid s\n");
   }
 
   template <class R>
@@ -2169,7 +2188,7 @@ public:
   }
 
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf8string<R>
               && inner::arg_can_be_utf8string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2179,7 +2198,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf8string<R>
               && inner::arg_can_be_utf16string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2189,7 +2208,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf8string<R>
               && inner::arg_can_be_utf32string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2200,7 +2219,7 @@ public:
   }
 
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf16string<R>
               && inner::arg_can_be_utf8string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2210,7 +2229,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf16string<R>
               && inner::arg_can_be_utf16string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2220,7 +2239,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf16string<R>
               && inner::arg_can_be_utf32string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2231,7 +2250,7 @@ public:
   }
 
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf32string<R>
               && inner::arg_can_be_utf8string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2241,7 +2260,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf32string<R>
               && inner::arg_can_be_utf16string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2251,7 +2270,7 @@ public:
     return true;
   }
   template <class R>
-  bool assign_unicode(R &&r)
+  bool try_assign_unicode(R &&r)
     requires (inner::arg_can_be_utf32string<R>
               && inner::arg_can_be_utf32string_range<this_t>) {
     this_t tmp(get_allocator());
@@ -2259,6 +2278,20 @@ public:
       return false;
     *this = move(tmp);
     return true;
+  }
+
+  template <class R>
+  void assign_unicode(R &&r) {
+    if (!try_assign_unicode(r))
+      throw_or_terminate<logic_error>
+        ("re::sso_string::assign_unicode(r) failed\n");
+  }
+
+  template <class R>
+  sso_string(from_unicode_t, R &&r) : sso_string() {
+    if (!try_assign_unicode(r))
+      throw_or_terminate<logic_error>
+        ("sso_string::sso_string(from_unicode, s): invalid s\n");
   }
 
   template <class R>
