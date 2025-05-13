@@ -13280,6 +13280,10 @@ void test_miscl() {
     assert(sub_to_zero_at_most(5u, 1u, 2u, 2u) == 0u);
     assert(sub_to_zero_at_most(5u, 1u, 2u, 1u) == 1u);
     assert(sub_to_zero_at_most(5u, 1u, 2u) == 2u);
+
+    assert(sub_to_zero_at_most(7, 6) == 1);
+    assert(sub_to_zero_at_most(7, 1, 2, 4) == 0);
+    assert(sub_to_zero_at_most(7, 1, 2, 4, 5) == 0);
   }
 
   // max_uint_of_max_size

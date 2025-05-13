@@ -2460,6 +2460,50 @@ void test_copyable_array() {
     assert(a.back() == 2 && as_const(a).back() == 2);
   }
 }
+void test_maybe_owner_ptr() {
+  using t = test_object<int>;
+
+  maybe_owner_ptr<t> p0;
+  assert(p0.operator ->() == nullptr && p0.get() == nullptr
+         && p0.empty() && !p0.owns());
+  p0.clear();
+  assert(p0.operator ->() == nullptr && p0.get() == nullptr
+         && p0.empty() && !p0.owns());
+  p0.reset();
+  assert(p0.operator ->() == nullptr && p0.get() == nullptr
+         && p0.empty() && !p0.owns());
+
+  maybe_owner_ptr<t> p1(in_place, 1);
+  assert(p1.get() != nullptr && *p1 == 1 && !p1.empty() && p1.owns());
+  p1 = move(p1);
+  p1 = p1;
+  assert(p1.get() != nullptr && *p1 == 1 && !p1.empty() && p1.owns());
+
+  maybe_owner_ptr<t> p2 = p1;
+  assert(p1.get() != nullptr && *p1 == 1 && !p1.empty() && p1.owns());
+  assert(p2.get() != nullptr && *p2 == 1 && !p2.empty() && !p2.owns());
+  p1 = p2;
+  assert(p1.get() != nullptr && *p1 == 1 && !p1.empty() && p1.owns());
+  assert(p2.get() != nullptr && *p2 == 1 && !p2.empty() && !p2.owns());
+  p2 = p2;
+  assert(p1.get() != nullptr && *p1 == 1 && !p1.empty() && p1.owns());
+  assert(p2.get() != nullptr && *p2 == 1 && !p2.empty() && !p2.owns());
+
+  maybe_owner_ptr<t> p3(nullptr);
+  p3 = p1;
+  p1 = move(p3);
+  assert(p1.get() != nullptr && *p1 == 1 && !p1.empty() && p1.owns());
+  assert(p2.get() != nullptr && *p2 == 1 && !p2.empty() && !p2.owns());
+  assert(p3.get() != nullptr && *p3 == 1 && !p3.empty() && !p3.owns());
+  p3 = move(p1);
+  assert(p1 == nullptr && !p1.owns());
+  assert(p2.get() != nullptr && *p2 == 1 && !p2.empty() && !p2.owns());
+  assert(p3.get() != nullptr && *p3 == 1 && !p3.empty() && p3.owns());
+
+  p3 = nullptr;
+  p2 = nullptr;
+  assert(p2 == nullptr && p3 == nullptr);
+}
 void test_buffer() {
   // compile-time traits
   {

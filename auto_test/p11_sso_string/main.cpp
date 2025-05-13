@@ -1331,15 +1331,17 @@ void test_utf8_utf16_utf32_conversion() {
     u32string ss(U"一二abc三𠮷");
     u32string ss2;
 
-    assert(s2.assign_unicode(ss));
+    assert(s2.try_assign_unicode(ss));
     assert(s == s2);
-    assert(ss2.assign_unicode(s));
+    assert(s2 == u16string(from_unicode, ss));
+    assert(ss2.try_assign_unicode(s));
     assert(ss == ss2);
+    assert(ss == u32string(from_unicode, ss2));
 
     string s3;
-    assert(s3.assign_unicode(ss2));
+    assert(s3.try_assign_unicode(ss2));
     assert(s3 == "一二abc三𠮷");
-    assert(ss2.assign_unicode(s3));
+    assert(ss2.try_assign_unicode(s3));
     assert(ss == ss2);
   }
 
@@ -1372,24 +1374,24 @@ void test_utf8_utf16_utf32_conversion() {
         }
         s3.push_back(k);
       }
-      assert(s.assign_unicode(s3));
-      assert(s3b.assign_unicode(s));
+      assert(s.try_assign_unicode(s3));
+      assert(s3b.try_assign_unicode(s));
       assert(s3 == s3b);
-      assert(s2.assign_unicode(s3));
-      assert(s3c.assign_unicode(s2));
+      assert(s2.try_assign_unicode(s3));
+      assert(s3c.try_assign_unicode(s2));
       assert(s3 == s3c);
 
-      assert(sb.assign_unicode(s2));
-      assert(s2b.assign_unicode(sb));
+      assert(sb.try_assign_unicode(s2));
+      assert(s2b.try_assign_unicode(sb));
       assert(s2 == s2b);
 
-      assert(s2c.assign_unicode(s));
-      assert(sc.assign_unicode(s2c));
+      assert(s2c.try_assign_unicode(s));
+      assert(sc.try_assign_unicode(s2c));
       assert(s == sc);
 
-      assert(sd.assign_unicode(s) && s == sd);
-      assert(s2d.assign_unicode(s2) && s2 == s2d);
-      assert(s3d.assign_unicode(s3) && s3 == s3d);
+      assert(sd.try_assign_unicode(s) && s == sd);
+      assert(s2d.try_assign_unicode(s2) && s2 == s2d);
+      assert(s3d.try_assign_unicode(s3) && s3 == s3d);
     }
 
     const uint32_t a[] = {
@@ -1403,24 +1405,24 @@ void test_utf8_utf16_utf32_conversion() {
       for (int c : irng(0, i))
         s3.push_back(a[r(1u, size(a)) - 1u]);
 
-      assert(s.assign_unicode(s3));
-      assert(s3b.assign_unicode(s));
+      assert(s.try_assign_unicode(s3));
+      assert(s3b.try_assign_unicode(s));
       assert(s3 == s3b);
-      assert(s2.assign_unicode(s3));
-      assert(s3c.assign_unicode(s2));
+      assert(s2.try_assign_unicode(s3));
+      assert(s3c.try_assign_unicode(s2));
       assert(s3 == s3c);
 
-      assert(sb.assign_unicode(s2));
-      assert(s2b.assign_unicode(sb));
+      assert(sb.try_assign_unicode(s2));
+      assert(s2b.try_assign_unicode(sb));
       assert(s2 == s2b);
 
-      assert(s2c.assign_unicode(s));
-      assert(sc.assign_unicode(s2c));
+      assert(s2c.try_assign_unicode(s));
+      assert(sc.try_assign_unicode(s2c));
       assert(s == sc);
 
-      assert(sd.assign_unicode(s) && s == sd);
-      assert(s2d.assign_unicode(s2) && s2 == s2d);
-      assert(s3d.assign_unicode(s3) && s3 == s3d);
+      assert(sd.try_assign_unicode(s) && s == sd);
+      assert(s2d.try_assign_unicode(s2) && s2 == s2d);
+      assert(s3d.try_assign_unicode(s3) && s3 == s3d);
     }
   }
 }

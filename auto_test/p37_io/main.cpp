@@ -2193,9 +2193,9 @@ void test_file() {
   wstring wpath;
   u16string u16path;
   u32string u32path;
-  assert(wpath.assign_unicode(path));
-  assert(u16path.assign_unicode(path));
-  assert(u32path.assign_unicode(path));
+  assert(wpath.try_assign_unicode(path));
+  assert(u16path.try_assign_unicode(path));
+  assert(u32path.try_assign_unicode(path));
   try_remove_file(copy(path).append("\\tmp.txt"));
 
   static_assert(movable<file>);
@@ -2270,9 +2270,9 @@ void test_file_ralated_fns() {
   wstring wpath;
   u16string u16path;
   u32string u32path;
-  assert(wpath.assign_unicode(path));
-  assert(u16path.assign_unicode(path));
-  assert(u32path.assign_unicode(path));
+  assert(wpath.try_assign_unicode(path));
+  assert(u16path.try_assign_unicode(path));
+  assert(u32path.try_assign_unicode(path));
   try_remove_file(copy(path).append("\\tmp_dir"));
   try_remove_file(copy(path).append("\\a"));
   try_remove_file(copy(path).append("\\time0.txt"));
@@ -2614,9 +2614,9 @@ void test_file_ralated_fns() {
         v2.insert(v2.end(), {});
         v2.insert(v2.end(), {});
         v2.insert(v2.end(), {});
-        assert(ref(v2, 0).assign_unicode("6_byte.txt"));
-        assert(ref(v2, 1).assign_unicode("empty_f"));
-        assert(ref(v2, 2).assign_unicode("read_only_abc.txt"));
+        assert(ref(v2, 0).try_assign_unicode("6_byte.txt"));
+        assert(ref(v2, 1).try_assign_unicode("empty_f"));
+        assert(ref(v2, 2).try_assign_unicode("read_only_abc.txt"));
         assert(is_permutation(v, v2));
         assert(all_of(l, [](auto &x) {return x->is_dir == false;}));
         assert(all_of(l, [](auto &x) {return x->time.count() != 0;}));
