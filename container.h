@@ -39860,20 +39860,78 @@ public:
     h = 0;
   }
   void resize(int ww, int hh, const value_type &fll = value_type{}) {
-    if constexpr (has_allocator_type<base_t>) {
-      if (!(ww == w && hh == h)) {
-        matrix tmp(ww, hh, fll, get_allocator());
-        tmp.keep_layout_assign(move(*this));
-        *this = move(tmp);
-      }
+    if (ww == 0 || hh == 0) {
+      c.clear();
+      w = ww;
+      h = hh;
+      return;
+    }
+    if (ww > numeric_limits<int>::max() / hh)
+      throw_or_terminate<logic_error>
+        ("re::matrix::resize(): new size overflow\n");
+    if (w == 0 || h == 0) {
+      w = ww;
+      h = hh;
+      c.resize(ww * hh, fll);
     }
     else {
-      if (!(ww == w && hh == h)) {
-        matrix tmp(ww, hh, fll);
-        tmp.keep_layout_assign(move(*this));
-        *this = move(tmp);
+      if (ww < w) {
+        auto it = c.begin() + ww;
+        auto it2 = c.begin() + w;
+        int cc = 0;
+        for (;;) {
+          if (it2 == c.end())
+            break;
+          ++cc;
+          auto it3 = it2 + ww;
+          auto it4 = it2 + w;
+          while (it2 != it3) {
+            *it = move(*it2);
+            ++it;
+            ++it2;
+          }
+          it2 = it4;
+          if (cc == hh)
+            break;
+        }
+        c.erase(it, c.end());
+        c.resize(ww * hh, fll);
       }
+      else {
+        const int old_len = w * h;
+        const int new_len = ww * hh;
+        c.resize(to_unsigned(new_len), fll);
+        const int hhh = min(h, hh);
+        auto it1 = c.begin() + hhh * w;
+        auto it2 = c.begin() + hhh * ww;
+        if (it2 - c.begin() < old_len)
+          re::fill(rng(it2, c.begin() + old_len), fll);
+        const int padding_len = ww - w;
+        for (;;) {
+          const auto it3 = it2 - padding_len;
+          re::fill(rng(it3, it2), fll);
+          if (it3 == it1)
+            break;
+          const auto new_it1 = it1 - w;
+          it2 = move_backward(rng(new_it1, it1), it3);
+          it1 = new_it1;
+        }
+      }
+      w = ww;
+      h = hh;
     }
+  }
+  void reset(int ww, int hh, const value_type &fll = value_type{}) {
+    if (ww == 0 || hh == 0
+        || (capacity() / (typename C::size_type)hh
+            >= (typename C::size_type)ww)) {
+      w = ww;
+      h = hh;
+      c.resize(ww * hh);
+      fill(fll);
+    }
+    else
+      *this = matrix(ww, hh, fll);
   }
 
   auto row(int n) {
@@ -39945,6 +40003,9 @@ public:
     const auto it = iter(x, y);
     for (int k : irng(0, hei))
       re::fill(rng(it + k * width(), wid), z);
+  }
+  void fill(const value_type &fll) {
+    re::fill(range(), fll);
   }
 
   value_type &left_top() {
@@ -40231,6 +40292,14 @@ class dup_compressed_array {
   }
 
 public:
+  using stored_value_type = stored_t;
+  auto &stored_range() noexcept {
+    return v;
+  }
+  const auto &stored_range() const noexcept {
+    return v;
+  }
+
   using value_type = T;
   using reference = value_type;
   using const_reference = value_type;

@@ -65,9 +65,6 @@ inline const int mingw_no_assertion_failure_popup
 //     re::file
 //   concurrency.h
 //     ...
-//   graphics.h
-//     re::inner::fns::win32_enable_wstring_console_for_command_line_program
-//     re::inner::fns::win32_enable_utf8_console_for_window_program
 
 #include <cstdio>
 #include <cstddef>
@@ -8731,6 +8728,30 @@ struct hash<optional<T>> : private hash<T> {
   size_t operator ()(const optional<T> &x)
     const noexcept(is_nothrow_hashable_v<T>) {
     return x != nullopt ? hash<T>::operator ()(*x) : 0u;
+  }
+};
+
+template <class T1, class T2>
+struct hash<tuple<T1, T2>> : private hash<T1>, private hash<T2> {
+  using argument_type = tuple<T1, T2>;
+  using result_type = size_t;
+
+  size_t operator ()(const tuple<T1, T2> &x)
+    const noexcept(is_nothrow_hashable_v<T1>
+                   && is_nothrow_hashable_v<T2>) {
+    return hash<T1>::operator ()(x.first)
+      ^ hash<T2>::operator ()(x.second);
+  }
+};
+template <class T>
+struct hash<tuple<T, T>> : private hash<T> {
+  using argument_type = tuple<T, T>;
+  using result_type = size_t;
+
+  size_t operator ()(const tuple<T, T> &x)
+    const noexcept(is_nothrow_hashable_v<T>) {
+    return hash<T>::operator ()(x.first)
+      ^ hash<T>::operator ()(x.second);
   }
 };
 

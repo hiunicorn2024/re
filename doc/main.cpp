@@ -2200,6 +2200,7 @@ void doc_hash() {
   // hash<nullptr_t>
   // hash<type_index>
   // hash<optional<T>>
+  // hash<tuple<T1, T2>>
   //
   // hash<unique_ptr<T, D>>
   // hash<monostate>
@@ -8948,7 +8949,7 @@ void doc_tree_typedef() {
   // logn_dynamic_tree_vector<T, F = store_this_iter>
 }
 void doc_matrix() {
-  // matrix<T, C>
+  // matrix<T, C = ...>
   //   value_type
   //   reference
   //   const_reference
@@ -8996,14 +8997,16 @@ void doc_matrix() {
   //
   //   clear()
   //   resize(w, h, fll = value_type{})
+  //   reset(w, h, fll = value_type{})
   //
   //   row(n)
   //   rows()
   //   column(n)
   //   columns()
   //   sub_range(x, y, w, h) // overflowed part are removed
-  //   fill(x, y, w, h, z)
+  //   fill(x, y, w, h, value)
   //     // rectangle of (x, y)-(w, h) belong to *this or empty rectangle
+  //   fill(value)
   //
   //   left_top()
   //   left_bottom()
@@ -9039,6 +9042,9 @@ void doc_matrix() {
 }
 void doc_dup_compressed_array() {
   // dup_compressed_array<T, AL>
+  //   stored_value_type = pair<T, uint>;
+  //   stored_range()->rng_of_stored_value_type
+  //
   //   value_type = T
   //   reference = value_type
   //   const_reference = value_type
@@ -9173,7 +9179,7 @@ void doc_duration() {
   //   round<rep2>()
   //   abs()
   // duration_cast<d2_t>(d)
-  // duration_flour<d2_t>(d)
+  // duration_floor<d2_t>(d)
   // duration_ceil<d2_t>(d)
   // duration_round<d2_t>(d)
   // abs(d)
@@ -9204,6 +9210,8 @@ void doc_time_point() {
   //   duration = D
   //   rep = duration::rep
   //   period = duration::period
+  //
+  //   smf: full
   //
   //   explicit time_point(d)
   //   time_point(tp2) requires is_convertible_v<tp2_t, duration>
@@ -9941,12 +9949,2220 @@ void doc_exclusive_thread_pool() {
   //   exclusive_thread_pool(size_t)
   //   fetch(f)
   //   join()
+  //     // join is not called by thread object, but called by pool
   //   size_type = size_t
   //   count()->size_type
   //   count_running()->size_type
   //   count_sleeping()->size_type
   //   shrink_to_fit()
   //   append(size_type)
+}
+
+void doc_key_code() {
+  // key_code_t = unsigned
+  //
+  // inline constexpr unsigned
+  // key_lbutton = ...
+  // key_rbutton
+  // key_mbutton
+  // key_xbutton1
+  // key_xbutton2
+  // key_volume_mute key_volume_down key_volume_up
+  // key_print key_pause key_insert key_delete key_scroll
+  // key_home key_end key_pageup key_pagedown
+  // key_esc                     key_backspace
+  // key_tab
+  // key_capslock                    key_enter
+  // key_shift
+  // key_ctrl key_alt   key_space    key_up
+  //                        key_left key_down key_right
+  // key_app
+  // key_lwin key_rwin
+  // key_lshift key_rshift
+  // key_lctrl key_rctrl
+  // key_lalt key_ralt
+  //
+  // key_0 key_1 key_2 key_3 key_4 key_5 key_6 key_7 key_8 key_9
+  //
+  // key_a key_b key_c key_d key_e key_f key_g key_h key_i key_j key_k
+  // key_l key_m key_n key_o key_p key_q key_r key_s key_t key_u
+  // key_v key_w key_x key_y key_z
+  //
+  // key_f1 key_f2 key_f3 key_f4 key_f5 key_f6 key_f7 key_f8 key_f9 key_f10
+  // key_f11 key_f12 key_f13 key_f14 key_f15 key_f16 key_f17 key_f18 key_f19
+  // key_f20 key_f21 key_f22 key_f23 key_f24
+  //
+  // key_us_semicolon = VK_OEM_1;
+  //   // Used for miscellaneous characters;
+  //   // it can vary by keyboard. For the US standard keyboard, the ;: key
+  // key_us_plus = VK_OEM_PLUS;
+  //   // For any country/region, the + key
+  // key_us_comma = VK_OEM_COMMA;
+  //   // For any country/region, the , key
+  // key_us_minus = VK_OEM_MINUS;
+  //   // For any country/region, the - key
+  // key_us_period = VK_OEM_PERIOD;
+  //   // For any country/region, the . key
+  // key_us_slash = VK_OEM_2;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  //   // For the US standard keyboard, the /? key
+  // key_us_tilde = VK_OEM_3;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  //   // For the US standard keyboard, the `~ key
+  // key_us_lbrace = VK_OEM_4;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  //   // For the US standard keyboard, the [{ key
+  // key_us_backslash = VK_OEM_5;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  //   // For the US standard keyboard, the \\| key
+  // key_us_rbrace = VK_OEM_6;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  //   // For the US standard keyboard, the ]} key
+  // key_us_quote = VK_OEM_7;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  //   // For the US standard keyboard, the '" key
+  // key_oem_8 = VK_OEM_8;
+  //   // Used for miscellaneous characters; it can vary by keyboard.
+  // key_oem_102 = VK_OEM_102;
+  //   // The <> keys on the US standard keyboard,
+  //   // or the \\| key on the non-US 102-key keyboard
+  // key_ime_process = VK_PROCESSKEY; // IME PROCESS key
+  // key_packet = VK_PACKET;
+  //   // Used to pass Unicode characters as if they were keystrokes.
+  //   // The VK_PACKET key is the low word of a 32-bit Virtual Key value
+  //   // used for non-keyboard input methods. For more information,
+  //   // see Remark in KEYBDINPUT, SendInput, WM_KEYDOWN, and WM_KEYUP
+  // key_oem_clear = VK_OEM_CLEAR; // Clear key
+  //
+  // key_media_next_track   key_media_previous_track
+  // key_media_stop   key_media_play_pause
+  //
+  // key_numlock
+  // key_numpad0 key_numpad1 key_numpad2
+  // key_numpad3 key_numpad4 key_numpad5
+  // key_numpad6 key_numpad7 key_numpad8 key_numpad9
+  // key_add key_subtract key_multiply key_divide
+  // key_decimal key_separator
+  //
+  // key_clear
+  // key_sleep
+}
+void doc_key_comb() {
+  // key_name(unsigned)->sview
+  // key_code(sview)->optional<unsigned>
+  // is_modifier_key(unsigned)->bool // (l/r)(ctrl/alt/shift)
+  // is_upper_modifier_key(unsigned)->bool // shift
+  // is_lower_modifier_key(unsigned)->bool // lshift/rshift
+  // to_upper_modifier_key(unsigned)->unsigned // lshift/rshift -> shift
+  //
+  // key_comb
+  //   // if valid, back(*this) is the non-modifier key
+  //   smf: full
+  //   ==
+  //   <=> // compare size for different sizes, otherwise compare sequence
+  //   explicit key_comb(r)
+  //     // at most 8 keys, invalid input get nil key_comb
+  //     //
+  //     // if size(r) == 1u
+  //     //   all key is acceptable  
+  //     // otherwise
+  //     //   invalid if only contains modifier keys
+  //     //   invalid if number of non-modifier key is not 1
+  //     //
+  //     // for modifier key:
+  //     //   no modifier key, all upper modifier key, or all lower modifier key
+  //     //   no repeated modifier key
+  //   explicit key_comb(unsigned) // invalid input get nil key_comb
+  //   key_comb(k1, k2) // invalid input get nil key_comb
+  //   key_comb(k1, k2, k3) // invalid input get nil key_comb
+  //   key_comb(k1, k2, k3, k4) // invalid input get nil key_comb
+  //   valid()->bool // not nil
+  //   explicit operator bool() // valid()
+  //   begin()->const unsigned *
+  //   end()->const unsigned *
+  //   size()
+  //   empty()
+  //   conflicts_with(const key_comb &)
+  //     // e.g. a conflicts with a
+  //     // e.g. lctrl conflicts with ctrl
+  //     // e.g. lctrl-lalt-a conflicts with ctrl-alt-a
+  //     // e.g. lctrl-lalt-a does not conflicts with rctrl-ralt-a
+  //   includes(const key_comb &) // false if equal
+  //     // e.g. a does not includes a
+  //     // e.g. lctrl-a includes a
+  //     // e.g. lctrl-lalt-a includes lctrl-a
+  //   triggered_by(const local_vector<unsigned, 8> &)
+  //     // upper modifier can be triggered by lower modifier
+  //     // lower modifier can not be triggered by upper modifier
+  //
+  // enum key_action
+  //   key_press
+  //   key_release
+  //   key_double_press
+  //   key_action_lim
+}
+void doc_key_recorder() {
+  // key_recorder
+  //   smf: only default constructible
+  //
+  //   press(key_code_t)
+  //   release(key_code_t)
+  //   unset_focus() // clear states
+  //   set_focus() // read states from system
+  //
+  //   pressed(key_code_t)
+  //   locked(key_code_t)
+  //     // return false if not one of {key_capslock, key_numlock, key_scroll}
+  //   copy_pressed(O)->O
+}
+void doc_key_mapper() {
+  // key_mapper
+  //   smf: only destructible
+  //   explicit key_mapper(const key_recorder &)
+  //
+  //   set_focus() // do nothing
+  //   unset_focus() // clear time caches for double-press
+  //   press(key_code_t) // no upper modifier key is accepted
+  //     // key_recorder::press
+  //   release(key_code_t) // no upper modifier key is accepted
+  //
+  //   rotate_wheel(int)
+  //   bound_wheel()->bool
+  //   bind_wheel(f)
+  //   unbind_wheel()
+  //
+  //   clear()
+  //   empty()
+  //
+  //   contains(pair<key_comb, key_action>)->bool // exactly contain
+  //
+  //   insert(pair<key_comb, key_action>,
+  //          function<void ()>)->bool
+  //   insert_or_assign(pair<key_comb, key_action>,
+  //                    function<void ()>)->bool
+  //   remove(pair<key_comb, key_action>)->bool
+}
+void doc_vector_math() {
+  // pi_f
+  // pi_d
+  //
+  // abs_square(v1)
+  // dot(v1, v2)
+  // cross(v1, v2)
+  // normalize(v)
+  // traverse(m)
+  //
+  // mat<T, W, H>
+  // ivec2 = mat<int, 1, 2>
+  // ivec3 = mat<int, 1, 3>
+  // ivec4 = mat<int, 1, 4>
+  // lvec2 = mat<long, 1, 2>
+  // lvec3 = mat<long, 1, 3>
+  // lvec4 = mat<long, 1, 4>
+  // llvec2 = mat<long long, 1, 2>
+  // llvec3 = mat<long long, 1, 3>
+  // llvec4 = mat<long long, 1, 4>
+  // zvec2 = mat<size_t, 1, 2>
+  // zvec3 = mat<size_t, 1, 3>
+  // zvec4 = mat<size_t, 1, 4>
+  // fvec2 = mat<float, 1, 2>
+  // fvec3 = mat<float, 1, 3>
+  // fvec4 = mat<float, 1, 4>
+  // fmat2 = mat<float, 2, 2>
+  // fmat3 = mat<float, 3, 3>
+  // fmat4 = mat<float, 4, 4>
+  // dvec2 = mat<double, 1, 2>
+  // dvec3 = mat<double, 1, 3>
+  // dvec4 = mat<double, 1, 4>
+  // dmat2 = mat<double, 2, 2>
+  // dmat3 = mat<double, 3, 3>
+  // dmat4 = mat<double, 4, 4>
+  //
+  // mat<T, W, H>
+  //   smf: dependent
+  //   ==(const mat &) = default;
+  //   <=>(const mat &)
+  //
+  //   explicit(sizeof...(s) == 1u) mat(s...)
+  //   explicit mat(m2_lv_or_rv)
+  //   mat(m2_lv_or_rv, fll)
+  //   =(m2_lv_or_rv)
+  //
+  //   pointer
+  //   const_pointer
+  //   value_type
+  //   reference
+  //   const_reference
+  //   iterator
+  //   const_iterator
+  //   difference_type
+  //   size_type
+  //
+  //   matrix_width()->size_type
+  //   matrix_height()->size_type
+  //
+  //   begin()
+  //   end()
+  //   cbegin()
+  //   cend()
+  //   size()
+  //   empty()
+  //
+  //   front()
+  //   back()
+  //   [](i)
+  //
+  //   left_top()
+  //   left_bottom()
+  //   right_top()
+  //   right_bottom()
+  //
+  //   ()(x, y)
+  //   iter(x, y)
+  //   row(n)
+  //   rows()
+  //   column(n)
+  //   columns()
+  //
+  //   -()
+  //   +()
+  //   +=(m)
+  //   -=(m)
+  //   +(m)
+  //   -(m)
+  //   add_with_check(const mat &)->mat // value type is integral
+  //   sub_with_check(const mat &)->mat // value type is integral
+  //   sub_to_zero_at_most(const mat &)->mat
+  //     // value type is integral, all arg element greater than zero
+  //
+  //   *=(k)
+  //   *(k)
+  //   friend k * m
+  //   /=(k)
+  //   /(k)
+  //
+  //   *=(m)
+  //   *(m)
+  //
+  //   is_zero()
+  //   fill(x)
+  //
+  //   x() r() s()
+  //   y() g() t()
+  //   z() b() p()
+  //   w() a() q()
+  //
+  //   apply_w() // vec3 to vec2, vec4 to vec3
+  //   reset_w() // unchanged vec values but set w to 1
+  //
+  //   abs()->T // only for vec
+  //   abs_square()->T // only for vec
+  //   dot(v)->T // only for vec
+  //   cross(v)->mat // only for vec
+  //   normalize()->mat // only for vec, unchange if abs() is zero
+  //
+  //   on_left(const vec2 &p, const vec2 &v)->bool // only for vec2
+  //   on_right(const vec2 &p, const vec2 &v)->bool // only for vec2
+  //
+  //   in_triangle(const vec2 &p1, const vec2 &p2, const vec2 &p3)->bool
+  //     // only for vec2
+  //   in_triangle(const vec2 &p1, const vec2 &p2_m_p1,
+  //               const vec2 &p2, const vec2 &p3_m_p2,
+  //               const vec2 &p3, const vec2 &p1_m_p3)->bool
+  //     // only for vec2
+  //
+  //   static identity()->mat
+  //
+  //   traverse()->mat
+  //
+  //   static x_translation(s)->mat // for mat3
+  //   static y_translation(s)->mat // for mat3
+  //   static translation(vec2)->mat // for mat3
+  //
+  //   static x_translation(s)->mat // for mat4
+  //   static y_translation(s)->mat // for mat4
+  //   static z_translation(s)->mat // for mat4
+  //   static translation(vec3)->mat // for mat4
+  //
+  //   static scaling(s)->mat // for mat3 or mat4
+  //   static x_scaling(s)->mat // for mat3 or mat4
+  //   static y_scaling(s)->mat // for mat3 or mat4
+  //   static z_scaling(s)->mat // for mat3 or mat4
+  //
+  //   static z_rotation(r)->mat // for mat2 or mat3 or mat4
+  //   static x_rotation(r)->mat // for mat3 or mat4
+  //   static y_rotation(r)->mat // for mat3 or mat4
+  //
+  //   static rotation(vec3 pos, vec3 normalized_arrow, r)->mat // for mat4
+  //   static rotation(vec3 normalized_arrow, r)->mat // for mat4
+  //
+  //   z_rotate(r)->vec2 // for vec2
+  //   z_rotate(r)->vec3 // for vec3
+  //   y_rotate(r)->vec3 // for vec3
+  //   x_rotate(r)->vec3 // for vec3
+  //   rotate(vec3 normalized_arrow, r)->vec3 // for vec3
+  //   rotate(vec3 pos, vec3 normalized_arrow, r)->vec3 // for vec3
+  //
+  //   static persp_projection(w, h, near, far) // for mat4 // perspective
+  //   static ortho_projection(w, h, near, far) // for mat4 // orthographic
+  //
+  //   static look_at(vec3 center, vec3 eye, vec3 up)->mat // for mat4
+  //   static look_at(angle_hrot, angle_vrot, dst)->mat // for mat4
+  //   static look_at(angle_hrot, angle_vrot, angle_uprot, dst)->mat // for mat4
+  //     // angle_uprot: do counterclockwise rotation for camera image
+  //   static look_at(vec3 center,
+  //                  angle_hrot, angle_vrot, dst)->mat // for mat4
+  //   static look_at(vec3 center,
+  //                  angle_hrot, angle_vrot, angle_uprot, dst)->mat // for mat4
+  //
+  //   static reflective_ray(vec incident_ray,
+  //                         vec normalized_normal)->vec // for vec
+  //   static refractive_ray(vec normalized_incident_ray,
+  //                         vec normalized_normal,
+  //                         relative_refractive_index)->vec // for vec2 or vec3
+  //
+  //   project_onto_line(vec pos, vec normalized_arrow)->vec // for vec2 or vec3
+  //   project_onto_plane(vec pos, vec normalized_normal)->vec // for vec3
+  //
+  //   sprint()->string
+  //     // for mat<integral, 1, 2>
+  //     // for mat<integral, 1, 3>
+  //   sprint(size_t precision = 6u)->string
+  //     // for mat<floating_point, 1, 2>
+  //     // for mat<floating_point, 1, 3>
+  //
+  //   size_includes(const mat &, less_f = less<>{})->bool
+  //     // return true if:
+  //     //   for every element of arg, named by x
+  //     //     !less_f(the_corresponding_element_in_this, x)
+  //   size_no_eq_includes(const mat &, less_f = less<>{})->bool
+  //     // *this != arg && this->size_includes(arg, less_f)
+  //
+  //   // to_abs_point: cast ivec2 of pixel point to absolute point
+  //   to_abs_point<FP>()->mat<FP, 1, 2>
+  //   to_abs_fpoint()->fvec2
+  //   to_abs_dpoint()->dvec2
+  //   to_pixel_point(ivec2 pixmap_sz)->ivec2
+  //     // cast ivec2 of absolute point to pixel coordinates
+  //     // sz != ivec2(0, 0)
+  //
+  //   dif_from_left_top(ivec2 p)->ivec2
+  //     // p is at left of *this
+  //     // p is at higher of *this
+  //     // return two postive values
+  //
+  // tuple_element<I, mat<T, 1, N>>
+  //   type
+  // tuple_size<mat<T, 1, N>>
+  //   value
+  // get<I>(mat<T, 1, N> &)
+  // get<I>(const mat<T, 1, N> &)
+  // get<I>(mat<T, 1, N> &&)
+  // get<I>(const mat<T, 1, N> &&)
+  //
+  //
+  // hash<mat<T, 1, 2>>
+}
+void doc_rgba() {
+  // rgba_r(uint32_t)->uint32_t
+  // rgba_r(uint32_t &, uint32_t)
+  // rgba_g
+  // rgba_b
+  // rgba_a
+  //
+  // rgba_rgba(uint32_t)->tuple<uint32_t, uint32_t, uint32_t, uint32_t>
+  // rgba_rgba(uint32_t &, tuple<uint32_t, uint32_t, uint32_t, uint32_t>)
+  // rgba_rgba(uint32_t &, uint32_t, uint32_t, uint32_t, uint32_t)
+  //
+  // rgba_rgb(uint32_t)->tuple<uint32_t, uint32_t, uint32_t>
+  // rgba_rgb(uint32_t &, tuple<uint32_t, uint32_t, uint32_t>)
+  // rgba_rgb(uint32_t &, uint32_t, uint32_t, uint32_t)
+  // rgba_rga
+  // rgba_rba
+  // rgba_gba
+  //
+  // rgba_rg(uint32_t)->tuple<uint32_t, uint32_t>
+  // rgba_rg(uint32_t &, tuple<uint32_t, uint32_t>)
+  // rgba_rg(uint32_t &, uint32_t, uint32_t)
+  // rgba_rb
+  // rgba_ra
+  // rgba_gb
+  // rgba_ga
+  // rgba_ba
+  //
+  // rgba_from_rgba(tuple<uint32_t, uint32_t, uint32_t, uint32_t>)
+  // rgba_from_rgba(uint32_t, uint32_t, uint32_t, uint32_t)
+  // rgba_from_rgb(...)
+  // rgba_from_rga(...)
+  // rgba_from_rba(...)
+  // rgba_from_gba(...)
+  // rgba_from_rg(...)
+  // rgba_from_rb(...)
+  // rgba_from_ra(...)
+  // rgba_from_gb(...)
+  // rgba_from_ga(...)
+  // rgba_from_ba(...)
+  // rgba_from_r(...)
+  // rgba_from_g(...)
+  // rgba_from_b(...)
+  // rgba_from_a(...)
+  //
+  // rgba_f = fvec4
+  // rgba_d = dvec4
+  // rgba_to_rgba_f(uint32_t)->rgba_f
+  // rgba_to_rgba_d(uint32_t)->rgba_d
+  // rgba_from_rgba_f(fvec4)->uint32_t
+  // rgba_from_rgba_d(dvec4)->uint32_t
+  //
+  // rgba_sprint(uint32_t)->string
+  //
+  // alpha_blend(uint32_t lower, uint32_t upper)->uint32_t
+  // alpha_blend(rgba_f lower, rgba_f upper)->rgba_f
+  // alpha_blend(rgba_d lower, rgba_d upper)->rgba_d
+  //
+  // premultiplied_alpha_blend(uint32_t lower, uint32_t upper)->uint32_t
+  // premultiplied_alpha_blend(rgba_f lower, rgba_f upper)->rgba_f
+  // premultiplied_alpha_blend(rgba_d lower, rgba_d upper)->rgba_d
+  //
+  // rgba_rgb_mul_div(uint32_t c, uint32_t num, uint32_t den)->uint32_t
+  //   // for per element of c, multiply num then divide by den
+  //
+  // rgba_black
+  // rgba_white
+  // rgba_red
+  // rgba_green
+  // rgba_blue
+  // rgba_yellow
+}
+void doc_irect2() {
+  // basic_align
+  //   left
+  //   middle
+  //   right
+  // basic_v_align
+  //   top
+  //   middle
+  //   bottom
+  //
+  // irect2
+  //   smf: full
+  //   ==
+  //   irect2(ivec2, ivec2) // {x, y}, {w, h}
+  //     // no check for negative size
+  //     // terminate if size is too big or w * h overflowed
+  //
+  //   origin()->ivec2 // return left_bottom()
+  //   left_bottom()->ivec2
+  //   left_top()->ivec2
+  //   right_bottom()->ivec2
+  //   right_top()->ivec2
+  //   size()->ivec2
+  //   width()->int
+  //   height()->int
+  //   empty()->bool // width() == 0 || height() == 0
+  //
+  //   includes_point(ivec2)->bool
+  //
+  //   intersection_with(const irect2 &)->irect2
+  //     // if the result is empty, return irect2(this->origin(), ivec2(0, 0))
+  //   has_intersection_with(const irect2 &)->bool
+  //   exclude_from_non_overlapping(circular_vector<ivec2> &v,
+  //                                size_t n_at_most = v.size())
+  //   exclude_from(irect2)->local_vector<irect2, 4>
+  //
+  //   left_of(irect2)->irect2
+  //   right_of(irect2)->irect2
+  //   top_of(irect2)->irect2
+  //   bottom_of(irect2)->irect2
+  //
+  //   move_to(irect2 r2,
+  //           basic_align = basic_align::middle,
+  //           basic_v_align = basic_v_align::middle)->irect2
+  //     // move *this to r2 by align
+  //     // the returned irect2 has the same size() than *this
+  //     // if r2 do not includes *this, return irect2(r2.origin(), size())
+  //   
+  //   to_matrix_point(ivec2 point)->ivec2
+  //     // point is in *this (hint: *this is not empty)
+  //     // return relative window point: (0, 0) is left-top
+  //   to_point(ivec2 relative_win_point)->ivec2
+  //     // relative_win_point is in *this (hint: *this is not empty)
+  //     // return absolute point: (0, 0) is left-bottom
+  //
+  //   sprint()->string
+}
+void doc_pixmap() {
+  // pixmap
+  //   smf: full
+  //   ==
+  //
+  //   explicit pixmap(ivec2 non_neg_sz)
+  //   pixmap(ivec2 non_neg_sz, fll)
+  //
+  //   pixmap(ivec2 non_neg_sz, r)
+  //
+  //   width()->int
+  //   height()->int
+  //   size()->ivec2
+  //   empty()->bool
+  //   clear()
+  //
+  //   row(int)->range // valid row number
+  //   rows()->range
+  //   column(int)->range // valid column number
+  //   columns()->range
+  //   sub_range(irect2 r)
+  //     // return stored sequence (from top line to bottom line)
+  //
+  //   fill(irect2 r, uint32_t)
+  //   fill(uint32_t)
+  //
+  //   iter(ivec2) // valid coordinates (from left-bottom to right-top)
+  //   operator ()(ivec2)->value_type_ref // valid coordinates
+  //   iter(int, int)
+  //     // valid matrix coordinates (from left-top to right-bottom)
+  //   includes_point(ivec2)
+  //
+  //   value_type = uint32_t
+  //
+  //   range()
+  //
+  //   rectangle()->irect2
+  //
+  //   resize(ivec2, uint32_t = 0u)
+  //   reset(ivec2, uint32_t = 0u)
+  //
+  //   capacity()->size_t
+  //   reserve(size_t)
+  //   reserve_more(size_t)
+  //   shrink_to_fit()
+  //
+  //   reverse_left_right()
+  //   reverse_up_down()
+  //
+  //   cover(ivec2, const pixmap &, mix_f = ...)->ivec2
+  //     // return replaced size
+  //     // mix_f eats two value of const uint32_t &
+  //     // mix_f(old, new)->uint32_t
+  //   cover(ivec2, const pixmap &b, irect2 r2, mix_f = ...)->ivec2
+  //     // return replaced size
+  //     // r2 is in b.rectangle()
+  //
+  //   cover(irect2 r, const pixmap &b, {irect2 r2, }, mix_f = ...,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->ivec2
+  //     // r2 is in b.rectangle()
+  //     // return replaced size
+  //     // if r can not include r2, do nothing and return {}
+  //
+  //   cover(irect2 r, irect2 r2, const pixmap &b, {irect2 b_r, }, mix_f = ...,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->ivec2
+  //     // same as no-r2-version except for keeping only part of r2
+  //     // b_r is in b.rectangle(), b_r is b.rectangle() if no list
+  //     // return replaced size
+  //     // if r can not include b_r, do nothing and return {}
+  //
+  //   default_multi_sample_coefficient()->int // return 6
+  //   default_multi_sample_coefficient(int) // not thread-safe
+  //
+  //   // draw_xxx():
+  //   //   size() is not too big, msaa_coeff is not too big
+  //
+  //   draw_point(fvec2, uint32_t clr, int msaa_coeff = ...)
+  //   draw_point(dvec2, uint32_t clr, int msaa_coeff = ...)
+  //
+  //   // draw_line(): if two point have no difference, draw one point
+  //   draw_line(fvec2, fvec2, uint32_t clr, int msaa_coeff = ...)
+  //   draw_line(dvec2, dvec2, uint32_t clr, int msaa_coeff = ...)
+  //   draw_triangle(fvec2, fvec2, fvec2, uint32_t clr, int msaa_coeff = ...)
+  //   draw_triangle(dvec2, dvec2, dvec2, uint32_t clr, int msaa_coeff = ...)
+  //
+  //   draw_triangle_outline(fvec2, fvec2, fvec2,
+  //                         uint32_t clr, int msaa_coeff = ...)
+  //   draw_triangle_outline(dvec2, dvec2, dvec2,
+  //                         uint32_t clr, int msaa_coeff = ...)
+  //
+  //   draw_triangle(fvec2, fvec2, fvec2, uint32_t clr, int msaa_coeff = ...)
+  //   draw_triangle(dvec2, dvec2, dvec2, uint32_t clr, int msaa_coeff = ...)
+  //
+  //   draw_triangle_with_outline(fvec2, fvec2, fvec2,
+  //                              uint32_t clr, int msaa_coeff = ...)
+  //   draw_triangle_with_outline(dvec2, dvec2, dvec2,
+  //                              uint32_t clr, int msaa_coeff = ...)
+}
+void doc_font_glyph() {
+  // glyph
+  //   // store reference or dyanmic array
+  //   smf: full
+  //   value_type = unsigned char
+  //   range()->iter_pair<dup_compressed_array<unsigned char>::const_iterator>
+  //   compressed_length()->size_t
+  //   empty()->bool
+  //   owns()->bool
+  //   rectangle()->irect2
+  //   size()->ivec2
+  //   width()->int
+  //   height()->int
+  //   left_offset()->int // leftmost_point_x - baseline_point_x (may be minus)
+  //   top_offset()->int // topmost_point_y - baseline_point_y (may be minus)
+  //   left_width()->int // baseline left
+  //   right_width()->int
+  //   upper_height()->int // baseline left
+  //   lower_height()->int
+  //   cover(bitmap &b, ivec2 pos, uint32_t color)->ivec2
+  //   cover(bitmap &b, ivec2 pos, irect2 rect, uint32_t color)->ivec2
+  //     // return painted size
+  //     // paint to intersection area of b.rectangle(), rect, and
+  //     // irect2(pos, size)
+  //   code()->uint32_t
+  //   utf8_code()->string
+  //
+  // font_file_data
+  //   smf: destructible
+  //   explicit font_file_data(sview)
+  // font
+  //   smf: only destructible
+  //   font(font_file_data, size_t sz, cached = true) // throw if n == 0
+  //   font(sview, size_t sz, cached = true) // throw if n == 0
+  //   cached()->bool
+  //   size()->int
+  //   has_character(unsigned long)->bool
+  //   [](unsigned long)->glyph
+  //   [](sview)->glyph
+  //   a_to_z_upper_height() const noexcept->int;
+  //   a_to_z_lower_height() const noexcept->int;
+  //
+  //   default_separator_width() const noexcept->int
+  //   default_separator_width(int) noexcept
+  //
+  //   cover(sview, pixmap &, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //   cover(u32sview, pixmap &, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //
+  //   cover(sview, pixmap &, irect2, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //   cover(u32sview, pixmap &, irect2, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //     // cover the first irect2, but keep only part of irect2
+  //
+  //   cover(sview, int separator_width,
+  //         pixmap &, irect2, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //   cover(u32sview, int separator_width,
+  //         pixmap &, irect2, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //
+  //   cover(sview, int separator_width,
+  //         pixmap &, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //   cover(u32sview, int separator_width,
+  //         pixmap &, irect2, uint32_t,
+  //         basic_align = basic_align::middle,
+  //         basic_v_align = basic_v_align::middle)->size_t
+  //     // return number of the painted characters
+  //
+  //   min_size_for(sview, int space_width = ...)->ivec2
+  //   min_size_for(u32sview, int space_width = ...)->ivec2
+  //
+  // font_ptr
+  //   smf: non-default-constructible
+  //   font_ptr(shared_ptr<font>) // throw for nullptr
+  //   font_ptr(font &)
+  //   font_ptr(font *) // throw for nullptr
+  //   get()->font *
+  //   operator ->()->font *
+  //   operator *()->font &
+}
+void doc_basic_window_program() {
+  // basic_system_window
+  //   smf: none
+  //
+  //   static has_console()->bool
+  //   static start_time()->steady_clock::time_point
+  //   static monitor_position()->ivec2
+  //     // left-top corrdinates from system origin point
+  //     // (left-top to right-bottom)
+  //   static monitor_size()->ivec2
+  //   static frame_position()->ivec2
+  //     // left-top corrdinates from system origin point
+  //     // (left-top to right-bottom)
+  //   static frame_size()->ivec2
+  //   static size()->ivec2 // size of client area
+  //
+  //   static resize(ivec2) // resize client area
+  //   static move_to(ivec2) // move frame
+  //   static paint(const pixmap &)
+  //
+  // as_basic_window_program<DERIVED>
+  //   // DERIVED optional functions:
+  //   //   create()
+  //   //   destroy()
+  //   //   paint()
+  //   //   set_focus()
+  //   //   unset_focus()
+  //   //   press(unsigned)
+  //   //   release(unsigned)
+  //   //   rotate_wheel(int)
+  //   //   mouse_leave()
+  //   //   mouse_move(ivec2) // from left-bottom to right-top
+  //   //   resize(ivec2)
+  //
+  // run_basic_window_program<DERIVED>(console_on = false)->int
+}
+void doc_window_paint_traits_default_affairs() {
+  // window_paint_traits
+  //   uint32_t background_color
+  //   uint32_t forground_color
+  //   uint32_t light_forground_color
+  //   uint32_t font_color
+  //   uint32_t frame_color
+  //
+  //   uint32_t groove_color
+  //   uint32_t check_box_color
+  //   uint32_t progress_bar_color
+  // default_window_paint_traits()->const window_paint_traits &
+  //
+  // default_locked_color(uint32_t)->uint32_t
+  //   // map normal rgb to locked rgb, do not touch alpha
+  // default_pressed_color(uint32_t)->uint32_t // do not touch alpha
+  // default_hovered_color(uint32_t)->uint32_t // do not touch alpha
+  // default_window_color(uint32_t,
+  //                      bool hovered,
+  //                      bool pressed,
+  //                      bool locked)->uint32_t // do not touch alpha
+  // default_window_color(uint32_t,
+  //                      bool hovered,
+  //                      bool locked)->uint32_t // do not touch alpha
+  // default_window_color(uint32_t,
+  //                      bool locked)->uint32_t // do not touch alpha
+  //
+  // default_font()->font * // same as system_window::get()->vf_default_font()
+  //
+  // default_slider_line_width()->int
+  //   // same as system_window::get()->vf_default_bar_line_width()
+  // default_slider_length()->int
+  //   // same as system_window::get()->vf_default_slider_length()
+}
+void doc_window() {
+  // window
+  // window_controller
+  // window_tree_vector
+  // window_tree
+  // window_iterator = window_tree_vector::iterator;
+  // window_const_iterator = window_tree_vector::const_iterator;
+  //
+  // window // abstract class
+  //   smf: only default constructible
+  //
+  //   iterator
+  //   const_iterator
+  //   iter() noexcept->window_iterator
+  //   iter() const noexcept->window_const_iterator
+  //   protected iter(window_iterator) noexcept
+  //
+  //   has_focus() const noexcept->bool
+  //   protected focus(bool) noexcept
+  //   protected virtual set_focus()
+  //   protected virtual unset_focus()
+  //
+  //   hovered() const noexcept->bool
+  //   protected hovered(bool) noexcept
+  //   protected virtual set_hovered()
+  //   protected virtual unset_hovered()
+  //
+  //   virtual mouse_move(ivec2);
+  //     // eat absolute position
+  //     // only be called when focused
+  //
+  //   virtual bool aware_keys() const
+  //     // if true, key-focused-window stoped at *this to avoid upward search
+  //   has_keys() const noexcept->bool
+  //   set_keys()
+  //   unset_keys() noexcept
+  //   key_mapper &keys()
+  //   protected virtual press(key_code_t)
+  //   protected virtual release(key_code_t)
+  //   protected virtual rotate_wheel(int)->bool
+  //     // return whether stop calling iter()->parent()->rotate_wheel()
+  //
+  //   position() const noexcept->ivec2 // return left-bottom point
+  //   protected assign_position(ivec2) noexcept // no adjustment
+  //   virtual void move_to(ivec2)
+  //   size() const noexcept->ivec2
+  //   protected assign_size(ivec2) noexcept // no adjustment
+  //   virtual resize(ivec2)
+  //   virtual rectangle(irect2)
+  //   min_size() const noexcept->ivec2
+  //   max_size() const noexcept->ivec2
+  //   min_width() const noexcept->int
+  //   min_height() const noexcept->int
+  //   max_width() const noexcept->int
+  //   max_height() const noexcept->int
+  //   width() const noexcept->int
+  //   height() const noexcept->int
+  //   width(int);
+  //   height(int);
+  //
+  //   protected assign_min_size(ivec2) noexcept // no adjustment
+  //   protected assign_max_size(ivec2) noexcept // no adjustment
+  //   protected assign_locked_minmax_size(ivec2 v = {}) noexcept
+  //     // no adjustment
+  //     // set min_size = max_size = v
+  //   protected lock_size() noexcept
+  //     // assign_locked_minmax_size() with adjustment
+  //   protected assign_unlocked_minmax_size() noexcept // no adjustment
+  //     // set min_size = {} and max_size = {max, max}
+  //   protected unlock_size() noexcept
+  //     // assign_unlocked_minmax_size() with adjustment
+  //   protected lock_width() noexcept
+  //   protected lock_height() noexcept
+  //   protected unlock_width() noexcept
+  //   protected unlock_height() noexcept
+  //   protected virtual controls_children() const->bool
+  //     // if true, adjust_to_fit_parent() should do nothing to let the parent
+  //     // decide rectangle of *this
+  //   protected virtual adjust_to_fit_children() // do not touch abs_rectangle
+  //   protected virtual adjust_to_fit_parent() // do not touch abs_rectangle
+  //   protected virtual adjust_children_to_fit_this()
+  //     // do not touch abs_rectangle
+  //   protected virtual adjust_for_rectangle()
+  //     // set data for pre-provided rectangle info by sz() and position()
+  //   adjust()
+  //     // call "adjust_" functions and adjust abs_rectangle
+  //     // when all rectangle-changed windows are hooked in sub-tree of *this
+  //
+  //   hidden() const noexcept->bool
+  //   protected assign_hidden(bool) noexcept
+  //   virtual hide()
+  //   virtual show()
+  //
+  //   locked() const noexcept->bool
+  //   protected assign_locked(bool) noexcept
+  //   virtual lock()
+  //   virtual unlock()
+  //
+  //   can_cross() const noexcept->bool
+  //   protected assign_cross(bool) noexcept
+  //   virtual lock_cross()
+  //   virtual unlock_cross()
+  //
+  //   virtual init_after_first_insertion()
+  //   virtual init_new_child(window_iterator)
+  //   protected stored_data() noexcept->dynamic_ptr<void> &
+  //   protected stored_data() const noexcept->const dynamic_ptr<void> &
+  //   virtual cat(window_tree &, window_tree &&);
+  //   virtual cat(window_tree &, window_tree_vector &&);
+  //   cat(window_tree &, s...)
+  //
+  //   protected assign_rectangle(irect2) noexcept
+  //   rectangle() const noexcept->irect2
+  //   virtual rectangle(irect2)
+  //   rectangle_info_t
+  //     rectangle
+  //     min_size
+  //     max_size
+  //     ==
+  //   rectangle_info()const noexcept->rectangle_info_t
+  //   abs_rectangle() const noexcept->irect2
+  //   protected abs_rectangle(irect2) noexcept
+  //   protected abs_position(ivec2)
+  //   abs_position() const noexcept->ivec2
+  //
+  //   set_tooltip<T = tooltip>(s...)
+  //   unset_tooltip()
+  //   has_tooltip() const noexcept->bool
+  //   tooltip() noexcept->window *
+  //
+  //   companion_tooltip_offset()->optional<ivec2>
+  //   companion_tooltip_offset(optional<ivec2>)
+  //   set_companion_tooltip<T>(s...)
+  //   unset_companion_tooltip()
+  //   has_companion_tooltip() const noexcept->bool
+  //   companion_tooltip() noexcept->window *
+  //
+  //   virtual refresh_when_focused()
+  //
+  //   protected fill_color_excluding_children(uint32_t,
+  //                                           pixmap &,
+  //                                           exclusive_thread_pool &,
+  //                                           bool)
+  //   protected fill_color_excluding_one_child(uint32_t,
+  //                                            pixmap &,
+  //                                            exclusive_thread_pool &,
+  //                                            bool)
+  //
+  //   protected rect_buf_for_painting() noexcept->circular_vector<irect2> &
+  //   protected list_hook() const noexcept->window *
+  //   protected list_hook(window *) noexcept
+  //   protected virtual no_overlap() const->bool // children have no overlap
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &,
+  //                           bool no_overlap) = 0
+  //     // no overlap with left and right windows
+}
+void doc_window_tree() {
+  // window_tree_arg_tuple<S...>
+  //   smf: default-contructible
+  //   explicit window_tree_arg_tuple(s...)
+  //   operator *()->tuple &
+  //   operator ->()->tuple *
+  // make_window_tree_arg_tuple(s...)->window_tree_arg_tuple<decay_t<S>...>
+  //
+  // inner::fns::paint_window_tree(window_tree &,
+  //                               pixmap &, exclusive_thread_pool &)
+  //
+  // window_tree
+  //   tree_type = this_t
+  //   vector_type = window_tree_vector
+  //   iterator = window_iterator
+  //   const_iterator = window_const_iterator
+  //   key_type = dynamic<window, 0>
+  //   children_type
+  //   tree_node_type
+  //   value_type = inner::tree_node_impl<...>
+  //   reference = window &
+  //   const_reference = const window &
+  //   difference_type
+  //   size_type
+  //
+  //   root()->(const_)iterator
+  //   croot()->const_iterator
+  //
+  //   empty()->bool
+  //
+  //   smf:
+  //     default constructible
+  //     movable
+  //
+  //   allocator_type
+  //   get_allocator()->allocator_type
+  //
+  //   explicit window_tree(const allocator_type &)
+  //   explicit window_tree(allocator_arg_t, const allocator_type &)
+  //
+  //   explicit(...) window_tree(in_place_type_t<T>, s...)
+  //   append_children(s...) &->this &
+  //   append_children(s...) &&->this &&
+  //   cat(window_tree or window_tree_vector ...) &->this &
+  //   cat(window_tree or window_tree_vector ...) &&->this &&
+  //   prepend_children(s...) &->this &
+  //   prepend_children(s...) &&->this &&
+  //
+  //   copy(tree_t, tree_iter_t, get_key)->this_t
+  //     // get_key return dynamic_window
+  //
+  //   emplace<T>(s...)->T *
+  //   clear()
+  //
+  //   swap(const_iterator, const_iterator)
+  //   swap(const_iterator, tree_type ref, const_iterator)
+  //   swap(const_iterator, vector_type ref, const_iterator)
+  //
+  //   extract(const_iterator)->tree_type
+  //   insert(const_iterator, tree_type &&)->iterator
+  //   exchange(const_iterator, tree_type &&)->tree_type
+  //   replace(const_iterator, tree_type &&)->iterator
+  //
+  //   extract(const_iterator, const_iterator)->vector_type
+  //   insert(const_iterator, vector_type &&)->iterator
+  //   exchange(const_iterator, const_iterator, vector_type &&)->vector_type
+  //   replace(const_iterator, const_iterator, vector_type &&)->iterator
+  //
+  //   extract_children(const_iterator)->vector_type
+  //   exchange_children(const_iterator, vector_type &&)->vector_type
+  //   replace_children(const_iterator, vector_type &&)->iterator
+  //
+  //   splice(const_iterator, tree_type ref, const_iterator)
+  //   splice(const_iterator, tree_type ref, const_iterator, const_iterator)
+  //
+  //   splice(const_iterator, vector_type ref, const_iterator)
+  //   splice(const_iterator, vector_type ref, const_iterator, const_iterator)
+  //
+  //   emplace<T>(const_iterator, s...)->T *
+  //
+  //   erase(const_iterator)->iterator
+  //   erase(const_iterator, const_iterator)->iterator
+  //   clear(const_iterator)
+  //
+  //   emplace_back<T>(const_iterator, s...)->T *
+  //   push_back(const_iterator, tree_type &&)
+  //   push_back(const_iterator, vector_type &&)
+  //   append(const_iterator, s...)
+  //   pop_back(const_iterator, size_type = 1u)
+  //
+  //   emplace_front<T>(const_iterator, s...)->T *
+  //   push_front(const_iterator, tree_type &&)
+  //   push_front(const_iterator, vector_type &&)
+  //   prepend(const_iterator, s...)
+  //   pop_front(const_iterator, size_type = 1u)
+  //
+  //   capacity(const_iterator)->size_type
+  //   full(const_iterator)->bool
+  //   reserve(const_iterator, size_type)
+  //   first_order_reserve(const_iterator, size_type)
+  //   reserve_more(const_iterator, size_type)
+  //   first_order_reserve_more(const_iterator, size_type)
+  //   shrink_to_fit(const_iterator)
+  //   first_order_shrink_to_fit(const_iterator)
+  //
+  //   rect(irect2)->this_t ref
+  //   sz(ivec2)->this_t ref
+  //   wid(int)->this_t ref
+  //   hei(int)->this_t ref
+  //   pos(ivec2)->this_t ref
+  //   args(s...)->this_t ref // store window_tree_arg_tuple in stored_data()
+  //
+  // make_win<T>(s...)->window_tree
+  // make_win<T>(T *&, s...)->window_tree
+  // make_window(T *&, s...)->window_tree // = make_win<T>(...)
+}
+void doc_window_tree_vector() {
+  // window_tree_vector
+  //   tree_type = window_tree
+  //   vector_type = this_t
+  //   iterator = window_iterator
+  //   const_iterator = window_const_iterator
+  //   key_type = dynamic<window, 0>
+  //   children_type
+  //   tree_node_type
+  //   value_type = inner::tree_node_impl<...>
+  //   reference = window &
+  //   const_reference = const window &
+  //   difference_type
+  //   size_type
+  //
+  //   begin()->(const_)iterator
+  //   end()->(const_)iterator
+  //   cbegin()->const_iterator
+  //   cend()->const_iterator
+  //
+  //   max_size()->size_type
+  //   size()->size_type
+  //   empty()->bool
+  //
+  //   [](size_type)->(const_)reference
+  //   nth(difference_type)->(const_)iterator
+  //
+  //   reverse_iterator
+  //   const_reverse_iterator
+  //   rbegin()
+  //   rend()
+  //   crbegin()
+  //   crend()
+  //
+  //   smf:
+  //     default constructible
+  //     movable
+  //
+  //   allocator_type
+  //   get_allocator()->allocator_type
+  //
+  //   explicit window_tree_vector(const allocator_type &)
+  //   explicit window_tree_vector(allocator_arg_t, const allocator_type &)
+  //
+  //   clear()
+  //
+  //   swap(const_iterator, const_iterator)
+  //   swap(const_iterator, tree_type ref, const_iterator)
+  //   swap(const_iterator, vector_type ref, const_iterator)
+  //
+  //   extract(const_iterator)->tree_type
+  //   insert(const_iterator, tree_type &&)->iterator
+  //   exchange(const_iterator, tree_type &&)->tree_type
+  //   replace(const_iterator, tree_type &&)->iterator
+  //
+  //   extract(const_iterator, const_iterator)->vector_type
+  //   insert(const_iterator, tree_type &&)->iterator
+  //   exchange(const_iterator, const_iterator, vector_type &&)->vector_type
+  //   replace(const_iterator, const_iterator, vector_type &&)->iterator
+  //
+  //   extract_children(const_iterator)->vector_type
+  //   exchange_children(const_iterator, vector_type &&)->vector_type
+  //   replace_children(const_iterator, vector_type &&)->iterator
+  //
+  //   splice(const_iterator, tree_type ref, const_iterator)
+  //   splice(const_iterator, tree_type ref, const_iterator, const_iterator)
+  //   splice(const_iterator, vector_type ref, const_iterator)
+  //   splice(const_iterator, vector_type ref, const_iterator, const_iterator)
+  //
+  //   splice(const_iterator, vector_type ref)
+  //
+  //   emplace<T>(const_iterator, s...)->T *
+  //
+  //   erase(const_iterator)->iterator
+  //   erase(const_iterator, const_iterator)->iterator
+  //   clear(const_iterator)
+  //
+  //   emplace_back<T>(s...)->T *
+  //   push_back(tree_type &&)
+  //   push_back(vector_type &&)
+  //   append(s...) &->this_t &
+  //   append(s...) &&->this_t &&
+  //   pop_back(size_type = 1u)
+  //   emplace_back<T>(const_iterator, s...)->T *
+  //   push_back(const_iterator, tree_type &&)
+  //   push_back(const_iterator, vector_type &&)
+  //   append(const_iterator, s...)
+  //   pop_back(const_iterator, size_type = 1u)
+  //
+  //   emplace_front<T>(s...)->T *
+  //   push_front(tree_type &&)
+  //   push_front(vector_type &&)
+  //   prepend(s...) &->this_t &
+  //   prepend(s...) &&->this_t &&
+  //   pop_front(size_type = 1u)
+  //   emplace_front<T>(const_iterator, s...)->T *
+  //   push_front(const_iterator, tree_type &&)
+  //   push_front(const_iterator, vector_type &&)
+  //   prepend(const_iterator, s...)
+  //   pop_front(const_iterator, size_type = 1u)
+  //
+  //   capacity()->size_type
+  //   capacity(const_iterator)->size_type
+  //   full()->bool
+  //   full(const_iterator)->bool
+  //   reserve(size_type)
+  //   reserve(const_iterator, size_type)
+  //   first_order_reserve(size_type)
+  //   first_order_reserve(const_iterator, size_type)
+  //   reserve_more(size_type)
+  //   reserve_more(const_iterator, size_type)
+  //   first_order_reserve_more(size_type)
+  //   first_order_reserve_more(const_iterator, size_type)
+  //   shrink_to_fit()
+  //   shrink_to_fit(const_iterator)
+  //   first_order_shrink_to_fit()
+  //   first_order_shrink_to_fit(const_iterator)
+}
+void doc_window_controller() {
+  // window_controller
+  //   smf: only destructible
+  //
+  //   explicit window_controller(window_tree &)
+  //
+  //   wins()->window_tree &
+  //
+  //   keys()->const key_recorder &
+  //   cursor_position()->ivec2
+  //
+  //   mouse_leave()
+  //     // make mouse_in() return false
+  //     // auto called by window_program when some system message is received
+  //   mouse_enter()
+  //     // make mouse_in() return true
+  //     // auto called by window_program when some system message is received
+  //   mouse_entered()->bool
+  //     // return true after mouse_enter()
+  //     // return false after mouse_leave() is called
+  //
+  //   focused_window()->window *
+  //   key_focused_window()->window *
+  //
+  //   has_focus()->bool
+  //   set_focus()
+  //   unset_focus()
+  //   set_focus(window *)
+  //     // has_focus()
+  //     // call after set_focus()
+  //     // nullptr means no abstract window is focused
+  //   clear_focus() // if has_focus(), call set_focus(nullptr)
+  //
+  //   set_hovered(window *)
+  //     // work if has_hovered_tracing()
+  //     // nullptr means unset_hovered()
+  //   unset_hovered()
+  //     // work if has_hovered_tracing()
+  //
+  //   hovering_locked()->bool
+  //   hovering_lock()
+  //   hovering_unlock()
+  //
+  //   press(key_code_t) // !hidden()
+  //   release(key_code_t)
+  //   rotate_wheel(int)
+  //     // if the hovered window is not null
+  //     //   if (!(w.rotate_wheel(n) && w.keys().rotate_wheel(n)))
+  //     //     go upward
+  //     //
+  //     // note: if !w.has_keys(), stop if w.rotate_wheel(n)
+  //   mouse_move(ivec2)
+  //     // clear tooltip
+  //     // update window over which the mouse arrow hovered
+  //     // cancel mouse-leave situation
+  //
+  //   hovered_window()->window *
+  //     // if tracing is not enabled, traverse to find it
+  //   clear_hovered_window()
+  //     // clear the cached hovered window
+  //     // which is only used if has_hovered_tracing()
+  //
+  //   tooltip_countdown_finished()->bool
+  //   update_tooltip_countdown()
+  //   restart_tooltip_countdown()
+  //
+  //   refresh()
+  //     // auto call for every paint time if has_auto_refreshing()
+  //     // process:
+  //     //   call update_tooltip_countdown()
+  //     //   call refresh_when_focused() for focused_window() if not nullptr
+  //     //   more things to be added
+  //   has_auto_refreshing()->bool
+  //   set_auto_refreshing()
+  //   unset_auto_refreshing()
+}
+void doc_window_program() {
+  // system_window
+  //   smf: none
+  //
+  //   static has_console()->bool
+  //   static start_time()->steady_clock::time_point
+  //   static monitor_position()->ivec2
+  //     // left-top corrdinates from system origin point
+  //     // (left-top to right-bottom)
+  //   static monitor_size()->ivec2
+  //   static frame_position()->ivec2
+  //     // left-top corrdinates from system origin point
+  //     // (left-top to right-bottom)
+  //   static frame_size()->ivec2
+  //   static size()->ivec2
+  //
+  //   static resize(ivec2)
+  //   static move_to(ivec2)
+  //   static paint(const pixmap &)
+  //
+  //   static get()->system_window *
+  //   static controller()->window_controller &
+  //   static keys()->const key_recorder &
+  //   static cursor_position()->ivec2
+  //   static wins()->window_tree &
+  //   static paint_wins(pixmap &)
+  //
+  // as_window_program<DERIVED>
+  //   // DERIVED optional functions:
+  //   //   create()
+  //   //   paint()
+  //   //   destroy()
+  //   //   set_focus()
+  //   //   unset_focus()
+  //   //   press(unsigned)
+  //   //   release(unsigned)
+  //   //   rotate_wheel(int)
+  //   //   mouse_leave()
+  //   //   mouse_move(ivec2)
+  //   //   resize(ivec2)
+  //   //   button_font()->font * // may be nullptr
+  //   //   mouse_arrow_size()->ivec2 // {25, 25} if undefined, can not be empty
+  //
+  // run_window_program<DERIVED>(console_on = false)->int
+}
+void doc_root_window() {
+  // root_window : public window
+  //   // set_keys() auto-called by constructor
+  //   smf: only default constructible
+  //   explicit root_window(uint32_t)
+  //
+  //   has_color() const noexcept->bool
+  //   color() const noexcept->uint32_t // has_color()
+  //   set_color(uint32_t) noexcept
+  //   unset_color() noexcept
+  //
+  //   virtual move_to(ivec2) override
+  //   virtual resize(ivec2) override
+  //   virtual rectangle(irect2) override
+  //
+  //   protected virtual adjust_to_fit_parent() override
+  //
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_colored_window() {
+  // colored_window : public window
+  //   smf: only destructible
+  //
+  //   explicit colored_window(uint32_t)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   reset(uint32_t)
+  //
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_image_window() {
+  // image_window : public window
+  //   // size is dependent on the stored pixmap
+  //
+  //   smf : destructible
+  //
+  //   explicit image_window(pixmap)
+  //   reset(pixmap)
+  //   image(pixmap)
+  //   image() const noexcept->const pixmap &
+  //
+  //   resize(ivec2) override
+  //   rectangle(irect2) override
+  //
+  //   protected virtual void paint(pixmap &, exclusive_thread_pool &, bool)
+}
+void doc_frame_hook_box() {
+  // frame_hook : public window
+  //   // size keeps being the same as result of
+  //   //   the size of the child adding a fixed-width frame
+  //   // position has no dependence
+  //   //
+  //   // size change:
+  //   //   1) change size of the child to fit the new size,
+  //   //   2) change size to maintain frame line width
+  //   //   3) set position of the child to the center
+  //   // position change: free
+  //
+  //   smf: default-constructible
+  //   explicit frame_hook(int wid)
+  //   frame_hook(int wid, uint32_t clr)
+  //   reset(int wid, uint32_t clr)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+  //
+  //   protected virtual controls_children() const->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_to_fit_parent() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual no_overlap() const->bool
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+  //
+  // frame_box : public frame_hook
+  //   // position-size affairs are same as frame_hook
+  //   //   but make full rectangle for parent
+  //   //   if iter().parent()->controls_children()
+  //   smf: default-constructible
+  //   explicit frame_box(int wid)
+  //   frame_box(int wid, uint32_t clr)
+  //   reset(int wid, uint32_t clr)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+}
+void doc_edge_hook() {
+  // enum class basic_direction
+  //   up
+  //   down
+  //   left
+  //   right
+  //
+  // edge_hook : public window
+  //   // size keeps being the same as the child
+  //   // position keeps being what to put the child at a specified position
+  //   //   on edge of the parent
+  //   //
+  //   // size change: do nothing
+  //   // position change: do nothing
+  //
+  //   smf: destructible
+  //
+  //   edge_hook(basic_direction)
+  //   edge_hook(basic_direction, double k_parent, double k_child)
+  //     // k in [0.0, 1.0] denotes position
+  //     // (from left to right or from bottom to top)
+  //   void reset(basic_direction, double k_parent, double k_child)
+  //
+  //   virtual move_to(ivec2) override
+  //   virtual resize(ivec2) override
+  //   virtual rectangle(irect2) override
+  //
+  //   protected virtual controls_children() const override->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_to_fit_parent() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual no_overlap() const->bool override
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_center_hook() {
+  // center_hook : public window
+  //   // size keeps being the same as the child
+  //   // position keeps being what to put the child to center of the parent
+  //   //
+  //   // size change: do nothing
+  //   // position change: do nothing
+  //
+  //   smf: default-constructible
+  //   virtual move_to(ivec2)
+  //   virtual resize(ivec2) // do nothing
+  //   virtual rectangle(irect2) // only change position
+  //   protected virtual controls_children() const override->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_to_fit_parent() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual no_overlap() const->bool override
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_size_locked_hook() {
+  // size_locked_hook : public window
+  //   // size keeps being the same as the child but minmax-locked
+  //   // position has no dependence
+  //   //
+  //   // size change: do nothing
+  //   // position change: free
+  //
+  //   smf: default-constructible
+  //   virtual resize(ivec2) // do nothing
+  //   virtual rectangle(irect2) // only change position
+  //   protected virtual controls_children() const override->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual no_overlap() const->bool override
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_label_tooltip() {
+  // label_traits
+  //   smf: full
+  //
+  //   align(basic_align)->this_t &
+  //   frame_line_width(int)->this_t &
+  //   color(uint32_t)->this_t &
+  //   frame_color(uint32_t)->this_t &
+  //   font_color(uint32_t)->this_t &
+  //
+  //   align()->basic_laign
+  //   frame_line_width()->int
+  //   color()->uint32_t
+  //   frame_color()->uint32_t
+  //   font_color()->uint32_t
+  //
+  // label
+  //   default_size() const->ivec2
+  //   set_default_size() // min-size is assigned by default_size()
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   smf: destructible
+  //   label(font_ptr, sview, label_traits = {})
+  //   explicit label(sview, label_traits = {})
+  //   reset(font_ptr, sview, label_traits = {})
+  //
+  //   font() const noexcept->font &
+  //   font(font_ptr)
+  //   text() const->string
+  //   text(sview)
+  //
+  //   align() const noexcept->basic_align
+  //   align(basic_align)
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_color() const noexcept->uint32_t
+  //   frame_color(uint32_t)
+  //   font_color() const noexcept->uint32_t
+  //   font_color(uint32_t)
+  //
+  //   protected paint(pixmap &, exclusive_thread_pool &, bool)
+  //
+  //
+  // tooltip_traits
+  //   smf: full
+  //
+  //   frame_line_width(int)
+  //   color(uint32_t)
+  //   frame_color(uint32_t)
+  //   font_color(uint32_t)
+  //
+  //   frame_line_width()->int
+  //   color()->uint32_t
+  //   frame_color()->uint32_t
+  //   font_color()->uint32_t
+  //
+  // tooltip
+  //   smf: destructible
+  //   tooltip(font_ptr, sview, label_traits = {})
+  //   explicit tooltip(sview, label_traits = {})
+  //   reset(font_ptr, sview, label_traits = {})
+  //
+  //   font() const noexcept->font &
+  //   font(font_ptr)
+  //   text() const->string
+  //   text(sview)
+  //
+  //   align() const noexcept->basic_align
+  //   align(basic_align)
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_color() const noexcept->uint32_t
+  //   frame_color(uint32_t)
+  //   font_color() const noexcept->uint32_t
+  //   font_color(uint32_t)
+  //
+  //   clone() const->window_tree
+  //
+  //   protected paint(pixmap &, exclusive_thread_pool &, bool)
+}
+void doc_button() {
+  // button_traits
+  //   smf: full
+  //
+  //   align(basic_align)->this_t &
+  //   frame_line_width(int)->this_t &
+  //   color(int)->this_t &
+  //   frame_color(int)->this_t &
+  //   font_color(int)->this_t &
+  //
+  //   align()->basic_align
+  //   frame_line_width()->int
+  //   color()->uint32_t
+  //   frame_color()->uint32_t
+  //   font_color()->uint32_t
+  //
+  // button : public window
+  //   default_size()
+  //   set_default_size()
+  //     // post condition:
+  //     //   min_size is locked to the default size
+  //     //   max_size is open
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   smf: destructible
+  //
+  //   button(font_ptr, pixmap, sview, button_traits = {})
+  //   button(font_ptr, sview, button_traits = {})
+  //   button(pixmap, sview, button_traits = {})
+  //   explicit button(sview, button_traits = {})
+  //
+  //   // after any update may change rectangle info
+  //   //   size is set to be the_default_size
+  //   //   min_size is set to be the_default_size
+  //   //   max_size is set to be max
+  //
+  //   reset(font_ptr, pixmap, sview, button_traits = {})
+  //     // do not change function bindings
+  //
+  //   // every function to change geometric data ends with set_default_size()
+  //
+  //   image() const noexcept->const pixmap &
+  //   image(pixmap)
+  //   font() const noexcept->font &
+  //   font(font_ptr)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //   text() const->string
+  //   text(sview)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //
+  //   align()->basic_align
+  //   align(basic_align)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_color() const noexcept->uint32_t
+  //   frame_color(uint32_t)
+  //   font_color() const noexcept->uint32_t
+  //   font_color(uint32_t)
+  //
+  //   pressed() const noexcept->bool
+  //
+  //   bind_press(f)
+  //   bound_press() const noexcept->bool
+  //   unbind_press()
+  //   bind_double_press(f)
+  //   bound_double_press() const noexcept->bool
+  //   unbind_double_press()
+  //   bind_release_pressed(f)
+  //   bound_release_pressed() const noexcept->bool
+  //   unbind_release_pressed()
+  //   clear_callback_functions()
+  //
+  //   protected virtual set_focus() override
+  //   protected virtual unset_focus() override
+  //
+  //   protected virtual unset_hovered() override
+  //
+  //   virtual lock() override
+  //
+  //   protected virtual press(key_code_t) override
+  //   protected virtual release(key_code_t) override
+  //
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_check_button() {
+  // check_button_traits
+  //   smf: full
+  //
+  //   align(basic_align)->this_t &
+  //   frame_line_width(int)->this_t &
+  //   color(uint32_t)->this_t &
+  //   frame_color(uint32_t)->this_t &
+  //   font_color(uint32_t)->this_t &
+  //   box_color(uint32_t)->this_t &
+  //
+  //   align()->basic_align
+  //   frame_line_width()->int
+  //   color()->uint32_t
+  //   frame_color()->uint32_t
+  //   font_color()->uint32_t
+  //   box_color()->uint32_t
+  //
+  // check_button : public button
+  //   default_size()
+  //   set_default_size()
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   operator bool() const noexcept
+  //   on() const noexcept->bool
+  //   set(bool = true) noexcept // omit exclusive set limit
+  //   unset() noexcept // omit exclusive set limit
+  //
+  //   smf: destructible
+  //
+  //   check_button(font_ptr, sview, check_button_traits = {})
+  //   explicit check_button(sview, check_button_traits = {})
+  //
+  //   // after any update may change rectangle info
+  //   //   size is set to be the_default_size
+  //   //   min_size is set to be the_default_size
+  //   //   max_size is set to be max
+  //
+  //   reset(font_ptr, sview, check_button_traits = {})
+  //
+  //   font() const noexcept->font &
+  //   font(font_ptr)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //   text() const->string
+  //   text(sview)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //
+  //   align()->basic_align
+  //   align(basic_align)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+  //     // call set_default_size()
+  //     // press-realted info is reset
+  //     // call no callback function
+  //
+  //   box_color() const noexcept->uint32_t
+  //   box_color(uint32_t)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_color() const noexcept->uint32_t
+  //   frame_color(uint32_t)
+  //   font_color() const noexcept->uint32_t
+  //   font_color(uint32_t)
+  //
+  //   bind_press(f)
+  //   bound_press() const noexcept->bool
+  //   unbind_press()
+  //   bind_double_press(f)
+  //   bound_double_press() const noexcept->bool
+  //   unbind_double_press()
+  //   bind_release(f)
+  //   bound_release() const noexcept->bool
+  //   unbind_release()
+  //
+  //   make_set(n_at_most, window *, ...)
+  //     // call clear_set() then make a new set, n > 0
+  //     // window * is cast to check_button *
+  //     // one check_button can only join one set
+  //   make_set_from_range(n, rng_of_window_ptr)
+  //     // range value is window * to be cast to check_button *
+  //   has_set()->bool
+  //   count_of_set()->int
+  //   limit_of_set()->int
+  //   clear_set() // post-condition: !has_set() for all buttons in the set
+  //
+  //   protected virtual set_focus() override
+  //   protected virtual unset_focus() override
+  //
+  //   protected virtual unset_hovered() override
+  //
+  //   virtual lock() override
+  //
+  //   protected virtual press(key_code_t) override
+  //   protected virtual release(key_code_t) override
+  //
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_hbox_vbox() {
+  // h_space : public window // with fixed width
+  // v_space : public window // with fixed height
+  //   smf: default-constructible
+  //
+  //   constructor(int len)
+  //   constructor(int len, uint32_t clr)
+  //   reset(int len, uint32_t clr)
+  //
+  //   int length() const noexcept
+  //   void length(int)
+  //   uint32_t color() const noexcept
+  //   void color(uint32_t)
+  //
+  //   protected paint(pixmap &, exclusive_thread_pool &, bool) override
+  //
+  //
+  // hbox : public window
+  //   // position-size is dependent on children and the parent
+  //   //   1) fit children
+  //   //   2) if the parent returns false on controls_children(),
+  //   //      fill the full rectangle of the parent
+  //   //
+  //   // position change:
+  //   //   free if the parent returns false on controls_children()
+  //   // size change:
+  //   //   max-size is not limited but adjust() always reset size
+  //   //     when fit the children
+
+  //   smf: default-constructible
+  //   hbox(basic_align)
+  //   hbox(basic_align, bool v_full)
+  //   hbox(basic_align, bool v_full, uint32_t clr)
+  //   void reset(basic_align, bool v_full, uint32_t clr)
+  //
+  //   align() const noexcept->basic_align
+  //   align(basic_align)
+  //   v_full() const noexcept->bool
+  //   v_full(bool)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   stretch(window &, int)
+  //   stretch(window &)->int
+  //
+  //   protected virtual controls_children() const->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_to_fit_parent() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual init_new_child(window_iterator) override
+  //   protected virtual no_overlap() const override->bool
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+  //
+  // vbox : public window
+  //   // position-size is dependent on children and the parent
+  //   //   1) fit children
+  //   //   2) if the parent returns false on controls_children(),
+  //   //      fill the full rectangle of the parent
+  //   //
+  //   // position change:
+  //   //   free if the parent returns false on controls_children()
+  //   // size change:
+  //   //   max-size is not limited but adjust() always reset size
+  //   //     when fit the children
+  //
+  //   smf: default-constructible
+  //   vbox(basic_v_align)
+  //   vbox(basic_v_align, bool h_full)
+  //   vbox(basic_v_align, bool h_full, uint32_t clr)
+  //   void reset(basic_v_align, bool h_full, uint32_t clr)
+  //
+  //   align() const noexcept->basic_v_align
+  //   align(basic_v_align)
+  //   h_full() const noexcept->bool
+  //   h_full(bool)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   stretch(window &, int)
+  //   stretch(window &)->int
+  //
+  //   protected virtual controls_children() const->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_to_fit_parent() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual init_new_child(window_iterator) override
+  //   protected virtual no_overlap() const override->bool
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_grid_box() {
+  // grid_box_traits
+  //   smf: full
+  //
+  //   color(uint32_t)->this_t &
+  //   frame_line_width(int)->this_t &
+  //   line_width(int)->this_t &
+  //   set_h_full(bool = true)->this_t &
+  //   unset_h_full()->this_t &
+  //   set_v_full(bool = true)->this_t &
+  //   unset_v_full()->this_t &
+  //   h_align(basic_align)->this_t &
+  //   v_align(basic_v_align)->this_t &
+  //
+  //   color()->uint32_t
+  //   frame_line_width()->int
+  //   line_width()->int
+  //   h_full()->bool
+  //   v_full()->bool
+  //   h_align()->basic_align
+  //   v_align()->basic_v_align
+  //
+  // grid_box
+  //   // position-size is dependent on children and the parent
+  //   //   1) fit children
+  //   //   2) if the parent returns false on controls_children(),
+  //   //      fill the full rectangle of the parent
+  //   //
+  //   // position change:
+  //   //   free if the parent returns false on controls_children()
+  //   // size change:
+  //   //   max-size is not limited but adjust() always reset size
+  //   //     when fit the children
+  //
+  //   smf: destructible
+  //
+  //   grid_box(int w, int h, grid_box_traits = {})
+  //   grid_box(int w, int h,
+  //            h_stretch_range, v_stretch_range,
+  //            grid_box_traits = {})
+  //   reset(int w, int h, grid_box_traits{})
+  //   reset(int w, int h, h_stretch_range, v_stretch_range,
+  //         grid_box_traits = {})
+  //
+  //   h_length(int) const->int
+  //   v_length(int) const->int
+  //
+  //   h_stretch(int) const->int
+  //   v_stretch(int) const->int
+  //   h_stretch(int, int)
+  //   v_stretch(int, int)
+  //
+  //   grid_width() const noexcept->int
+  //   grid_width(int)
+  //   grid_height() const noexcept->int
+  //   grid_height(int)
+  //   color() const noexcept->uint32_t
+  //   color(uint32_t)
+  //   frame_line_width() const noexcept->int
+  //   frame_line_width(int)
+  //   line_width() const noexcept->int // space between two adjacent cells
+  //   line_width(int)
+  //   h_full() const noexcept->bool
+  //   set_h_full(bool = true)
+  //   unset_h_full()
+  //   v_full() const noexcept->bool
+  //   set_v_full(bool = true)
+  //   unset_v_full()
+  //   h_align() const noexcept->basic_align
+  //   h_align(basic_align)
+  //   v_align() const noexcept->basic_v_align
+  //   v_align(basic_v_align)
+  //
+  //   protected virtual controls_children() const->bool
+  //   protected virtual adjust_to_fit_children() override
+  //   protected virtual adjust_to_fit_parent() override
+  //   protected virtual adjust_children_to_fit_this() override
+  //   protected virtual no_overlap() const override->bool
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_v_progress_bar() {
+  // progress_bar_traits
+  // v_progress_bar_traits
+  //   smf: full
+  //
+  //   frame_line_width()->int
+  //   groove_line_width()->int
+  //   frame_color()->uint32_t
+  //   groove_color()->uint32_t
+  //   color()->uint32_t
+  //
+  //   frame_line_width(int)->this_t &
+  //   groove_line_width(int)->this_t &
+  //   frame_color(uint32_t)->this_t &
+  //   groove_color(uint32_t)->this_t &
+  //   color(uint32_t)->this_t &
+  //
+  // progress_bar
+  // v_progress_bar
+  //   set_default_size()
+  //   default_size() const->ivec2
+  //
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   smf: default-constructible
+  //
+  //   explicit progress_bar(double, {v_}progress_bar_traits = {})
+  //   explicit progress_bar({v_}progress_bar_traits)
+  //   reset(double, {v_}progress_bar_traits = {})
+  //
+  //   frame_line_width() const noexcept->int
+  //   groove_line_width() const noexcept->int
+  //   frame_color() const noexcept->uint32_t
+  //   groove_color() const noexcept->uint32_t
+  //   color() const noexcept->uint32_t
+  //
+  //   frame_line_width(int)
+  //     // call set_default_size()
+  //     // value() is not changed
+  //   groove_line_width(int)
+  //     // call set_default_size()
+  //     // value() is not changed
+  //   frame_color(uint32_t)
+  //   groove_color(uint32_t)
+  //   color(uint32_t)
+  //
+  //   value() const noexcept->double
+  //   value(double);
+  //
+  //   max_pixel_value() const->int
+  //   max_pixel_value(int) // only call resize
+  //   groove_length() const->int // same as max_pixel_value()
+  //   groove_length(int) // same as max_pixel_value(i)
+  //
+  //   protected virtual paint(pixmap &,
+  //                           exclusive_thread_pool &, bool) override;
+}
+void doc_v_slider_bar() {
+  // slide_bar_traits
+  // v_slide_bar_traits
+  //   smf: full
+  //
+  //   frame_line_width()->int
+  //   groove_line_width()->int
+  //   slider_length()->int
+  //   relaxed_hovering()->bool
+  //   frame_color()->uint32_t
+  //   groove_color()->uint32_t
+  //   color()->uint32_t
+  //
+  //   frame_line_width(int)->this_t &
+  //   groove_line_width(int)->this_t &
+  //   slider_length(int)->this_t &
+  //   set_relaxed_hovering(bool = true)->this_t &
+  //   unset_relaxed_hovering()->this_t &
+  //   frame_color(uint32_t)->this_t &
+  //   groove_color(uint32_t)->this_t &
+  //   color(uint32_t)->this_t &
+  //
+  // slide_bar
+  // v_slide_bar
+  //   set_default_size()
+  //   default_size() const->ivec2
+  //
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   smf: default-constructible
+  //
+  //   explicit {v_}slide_bar(double, {v_}slide_bar_traits = {})
+  //   explicit {v_}slide_bar({v_}slide_bar_traits)
+  //   reset(double, {v_}slide_bar_traits = {})
+  //
+  //   frame_line_width() const noexcept->int
+  //   groove_line_width() const noexcept->int
+  //   slider_length() const noexcept->int
+  //   relaxed_hovering() const noexcept->bool
+  //   frame_color() const noexcept->uint32_t
+  //   groove_color() const noexcept->uint32_t
+  //   color() const noexcept->uint32_t
+  //
+  //   frame_line_width(int)
+  //     // call set_default_size()
+  //     // press-related info is reset and call no callback function
+  //     // value() is unchanged
+  //   groove_line_width(int)
+  //     // call set_default_size()
+  //     // press-related info is reset and call no callback function
+  //     // value() is unchanged
+  //   slider_length(int)
+  //     // call set_default_size()
+  //     // press-related info is reset and call no callback function
+  //     // value() is unchanged
+  //   set_relaxed_hovering(bool = true)
+  //   unset_relaxed_hovering()
+  //   frame_color(uint32_t)
+  //   groove_color(uint32_t)
+  //   color(uint32_t)
+  //
+  //   groove_length() const noexcept->int
+  //   groove_length(int) // only call resize
+  //
+  //   value() const noexcept->double
+  //   value(double)
+  //   assign_value(double) // same as value(double) but no callback
+  //
+  //   max_pixel_value() const->int
+  //   max_pixel_value(int) // only call resize
+  //   pixel_value() const noexcept->int
+  //   pixel_value(int)
+  //   assign_pixel_value(int) // same as pixel_value(int) but no callback
+  //
+  //   bind_value_change(f)
+  //   bound_value_change() const noexcept->bool
+  //   bind_value_change_after_release(f)
+  //   bound_value_change_after_release() const noexcept->bool
+  //
+  //   protected virtual set_focus() override
+  //   protected virtual unset_focus() override
+  //
+  //   protected virtual unset_hovered() override
+  //
+  //   protected virtual mouse_move(ivec2)
+  //
+  //   virtual lock() override
+  //
+  //   protected press(key_code_t) override
+  //   protected virtual release(key_code_t) override
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
+}
+void doc_h_scroll_bar_v_scroll_bar() {
+  // inner::fns::get_arrow_button_grey_map(basic_direction, int, int)
+  //   ->const dup_compressed_array<uint8_t> &
+  //
+  // h_scroll_bar_traits
+  // v_scroll_bar_traits
+  //   frame_line_width()->int
+  //   groove_line_width()->int
+  //   slider_length()->int
+  //   arrow_length()->int
+  //   step()->double
+  //   max_step()->double
+  //   frame_color()->uint32_t
+  //   groove_color()->uint32_t
+  //   color()->uint32_t
+  //   arrow_color()->uint32_t
+  //   arrow_button_color()->uint32_t
+  //
+  //   frame_line_width(int)->this_t &
+  //   groove_line_width(int)->this_t &
+  //   slider_length(int)->this_t &
+  //   arrow_length(int)->this_t &
+  //   step(double)->this_t &
+  //   max_step(double)->this_t &
+  //   frame_color(uint32_t)->this_t &
+  //   groove_color(uint32_t)->this_t &
+  //   color(uint32_t)->this_t &
+  //   arrow_color(uint32_t)->this_t &
+  //   arrow_button_color(uint32_t)->this_t &
+  //
+  //
+  // h_scroll_bar
+  // v_scroll_bar
+  //   set_default_size()
+  //   default_size() const->ivec2
+  //
+  //   lock_width()
+  //   lock_height()
+  //   lock_size()
+  //   unlock_width()
+  //   unlock_height()
+  //   unlock_size()
+  //
+  //   smf: default-constructible
+  //
+  //   explicit {v_}scroll_bar(double, {v_}scroll_bar_traits = {})
+  //   explicit {v_}scroll_bar({v_}scroll_bar_traits)
+  //   reset(double, {v_}scroll_bar_traits = {})
+  //
+  //   frame_line_width() const noexcept->int
+  //   groove_line_width() const noexcept->int
+  //   slider_length() const noexcept->int
+  //   arrow_length() const noexcept->int
+  //   step() const noexcept->double // move distance of every pressed interval
+  //   max_step() const noexcept->double
+  //   frame_color() const noexcept->uint32_t
+  //   groove_color() const noexcept->uint32_t
+  //   color() const noexcept->uint32_t
+  //   arrow_color() const noexcept->uint32_t
+  //   arrow_button_color() const noexcept->uint32_t
+  //
+  //   frame_line_width(int);
+  //   groove_line_width(int);
+  //   slider_length(int);
+  //   arrow_length(int);
+  //   step(double);
+  //   max_step(double);
+  //   frame_color(uint32_t);
+  //   groove_color(uint32_t);
+  //   color(uint32_t);
+  //   arrow_color(uint32_t);
+  //   arrow_button_color(uint32_t);
+  //
+  //   groove_length() const noexcept->int
+  //   groove_length(int)
+  //
+  //   value() const noexcept->double
+  //   value(double)
+  //   assign_value(double)
+  //
+  //   max_pixel_value() const->int
+  //   max_pixel_value(int) // only call resize
+  //   pixel_value() const noexcept->int
+  //   pixel_value(int)
+  //   assign_pixel_value(int) // same as pixel_value(int) but no callback
+  //
+  //   bind_value_change(f)
+  //   bound_value_change() const noexcept->bool
+  //   bind_value_change_after_release(f)
+  //   bound_value_change_after_release() const noexcept->bool
+  //
+  //   protected virtual set_focus() override
+  //   protected virtual unset_focus() override
+  //
+  //   protected virtual unset_hovered() override
+  //
+  //   protected virtual mouse_move(ivec2)
+  //
+  //   virtual lock() override
+  //
+  //   protected virtual refresh_when_focused() override
+  //   protected press(key_code_t) override
+  //   protected virtual release(key_code_t) override
+  //   protected virtual paint(pixmap &, exclusive_thread_pool &, bool) override
 }
 
 }
@@ -10178,6 +12394,38 @@ int main() {
   re::inner::test::doc_shared_mutex();
   re::inner::test::doc_thread_pool();
   re::inner::test::doc_exclusive_thread_pool();
+
+  re::inner::test::doc_key_code();
+  re::inner::test::doc_key_comb();
+  re::inner::test::doc_key_recorder();
+  re::inner::test::doc_key_mapper();
+  re::inner::test::doc_vector_math();
+  re::inner::test::doc_rgba();
+  re::inner::test::doc_irect2();
+  re::inner::test::doc_pixmap();
+  re::inner::test::doc_font_glyph();
+  re::inner::test::doc_basic_window_program();
+  re::inner::test::doc_window_paint_traits_default_affairs();
+  re::inner::test::doc_window();
+  re::inner::test::doc_window_tree();
+  re::inner::test::doc_window_tree_vector();
+  re::inner::test::doc_window_controller();
+  re::inner::test::doc_window_program();
+  re::inner::test::doc_root_window();
+  re::inner::test::doc_colored_window();
+  re::inner::test::doc_image_window();
+  re::inner::test::doc_frame_hook_box();
+  re::inner::test::doc_edge_hook();
+  re::inner::test::doc_center_hook();
+  re::inner::test::doc_size_locked_hook();
+  re::inner::test::doc_label_tooltip();
+  re::inner::test::doc_button();
+  re::inner::test::doc_check_button();
+  re::inner::test::doc_hbox_vbox();
+  re::inner::test::doc_grid_box();
+  re::inner::test::doc_v_progress_bar();
+  re::inner::test::doc_v_slider_bar();
+  re::inner::test::doc_h_scroll_bar_v_scroll_bar();
 
   printf("ok\n");
 }
