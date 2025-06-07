@@ -340,15 +340,73 @@ void test_matrix0() {
   // clear()
   // resize(w, h, fll = {})
   {
+    {
+      matrix<int> m(3, 2, 1);
+      m.clear();
+      assert(m.empty() && m.width() == 0 && m.height() == 0);
+      m.resize(2, 2, 1);
+      assert(m.width() == 2 && m.height() == 2);
+      assert(equal(m.range(), rng(4, 1)));
+      m.resize(1, 1);
+      assert(m.width() == 1 && m.height() == 1);
+      assert(equal(m.range(), single_rng(1)));
+    }
+    {
+      matrix<int> m(3, 4, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9,
+                              10, 11, 12));
+      m.resize(3, 2);
+      assert(m == matrix<int>(3, 2, seq(1, 2, 3,
+                                        4, 5, 6)));
+      m.resize(0, 3);
+      assert(m == matrix<int>(0, 3) && m.range().empty());
+    }
+    {
+      matrix<int> m(3, 4, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9,
+                              10, 11, 12));
+      m.resize(5, 6, 1);
+      assert(m == matrix<int>(5, 6, seq(1, 2, 3, 1, 1,
+                                        4, 5, 6, 1, 1,
+                                        7, 8, 9, 1, 1,
+                                        10, 11, 12, 1, 1,
+                                        1, 1, 1, 1, 1,
+                                        1, 1, 1, 1, 1)));
+      m.resize(3, 7, 1);
+      assert(m == matrix<int>(3, 7, seq(1, 2, 3,
+                                        4, 5, 6,
+                                        7, 8, 9,
+                                        10, 11, 12,
+                                        1, 1, 1,
+                                        1, 1, 1,
+                                        1, 1, 1)));
+    }
+    {
+      matrix<int> m(3, 4, seq(1, 2, 3,
+                              4, 5, 6,
+                              7, 8, 9,
+                              10, 11, 12));
+      m.resize(5, 3, 1);
+      assert(m == matrix<int>(5, 3, seq(1, 2, 3, 1, 1,
+                                        4, 5, 6, 1, 1,
+                                        7, 8, 9, 1, 1)));
+      m.resize(3, 2, 1);
+      assert(m == matrix<int>(3, 2, seq(1, 2, 3,
+                                        4, 5, 6)));
+    }
+  }
+  // reset(w, h, fll)
+  {
     matrix<int> m(3, 2, 1);
-    m.clear();
-    assert(m.empty() && m.width() == 0 && m.height() == 0);
-    m.resize(2, 2, 1);
-    assert(m.width() == 2 && m.height() == 2);
-    assert(equal(m.range(), rng(4, 1)));
-    m.resize(1, 1);
-    assert(m.width() == 1 && m.height() == 1);
-    assert(equal(m.range(), single_rng(1)));
+    m.reserve(18);
+    m.reset(4, 5, 2);
+    assert(m.width() == 4 && m.height() == 5
+           && equal(m.range(), rng(20, 2)));
+    m.reset(16, 17, 3);
+    assert(m.width() == 16 && m.height() == 17
+           && equal(m.range(), rng(16 * 17, 3)));
   }
 
   // row(n)
@@ -394,6 +452,7 @@ void test_matrix0() {
   }
 
   // fill(x, y, w, h, z)
+  // flll(fll)
   {
     matrix<int> m(3, 3, seq(1, 2, 3,
                             4, 5, 6,
@@ -407,6 +466,8 @@ void test_matrix0() {
     assert(m == matrix<int>(3, 3, seq(1, 2, 3,
                                       4, 0, 0,
                                       7, 0, 0)));
+    m.fill(0);
+    assert(m == matrix<int>(3, 3, rng(9, 0)));
   }
 
   // front()
