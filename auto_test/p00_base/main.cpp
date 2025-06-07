@@ -12709,6 +12709,14 @@ struct ttt {};
 
 }
 void test_miscl() {
+  // hash<pair>
+  {
+    assert((hash<pair<int, int>>{}(pair(13369, 89987))
+            == (hash<int>{}(13369) ^ hash<int>{}(89987))));
+    assert((hash<pair<int, float>>{}(pair(13369, 3.66f))
+            == (hash<int>{}(13369) ^ hash<float>{}(3.66f))));
+  }
+
   // min_value
   // max_value
   {
