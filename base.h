@@ -65,6 +65,9 @@ inline const int mingw_no_assertion_failure_popup
 //     re::file
 //   concurrency.h
 //     ...
+//   graphics.h
+//     re::inner::fns::win32_enable_wstring_console_for_command_line_program
+//     re::inner::fns::win32_enable_utf8_console_for_window_program
 
 #include <cstdio>
 #include <cstddef>
@@ -264,20 +267,90 @@ using std::rename;
 using std::tmpfile;
 using std::tmpnam;
 
-using std::isalnum;
-using std::isalpha;
-using std::islower;
-using std::isupper;
-using std::isdigit;
-using std::isxdigit;
-using std::iscntrl;
-using std::isgraph;
-using std::isspace;
-using std::isblank;
-using std::isprint;
-using std::ispunct;
-using std::tolower;
-using std::toupper;
+struct fo_isalnum {
+  bool operator ()(int c) const noexcept {
+    return std::isalnum(c);
+  }
+};
+inline constexpr fo_isalnum isalnum{};
+struct fo_isalpha {
+  bool operator ()(int c) const noexcept {
+    return std::isalpha(c);
+  }
+};
+inline constexpr fo_isalpha isalpha{};
+struct fo_islower {
+  bool operator ()(int c) const noexcept {
+    return std::islower(c);
+  }
+};
+inline constexpr fo_islower islower{};
+struct fo_isupper {
+  bool operator ()(int c) const noexcept {
+    return std::isupper(c);
+  }
+};
+inline constexpr fo_isupper isupper{};
+struct fo_isdigit {
+  bool operator ()(int c) const noexcept {
+    return std::isdigit(c);
+  }
+};
+inline constexpr fo_isdigit isdigit{};
+struct fo_isxdigit {
+  bool operator ()(int c) const noexcept {
+    return std::isxdigit(c);
+  }
+};
+inline constexpr fo_isxdigit isxdigit{};
+struct fo_iscntrl {
+  bool operator ()(int c) const noexcept {
+    return std::iscntrl(c);
+  }
+};
+inline constexpr fo_iscntrl iscntrl{};
+struct fo_isgraph {
+  bool operator ()(int c) const noexcept {
+    return std::isgraph(c);
+  }
+};
+inline constexpr fo_isgraph isgraph{};
+struct fo_isspace {
+  bool operator ()(int c) const noexcept {
+    return std::isspace(c);
+  }
+};
+inline constexpr fo_isspace isspace{};
+struct fo_isblank {
+  bool operator ()(int c) const noexcept {
+    return std::isblank(c);
+  }
+};
+inline constexpr fo_isblank isblank{};
+struct fo_isprint {
+  bool operator ()(int c) const noexcept {
+    return std::isprint(c);
+  }
+};
+inline constexpr fo_isprint isprint{};
+struct fo_ispunct {
+  bool operator ()(int c) const noexcept {
+    return std::ispunct(c);
+  }
+};
+inline constexpr fo_ispunct ispunct{};
+struct fo_toupper {
+  int operator ()(int c) const noexcept {
+    return std::toupper(c);
+  }
+};
+inline constexpr fo_toupper toupper{};
+struct fo_tolower {
+  int operator ()(int c) const noexcept {
+    return std::tolower(c);
+  }
+};
+inline constexpr fo_tolower tolower{};
 
 using std::strcpy;
 using std::strncpy;

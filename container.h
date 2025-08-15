@@ -2893,6 +2893,97 @@ struct hash<string_reference<T>> {
   }
 };
 
+struct fo_unicode_is_any_space {
+  bool operator ()(char32_t c) const noexcept {
+    switch (c) {
+    case 0x9u:
+    case 0x20u:
+    case 0xA0u:
+    case 0x2000u:
+    case 0x2001u:
+    case 0x2002u:
+    case 0x2003u:
+    case 0x2004u:
+    case 0x2005u:
+    case 0x2006u:
+    case 0x2007u:
+    case 0x2008u:
+    case 0x2009u:
+    case 0x200Au:
+    case 0x202Fu:
+    case 0x205Fu:
+    case 0x3000u:
+    case 0x200Bu:
+    case 0x200Cu:
+    case 0x200Du:
+    case 0x2060u:
+    case 0xFEFEu:
+      return true;
+    default:
+      return false;
+    }
+  }
+};
+inline constexpr fo_unicode_is_any_space unicode_is_any_space{};
+
+struct fo_unicode_is_lower {
+  bool operator ()(char32_t c) const noexcept {
+    return U'a' <= c && c <= U'z';
+  }
+};
+inline constexpr fo_unicode_is_lower unicode_is_lower{};
+struct fo_unicode_is_upper {
+  bool operator ()(char32_t c) const noexcept {
+    return U'A' <= c && c <= U'Z';
+  }
+};
+inline constexpr fo_unicode_is_upper unicode_is_upper{};
+struct fo_unicode_is_alpha {
+  bool operator ()(char32_t c) const noexcept {
+    return unicode_is_upper(c) || unicode_is_lower(c);
+  }
+};
+inline constexpr fo_unicode_is_alpha unicode_is_alpha{};
+struct fo_unicode_is_digit {
+  bool operator ()(char32_t c) const noexcept {
+    return U'0' <= c && c <= U'9';
+  }
+};
+inline constexpr fo_unicode_is_digit unicode_is_digit{};
+struct fo_unicode_is_alnum {
+  bool operator ()(char32_t c) const noexcept {
+    return unicode_is_digit(c) || unicode_is_upper(c) || unicode_is_lower(c);
+  }
+};
+inline constexpr fo_unicode_is_alnum unicode_is_alnum{};
+
+struct fo_unicode_is_xdigit {
+  bool operator ()(char32_t c) const noexcept {
+    return (U'0' <= c && c <= U'9')
+      || (U'a' <= c && c <= U'f')
+      || (U'A' <= c && c <= U'F');
+  }
+};
+inline constexpr fo_unicode_is_xdigit unicode_is_xdigit{};
+
+struct fo_unicode_to_upper {
+  char32_t operator ()(char32_t c) const noexcept {
+    if (unicode_is_lower(c))
+      return c + to_unsigned(U'A' - U'a');
+    return c;
+  }
+};
+inline constexpr fo_unicode_to_upper unicode_to_upper{};
+
+struct fo_unicode_to_lower {
+  char32_t operator ()(char32_t c) const noexcept {
+    if (unicode_is_upper(c))
+      return c + to_unsigned(U'a' - U'A');
+    return c;
+  }
+};
+inline constexpr fo_unicode_to_lower unicode_to_lower{};
+
 }
 
 // bitset
@@ -19975,6 +20066,7 @@ public:
   auto to_mutable() const requires is_const_v<T> {
     return rrbt_iterator<remove_const_t<T>, TRAITS, PROMOTED>(p);
   }
+
   auto promote() const requires (!PROMOTED) {
     return rrbt_iterator<T, TRAITS, true>(p);
   }
@@ -34086,7 +34178,7 @@ private:
     }
   }
   template <class UINT>
-  void reserve_raw_space_at_least(UINT) requires (N != 0u) {
+  void reserve_raw_space_at_least(UINT nn) requires (N != 0u) {
     static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
   }
 
@@ -34706,7 +34798,8 @@ public:
 
   // list operations
 
-  void splice(const_iterator next, this_t &l) {
+  template <size_t NN>
+  void splice(const_iterator next, stable_vector_adaptor<TRAITS, NN> &l) {
     const auto l_sz = l.size();
     reserve_raw_space_at_least(l_sz);
     const auto j = next.index_iter();
@@ -34716,10 +34809,24 @@ public:
              [&](auto &x, auto &y) {node_sync(iterator(x), y);});
     l.unlink();
   }
-  void splice(const_iterator next, this_t &&l) {
+  template <size_t NN>
+  void splice(const_iterator next, stable_vector_adaptor<TRAITS, NN> &&l) {
     splice(next, l);
   }
-  void splice(const_iterator next, this_t &l, const_iterator i) {
+  template <size_t NN>
+  void splice(const_iterator next,
+              stable_vector_adaptor<TRAITS, NN> &l,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator i) {
+    reserve_raw_space_at_least_1();
+    l.unlink(i);
+    link(next, i);
+  }
+  template <size_t NN>
+  void splice(const_iterator next,
+              stable_vector_adaptor<TRAITS, NN> &l,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator i) requires (N == NN) {
     if (this == addressof(l)) {
       if (next != i) {
         unlink(i);
@@ -34727,16 +34834,46 @@ public:
       }
     }
     else {
-      reserve_raw_space_at_least(l.size());
+      reserve_raw_space_at_least_1();
       l.unlink(i);
       link(next, i);
     }
   }
-  void splice(const_iterator next, this_t &&l, const_iterator i) {
+  template <size_t NN>
+  void splice(const_iterator next,
+              stable_vector_adaptor<TRAITS, NN> &&l,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator i) {
     splice(next, l, i);
   }
-  void splice(const_iterator next, this_t &l,
-              const_iterator from, const_iterator to) {
+  template <size_t NN>
+  void splice(const_iterator next,
+              stable_vector_adaptor<TRAITS, NN> &l,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator from,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator to) {
+    const size_type sz = to - from;
+    reserve_raw_space_at_least(sz);
+    const auto to_iter = to.index_iter();
+
+    if (sz != 0) {
+      const auto j = next.index_iter();
+      for (auto &i : r_iters(j, end().index_iter() + 1))
+        node_sync(iterator(*i), i + sz);
+      for_each(rng(from.index_iter(), sz), j,
+               [&](auto &x, auto &y) {node_sync(iterator(x), y);});
+      for (auto &it : iters(to_iter, l.end().index_iter() + 1))
+        node_sync(iterator(*it), it - sz);
+    }
+  }
+  template <size_t NN>
+  void splice(const_iterator next,
+              stable_vector_adaptor<TRAITS, NN> &l,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator from,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator to) requires (N == NN) {
     const size_type sz = to - from;
     reserve_raw_space_at_least(sz);
     const auto to_iter = to.index_iter();
@@ -34770,8 +34907,13 @@ public:
       });
     }
   }
-  void splice(const_iterator next, this_t &&l,
-              const_iterator from, const_iterator to) {
+  template <size_t NN>
+  void splice(const_iterator next,
+              stable_vector_adaptor<TRAITS, NN> &&l,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator from,
+              typename stable_vector_adaptor<TRAITS, NN>
+              ::const_iterator to) {
     splice(next, l, from, to);
   }
 
@@ -40279,6 +40421,9 @@ public:
 }
 template <class T, class AL>
 class dup_compressed_array {
+  template <class, class>
+  friend class dup_compressed_array;
+
   using this_t = dup_compressed_array;
 
   using count_t = max_uint_of_max_size<sizeof(T)>;
@@ -40662,6 +40807,18 @@ public:
   iterator replace(iterator i1, iterator i2, R &&r) {
     return insert_range(erase(i1, i2), r);
   }
+
+  template <class T2, class AL2>
+  explicit dup_compressed_array(const dup_compressed_array<T2, AL2> &x)
+    requires (!is_same_v<T, T2> && is_constructible_v<T, const T2 &>)
+    : v(from_range, x.v) {}
+  template <class T2, class AL2, class F>
+  dup_compressed_array(const dup_compressed_array<T2, AL2> &x, F f)
+    : v(from_range,
+        bind_range(x.v,
+                   [f](const stored_t &x)->stored_t {
+                     return stored_t(f(x.first), x.second);
+                   })) {}
 
   template <class R>
   dup_compressed_array(from_range_t,

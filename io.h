@@ -641,30 +641,6 @@ struct fo_sscan {
       return false;
   }
 
-  template <class T>
-  bool operator ()(sview &v, T &o) const requires is_integral_v<T> {
-    return inner::fns::sscan_int_impl<inner::sscan_int_traits_dec<T>>(v, o);
-  }
-  template <class T>
-  bool operator ()(sview &v, T &o, print_tag_dec) const
-    requires is_integral_v<T> {
-    return operator ()(v, o);
-  }
-  template <class T>
-  bool operator ()(sview &v, T &o, print_tag_bin) const
-    requires is_integral_v<T> {
-    return inner::fns::sscan_int_impl<inner::sscan_int_traits_bin<T>>(v, o);
-  }
-  template <class T>
-  bool operator ()(sview &v, T &o, print_tag_oct) const
-    requires is_integral_v<T> {
-    return inner::fns::sscan_int_impl<inner::sscan_int_traits_oct<T>>(v, o);
-  }
-  template <class T>
-  bool operator ()(sview &v, T &o, print_tag_hex) const
-    requires is_integral_v<T> {
-    return inner::fns::sscan_int_impl<inner::sscan_int_traits_hex<T>>(v, o);
-  }
   template <class U, class T>
   bool operator ()(string_reference<const U> &v, T &o) const
     requires is_integral_v<T> {
@@ -695,12 +671,6 @@ private:
   template <class T, class F>
   static bool impl_for_float(string_reference<T> &v, F &x);
 public:
-  bool operator ()(sview &v, float &x) const {
-    return impl_for_float(v, x);
-  }
-  bool operator ()(sview &v, double &x) const {
-    return impl_for_float(v, x);
-  }
   template <class T>
   bool operator ()(string_reference<const T> &v, float &x) const {
     return impl_for_float(v, x);
@@ -713,7 +683,8 @@ public:
 inline constexpr fo_sscan sscan{};
 
 struct fo_sscan_single {
-  bool operator ()(sview &v, char &c) const {
+  template <class T>
+  bool operator ()(string_reference<const T> &v, T &c) const {
     if (v.empty())
       return false;
     else {
@@ -726,8 +697,9 @@ struct fo_sscan_single {
 inline constexpr fo_sscan_single sscan_single{};
 
 struct fo_sscan_while {
-  template <class F>
-  sview operator ()(sview &v, F f) const {
+  template <class T, class F>
+  string_reference<const T>
+  operator ()(string_reference<const T> &v, F f) const {
     const auto op = v.begin();
     const auto ed = v.end();
 
@@ -736,10 +708,62 @@ struct fo_sscan_while {
       ;
 
     v = {it, ed};
-    return sview(op, it);
+    return string_reference<const T>(op, it);
   }
 };
 inline constexpr fo_sscan_while sscan_while{};
+
+struct fo_sscan_ln {
+  template <class T>
+  bool operator ()(string_reference<const T> &v) const {
+    if (v.empty())
+      return false;
+    else {
+      const auto c = *v.begin();
+      if (to_unsigned(c) == 10u) {
+        v = {v.begin() + 1, v.end()};
+        return true;
+      }
+      else if (to_unsigned(c) == 13u) {
+        if (v.begin() + 1 != v.end()
+            && to_unsigned(*(v.begin() + 1)) == 10u) {
+          v = {v.begin() + 2, v.end()};
+          return true;
+        }
+        v = {v.begin() + 1, v.end()};
+        return true;
+      }
+      else
+        return false;
+    }
+  }
+};
+inline constexpr fo_sscan_ln sscan_ln{};
+
+struct fo_sscan_line {
+  template <class T>
+  optional<string_reference<const T>>
+  operator ()(string_reference<const T> &v) const {
+    using view_t = string_reference<const T>;
+    const auto it = v.begin();
+    for (;;) {
+      auto it2 = v.begin();
+      if (sscan_ln(v))
+        return view_t(it, it2);
+      else {
+        if (v.empty()) {
+          if (it != it2)
+            return view_t(it, it2);
+          else
+            return nullopt;
+        }
+        else
+          v = {v.begin() + 1, v.end()};
+      }
+    }
+  }
+};
+inline constexpr fo_sscan_line sscan_line{};
 
 }
 

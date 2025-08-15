@@ -434,6 +434,8 @@ inline constexpr fo_find_last_of find_last_of{};
 }
 
 // adjacent_find
+// adjacent_find_both
+// adjacent_find_both_while
 namespace re {
 
 struct fo_adjacent_find {
@@ -455,6 +457,56 @@ struct fo_adjacent_find {
   }
 };
 inline constexpr fo_adjacent_find adjacent_find{};
+
+struct fo_adjacent_find_both {
+  template <class FR, class UF>
+  constexpr rng_itr<FR> operator ()(FR &&r, UF eq) const
+    requires is_frng<FR> {
+    auto r_ed = end(r);
+    auto first_eq_pos = begin(r);
+    for (;;) {
+      for (;;) {
+        if (first_eq_pos == r_ed)
+          return r_ed;
+        if (eq(*first_eq_pos))
+          break;
+        ++first_eq_pos;
+      }
+      auto next_it = next(first_eq_pos);
+      if (next_it == r_ed)
+        return r_ed;
+      if (eq(*next_it))
+        return first_eq_pos;
+      first_eq_pos = next(next_it);
+    }
+  }
+};
+inline constexpr fo_adjacent_find_both adjacent_find_both{};
+
+struct fo_adjacent_find_both_while {
+  template <class FR, class UF, class UF2>
+  constexpr rng_itr<FR> operator ()(FR &&r, UF eq, UF2 eq_while) const
+    requires is_frng<FR> {
+    auto r_ed = end(r);
+    auto first_eq_pos = begin(r);
+    for (;;) {
+      for (;;) {
+        if (first_eq_pos == r_ed || !eq_while(*first_eq_pos))
+          return r_ed;
+        if (eq(*first_eq_pos))
+          break;
+        ++first_eq_pos;
+      }
+      auto next_it = next(first_eq_pos);
+      if (next_it == r_ed)
+        return r_ed;
+      if (eq(*next_it))
+        return first_eq_pos;
+      first_eq_pos = next(next_it);
+    }
+  }
+};
+inline constexpr fo_adjacent_find_both_while adjacent_find_both_while{};
 
 }
 
@@ -5323,6 +5375,13 @@ public:
   }
   constexpr bool empty() const requires is_rng_ref<add_const_t<R>> {
     return c->first == end(r);
+  }
+
+  template <class F>
+  void for_each(F f) {
+    for (decltype(auto) sub_r : r)
+      for (auto &i : iters(sub_r))
+        f(*i);
   }
 };
 template <class R>
