@@ -56,8 +56,8 @@ struct is_duration<const duration<R, P>> : true_type {};
 
 }
 template <class R1, ratio P1, class R2, ratio P2>
-struct common_type<duration<R1, P1>, duration<R2, P2>> {
-  using type = duration<common_type_t<R1, R2>,
+struct template_common_type<duration<R1, P1>, duration<R2, P2>> {
+  using type = duration<common_type<R1, R2>,
                         ratio(inner::fns::constexpr_gcd(P1.num, P2.num),
                               inner::fns::constexpr_lcm(P1.den, P2.den))>;
 };
@@ -103,7 +103,7 @@ public:
   template <class R2>
   constexpr explicit duration(const R2 &x)
     requires ((treat_as_floating_point_v<rep>
-               && is_convertible_v<const R2 &, rep>)
+               && is_convertible<const R2 &, rep>)
               || !treat_as_floating_point_v<R2>)
     : r(x) {}
   constexpr rep count() const {
@@ -114,11 +114,11 @@ public:
   constexpr duration(const duration<R2, P2> &x)
     requires (treat_as_floating_point_v<R> || (P2 / P).den == 1);
 
-  constexpr common_type_t<duration> operator +() const {
-    return common_type_t<duration>(*this);
+  constexpr common_type<duration> operator +() const {
+    return common_type<duration>(*this);
   }
-  constexpr common_type_t<duration> operator -() const {
-    return common_type_t<duration>(-r);
+  constexpr common_type<duration> operator -() const {
+    return common_type<duration>(-r);
   }
   constexpr duration &operator ++() {
     ++r;
@@ -197,7 +197,7 @@ struct fo_duration_cast<duration<R, P>> {
     constexpr ratio P3 = P2 / P;
     using t = duration<R, P>;
     using rep_t = typename t::rep;
-    using common_rep_t = common_type_t<rep_t, R2, intmax_t>;
+    using common_rep_t = common_type<rep_t, R2, intmax_t>;
 
     if constexpr (P3.num == 1 && P3.den == 1) {
       return t(static_cast<rep_t>(x.count()));
@@ -296,75 +296,75 @@ inline constexpr fo_duration_round<T> duration_round{};
 template <class R, ratio P, class R2, ratio P2>
 constexpr bool operator ==(const duration<R, P> &x,
                            const duration<R2, P2> &y) {
-  using ct = common_type_t<duration<R, P>, duration<R2, P2>>;
+  using ct = common_type<duration<R, P>, duration<R2, P2>>;
   return ct(x).count() == ct(y).count();
 }
 template <class R, ratio P, class R2, ratio P2>
 constexpr synth_3way_result<typename
-                            common_type_t<duration<R, P>, duration<R2, P2>>
+                            common_type<duration<R, P>, duration<R2, P2>>
                             ::rep>
 operator <=>(const duration<R, P> &x, const duration<R2, P2> &y) {
-  using ct = common_type_t<duration<R, P>, duration<R2, P2>>;
+  using ct = common_type<duration<R, P>, duration<R2, P2>>;
   return synth_3way(ct(x).count(), ct(y).count());
 }
 
 template <class R1, ratio P1, class R2, ratio P2>
-constexpr common_type_t<duration<R1, P1>, duration<R2, P2>>
+constexpr common_type<duration<R1, P1>, duration<R2, P2>>
 operator +(const duration<R1, P1> &x, const duration<R2, P2> &y) {
-  using ret_t = common_type_t<duration<R1, P1>, duration<R2, P2>>;
+  using ret_t = common_type<duration<R1, P1>, duration<R2, P2>>;
   return ret_t(ret_t(x).count() + ret_t(y).count());
 }
 
 template <class R1, ratio P1, class R2, ratio P2>
-constexpr common_type_t<duration<R1, P1>, duration<R2, P2>>
+constexpr common_type<duration<R1, P1>, duration<R2, P2>>
 operator -(const duration<R1, P1> &x, const duration<R2, P2> &y) {
-  using ret_t = common_type_t<duration<R1, P1>, duration<R2, P2>>;
+  using ret_t = common_type<duration<R1, P1>, duration<R2, P2>>;
   return ret_t(ret_t(x).count() - ret_t(y).count());
 }
 
 template <class R1, ratio P1, class R2>
-constexpr duration<common_type_t<R1, R2>, P1>
+constexpr duration<common_type<R1, R2>, P1>
 operator *(const duration<R1, P1> &x, const R2 &k)
-  requires is_convertible_v<const R2 &, common_type_t<R1, R2>> {
-  using ret_t = duration<common_type_t<R1, R2>, P1>;
+  requires is_convertible<const R2 &, common_type<R1, R2>> {
+  using ret_t = duration<common_type<R1, R2>, P1>;
   return ret_t(ret_t(x).count() * k);
 }
 
 template <class R2, class R1, ratio P1>
-constexpr duration<common_type_t<R2, R1>, P1>
+constexpr duration<common_type<R2, R1>, P1>
 operator *(const R2 &k, const duration<R1, P1> &x)
-  requires is_convertible_v<const R2 &, common_type_t<R2, R1>> {
+  requires is_convertible<const R2 &, common_type<R2, R1>> {
   return x * k;
 }
 
 template <class R1, ratio P1, class R2>
-constexpr duration<common_type_t<R1, R2>, P1>
+constexpr duration<common_type<R1, R2>, P1>
 operator /(const duration<R1, P1> &d, const R2 &k)
-  requires is_convertible_v<const R2 &, common_type_t<R1, R2>> {
-  using ret_t = duration<common_type_t<R1, R2>, P1>;
+  requires is_convertible<const R2 &, common_type<R1, R2>> {
+  using ret_t = duration<common_type<R1, R2>, P1>;
   return ret_t(ret_t(d).count() / k);
 }
 
 template <class R1, ratio P1, class R2, ratio P2>
-constexpr common_type_t<R1, R2>
+constexpr common_type<R1, R2>
 operator /(const duration<R1, P1> &x, const duration<R2, P2> &y) {
-  using t = common_type_t<duration<R1, P1>, duration<R2, P2>>;
+  using t = common_type<duration<R1, P1>, duration<R2, P2>>;
   return t(x).count() / t(y).count();
 }
 
 template <class R1, ratio P1, class R2>
-constexpr duration<common_type_t<R1, R2>, P1>
+constexpr duration<common_type<R1, R2>, P1>
 operator %(const duration<R1, P1> &d, const R2 &k)
-  requires (is_convertible_v<const R2 &, common_type_t<R1, R2>>
+  requires (is_convertible<const R2 &, common_type<R1, R2>>
             && !inner::is_duration<R2>::value) {
-  using ret_t = duration<common_type_t<R1, R2>, P1>;
+  using ret_t = duration<common_type<R1, R2>, P1>;
   return ret_t(ret_t(d).count() % k);
 }
 
 template <class R1, ratio P1, class R2, ratio P2>
-constexpr common_type_t<duration<R1, P1>, duration<R2, P2>>
+constexpr common_type<duration<R1, P1>, duration<R2, P2>>
 operator %(const duration<R1, P1> &x, const duration<R2, P2> &y) {
-  using ret_t = common_type_t<duration<R1, P1>, duration<R2, P2>>;
+  using ret_t = common_type<duration<R1, P1>, duration<R2, P2>>;
   return ret_t(ret_t(x).count() % ret_t(y).count());
 }
 
@@ -436,7 +436,7 @@ public:
   constexpr explicit time_point(const duration &dd) : d(dd) {}
   template <class D2>
   constexpr time_point(const time_point<C, D2> &t)
-    requires is_convertible_v<D2, duration> : d(t.time_since_epoch()) {}
+    requires is_convertible<D2, duration> : d(t.time_since_epoch()) {}
 
   constexpr duration time_since_epoch() const {
     return d;
@@ -541,24 +541,24 @@ constexpr auto operator <=>(const time_point<C, D> &x,
   return x.time_since_epoch() <=> y.time_since_epoch();
 }
 template <class C, class D, class R, ratio P>
-constexpr time_point<C, common_type_t<D, duration<R, P>>>
+constexpr time_point<C, common_type<D, duration<R, P>>>
 operator +(const time_point<C, D> &x, const duration<R, P> &y) {
-  return time_point<C, common_type_t<D, duration<R, P>>>
+  return time_point<C, common_type<D, duration<R, P>>>
     (x.time_since_epoch() + y);
 }
 template <class R, ratio P, class C, class D>
-constexpr time_point<C, common_type_t<D, duration<R, P>>>
+constexpr time_point<C, common_type<D, duration<R, P>>>
 operator +(const duration<R, P> &y, const time_point<C, D> &x) {
   return x + y;
 }
 template <class C, class D, class R, ratio P>
-constexpr time_point<C, common_type_t<D, duration<R, P>>>
+constexpr time_point<C, common_type<D, duration<R, P>>>
 operator -(const time_point<C, D> &x, const duration<R, P> &y) {
-  return time_point<C, common_type_t<D, duration<R, P>>>
+  return time_point<C, common_type<D, duration<R, P>>>
     (x.time_since_epoch() - y);
 }
 template <class C, class D, class D2>
-constexpr common_type_t<D, D2>
+constexpr common_type<D, D2>
 operator -(const time_point<C, D> &x, const time_point<C, D2> &y) {
   return x.time_since_epoch() - y.time_since_epoch();
 }

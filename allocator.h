@@ -21,7 +21,7 @@ struct alloc_traits_get_const_pointer_0 {
   static type_tag<typename AL::const_pointer> f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_const_pointer_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_const_pointer_0, AL>>
 struct alloc_traits_get_const_pointer {
   using type = typename AL::const_pointer;
 };
@@ -38,7 +38,7 @@ struct alloc_traits_get_void_pointer_0 {
   static type_tag<typename AL::void_pointer> f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_void_pointer_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_void_pointer_0, AL>>
 struct alloc_traits_get_void_pointer {
   using type = typename AL::void_pointer;
 };
@@ -53,8 +53,7 @@ struct alloc_traits_get_const_void_pointer_0 {
   static type_tag<typename AL::const_void_pointer> f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v
-          <alloc_traits_get_const_void_pointer_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_const_void_pointer_0, AL>>
 struct alloc_traits_get_const_void_pointer {
   using type = typename AL::const_void_pointer;
 };
@@ -69,7 +68,7 @@ struct alloc_traits_get_difference_type_0 {
   static type_tag<typename AL::difference_type> f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_difference_type_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_difference_type_0, AL>>
 struct alloc_traits_get_difference_type {
   using type = typename AL::difference_type;
 };
@@ -84,14 +83,14 @@ struct alloc_traits_get_size_type_0 {
   static type_tag<typename AL::size_type> f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_size_type_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_size_type_0, AL>>
 struct alloc_traits_get_size_type {
   using type = typename AL::size_type;
 };
 template <class AL>
 struct alloc_traits_get_size_type<AL, false> {
   using difference_type = typename allocator_traits<AL>::difference_type;
-  using type = make_unsigned_t<difference_type>;
+  using type = make_unsigned<difference_type>;
 };
 
 struct alloc_traits_get_propg_on_copy_0 {
@@ -100,7 +99,7 @@ struct alloc_traits_get_propg_on_copy_0 {
   f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_propg_on_copy_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_propg_on_copy_0, AL>>
 struct alloc_traits_get_propg_on_copy {
   using type = typename AL::propagate_on_container_copy_assignment;
 };
@@ -115,7 +114,7 @@ struct alloc_traits_get_propg_on_move_0 {
   f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_propg_on_move_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_propg_on_move_0, AL>>
 struct alloc_traits_get_propg_on_move {
   using type = typename AL::propagate_on_container_move_assignment;
 };
@@ -130,7 +129,7 @@ struct alloc_traits_get_propg_on_swap_0 {
   f(type_pack<AL>);
 };
 template <class AL,
-          bool = f_is_well_formed_v<alloc_traits_get_propg_on_swap_0, AL>>
+          bool = f_is_well_formed<alloc_traits_get_propg_on_swap_0, AL>>
 struct alloc_traits_get_propg_on_swap {
   using type = typename AL::propagate_on_container_swap;
 };
@@ -150,7 +149,7 @@ struct alloc_traits_get_rebind_alloc_0 {
   f(type_pack<AL, T>);
 };
 template <class AL, class T,
-          bool = f_is_well_formed_v<alloc_traits_get_rebind_alloc_0, AL, T>>
+          bool = f_is_well_formed<alloc_traits_get_rebind_alloc_0, AL, T>>
 struct alloc_traits_get_rebind_alloc;
 template <class AL, class T>
 struct alloc_traits_get_rebind_alloc<AL, T, true> {
@@ -213,7 +212,7 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
   using allocator_type = AL;
 
   using value_type = typename AL::value_type;
-  using pointer = return_type_of_f_or_t
+  using pointer = return_type_of_f_or
     <inner::alloc_traits_get_pointer, value_type *, AL>;
   using const_pointer
     = typename inner::alloc_traits_get_const_pointer<AL>::type;
@@ -232,8 +231,8 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
     = typename inner::alloc_traits_get_propg_on_move<AL>::type;
   using propagate_on_container_swap
     = typename inner::alloc_traits_get_propg_on_swap<AL>::type;
-  using is_always_equal = return_type_of_f_or_t
-    <inner::alloc_traits_get_is_always_equal, is_empty<AL>, AL>;
+  using is_always_equal = return_type_of_f_or
+    <inner::alloc_traits_get_is_always_equal, template_is_empty<AL>, AL>;
 
   template <class T>
   using rebind_alloc
@@ -254,7 +253,7 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
   }
   [[nodiscard]] static pointer allocate(AL &a, size_type n,
                                         const_void_pointer hint) {
-    if constexpr (f_is_well_formed_v
+    if constexpr (f_is_well_formed
                   <inner::check_alloc_is_capable_of_hint_allocation,
                    AL>) {
       return a.allocate(n, hint);
@@ -277,7 +276,7 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
 
   template <class T, class...S>
   static void construct(AL &a, T *p, S &&...s) {
-    if constexpr (f_is_well_formed_v
+    if constexpr (f_is_well_formed
                   <inner::check_alloc_can_construct_by_member_function,
                    AL, T, S &&...>) {
       a.construct(p, forward<S>(s)...);
@@ -288,7 +287,7 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
   }
   template <class T>
   static void destroy(AL &a, T *p) {
-    if constexpr (f_is_well_formed_v
+    if constexpr (f_is_well_formed
                   <inner::check_alloc_can_destroy_by_member_function,
                    AL, T>) {
       a.destroy(p);
@@ -299,7 +298,7 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
   }
 
   static size_type max_size(const AL &a) noexcept {
-    if constexpr (f_is_well_formed_v
+    if constexpr (f_is_well_formed
                   <inner::check_alloc_has_member_function_max_size,
                    AL>) {
       return a.max_size();
@@ -310,7 +309,7 @@ struct allocator_traits : inner::allocator_traits_primary_tag {
   }
 
   static AL select_on_container_copy_construction(const AL &al) {
-    if constexpr (f_is_well_formed_v
+    if constexpr (f_is_well_formed
                   <inner::check_alloc_can_select_on_container_copy_construction,
                    AL>) {
       return al.select_on_container_copy_construction();
@@ -361,7 +360,7 @@ inline constexpr bool alloc_always_equal = allocator_traits<A>
 
 template <class AL>
 concept allocator_with_primary_traits
-  = is_base_of_v<inner::allocator_traits_primary_tag, allocator_traits<AL>>;
+  = is_base_of<inner::allocator_traits_primary_tag, allocator_traits<AL>>;
 template <class AL, class T, class...S>
 concept allocator_provides_construct_function
   = requires(AL &a, T *p, S &&...s) {a.construct(p, static_cast<S &&>(s)...);};
@@ -371,7 +370,7 @@ concept allocator_provides_destroy_function
 template <class AL, class T, class...S>
 concept nothrow_constructible_by_allocator
   = !allocator_provides_construct_function<AL, T, S...>
-  && is_nothrow_constructible_v<T, S...>
+  && is_nothrow_constructible<T, S...>
   && allocator_with_primary_traits<AL>;
 template <class AL, class T>
 concept nothrow_move_constructible_by_allocator
@@ -433,7 +432,7 @@ struct fo_destroy_at {
     p->~T();
   }
   template <class T>
-  constexpr void operator ()(T *p) const requires is_array_v<T> {
+  constexpr void operator ()(T *p) const requires is_array<T> {
     destroy(*p);
   }
 
@@ -442,7 +441,7 @@ struct fo_destroy_at {
     d(p);
   }
   template <class T, class D>
-  constexpr void operator ()(T *p, D d) const requires is_array_v<T> {
+  constexpr void operator ()(T *p, D d) const requires is_array<T> {
     destroy(*p, d);
   }
 };
@@ -462,14 +461,14 @@ namespace inner::fns {
 template <class T, class F, class D>
 void default_construct_array_impl(T *, F, D);
 template <class T, class F, class D>
-void default_construct_array_impl(T *, F, D) requires is_bounded_array_v<T>;
+void default_construct_array_impl(T *, F, D) requires is_bounded_array<T>;
 template <class T, class F, class D>
 void default_construct_array_impl(T *p, F f, D) {
   f(p);
 }
 template <class T, class F, class D>
 void default_construct_array_impl(T *p, F f, D d)
-  requires is_bounded_array_v<T> {
+  requires is_bounded_array<T> {
   for (auto &it : iters(*p)) {
 #ifndef RE_NOEXCEPT
     try {
@@ -489,13 +488,13 @@ void default_construct_array_impl(T *p, F f, D d)
 template <class T, class F, class D>
 void construct_array_impl(T *, F, D);
 template <class T, class F, class D>
-void construct_array_impl(T *, F, D) requires is_bounded_array_v<T>;
+void construct_array_impl(T *, F, D) requires is_bounded_array<T>;
 template <class T, class F, class D>
 void construct_array_impl(T *p, F f, D d) {
   f(p);
 }
 template <class T, class F, class D>
-void construct_array_impl(T *p, F f, D d) requires is_bounded_array_v<T> {
+void construct_array_impl(T *p, F f, D d) requires is_bounded_array<T> {
   for (auto &it : iters(*p)) {
 #ifndef RE_NOEXCEPT
     try {
@@ -516,14 +515,14 @@ template <class T, class U, class F, class D>
 void construct_array_impl(T *, const U &fll, F, D);
 template <class T, class U, class F, class D>
 void construct_array_impl(T *, const U &fll, F, D)
-  requires is_bounded_array_v<T>;
+  requires is_bounded_array<T>;
 template <class T, class U, class F, class D>
 void construct_array_impl(T *p, const U &fll, F f, D) {
   f(p, fll);
 }
 template <class T, class U, class F, class D>
 void construct_array_impl(T *p, const U &fll, F f, D d)
-  requires is_bounded_array_v<T> {
+  requires is_bounded_array<T> {
   for (auto &it : iters(*p)) {
 #ifndef RE_NOEXCEPT
     try {
@@ -544,15 +543,15 @@ template <class T, class U, class F, class D>
 void construct_array_impl2(T *, const U &, F, D);
 template <class T, class U, class F, class D>
 void construct_array_impl2(T *, const U &, F, D)
-  requires is_bounded_array_v<T>;
+  requires is_bounded_array<T>;
 template <class T, class U, class F, class D>
 void construct_array_impl2(T *p, const U &fll, F f, D d) {
   f(p, fll);
 }
 template <class T, class U, class F, class D>
 void construct_array_impl2(T *p, const U &fll, F f, D d)
-  requires is_bounded_array_v<T> {
-  for (size_t n : irng(0u, extent_v<T>)) {
+  requires is_bounded_array<T> {
+  for (size_t n : irng(0u, extent<T>)) {
 #ifndef RE_NOEXCEPT
     try {
 #endif
@@ -569,9 +568,9 @@ void construct_array_impl2(T *p, const U &fll, F f, D d)
 }
 
 template <class T, class F, class D>
-void construct_array_impl22(T *p, const remove_extent_t<T> &fll, F f, D d)
-  requires is_bounded_array_v<T> {
-  for (size_t n : irng(0u, extent_v<T>)) {
+void construct_array_impl22(T *p, const remove_extent<T> &fll, F f, D d)
+  requires is_bounded_array<T> {
+  for (size_t n : irng(0u, extent<T>)) {
 #ifndef RE_NOEXCEPT
     try {
 #endif
@@ -590,80 +589,80 @@ void construct_array_impl22(T *p, const remove_extent_t<T> &fll, F f, D d)
 }
 struct fo_default_construct_array {
   template <class T>
-  void operator ()(T *p) const requires is_array_v<T> {
+  void operator ()(T *p) const requires is_array<T> {
     inner::fns::default_construct_array_impl(p,
                                              default_construct_non_array_at,
                                              destroy_non_array_at);
   }
   template <class T, class F, class D>
-  void operator ()(T *p, F f, D d) const requires is_array_v<T> {
+  void operator ()(T *p, F f, D d) const requires is_array<T> {
     inner::fns::default_construct_array_impl(p, f, d);
   }
 };
 inline constexpr fo_default_construct_array default_construct_array{};
 struct fo_construct_array {
   template <class T>
-  void operator ()(T *p) const requires is_bounded_array_v<T> {
+  void operator ()(T *p) const requires is_bounded_array<T> {
     inner::fns::construct_array_impl(p,
                                      construct_non_array_at,
                                      destroy_non_array_at);
   }
   template <class T, class U>
   void operator ()(T *p, const U &fll) const
-    requires (is_bounded_array_v<T>
-              && !is_convertible_v<const U &, const remove_extent_t<T> &>
-              && !is_convertible_v<const U &, const T &>) {
+    requires (is_bounded_array<T>
+              && !is_convertible<const U &, const remove_extent<T> &>
+              && !is_convertible<const U &, const T &>) {
     inner::fns::construct_array_impl(p, fll,
                                      construct_non_array_at,
                                      destroy_non_array_at);
   }
   template <class T>
-  void operator ()(T *p, const remove_extent_t<T> &fll) const
-    requires is_bounded_array_v<T> {
+  void operator ()(T *p, const remove_extent<T> &fll) const
+    requires is_bounded_array<T> {
     inner::fns::construct_array_impl22(p, fll,
                                        construct_non_array_at,
                                        destroy_non_array_at);
   }
   template <class T>
   void operator ()(T *p, const T &fll) const
-    requires is_bounded_array_v<T> {
+    requires is_bounded_array<T> {
     inner::fns::construct_array_impl2(p, fll,
                                       construct_non_array_at,
                                       destroy_non_array_at);
   }
   template <class T>
   void operator ()(T *p, T &fll) const
-    requires is_bounded_array_v<T> {
+    requires is_bounded_array<T> {
     inner::fns::construct_array_impl2(p, fll,
                                       construct_non_array_at,
                                       destroy_non_array_at);
   }
 
   template <class T, class F, class D>
-  void operator ()(T *p, F f, D d) const requires is_bounded_array_v<T> {
+  void operator ()(T *p, F f, D d) const requires is_bounded_array<T> {
     inner::fns::construct_array_impl(p, f, d);
   }
   template <class T, class U, class F, class D>
   void operator ()(T *p, const U &fll, F f, D d) const
-    requires (is_bounded_array_v<T>
-              && !is_convertible_v<const U &, const remove_extent_t<T> &>
-              && !is_convertible_v<const U &, const T &>) {
+    requires (is_bounded_array<T>
+              && !is_convertible<const U &, const remove_extent<T> &>
+              && !is_convertible<const U &, const T &>) {
     inner::fns::construct_array_impl(p, fll, f, d);
   }
   template <class T, class F, class D>
-  void operator ()(T *p, const remove_extent_t<T> &fll,
+  void operator ()(T *p, const remove_extent<T> &fll,
                    F f, D d) const
-    requires is_bounded_array_v<T> {
+    requires is_bounded_array<T> {
     inner::fns::construct_array_impl22(p, fll, f, d);
   }
   template <class T, class F, class D>
   void operator ()(T *p, const T &fll, F f, D d) const
-    requires is_bounded_array_v<T> {
+    requires is_bounded_array<T> {
     inner::fns::construct_array_impl2(p, fll, f, d);
   }
   template <class T, class F, class D>
   void operator ()(T *p, T &fll, F f, D d) const
-    requires is_bounded_array_v<T> {
+    requires is_bounded_array<T> {
     inner::fns::construct_array_impl2(p, fll, f, d);
   }
 };
@@ -675,7 +674,7 @@ struct fo_default_construct_maybe_array {
     ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T;
   }
   template <class T>
-  void operator ()(T *p) const requires is_bounded_array_v<T> {
+  void operator ()(T *p) const requires is_bounded_array<T> {
     default_construct_array(p);
   }
 
@@ -684,7 +683,7 @@ struct fo_default_construct_maybe_array {
     ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T;
   }
   template <class T, class F, class D>
-  void operator ()(T *p, F f, D d) const requires is_bounded_array_v<T> {
+  void operator ()(T *p, F f, D d) const requires is_bounded_array<T> {
     default_construct_array(p, f, d);
   }
 };
@@ -692,38 +691,38 @@ inline constexpr fo_default_construct_maybe_array
 default_construct_maybe_array{};
 struct fo_construct_maybe_array {
   template <class T>
-  void operator ()(T *p) const requires (!is_array_v<T>) {
+  void operator ()(T *p) const requires (!is_array<T>) {
     ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T{};
   }
   template <class T>
-  void operator ()(T *p) const requires is_bounded_array_v<T> {
+  void operator ()(T *p) const requires is_bounded_array<T> {
     construct_array(p);
   }
   template <class T, class U>
-  void operator ()(T *p, const U &u) const requires (!is_array_v<T>) {
+  void operator ()(T *p, const U &u) const requires (!is_array<T>) {
     ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T(u);
   }
   template <class T, class U>
-  void operator ()(T *p, const U &u) const requires is_bounded_array_v<T> {
+  void operator ()(T *p, const U &u) const requires is_bounded_array<T> {
     construct_array(p, u);
   }
 
   template <class T, class F, class D>
-  void operator ()(T *p, F, D) const requires (!is_array_v<T>) {
+  void operator ()(T *p, F, D) const requires (!is_array<T>) {
     ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T{};
   }
   template <class T, class F, class D>
-  void operator ()(T *p, F f, D d) const requires is_bounded_array_v<T> {
+  void operator ()(T *p, F f, D d) const requires is_bounded_array<T> {
     construct_array(p, f, d);
   }
   template <class T, class U, class F, class D>
   void operator ()(T *p, const U &u, F, D) const
-    requires (!is_array_v<T>) {
+    requires (!is_array<T>) {
     ::new(const_cast<void *>(reinterpret_cast<const void *>(p))) T(u);
   }
   template <class T, class U, class F, class D>
   void operator ()(T *p, const U &u, F f, D d) const
-    requires is_bounded_array_v<T> {
+    requires is_bounded_array<T> {
     construct_array(p, u, f, d);
   }
 };
@@ -914,21 +913,21 @@ public:
   using allocator_type = AL;
   using traits = allocator_traits<AL>;
 
-  allocator_wrapper() noexcept(is_nothrow_default_constructible_v<AL>) : AL() {}
+  allocator_wrapper() noexcept(is_nothrow_default_constructible<AL>) : AL() {}
   ~allocator_wrapper() = default;
   allocator_wrapper(const this_t &) = default;
   allocator_wrapper &operator =(const this_t &) = default;
   allocator_wrapper(this_t &&) = default;
   allocator_wrapper &operator =(this_t &&) = default;
   friend void swap(allocator_wrapper &x, allocator_wrapper &y)
-    noexcept(is_nothrow_swappable_v<AL>) {
+    noexcept(is_nothrow_swappable<AL>) {
     adl_swap(x.get(), y.get());
   }
 
   explicit allocator_wrapper(const allocator_type &a) : AL(a) {}
   template <class...S>
   allocator_wrapper(S &&...s)
-    requires (sizeof...(S) != 1 && is_constructible_v<AL, S &&...>)
+    requires (sizeof...(S) != 1 && is_constructible<AL, S &&...>)
     : AL(forward<S>(s)...) {}
 
   AL &get() noexcept {
@@ -955,7 +954,7 @@ public:
 
   [[nodiscard]] pair<alloc_ptr<AL>, alloc_ptr<AL>>
   allocate_alignas(alloc_szt<AL> algn, alloc_szt<AL> n = 1)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     if (algn <= min_alignment()) {
       const alloc_ptr<AL> p = allocate(n);
       return {p, p};
@@ -975,7 +974,7 @@ public:
   void deallocate_alignas(alloc_szt<AL> algn,
                           pair<alloc_ptr<AL>, alloc_ptr<AL>> p,
                           alloc_szt<AL> n = 1)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     deallocate(p.second, (algn <= min_alignment()) ? n : (n + algn));
   }
 
@@ -1029,23 +1028,23 @@ public:
   }
 
   auto default_construct_non_array_fn() const noexcept
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     return [a = *this]<class T>(T *p) {
-      using vt = remove_cv_t<T>;
+      using vt = remove_cv<T>;
       a.template rebind<vt>().construct(const_cast<vt *>(p));
     };
   }
   auto construct_non_array_fn() const noexcept
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     return [a = *this]<class T, class...S>(T *p, S &&...s) {
-      using vt = remove_cv_t<T>;
+      using vt = remove_cv<T>;
       a.template rebind<vt>().construct(const_cast<vt *>(p), forward<S>(s)...);
     };
   }
   auto destroy_non_array_fn() const noexcept
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     return [a = *this]<class T>(T *p) {
-      using vt = remove_cv_t<T>;
+      using vt = remove_cv<T>;
       a.template rebind<vt>().destroy(const_cast<vt *>(p));
     };
   }
@@ -1138,7 +1137,7 @@ public:
       initialize(r, destroyf);
       return {i + len, o + len};
     }
-    else if constexpr (is_nothrow_assignable_v<itr_ref<FI>, rng_rref<FR>>) {
+    else if constexpr (is_nothrow_assignable<itr_ref<FI>, rng_rref<FR>>) {
       return initialize_plus(r, o, [=](auto r_p, auto o_p) {
         *o_p = move(*r_p);
         destroyf(to_address(r_p));
@@ -1220,23 +1219,6 @@ public:
     deallocate(p, n);
   }
 
-  template <class...S>
-  [[nodiscard]] alloc_ptr<AL> new_1_with_placement_new(S &&...s) {
-    alloc_ptr<AL> p = allocate();
-#ifndef RE_NOEXCEPT
-    try {
-#endif
-      construct(to_address(p), forward<S>(s)...);
-#ifndef RE_NOEXCEPT
-    }
-    catch (...) {
-      deallocate(p);
-      throw;
-    }
-#endif
-    return p;
-  }
-
   template <class NODE_T, class...S>
   auto new_node(S &&...s) {
     auto node_alw = rebind<NODE_T>();
@@ -1258,7 +1240,7 @@ public:
   template <class P>
   void delete_node(P p) noexcept {
     using node_t = pointer_traits<P>::element_type;
-    static_assert(is_same_v<alloc_rebind_ptr<AL, node_t>, P>);
+    static_assert(is_same<alloc_rebind_ptr<AL, node_t>, P>);
     traits::destroy(get(),
                     reinterpret_cast<alloc_vt<AL> *>(addressof(p->data)));
     rebind<node_t>().delete_1(p);
@@ -1388,7 +1370,7 @@ public:
   }
 
   template <class H, class U>
-  requires is_same_v<alloc_vt<AL>, byte>
+  requires is_same<alloc_vt<AL>, byte>
   class headed_buffer_ptr {
     friend class allocator_wrapper;
 
@@ -1466,7 +1448,7 @@ public:
   };
   template <class H, class U, class...S>
   headed_buffer_ptr<H, U> allocate_headed_buffer(alloc_szt<AL> n, S &&...s)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     const size_t max_align = max_value(alignof(H), alignof(U));
     if (numeric_limits<alloc_szt<AL>>::max() - max_align < sizeof(H))
       throw_or_terminate<length_error>
@@ -1502,13 +1484,13 @@ public:
   }
   template <class H, class U>
   void deallocate_headed_buffer(headed_buffer_ptr<H, U> p)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     p.head().~H();
     deallocate_alignas(alignof(H), p.p, p.n);
   }
 
   template <class H>
-  requires is_same_v<alloc_vt<AL>, byte>
+  requires is_same<alloc_vt<AL>, byte>
   class headed_bytebuf_ptr {
     friend class allocator_wrapper;
 
@@ -1593,7 +1575,7 @@ public:
   allocate_headed_bytebuf_alignas(alloc_szt<AL> algn2,
                                   alloc_szt<AL> n,
                                   S &&...s)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     const size_t algn = max_value(alignof(H), algn2);
     if (numeric_limits<alloc_szt<AL>>::max() - algn < sizeof(H))
       throw_or_terminate<length_error>
@@ -1631,12 +1613,12 @@ public:
   headed_bytebuf_ptr<H>
   allocate_headed_bytebuf(alloc_szt<AL> n,
                           S &&...s)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     allocate_headed_bytebuf_alignas<H>(min_alignment(), n, forward<S>(s)...);
   }
   template <class H>
   void deallocate_headed_bytebuf(headed_bytebuf_ptr<H> p)
-    requires is_same_v<alloc_vt<AL>, byte> {
+    requires is_same<alloc_vt<AL>, byte> {
     p.head().~H();
     deallocate_alignas(p.algn, p.p, p.n);
   }
@@ -1771,7 +1753,7 @@ public:
 
   template <class AL2>
   alloc_delete(const alloc_delete<AL2> &x) noexcept
-    requires (is_convertible_v<const AL2 &, AL> && !is_same_v<AL2, AL>)
+    requires (is_convertible<const AL2 &, AL> && !is_same<AL2, AL>)
     : alw_t(static_cast<const AL2 &>(x)) {}
 
   void operator ()(pointer p) noexcept {
@@ -1825,7 +1807,7 @@ public:
   default_delete &operator =(default_delete &&) = default;
 
   template <class U>
-  void operator ()(U *p) const requires is_convertible_v<U (*)[], T (*)[]> {
+  void operator ()(U *p) const requires is_convertible<U (*)[], T (*)[]> {
     ::delete [] p;
   }
 };
@@ -1854,18 +1836,19 @@ namespace inner {
 
 struct check_deleter_has_pointer_type_member {
   template <class T>
-  static type_tag<typename remove_reference_t<T>::pointer> f(type_pack<T>);
+  static type_tag<typename remove_reference<T>::pointer> f(type_pack<T>);
 };
 template <class T>
 struct deleter_has_pointer_type_member
-  : f_is_well_formed<inner::check_deleter_has_pointer_type_member, T> {};
+  : template_f_is_well_formed<inner::check_deleter_has_pointer_type_member,
+                              T> {};
 template <class T>
 inline constexpr bool deleter_has_pointer_type_member_v
   = deleter_has_pointer_type_member<T>::value;
 
 template <class T, class D, bool = deleter_has_pointer_type_member_v<D>>
 struct unique_ptr_pointer_type {
-  using type = typename remove_reference_t<D>::pointer;
+  using type = typename remove_reference<D>::pointer;
 };
 template <class T, class D>
 struct unique_ptr_pointer_type<T, D, false> {
@@ -1905,18 +1888,18 @@ public:
   unique_ptr(const unique_ptr &) = delete;
   unique_ptr &operator =(const unique_ptr &) = delete;
   unique_ptr(unique_ptr &&x) noexcept
-    requires is_move_constructible_v<D>
+    requires is_move_constructible<D>
     : base_t(move(x.base())), p(x.p) {
     x.p = nullptr;
   }
   unique_ptr &operator =(unique_ptr &&x) noexcept
-    requires is_move_assignable_v<D> {
+    requires is_move_assignable<D> {
     reset(x.release());
     base() = move(x.base());
     return *this;
   }
   friend void swap(unique_ptr &x, unique_ptr &y) noexcept
-    requires is_nothrow_swappable_v<D> {
+    requires is_nothrow_swappable<D> {
     adl_swap(x.base(), y.base());
     adl_swap(x.p, y.p);
   }
@@ -1929,33 +1912,33 @@ public:
 
   template <class T2, class D2>
   unique_ptr(unique_ptr<T2, D2> &&u) noexcept
-    requires (is_convertible_v<typename unique_ptr<T2, D2>::pointer, pointer>
-              && !is_array_v<T2>
-              && ((is_reference_v<D> && is_same_v<D2, D>)
-                  || (!is_reference_v<D> && is_convertible_v<D2, D>)))
+    requires (is_convertible<typename unique_ptr<T2, D2>::pointer, pointer>
+              && !is_array<T2>
+              && ((is_reference<D> && is_same<D2, D>)
+                  || (!is_reference<D> && is_convertible<D2, D>)))
     : base_t(in_place, forward<D2>(*u.base())), p(u.p) {
     u.p = nullptr;
   }
   template <class T2, class D2>
   unique_ptr &operator =(unique_ptr<T2, D2> &&u) noexcept
-    requires (is_convertible_v<typename unique_ptr<T2, D2>::pointer, pointer>
-              && !is_array_v<T2> && is_assignable_v<D &, D2 &&>) {
+    requires (is_convertible<typename unique_ptr<T2, D2>::pointer, pointer>
+              && !is_array<T2> && is_assignable<D &, D2 &&>) {
     reset(u.release());
     *base() = forward<D2>(*u.base());
     return *this;
   }
 
-  explicit unique_ptr(type_identity_t<pointer> pp) noexcept
-    requires (!is_pointer_v<deleter_type>
-              && is_default_constructible_v<deleter_type>) : p(pp) {}
-  unique_ptr(type_identity_t<pointer> pp, const D &d) noexcept
-    requires is_constructible_v<D, const D &>
+  explicit unique_ptr(type_identity<pointer> pp) noexcept
+    requires (!is_pointer<deleter_type>
+              && is_default_constructible<deleter_type>) : p(pp) {}
+  unique_ptr(type_identity<pointer> pp, const D &d) noexcept
+    requires is_constructible<D, const D &>
     : base_t(in_place, d), p(pp) {}
-  unique_ptr(type_identity_t<pointer> pp, remove_reference_t<D> &&d) noexcept
-    requires is_constructible_v<D, remove_reference_t<D> &&>
+  unique_ptr(type_identity<pointer> pp, remove_reference<D> &&d) noexcept
+    requires is_constructible<D, remove_reference<D> &&>
     : base_t(in_place, move(d)), p(pp) {}
 
-  add_lvalue_reference_t<T> operator *() const {
+  add_lvalue_reference<T> operator *() const {
     return *p;
   }
   pointer operator ->() const noexcept {
@@ -1995,11 +1978,11 @@ bool operator ==(const unique_ptr<T1, D1> &x, const unique_ptr<T2, D2> &y) {
   return x.get() == y.get();
 }
 template <class T1, class D1, class T2, class D2>
-synth_3way_result<common_type_t<typename unique_ptr<T1, D1>::pointer,
-                                typename unique_ptr<T2, D2>::pointer>>
+synth_3way_result<common_type<typename unique_ptr<T1, D1>::pointer,
+                              typename unique_ptr<T2, D2>::pointer>>
 operator <=>(const unique_ptr<T1, D1> &x, const unique_ptr<T2, D2> &y) {
-  using common_t = common_type_t<typename unique_ptr<T1, D1>::pointer,
-                                 typename unique_ptr<T2, D2>::pointer>;
+  using common_t = common_type<typename unique_ptr<T1, D1>::pointer,
+                               typename unique_ptr<T2, D2>::pointer>;
   return synth_3way(static_cast<const common_t &>(x.get()),
                     static_cast<const common_t &>(y.get()));
 }
@@ -2042,18 +2025,18 @@ public:
   unique_ptr(const unique_ptr &) = delete;
   unique_ptr &operator =(const unique_ptr &) = delete;
   unique_ptr(unique_ptr &&x) noexcept
-    requires is_move_constructible_v<D>
+    requires is_move_constructible<D>
     : base_t(move(x.base())), p(x.p) {
     x.p = nullptr;
   }
   unique_ptr &operator =(unique_ptr &&x) noexcept
-    requires is_move_assignable_v<D> {
+    requires is_move_assignable<D> {
     reset(x.release());
     base() = move(x.base());
     return *this;
   }
   friend void swap(unique_ptr &x, unique_ptr &y) noexcept
-    requires is_nothrow_swappable_v<D> {
+    requires is_nothrow_swappable<D> {
     adl_swap(x.base(), y.base());
     adl_swap(x.p, y.p);
   }
@@ -2066,17 +2049,17 @@ public:
 
   template <class T2, class D2>
   unique_ptr(unique_ptr<T2, D2> &&u) noexcept
-    requires (is_convertible_v<typename unique_ptr<T2, D2>::pointer, pointer>
-              && !is_array_v<T2>
-              && ((is_reference_v<D> && is_same_v<D2, D>)
-                  || (!is_reference_v<D> && is_convertible_v<D2, D>)))
+    requires (is_convertible<typename unique_ptr<T2, D2>::pointer, pointer>
+              && !is_array<T2>
+              && ((is_reference<D> && is_same<D2, D>)
+                  || (!is_reference<D> && is_convertible<D2, D>)))
     : base_t(in_place, forward<D2>(*u.base())), p(u.p) {
     u.p = nullptr;
   }
   template <class T2, class D2>
   unique_ptr &operator =(unique_ptr<T2, D2> &&u) noexcept
-    requires (is_convertible_v<typename unique_ptr<T2, D2>::pointer, pointer>
-              && !is_array_v<T2> && is_assignable_v<D &, D2 &&>) {
+    requires (is_convertible<typename unique_ptr<T2, D2>::pointer, pointer>
+              && !is_array<T2> && is_assignable<D &, D2 &&>) {
     reset(u.release());
     *base() = forward<D2>(*u.base());
     return *this;
@@ -2084,18 +2067,18 @@ public:
 
   template <class U>
   explicit unique_ptr(U pp) noexcept
-    requires (is_constructible_v<inner::unique_ptr_pointer_type_t<T, D>, U &>
-              && !is_pointer_v<deleter_type>
-              && is_default_constructible_v<deleter_type>) : p(pp) {}
+    requires (is_constructible<inner::unique_ptr_pointer_type_t<T, D>, U &>
+              && !is_pointer<deleter_type>
+              && is_default_constructible<deleter_type>) : p(pp) {}
   template <class U>
   unique_ptr(U pp, const D &d) noexcept
-    requires (is_constructible_v<inner::unique_ptr_pointer_type_t<T, D>, U &>
-              && is_constructible_v<D, const D &>)
+    requires (is_constructible<inner::unique_ptr_pointer_type_t<T, D>, U &>
+              && is_constructible<D, const D &>)
     : base_t(in_place, d), p(pp) {}
   template <class U>
-  unique_ptr(U pp, remove_reference_t<D> &&d) noexcept
-    requires (is_constructible_v<inner::unique_ptr_pointer_type_t<T, D>, U &>
-              && is_constructible_v<D, remove_reference_t<D> &&>)
+  unique_ptr(U pp, remove_reference<D> &&d) noexcept
+    requires (is_constructible<inner::unique_ptr_pointer_type_t<T, D>, U &>
+              && is_constructible<D, remove_reference<D> &&>)
     : base_t(in_place, move(d)), p(pp) {}
 
   T &operator [](size_t i) const {
@@ -2205,14 +2188,14 @@ class unique_array : derivable_wrapper<D> {
 
 public:
   using pointer = inner::unique_ptr_pointer_type_t<T, D>;
-  using const_pointer = pointer_rebind_t<pointer, add_const_t<T>>;
+  using const_pointer = ptr_rebind<pointer, add_const<T>>;
   using element_type = T;
-  using value_type = remove_cvref_t<T>;
+  using value_type = remove_cvref<T>;
   using reference = element_type &;
   using const_reference = const element_type &;
   using iterator = pointer;
   using const_iterator = const_pointer;
-  using difference_type = pointer_difference_t<pointer>;
+  using difference_type = ptr_dft<pointer>;
   using size_type = inner::unique_array_size_type_t<T, D>;
   using deleter_type = D;
   using pointer_pair = iter_pair<pointer>;
@@ -2225,57 +2208,57 @@ public:
   unique_array(const unique_array &) = delete;
   unique_array &operator =(const unique_array &) = delete;
   unique_array(unique_array &&x) noexcept
-    requires is_move_constructible_v<D>
+    requires is_move_constructible<D>
     : base_t(move(x.base())), p(x.p) {
     x.p = {};
   }
   unique_array &operator =(unique_array &&x) noexcept
-    requires is_move_assignable_v<D> {
+    requires is_move_assignable<D> {
     reset(x.release());
     base() = move(x.base());
     return *this;
   }
   friend void swap(unique_array &x, unique_array &y) noexcept
-    requires is_nothrow_swappable_v<D> {
+    requires is_nothrow_swappable<D> {
     adl_swap(x.base(), y.base());
     adl_swap(x.p, y.p);
   }
 
   template <class T2, class D2>
   unique_array(unique_array<T2, D2> &&u) noexcept
-    requires (is_convertible_v<typename unique_array<T2, D2>::pointer, pointer>
-              && is_same_v
+    requires (is_convertible<typename unique_array<T2, D2>::pointer, pointer>
+              && is_same
               <typename pointer_traits
                <typename unique_array<T2, D2>::pointer>::element_type,
                typename pointer_traits<pointer>::element_type>
-              && is_convertible_v
+              && is_convertible
               <typename unique_array<T2, D2>::size_type, size_type>
-              && is_convertible_v<D2, D>)
+              && is_convertible<D2, D>)
   : base_t(in_place, forward<D2>(*u.base())), p(u.p) {
     u.p = {};
   }
   template <class T2, class D2>
   unique_array &operator =(unique_array<T2, D2> &&u) noexcept
-    requires (is_convertible_v<typename unique_array<T2, D2>::pointer, pointer>
-              && is_same_v
+    requires (is_convertible<typename unique_array<T2, D2>::pointer, pointer>
+              && is_same
               <typename pointer_traits
                <typename unique_array<T2, D2>::pointer>::element_type,
                typename pointer_traits<pointer>::element_type>
-              && is_convertible_v
+              && is_convertible
               <typename unique_array<T2, D2>::size_type, size_type>
-              && is_assignable_v<D &, D2 &&>) {
+              && is_assignable<D &, D2 &&>) {
     reset(u.release());
     *base() = forward<D2>(*u.base());
     return *this;
   }
 
   explicit unique_array(iter_pair<pointer> x) noexcept
-    requires (!is_pointer_v<deleter_type>
-              && is_default_constructible_v<deleter_type>)
+    requires (!is_pointer<deleter_type>
+              && is_default_constructible<deleter_type>)
     : p(x) {}
   unique_array(iter_pair<pointer> x, const D &d) noexcept
     : base_t(in_place, d), p(x) {}
-  unique_array(iter_pair<pointer> x, remove_reference_t<D> &&d) noexcept
+  unique_array(iter_pair<pointer> x, remove_reference<D> &&d) noexcept
     : base_t(in_place, move(d)), p(x) {}
 
   pointer begin() noexcept {
@@ -2344,11 +2327,11 @@ public:
 template <class T1, class D1, class T2, class D2>
 bool operator ==(const unique_array<T1, D1> &x,
                  const unique_array<T2, D2> &y) noexcept
-  requires (is_same_v
-            <pointer_element_t<typename unique_array<T1, D1>::pointer>,
-             pointer_element_t<typename unique_array<T2, D2>::pointer>>
+  requires (is_same
+            <ptr_element<typename unique_array<T1, D1>::pointer>,
+             ptr_element<typename unique_array<T2, D2>::pointer>>
             && equality_comparable
-            <pointer_element_t<typename unique_array<T1, D1>::pointer>>) {
+            <ptr_element<typename unique_array<T1, D1>::pointer>>) {
   if (x.size() != y.size())
     return false;
   const auto x_ed = end(x);
@@ -2363,12 +2346,12 @@ bool operator ==(const unique_array<T1, D1> &x,
   return true;
 }
 template <class T1, class D1, class T2, class D2>
-synth_3way_result<pointer_element_t<typename unique_array<T1, D1>::pointer>>
+synth_3way_result<ptr_element<typename unique_array<T1, D1>::pointer>>
 operator <=>(const unique_array<T1, D1> &x,
              const unique_array<T2, D2> &y)
-  requires (is_same_v
-            <pointer_element_t<typename unique_array<T1, D1>::pointer>,
-             pointer_element_t<typename unique_array<T2, D2>::pointer>>) {
+  requires (is_same
+            <ptr_element<typename unique_array<T1, D1>::pointer>,
+             ptr_element<typename unique_array<T2, D2>::pointer>>) {
   const auto x_ed = x.end();
   const auto y_ed = y.end();
   auto x_i = x.begin();
@@ -2447,7 +2430,7 @@ class copyable_ptr {
 
 public:
   using element_type = T;
-  using value_type = remove_cvref_t<T>;
+  using value_type = remove_cvref<T>;
 
   copyable_ptr() = default;
   ~copyable_ptr() = default;
@@ -2493,10 +2476,10 @@ public:
 
   template <class...S>
   explicit copyable_ptr(in_place_t, S &&...s)
-    requires is_constructible_v<T, S &&...>
+    requires is_constructible<T, S &&...>
     : v(make_unique<T>(forward<S>(s)...)) {}
   template <class...S>
-  void emplace(S &&...s) requires is_constructible_v<T, S &&...> {
+  void emplace(S &&...s) requires is_constructible<T, S &&...> {
     v = make_unique<T>(forward<S>(s)...);
   }
 
@@ -2559,7 +2542,7 @@ public:
   copyable_array(size_t n, const T &x) : v(make_array<T>(n, x)) {}
   template <class IR>
   copyable_array(from_range_t, IR &&r)
-    requires (is_rng<IR> && is_constructible_v<T, rng_ref<IR>>)
+    requires (is_rng<IR> && is_constructible<T, rng_ref<IR>>)
     : v(make_array<T>(r)) {}
 
   template <class T1>
@@ -2729,7 +2712,7 @@ namespace re {
 
 template <class T, class AL = default_allocator<T>>
 class buffer : AL {
-  static_assert(is_same_v<alloc_vt<AL>, T>);
+  static_assert(is_same<alloc_vt<AL>, T>);
 
 public:
   using pointer = alloc_ptr<AL>;
@@ -3008,7 +2991,7 @@ auto &scoped_alloc_outermost(A &a) noexcept {
 
 template <class A>
 using scoped_alloc_outermost_traits
-  = allocator_traits<remove_reference_t
+  = allocator_traits<remove_reference
                      <decltype(inner::fns::scoped_alloc_outermost
                                (declval<A &>()))>>;
 
@@ -3037,7 +3020,7 @@ class scoped_allocator_adaptor : public OUTER_ALLOC {
 
 public:
   using outer_allocator_type = OUTER_ALLOC;
-  using inner_allocator_type = conditional_t
+  using inner_allocator_type = conditional
     <sizeof...(INNER_ALLOCS) == 0,
      this_t, inner::scoped_alloc_inner_t<INNER_ALLOCS...>>;
   using value_type = typename outer_traits::value_type;
@@ -3049,16 +3032,16 @@ public:
   using const_void_pointer = typename outer_traits::const_void_pointer;
   using propagate_on_container_copy_assignment
     = bool_constant<alloc_copy_prpg<OUTER_ALLOC>
-                    && (alloc_copy_prpg<INNER_ALLOCS> && ...)>;
+                    && (... && alloc_copy_prpg<INNER_ALLOCS>)>;
   using propagate_on_container_move_assignment
     = bool_constant<alloc_move_prpg<OUTER_ALLOC>
-                    && (alloc_move_prpg<INNER_ALLOCS> && ...)>;
+                    && (... && alloc_move_prpg<INNER_ALLOCS>)>;
   using propagate_on_container_swap
     = bool_constant<alloc_swap_prpg<OUTER_ALLOC>
-                    && (alloc_swap_prpg<INNER_ALLOCS> && ...)>;
+                    && (... && alloc_swap_prpg<INNER_ALLOCS>)>;
   using is_always_equal
     = bool_constant<alloc_always_equal<OUTER_ALLOC>
-                    && (alloc_always_equal<INNER_ALLOCS> && ...)>;
+                    && (... && alloc_always_equal<INNER_ALLOCS>)>;
   template <class T>
   struct rebind {
     using other = scoped_allocator_adaptor
@@ -3080,19 +3063,19 @@ public:
 
   template <class OUTER_A2>
   scoped_allocator_adaptor(OUTER_A2 &&a, const INNER_ALLOCS &...s) noexcept
-    requires is_constructible_v<OUTER_ALLOC, OUTER_A2 &&>
+    requires is_constructible<OUTER_ALLOC, OUTER_A2 &&>
     : OUTER_ALLOC(forward<OUTER_A2>(a)), inner(s...) {}
 
   template <class OUTER_A2>
   scoped_allocator_adaptor(const scoped_allocator_adaptor
                            <OUTER_A2, INNER_ALLOCS...> &other) noexcept
-    requires is_constructible_v<OUTER_ALLOC, const OUTER_A2 &>
+    requires is_constructible<OUTER_ALLOC, const OUTER_A2 &>
     : OUTER_ALLOC(static_cast<const OUTER_A2 &>(other))
     , inner(other.inner) {}
   template <class OUTER_A2>
   scoped_allocator_adaptor(scoped_allocator_adaptor
                            <OUTER_A2, INNER_ALLOCS...> &&other) noexcept
-    requires is_constructible_v<OUTER_ALLOC, OUTER_A2>
+    requires is_constructible<OUTER_ALLOC, OUTER_A2>
     : OUTER_ALLOC(static_cast<OUTER_A2 &&>(other))
     , inner(move(other.inner)) {}
 
@@ -3233,7 +3216,7 @@ class allocator_aware_container_ownership {
     static decltype(declval<TTT &>().assign_data(declval<const TTT &>()))
     f(type_tag<TTT> x);
     static constexpr bool value
-      = !is_same_v<decltype(f(type_tag<TT>{})), inner::disable>;
+      = !is_same<decltype(f(type_tag<TT>{})), inner::disable>;
   };
   template <class TT>
   struct has_mem_fn_assign_data_individually {
@@ -3242,7 +3225,7 @@ class allocator_aware_container_ownership {
     static decltype(declval<TTT &>().assign_data_individually(declval<TTT>()))
     f(type_tag<TTT> x);
     static constexpr bool value
-      = !is_same_v<decltype(f(type_tag<TT>{})), inner::disable>;
+      = !is_same<decltype(f(type_tag<TT>{})), inner::disable>;
   };
   template <class TT>
   struct has_mem_fn_swap_data_individually {
@@ -3251,7 +3234,7 @@ class allocator_aware_container_ownership {
     static decltype(declval<TTT &>().swap_data_individually(declval<TTT &>()))
     f(type_tag<TTT> x);
     static constexpr bool value
-      = !is_same_v<decltype(f(type_tag<TT>{})), inner::disable>;
+      = !is_same<decltype(f(type_tag<TT>{})), inner::disable>;
   };
 
 private:
@@ -3444,7 +3427,7 @@ template <class T, class AL = default_allocator<byte>>
 class pool_object;
 template <class T, class AL = default_allocator<byte>>
 class object_pool : allocator_wrapper<AL> {
-  static_assert(is_same_v<alloc_vt<AL>, byte>);
+  static_assert(is_same<alloc_vt<AL>, byte>);
 
   using alw_t = allocator_wrapper<AL>;
   using pointer = alloc_ptr<AL>;
@@ -3469,7 +3452,11 @@ private:
   head_t *lst_p;
   head_t *lst_last_p;
   head_t *cur_node;
-  size_type cur_node_dif; // cur_node_dif may equal to cur_node->n
+    // cur_node is copy of lst_last_p,
+    //   because the algorithm is the easiest one
+  size_type cur_node_dif;
+    // size of used objects in cur_node,
+    //   so cur_node_dif may equal to cur_node->n
   void *freelst;
 
   size_type start_n() {
@@ -3683,7 +3670,7 @@ namespace re {
 
 template <class AL = default_allocator<byte>>
 class raw_object_pool : allocator_wrapper<AL> {
-  static_assert(is_same_v<alloc_vt<AL>, byte>);
+  static_assert(is_same<alloc_vt<AL>, byte>);
 
   using alw_t = allocator_wrapper<AL>;
   using pointer = alloc_ptr<AL>;
@@ -3754,8 +3741,9 @@ public:
     obj_algn = max_value(max_value(obj_algn, alw_t::min_alignment()),
                          alignof(void *));
     obj_sz = max_value(obj_sz, sizeof(void *));
-    if ((obj_sz % obj_algn) != 0u)
-      obj_sz = obj_sz - (obj_sz % obj_algn) + obj_algn;
+    if (size_type rem = (obj_sz % obj_algn);
+        rem != 0u)
+      obj_sz = obj_sz - rem + obj_algn;
   }
 
 private:
@@ -3905,10 +3893,10 @@ public:
                        28, 42, 63, 94, 141, 211, 316, 474, 711,
                        1066, 1599, 2398, 3597, 5395, 8092);
 
-    if (numeric_limits<size_type>::max() / r.front() < algn)
+    if (numeric_limits<size_type>::max() / r.front() < algn2)
       print_then_terminate
           ("re::memory_pool::memory_pool(algn, a): size overflow\n");
-    auto &pl0 = v.emplace_back(r.front() * algn, algn, a);
+    auto &pl0 = v.emplace_back(r.front() * algn2, algn2, a);
     algn = pl0.object_align();
 
     for (size_type i : rng(next(r.begin()), r.end())) {
@@ -3924,13 +3912,13 @@ public:
   }
   template <class FR>
   memory_pool(FR &&r, size_type algn2, const AL &a = AL{})
-    requires is_frng<FR> && is_constructible_v<size_type, rng_ref<FR>>
+    requires is_frng<FR> && is_constructible<size_type, rng_ref<FR>>
     : alw_t(a), v(size(r)), algn{}, max_sz{} {
     if (empty(r))
       print_then_terminate
         ("re::memory_pool::memory_pool(r, algn, al): empty r\n");
 
-    auto &pl0 = v.emplace_back(size_type(*r.begin()), algn, a);
+    auto &pl0 = v.emplace_back(size_type(*r.begin()), algn2, a);
     algn = pl0.object_align();
 
     for (auto &it : iters(next(r.begin()), r.end())) {
@@ -3940,6 +3928,31 @@ public:
     }
 
     max_sz = v.back().object_size();
+  }
+
+  template <class T>
+  T *allocate() {
+    const size_type sz = sizeof(T);
+    if (alignof(T) > algn)
+      return to_address(alw_t::template rebind<T>().allocate());
+    else {
+      const size_type sz = sizeof(T);
+      const auto it = partition_point
+        (v, [sz](const pool_t &x) {return !(x.object_size() >= sz);});
+      return reinterpret_cast<T *>(it->allocate());
+    }
+  }
+  template <class T>
+  void deallocate(T *p) {
+    if (alignof(T) > algn)
+      alw_t::template rebind<T>()
+        .deallocate(pointer_traits<alloc_rebind_ptr<AL, T>>::pointer_to(*p));
+    else {
+      const size_type sz = sizeof(T);
+      const auto it = partition_point
+        (v, [sz](const pool_t &x) {return !(x.object_size() >= sz);});
+      return it->deallocate(p);
+    }
   }
 
   template <class T>
@@ -3969,7 +3982,7 @@ public:
   }
 
   size_type min_alignment() const noexcept {
-    return min_value(v.front().object_align(), alw_t::min_alignment());
+    return v.front().object_align();
   }
 };
 

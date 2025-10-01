@@ -63,7 +63,7 @@ auto unicode_sprint_impl_get_iter_pair(R &r) {
 }
 template <class R>
 auto unicode_sprint_impl_get_iter_pair(R &r)
-  requires is_pointer_v<remove_reference_t<R>> {
+  requires is_pointer<remove_reference<R>> {
   const auto p = r;
   auto pp = p;
   for (; to_unsigned(*pp) != 0u; ++pp)
@@ -140,7 +140,7 @@ optional<uint32_t> unicode_sprint_impl_utf16_sscan_single(T &sv) {
 template <class T>
 optional<uint32_t> unicode_sprint_impl_utf8_sscan_single(T &sv) {
   using char_t = rng_vt<T>;
-  using uchar_t = make_unsigned_t<rng_vt<T>>;
+  using uchar_t = make_unsigned<rng_vt<T>>;
   const uchar_t take_7bits = 0b0111'1111u;
   const uchar_t take_6bits = 0b11'1111u;
   const uchar_t take_5bits = 0b1'1111u;
@@ -275,7 +275,7 @@ bool utf16sprint_single_uint32(S &s, uint32_t c) {
 template <class S, class R>
 bool utf8sprint_utf8(S &s, R &&r) {
   const auto v = inner::fns::unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && v.end() != end(r))
+  if (!is_array<remove_cvref<R>> && v.end() != end(r))
     return false;
   s.append_range(v);
   return true;
@@ -283,7 +283,7 @@ bool utf8sprint_utf8(S &s, R &&r) {
 template <class S, class R>
 bool utf16sprint_utf8(S &s, R &&r) {
   auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   for (;;) {
     const auto x = unicode_sprint_impl_utf8_sscan_single(sv);
@@ -303,7 +303,7 @@ bool utf16sprint_utf8(S &s, R &&r) {
 template <class S, class R>
 bool utf32sprint_utf8(S &s, R &&r) {
   auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   for (;;) {
     const auto x = unicode_sprint_impl_utf8_sscan_single(sv);
@@ -322,7 +322,7 @@ bool utf32sprint_utf8(S &s, R &&r) {
 template <class S, class R>
 bool utf8sprint_utf16(S &s, R &&r) {
   auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   using char_t = typename S::value_type;
   for (;;) {
@@ -341,7 +341,7 @@ bool utf8sprint_utf16(S &s, R &&r) {
 template <class S, class R>
 bool utf16sprint_utf16(S &s, R &&r) {
   auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   if (!inner::fns::unicode_sprint_impl_utf16_check(sv))
     return false;
@@ -351,7 +351,7 @@ bool utf16sprint_utf16(S &s, R &&r) {
 template <class S, class R>
 bool utf32sprint_utf16(S &s, R &&r) {
   auto sv = inner::fns::unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   using char_t = typename S::value_type;
   for (;;) {
@@ -370,7 +370,7 @@ bool utf32sprint_utf16(S &s, R &&r) {
 template <class S, class R>
 bool utf8sprint_utf32(S &s, R &&r) {
   auto sv = unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   using char_t = typename S::value_type;
   for (auto x0 : sv) {
@@ -383,7 +383,7 @@ bool utf8sprint_utf32(S &s, R &&r) {
 template <class S, class R>
 bool utf16sprint_utf32(S &s, R &&r) {
   auto sv = unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   for (auto x0 : sv)
     if (!inner::fns::utf16sprint_single_uint32(s, (uint32_t)x0))
@@ -393,7 +393,7 @@ bool utf16sprint_utf32(S &s, R &&r) {
 template <class S, class R>
 bool utf32sprint_utf32(S &s, R &&r) {
   auto sv = unicode_sprint_impl_get_iter_pair(r);
-  if (!is_array_v<remove_cvref_t<R>> && sv.end() != end(r))
+  if (!is_array<remove_cvref<R>> && sv.end() != end(r))
     return false;
   const auto f = [](uint32_t c) {
     return c > 0x10ffffu || (c >= 0xd800u && c <= 0xdfffu);
@@ -410,14 +410,14 @@ namespace inner {
 
 template <class R>
 concept arg_can_be_utf8string_pointer
-  = is_pointer_v<remove_reference_t<R>>
-  && is_integral_v<itr_vt<remove_reference_t<R>>>
-  && !is_same_v<itr_vt<remove_reference_t<R>>, bool>
-  && sizeof(itr_vt<remove_reference_t<R>>) == 1u;
+  = is_pointer<remove_reference<R>>
+  && is_integral<itr_vt<remove_reference<R>>>
+  && !is_same<itr_vt<remove_reference<R>>, bool>
+  && sizeof(itr_vt<remove_reference<R>>) == 1u;
 template <class R>
 concept arg_can_be_utf8string_range
   = is_frng<R>
-  && is_integral_v<rng_vt<R>> && !is_same_v<rng_vt<R>, bool>
+  && is_integral<rng_vt<R>> && !is_same<rng_vt<R>, bool>
   && sizeof(rng_vt<R>) == 1u;
 template <class R>
 concept arg_can_be_utf8string
@@ -425,24 +425,24 @@ concept arg_can_be_utf8string
 
 template <class R>
 concept arg_can_be_utf16string_pointer
-  = is_pointer_v<remove_reference_t<R>>
-  && is_integral_v<itr_vt<remove_reference_t<R>>>
-  && sizeof(itr_vt<remove_reference_t<R>>) == 2u;
+  = is_pointer<remove_reference<R>>
+  && is_integral<itr_vt<remove_reference<R>>>
+  && sizeof(itr_vt<remove_reference<R>>) == 2u;
 template <class R>
 concept arg_can_be_utf16string_range
-  = is_frng<R> && is_integral_v<rng_vt<R>> && sizeof(rng_vt<R>) == 2u;
+  = is_frng<R> && is_integral<rng_vt<R>> && sizeof(rng_vt<R>) == 2u;
 template <class R>
 concept arg_can_be_utf16string
   = arg_can_be_utf16string_pointer<R> || arg_can_be_utf16string_range<R>;
 
 template <class R>
 concept arg_can_be_utf32string_pointer
-  = is_pointer_v<remove_reference_t<R>>
-  && is_integral_v<itr_vt<remove_reference_t<R>>>
-  && sizeof(itr_vt<remove_reference_t<R>>) == 4u;
+  = is_pointer<remove_reference<R>>
+  && is_integral<itr_vt<remove_reference<R>>>
+  && sizeof(itr_vt<remove_reference<R>>) == 4u;
 template <class R>
 concept arg_can_be_utf32string_range
-  = is_frng<R> && is_integral_v<rng_vt<R>> && sizeof(rng_vt<R>) == 4u;
+  = is_frng<R> && is_integral<rng_vt<R>> && sizeof(rng_vt<R>) == 4u;
 template <class R>
 concept arg_can_be_utf32string
   = arg_can_be_utf32string_pointer<R> || arg_can_be_utf32string_range<R>;
@@ -463,14 +463,14 @@ T &get_static_empty_string_placeholder() {
 };
 
 template <class CHAR, class R>
-enable_if_t<!(is_array_v<remove_reference_t<R>> && is_same_v<rng_vt<R>, CHAR>),
-            R &>
+enable_if<!(is_array<remove_reference<R>> && is_same<rng_vt<R>, CHAR>),
+          R &>
 basic_string_select_range(R &&r) {
   return r;
 }
 template <class CHAR, class R>
-enable_if_t<is_array_v<remove_reference_t<R>> && is_same_v<rng_vt<R>, CHAR>,
-            iter_pair<rng_itr<R>>>
+enable_if<is_array<remove_reference<R>> && is_same<rng_vt<R>, CHAR>,
+          iter_pair<rng_itr<R>>>
 basic_string_select_range(R &&r) {
   const auto ed = end(r);
   const auto p = ed - 1;
@@ -495,7 +495,7 @@ struct string_data {
 }
 template <class T, class AL = default_allocator<T>>
 class basic_string : inner::string_data<AL>, allocator_wrapper<AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   using this_t = basic_string;
 
@@ -653,7 +653,7 @@ private:
 
   template <class UINT>
   void reserve_space_at_least(UINT n) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
 
     const size_type rest_n = ed - now;
     if (n > rest_n) {
@@ -734,7 +734,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     reserve_space_at_least(size(r));
 #ifndef RE_NOEXCEPT
@@ -750,14 +750,14 @@ private:
 #endif
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     for (auto &p : iters(r))
       push_back_impl(*p);
   }
 
   template <class IITR_RANGE, class TT = value_type>
-  enable_if_t<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
+  enable_if<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     auto pos = cpos - op + op;
     const auto pos_dif = pos - op;
@@ -776,8 +776,8 @@ private:
     }
   }
   template <class IITR_RANGE, class TT = value_type>
-  enable_if_t<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
-              pointer>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     auto pos = cpos - op + op;
     const auto dif_pos = pos - op;
@@ -796,14 +796,14 @@ private:
 
   template <class SZT>
   void size_check(SZT n) {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (to_unsigned(n) > max_size())
       throw_or_terminate<length_error>
         ("re::basic_string: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     if (n == 0u) {
@@ -827,7 +827,7 @@ private:
     construct(to_address(now), value_type(0));
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     new_data();
     for (auto &p : iters(r))
@@ -856,7 +856,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     if (n == 0u) {
@@ -894,7 +894,7 @@ private:
       now = copy(r, op);
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
@@ -1035,12 +1035,12 @@ public:
     assign_range_impl(rng(n, ref(t)));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   basic_string(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -1063,7 +1063,7 @@ public:
   iterator insert(const_iterator pos, size_type n, value_type t) {
     return insert_range_impl(pos, rng(n, ref(t)));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -1300,35 +1300,39 @@ public:
 
   template <class R>
   basic_string(from_range_t, R &&r, const allocator_type &a = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alw_t(a) {
     construct_from_range_impl(inner::fns::basic_string_select_range<T>(r));
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R, const allocator_type &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && (is_array_v<remove_reference_t<R>>
-                 && is_same_v<decay_t<rng_vt<R>>, decay_t<T>>)>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R, const allocator_type &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && (is_array<remove_reference<R>>
+                  && is_same<decay<rng_vt<R>>, decay<T>>))>>
   basic_string(R &&r) : basic_string(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R, allocator_type>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && !(is_array_v<remove_reference_t<R>>
-                  && is_same_v<decay_t<rng_vt<R>>, decay_t<T>>)>,
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R, allocator_type>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && !(is_array<remove_reference<R>>
+                   && is_same<decay<rng_vt<R>>, decay<T>>))>,
             class = void>
   explicit basic_string(R &&r) : basic_string(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   basic_string(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(inner::fns::basic_string_select_range<T>(r));
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(inner::fns::basic_string_select_range<T>(r));
     return *this;
@@ -1343,7 +1347,7 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>, iterator>
+  enable_if<!is_convertible<IITR_RANGE &&, value_type>, iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, inner::fns::basic_string_select_range<T>(r));
   }
@@ -1353,7 +1357,7 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>>
+  enable_if<!is_convertible<IITR_RANGE &&, value_type>>
   push_back(IITR_RANGE &&r) {
     append_range_impl(inner::fns::basic_string_select_range<T>(r));
   }
@@ -1440,9 +1444,9 @@ template <class T, size_t N, class AL = default_allocator<T>>
 class sso_string
   : inner::sso_string_data<T, N, AL>, allocator_wrapper<AL> {
   static_assert(N > 0);
-  static_assert(is_trivially_copyable_v<T>);
-  static_assert(is_trivially_destructible_v<T>);
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_trivially_copyable<T>);
+  static_assert(is_trivially_destructible<T>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   using this_t = sso_string;
 
@@ -1607,8 +1611,8 @@ private:
     swap_data_impl(v);
   }
 
-  template <bool Y = is_trivially_copyable_v<data_t>>
-  enable_if_t<Y> swap_data_impl(this_t &v) noexcept {
+  template <bool Y = is_trivially_copyable<data_t>>
+  enable_if<Y> swap_data_impl(this_t &v) noexcept {
     if (this != addressof(v)) {
       alignas(data_t) byte tmp[sizeof(data_t)];
       void *const p1 = static_cast<void *>(addressof(tmp));
@@ -1624,8 +1628,8 @@ private:
         v.p = v.in_object_data();
     }
   }
-  template <bool Y = is_trivially_copyable_v<data_t>>
-  enable_if_t<!Y> swap_data_impl(this_t &v) noexcept {
+  template <bool Y = is_trivially_copyable<data_t>>
+  enable_if<!Y> swap_data_impl(this_t &v) noexcept {
     if (this == addressof(v))
       return;
     if (local()) {
@@ -1707,7 +1711,7 @@ private:
   }
   template <class UINT>
   void reserve_space_at_least(UINT n) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
 
     const size_type cap = local() ? N : shared.cp;
     const size_type rest_n = cap - sz;
@@ -1770,21 +1774,21 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     reserve_space_at_least(size(r));
     for (auto &i : iters(r))
       push_back(*i);
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     for (auto &i : iters(r))
       push_back(*i);
   }
 
   template <class IITR_RANGE, class TT = value_type>
-  enable_if_t<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
+  enable_if<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     const auto k = size(r);
     const auto dif = cpos - p;
@@ -1797,8 +1801,8 @@ private:
     return pos;
   }
   template <class IITR_RANGE, class TT = value_type>
-  enable_if_t<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
-              pointer>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     const auto dif = cpos - p;
     const auto ed_dif = sz;
@@ -1810,14 +1814,14 @@ private:
 
   template <class SZT>
   void size_check(SZT n) {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (to_unsigned(n) > max_size())
       throw_or_terminate<length_error>
         ("re::sso_string: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     size_check(n);
@@ -1855,7 +1859,7 @@ private:
     sz = n;
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     new_data();
     append_range(r);
@@ -1875,7 +1879,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     size_check(n);
@@ -1906,7 +1910,7 @@ private:
     sz = n;
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
@@ -2036,12 +2040,12 @@ public:
     assign_range_impl(rng(n, ref(t)));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   sso_string(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -2064,7 +2068,7 @@ public:
   iterator insert(const_iterator pos, size_type n, value_type t) {
     return insert_range_impl(pos, rng(n, ref(t)));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -2296,35 +2300,39 @@ public:
 
   template <class R>
   sso_string(from_range_t, R &&r, const allocator_type &a = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alw_t(a) {
     construct_from_range_impl(inner::fns::basic_string_select_range<T>(r));
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R, const allocator_type &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && (is_array_v<remove_reference_t<R>>
-                 && is_same_v<decay_t<rng_vt<R>>, decay_t<T>>)>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R, const allocator_type &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && (is_array<remove_reference<R>>
+                  && is_same<decay<rng_vt<R>>, decay<T>>))>>
   sso_string(R &&r) : sso_string(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R, allocator_type>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && !(is_array_v<remove_reference_t<R>>
-                  && is_same_v<decay_t<rng_vt<R>>, decay_t<T>>)>,
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R, allocator_type>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && !(is_array<remove_reference<R>>
+                   && is_same<decay<rng_vt<R>>, decay<T>>))>,
             class = void>
   explicit sso_string(R &&r) : sso_string(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   sso_string(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(inner::fns::basic_string_select_range<T>(r));
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(inner::fns::basic_string_select_range<T>(r));
     return *this;
@@ -2339,7 +2347,7 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>, iterator>
+  enable_if<!is_convertible<IITR_RANGE &&, value_type>, iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, inner::fns::basic_string_select_range<T>(r));
   }
@@ -2349,7 +2357,7 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>>
+  enable_if<!is_convertible<IITR_RANGE &&, value_type>>
   push_back(IITR_RANGE &&r) {
     append_range_impl(inner::fns::basic_string_select_range<T>(r));
   }
@@ -2408,10 +2416,11 @@ using wstring = basic_string<wchar_t>;
 using u16string = basic_string<char16_t>;
 using u32string = basic_string<char32_t>;
 template <class T>
-using string_t = conditional_t<(is_same_v<T, char>
-                                || is_same_v<T, signed char>
-                                || is_same_v<T, unsigned char>),
-                               sso_string<T, 15u>, basic_string<T>>;
+using string_t = conditional<(is_same<T, char>
+                              || is_same<T, signed char>
+                              || is_same<T, unsigned char>),
+                             sso_string<T, 15u>,
+                             basic_string<T>>;
   
 template <class AL>
 bool operator ==(const basic_string<char, AL> &x,
@@ -2448,7 +2457,7 @@ strong_ordering operator <=>(const sso_string<char, N, AL> &x,
 
 template <class T>
 class string_reference : range_fns {
-  using string_view_t = string_reference<add_const_t<T>>;
+  using string_view_t = string_reference<add_const<T>>;
 
   T *p = nullptr;
   size_t n = 0u;
@@ -2463,7 +2472,7 @@ class string_reference : range_fns {
 public:
   using pointer = T *;
   using const_pointer = const T *;
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using reference = T &;
   using const_reference = const T &;
   using iterator = T *;
@@ -2488,60 +2497,67 @@ public:
     *this = nullptr;
   }
 
-  template <class TT, class = enable_if_t
-            <is_same_v<TT, T>
-             || (is_const_v<T> && is_same_v<TT, remove_const_t<T>>)>>
+  template <class TT,
+            class = enable_if
+            <(is_same<TT, T>
+              || (is_const<T> && is_same<TT, remove_const<T>>))>>
   string_reference(TT &x) : p(addressof(x)), n(1) {}
-  template <class RANGE, class = enable_if_t
-            <!is_same_v<decay_t<RANGE>, string_reference>
-             && is_rng<RANGE &&> && !is_array_v<remove_reference_t<RANGE>>
-             && is_same_v<rng_vt<RANGE>, value_type>
-             && is_citr<rng_itr<RANGE>>
-             && is_convertible_v<rng_ref<RANGE>, T>
-             && is_convertible_v<rng_ptr<RANGE>, T *>>>
+  template <class RANGE,
+            class = enable_if
+            <(!is_same<decay<RANGE>, string_reference>
+              && is_rng<RANGE &&> && !is_array<remove_reference<RANGE>>
+              && is_same<rng_vt<RANGE>, value_type>
+              && is_citr<rng_itr<RANGE>>
+              && is_convertible<rng_ref<RANGE>, T>
+              && is_convertible<rng_ptr<RANGE>, T *>)>>
   string_reference(RANGE &&r) : string_reference(begin(r), end(r)) {}
-  template <class RANGE, class = enable_if_t
-            <!is_same_v<decay_t<RANGE>, string_reference>
-             && is_rng<RANGE &&> && is_array_v<remove_reference_t<RANGE>>
-             && extent_v<remove_reference_t<RANGE>> != 0u
-             && is_convertible_v<rng_ptr<RANGE>, T *>>,
+  template <class RANGE,
+            class = enable_if
+            <(!is_same<decay<RANGE>, string_reference>
+              && is_rng<RANGE &&> && is_array<remove_reference<RANGE>>
+              && extent<remove_reference<RANGE>> != 0u
+              && is_convertible<rng_ptr<RANGE>, T *>)>,
             class = void>
   string_reference(RANGE &&r) noexcept
     : string_reference(begin(r), *(end(r) - 1) != 0 ? end(r) : end(r) - 1) {}
 
-  template <class X, class = enable_if_t
-            <is_same_v<itr_vt<X>, value_type> && is_citr<X>
-             && is_convertible_v<itr_ref<X>, T>
-             && is_convertible_v<itr_ptr<X>, T *>>>
+  template <class X,
+            class = enable_if
+            <(is_same<itr_vt<X>, value_type> && is_citr<X>
+              && is_convertible<itr_ref<X>, T>
+              && is_convertible<itr_ptr<X>, T *>)>>
   string_reference(X x, X y) : p(to_address(x)), n(y - x) {}
-  template <class X, class Y, class = enable_if_t
-            <is_same_v<itr_vt<X>, value_type> && is_citr<X>
-             && is_convertible_v<itr_ref<X>, T>
-             && is_convertible_v<itr_ptr<X>, T *>
-             && is_integral_v<Y>>,
+  template <class X, class Y,
+            class = enable_if
+            <(is_same<itr_vt<X>, value_type> && is_citr<X>
+              && is_convertible<itr_ref<X>, T>
+              && is_convertible<itr_ptr<X>, T *>
+              && is_integral<Y>)>,
             class = void>
   string_reference(X x, Y y) : p(to_address(x)), n(y) {}
-  template <class X, class Y, class Z, class = enable_if_t
-            <is_rng<X> && is_same_v<rng_vt<X>, value_type>
-             && is_convertible_v<rng_ref<X>, T>
-             && is_convertible_v<rng_ptr<X>, T *>
-             && is_integral_v<Y> && is_integral_v<Z>>>
+  template <class X, class Y, class Z,
+            class = enable_if
+            <(is_rng<X> && is_same<rng_vt<X>, value_type>
+              && is_convertible<rng_ref<X>, T>
+              && is_convertible<rng_ptr<X>, T *>
+              && is_integral<Y> && is_integral<Z>)>>
   string_reference(X &&x, Y y, Z z) : p(to_address(begin(x) + y)), n(z) {}
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  string_reference(const string_reference<remove_const_t<T>> &x) noexcept {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  string_reference(const string_reference<remove_const<T>> &x) noexcept {
     p = x.p;
     n = x.n;
   }
 
-  template <class X, class TT = T, class = enable_if_t
-            <is_same_v<remove_cvref_t<X>, TT *>
-             || (is_const_v<TT>
-                 && is_same_v<remove_reference_t<X>, remove_const_t<TT> *>)>,
+  template <class X, class TT = T,
+            class = enable_if
+            <(is_same<remove_cvref<X>, TT *>
+              || (is_const<TT>
+                  && is_same<remove_reference<X>, remove_const<TT> *>))>,
             bool = 0>
   string_reference(X &&s) noexcept {
-    if constexpr (is_same_v<remove_const_t<T>, char>
-                  || is_same_v<remove_const_t<T>, unsigned char>) {
+    if constexpr (is_same<remove_const<T>, char>
+                  || is_same<remove_const<T>, unsigned char>) {
       p = s;
       n = strlen(p);
     }
@@ -2629,10 +2645,10 @@ public:
   }
 };
 template <class T1, class T2>
-enable_if_t<is_same_v<remove_const_t<T1>, remove_const_t<T2>>, bool>
+enable_if<is_same<remove_const<T1>, remove_const<T2>>, bool>
 operator ==(const string_reference<T1> &x,
             const string_reference<T2> &y) noexcept {
-  if constexpr (!is_same_v<remove_const_t<T1>, char>) {
+  if constexpr (!is_same<remove_const<T1>, char>) {
     return equal(x, y);
   }
   else {
@@ -2640,11 +2656,11 @@ operator ==(const string_reference<T1> &x,
   }
 }
 template <class T1, class T2>
-enable_if_t<is_same_v<remove_const_t<T1>, remove_const_t<T2>>,
-            synth_3way_result<T1, T2>>
+enable_if<is_same<remove_const<T1>, remove_const<T2>>,
+          synth_3way_result<T1, T2>>
 operator <=>(const string_reference<T1> &x,
              const string_reference<T2> &y) noexcept {
-  if constexpr (!is_same_v<remove_const_t<T1>, char>) {
+  if constexpr (!is_same<remove_const<T1>, char>) {
     return lexicographical_synth_3way(x, y);
   }
   else {
@@ -2690,50 +2706,50 @@ synth_3way_result<T> operator <=>(const T (&x)[N],
 }
 
 template <class T, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, bool>
+enable_if<is_same<remove_const<T2>, T>, bool>
 operator ==(const basic_string<T, AL> &x,
             const string_reference<T2> &y) {
   return string_reference<const T>(x) == y;
 }
 template <class T, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, bool>
+enable_if<is_same<remove_const<T2>, T>, bool>
 operator ==(const string_reference<T2> &y,
             const basic_string<T, AL> &x) {
   return x == y;
 }
 template <class T, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, synth_3way_result<T, T2>>
+enable_if<is_same<remove_const<T2>, T>, synth_3way_result<T, T2>>
 operator <=>(const basic_string<T, AL> &x,
              const string_reference<T2> &y) {
   return string_reference<const T>(x) <=> y;
 }
 template <class T, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, synth_3way_result<T2, T>>
+enable_if<is_same<remove_const<T2>, T>, synth_3way_result<T2, T>>
 operator <=>(const string_reference<T2> &x,
              const basic_string<T, AL> &y) {
   return x <=> string_reference<const T>(y);
 }
 
 template <class T, size_t N, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, bool>
+enable_if<is_same<remove_const<T2>, T>, bool>
 operator ==(const sso_string<T, N, AL> &x,
             const string_reference<T2> &y) {
   return string_reference<const T>(x) == y;
 }
 template <class T, size_t N, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, bool>
+enable_if<is_same<remove_const<T2>, T>, bool>
 operator ==(const string_reference<T2> &y,
             const sso_string<T, N, AL> &x) {
   return x == y;
 }
 template <class T, size_t N, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, synth_3way_result<T, T2>>
+enable_if<is_same<remove_const<T2>, T>, synth_3way_result<T, T2>>
 operator <=>(const sso_string<T, N, AL> &x,
              const string_reference<T2> &y) {
   return string_reference<const T>(x) <=> y;
 }
 template <class T, size_t N, class AL, class T2>
-enable_if_t<is_same_v<remove_const_t<T2>, T>, synth_3way_result<T2, T>>
+enable_if<is_same<remove_const<T2>, T>, synth_3way_result<T2, T>>
 operator <=>(const string_reference<T2> &x,
              const sso_string<T, N, AL> &y) {
   return x <=> string_reference<const T>(y);
@@ -2778,8 +2794,9 @@ struct less<basic_string<T, AL>> {
     return x < y;
   }
   template <class R1, class R2>
-  enable_if_t<is_array_v<remove_reference_t<R1>>
-              || is_array_v<remove_reference_t<R2>>, bool>
+  enable_if<(is_array<remove_reference<R1>>
+             || is_array<remove_reference<R2>>),
+            bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) < string_reference<const T>(y);
   }
@@ -2797,8 +2814,9 @@ struct less<sso_string<T, N, AL>> {
     return x < y;
   }
   template <class R1, class R2>
-  enable_if_t<is_array_v<remove_reference_t<R1>>
-              || is_array_v<remove_reference_t<R2>>, bool>
+  enable_if<(is_array<remove_reference<R1>>
+             || is_array<remove_reference<R2>>),
+            bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) < string_reference<const T>(y);
   }
@@ -2817,8 +2835,9 @@ struct equal_to<basic_string<T, AL>> {
     return x == y;
   }
   template <class R1, class R2>
-  enable_if_t<is_array_v<remove_reference_t<R1>>
-              || is_array_v<remove_reference_t<R2>>, bool>
+  enable_if<(is_array<remove_reference<R1>>
+             || is_array<remove_reference<R2>>),
+            bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) == string_reference<const T>(y);
   }
@@ -2836,8 +2855,9 @@ struct equal_to<sso_string<T, N, AL>> {
     return x == y;
   }
   template <class R1, class R2>
-  enable_if_t<is_array_v<remove_reference_t<R1>>
-              || is_array_v<remove_reference_t<R2>>, bool>
+  enable_if<(is_array<remove_reference<R1>>
+             || is_array<remove_reference<R2>>),
+            bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) == string_reference<const T>(y);
   }
@@ -2892,97 +2912,6 @@ struct hash<string_reference<T>> {
                                        x.size() * sizeof(T));
   }
 };
-
-struct fo_unicode_is_any_space {
-  bool operator ()(char32_t c) const noexcept {
-    switch (c) {
-    case 0x9u:
-    case 0x20u:
-    case 0xA0u:
-    case 0x2000u:
-    case 0x2001u:
-    case 0x2002u:
-    case 0x2003u:
-    case 0x2004u:
-    case 0x2005u:
-    case 0x2006u:
-    case 0x2007u:
-    case 0x2008u:
-    case 0x2009u:
-    case 0x200Au:
-    case 0x202Fu:
-    case 0x205Fu:
-    case 0x3000u:
-    case 0x200Bu:
-    case 0x200Cu:
-    case 0x200Du:
-    case 0x2060u:
-    case 0xFEFEu:
-      return true;
-    default:
-      return false;
-    }
-  }
-};
-inline constexpr fo_unicode_is_any_space unicode_is_any_space{};
-
-struct fo_unicode_is_lower {
-  bool operator ()(char32_t c) const noexcept {
-    return U'a' <= c && c <= U'z';
-  }
-};
-inline constexpr fo_unicode_is_lower unicode_is_lower{};
-struct fo_unicode_is_upper {
-  bool operator ()(char32_t c) const noexcept {
-    return U'A' <= c && c <= U'Z';
-  }
-};
-inline constexpr fo_unicode_is_upper unicode_is_upper{};
-struct fo_unicode_is_alpha {
-  bool operator ()(char32_t c) const noexcept {
-    return unicode_is_upper(c) || unicode_is_lower(c);
-  }
-};
-inline constexpr fo_unicode_is_alpha unicode_is_alpha{};
-struct fo_unicode_is_digit {
-  bool operator ()(char32_t c) const noexcept {
-    return U'0' <= c && c <= U'9';
-  }
-};
-inline constexpr fo_unicode_is_digit unicode_is_digit{};
-struct fo_unicode_is_alnum {
-  bool operator ()(char32_t c) const noexcept {
-    return unicode_is_digit(c) || unicode_is_upper(c) || unicode_is_lower(c);
-  }
-};
-inline constexpr fo_unicode_is_alnum unicode_is_alnum{};
-
-struct fo_unicode_is_xdigit {
-  bool operator ()(char32_t c) const noexcept {
-    return (U'0' <= c && c <= U'9')
-      || (U'a' <= c && c <= U'f')
-      || (U'A' <= c && c <= U'F');
-  }
-};
-inline constexpr fo_unicode_is_xdigit unicode_is_xdigit{};
-
-struct fo_unicode_to_upper {
-  char32_t operator ()(char32_t c) const noexcept {
-    if (unicode_is_lower(c))
-      return c + to_unsigned(U'A' - U'a');
-    return c;
-  }
-};
-inline constexpr fo_unicode_to_upper unicode_to_upper{};
-
-struct fo_unicode_to_lower {
-  char32_t operator ()(char32_t c) const noexcept {
-    if (unicode_is_upper(c))
-      return c + to_unsigned(U'a' - U'A');
-    return c;
-  }
-};
-inline constexpr fo_unicode_to_lower unicode_to_lower{};
 
 }
 
@@ -3074,7 +3003,7 @@ class bitset : range_fns {
 
   using sz = size_constant
     <N / bits_of_uint + (size_t)(N % bits_of_uint != 0)>;
-  using actual_sz = conditional_t<sz::value == 0u, size_constant<1>, sz>;
+  using actual_sz = conditional<sz::value == 0u, size_constant<1>, sz>;
   uint v[actual_sz::value];
 
   constexpr void reset_tail() noexcept {}
@@ -3170,7 +3099,7 @@ public:
     return v[0];
   }
   template <bool Y = (sizeof(unsigned long long) != sizeof(unsigned long))>
-  constexpr enable_if_t<Y, unsigned long> to_ulong() const {
+  constexpr enable_if<Y, unsigned long> to_ulong() const {
     size_t n = (sizeof(unsigned long long) - sizeof(unsigned long)) * 8;
     if (!all_of_equal(rng(v + 1, actual_sz::value - 1), uint(0))
         || (v[0] >> (uint)(sizeof(unsigned long) * 8)) != 0)
@@ -3178,7 +3107,7 @@ public:
     return static_cast<unsigned long>(v[0]);
   }
   template <bool Y = (sizeof(unsigned long long) != sizeof(unsigned long))>
-  constexpr enable_if_t<!Y, unsigned long> to_ulong() const {
+  constexpr enable_if<!Y, unsigned long> to_ulong() const {
     return to_ullong();
   }
   template <class STRING>
@@ -3355,11 +3284,11 @@ public:
     return operator [](pos);
   }
   template <bool Y = (N % (sizeof(uint) * 8) == 0u)>
-  constexpr enable_if_t<Y, bool> all() const noexcept {
+  constexpr enable_if<Y, bool> all() const noexcept {
     return all_of_equal(v, (uint)~uint(0));
   }
   template <bool Y = (N % (sizeof(uint) * 8) == 0u)>
-  constexpr enable_if_t<!Y, bool> all() const noexcept {
+  constexpr enable_if<!Y, bool> all() const noexcept {
     const uint max_val = (uint)~(uint)0;
     if (!all_of_equal(rng(begin(v), prev(end(v))), max_val))
       return false;
@@ -3460,7 +3389,7 @@ struct vector_data {
 }
 template <class T, class AL = default_allocator<T>>
 class vector : inner::vector_data<AL>, allocator_wrapper<AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   template <class, class>
   friend class pointer_vector;
@@ -3691,7 +3620,7 @@ private:
 
   template <class UINT>
   void reserve_raw_space_at_least(UINT n) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
     const size_type rest_n = ed - now;
     if (n > rest_n) {
       n -= rest_n;
@@ -3785,20 +3714,20 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     reserve_raw_space_at_least(size(r));
     now = uninitialized_copy(r, now);
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     for (auto &p : iters(r))
       emplace_back_impl(*p);
   }
 
   template <class IITR_RANGE, class TT = value_type>
-  enable_if_t<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
+  enable_if<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     pointer pos = cpos - op + op;
     const auto pos_dif = pos - op;
@@ -3839,8 +3768,8 @@ private:
     }
   }
   template <class IITR_RANGE, class TT = value_type>
-  enable_if_t<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
-              pointer>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     pointer pos = cpos - op + op;
     const auto dif_pos = pos - op;
@@ -3859,14 +3788,14 @@ private:
 
   template <class SZT>
   void size_check(SZT n) const {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (n > max_size())
       throw_or_terminate<length_error>
         ("re::vector: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     if (n == 0u) {
@@ -3889,7 +3818,7 @@ private:
 #endif
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     new_data();
 #ifndef RE_NOEXCEPT
@@ -3930,7 +3859,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     if (n == 0u) {
@@ -3971,7 +3900,7 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
@@ -4115,12 +4044,12 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   vector(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -4149,7 +4078,7 @@ public:
   iterator insert(const_iterator pos, size_type n, const value_type &x) {
     return insert_n_impl(pos, n, x);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -4285,27 +4214,30 @@ public:
 
   template <class R>
   vector(from_range_t, R &&r, const allocator_type &al = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alw_t(al) {
     construct_from_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const AL &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const AL &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit vector(R &&r) : vector(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const AL &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const AL &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   vector(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(r);
   }
   template <class R>
-  enable_if_t<!is_same_v<decay_t<R>, this_t>
-              && !is_convertible_v<R &&, const AL &>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && is_assignable_v<value_type &, rng_ref<R>>, this_t &>
+  enable_if<(!is_same<decay<R>, this_t>
+             && !is_convertible<R &&, const AL &>
+             && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+             && is_assignable<value_type &, rng_ref<R>>),
+            this_t &>
   operator =(R &&r) {
     assign_range_impl(r);
     return *this;
@@ -4320,9 +4252,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -4332,8 +4264,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }
@@ -4430,7 +4362,7 @@ public:
 
 template <class T, class UINT_AL>
 class bitvec_iterator {
-  static_assert(is_same_v<remove_cv_t<T>, bool>);
+  static_assert(is_same<remove_cv<T>, bool>);
 
   template <class, class>
   friend class bitvec_iterator;
@@ -4448,8 +4380,9 @@ class bitvec_iterator {
 
 public:
   using value_type = bool;
-  using reference = conditional_t<is_const_v<T>,
-                                  bool, bitvec_reference<UINT_AL>>;
+  using reference = conditional<is_const<T>,
+                                bool,
+                                bitvec_reference<UINT_AL>>;
   using pointer = reference *;
   using difference_type = alloc_dft<UINT_AL>;
   using iterator_category = random_access_iterator_tag;
@@ -4458,30 +4391,30 @@ public:
   ~bitvec_iterator() = default;
   bitvec_iterator(const bitvec_iterator &) = default;
   bitvec_iterator &operator =(const bitvec_iterator &x)
-    noexcept(is_nothrow_copy_assignable_v<bitvec_reference<UINT_AL>>) {
+    noexcept(is_nothrow_copy_assignable<bitvec_reference<UINT_AL>>) {
     ref.p = x.ref.p;
     ref.n = x.ref.n;
     return *this;
   }
   bitvec_iterator(bitvec_iterator &&) = default;
   bitvec_iterator &operator =(bitvec_iterator &&x)
-    noexcept(is_nothrow_move_assignable_v<bitvec_reference<UINT_AL>>) {
+    noexcept(is_nothrow_move_assignable<bitvec_reference<UINT_AL>>) {
     return operator =(static_cast<const bitvec_iterator &>(x));
   }
   friend void swap(bitvec_iterator &x, bitvec_iterator &y) noexcept {
     x.ref.swap_referenced_target(y.ref);
   }
 
-  template <bool Y = is_const_v<T>, class = enable_if_t<Y>>
+  template <bool Y = is_const<T>, class = enable_if<Y>>
   bitvec_iterator(const bitvec_iterator<bool, UINT_AL> &x) : ref(x.ref) {}
-  template <bool Y = is_const_v<T>, class = enable_if_t<Y>>
+  template <bool Y = is_const<T>, class = enable_if<Y>>
   bitvec_iterator &operator =(const bitvec_iterator<bool, UINT_AL> &x) {
     ref = x.ref;
     return *this;
   }
 
 private:
-  template <bool Y = !is_const_v<T>, class = enable_if_t<Y>>
+  template <bool Y = !is_const<T>, class = enable_if<Y>>
   bitvec_iterator(const bitvec_iterator<const bool, UINT_AL> &x) : ref(x.ref) {}
   template <class B>
   bool eq(const bitvec_iterator<B, UINT_AL> &x) const {
@@ -4615,7 +4548,7 @@ class vector<bool, AL> : range_fns {
   using range_fns::size;
   using range_fns::empty;
 
-  static_assert(is_same_v<alloc_vt<AL>, bool>);
+  static_assert(is_same<alloc_vt<AL>, bool>);
 
   using this_t = vector;
 
@@ -4819,8 +4752,8 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>
-              || is_fitr<rng_itr<IITR_RANGE>>, iterator>
+  enable_if<(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            iterator>
   insert_range_impl(iterator pos, IITR_RANGE &&r) {
     const auto sz = size(r);
     size_check_insert(sz);
@@ -4829,8 +4762,8 @@ private:
     return pos;
   }
   template <class IITR_RANGE>
-  enable_if_t<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
-              iterator>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            iterator>
   insert_range_impl(iterator pos, IITR_RANGE &&r) {
     const auto pos_dif = pos - begin();
     const auto old_ed_dif = n;
@@ -4911,14 +4844,14 @@ private:
   }
 
   template <class R>
-  enable_if_t<rng_is_n_value<R>> assign_range_impl(R &&r) {
+  enable_if<rng_is_n_value<R>> assign_range_impl(R &&r) {
     const auto sz = size(r);
     size_check(sz);
     v.assign_range(rng(v_n(sz), max_or_zero(*begin(r))));
     n = sz;
   }
   template <class R>
-  enable_if_t<!rng_is_n_value<R> && rng_is_sized<R>>
+  enable_if<!rng_is_n_value<R> && rng_is_sized<R>>
   assign_range_impl(R &&r) {
     const auto sz = size(r);
     size_check(sz);
@@ -4927,7 +4860,7 @@ private:
     copy(r, begin());
   }
   template <class R>
-  enable_if_t<!rng_is_n_value<R> && !rng_is_sized<R>>
+  enable_if<!rng_is_n_value<R> && !rng_is_sized<R>>
   assign_range_impl(R &&r) {
     v.clear();
     n = 0;
@@ -4936,18 +4869,19 @@ private:
   }
 
   struct range_construct_tag {};
-  template <class R, class = enable_if_t<rng_is_n_value<R>>>
+  template <class R, class = enable_if<rng_is_n_value<R>>>
   vector(range_construct_tag, R &&r, const AL &al = AL{})
     : v(checked_v_n(size(r)), max_or_zero(*begin(r)), uint_alloc(al))
     , n(size(r)) {}
-  template <class R, class = enable_if_t<!rng_is_n_value<R> && rng_is_sized<R>>,
+  template <class R,
+            class = enable_if<!rng_is_n_value<R> && rng_is_sized<R>>,
             int = 0>
   vector(range_construct_tag, R &&r, const AL &al = AL{})
     : v(checked_v_n(size(r)), uint_alloc(al)), n(size(r)) {
     copy(r, begin());
   }
   template <class R,
-            class = enable_if_t<!rng_is_n_value<R> && !rng_is_sized<R>>,
+            class = enable_if<!rng_is_n_value<R> && !rng_is_sized<R>>,
             class = void>
   vector(range_construct_tag, R &&r, const AL &al = AL{})
     : v(uint_alloc(al)) {
@@ -4965,7 +4899,7 @@ public:
   vector(vector &&) = default;
   vector &operator =(vector &&) = default;
   friend void swap(vector &x, vector &y)
-    noexcept(is_nothrow_swappable_v<vector<uint, uint_alloc>>) {
+    noexcept(is_nothrow_swappable<vector<uint, uint_alloc>>) {
     adl_swap(x.v, y.v);
     adl_swap(x.n, y.n);
   }
@@ -5022,11 +4956,11 @@ public:
     assign_range_impl(rng(nn, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   vector(IITR from, IITR to, const AL &al = AL{})
     : vector(range_construct_tag(), rng(from, to), al) {}
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -5054,7 +4988,7 @@ public:
   iterator insert(const_iterator pos, size_type n, const value_type &x) {
     return insert_range_impl(pos, rng(n, x));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -5199,24 +5133,27 @@ public:
 
   template <class R>
   vector(from_range_t, R &&r, const allocator_type &al = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : vector(range_construct_tag{}, r, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const AL &>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const AL &>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   explicit vector(IITR_RANGE &&r) : vector(range_construct_tag{}, r, AL()) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   vector(IITR_RANGE &&r, const AL &al) : vector(range_construct_tag{}, r, al) {}
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -5231,9 +5168,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -5243,8 +5180,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_back(IITR_RANGE &&r) {
     insert_range_impl(end(), r);
   }
@@ -5448,7 +5385,7 @@ private:
   }
 
   template <class R>
-  enable_if_t<rng_is_sized<R>, pointer>
+  enable_if<rng_is_sized<R>, pointer>
   insert_range_impl(pointer p, R &&r) {
     const auto ed = end();
     if (p == ed)
@@ -5482,7 +5419,7 @@ private:
     return p;
   }
   template <class R>
-  enable_if_t<!rng_is_sized<R>, pointer>
+  enable_if<!rng_is_sized<R>, pointer>
   insert_range_impl(pointer p, R &&r) {
     const auto ed = end();
     append_range_impl(r);
@@ -5504,7 +5441,7 @@ private:
   }
 
   template <class R>
-  enable_if_t<rng_is_sized<R>> assign_range_impl(R &&r) {
+  enable_if<rng_is_sized<R>> assign_range_impl(R &&r) {
     const auto n = size(r);
     if (n <= sz) {
       destroy(rng(copy(r, begin()), end()));
@@ -5519,7 +5456,7 @@ private:
     }
   }
   template <class R>
-  enable_if_t<!rng_is_sized<R>> assign_range_impl(R &&r) {
+  enable_if<!rng_is_sized<R>> assign_range_impl(R &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
     for (;; ++r1.first, (void)++r2.first) {
@@ -5570,13 +5507,13 @@ public:
     return *this;
   }
   local_vector(local_vector &&v)
-    noexcept(is_nothrow_move_constructible_v<value_type>) {
+    noexcept(is_nothrow_move_constructible<value_type>) {
     sz = uninitialized_fully_move(v, begin()) - begin();
     v.sz = 0;
   }
   local_vector &operator =(local_vector &&v)
-    noexcept(is_nothrow_move_constructible_v<value_type>
-             && is_nothrow_move_assignable_v<value_type>) {
+    noexcept(is_nothrow_move_constructible<value_type>
+             && is_nothrow_move_assignable<value_type>) {
     if (this != addressof(v)) {
       if (sz >= v.sz)
         erase_range_impl(fully_move(v, begin()), end());
@@ -5590,8 +5527,8 @@ public:
     return *this;
   }
   friend void swap(local_vector &a, local_vector &b)
-    noexcept(is_nothrow_swappable_v<T>
-             && is_nothrow_move_constructible_v<T>) {
+    noexcept(is_nothrow_swappable<T>
+             && is_nothrow_move_constructible<T>) {
     if (addressof(a) != addressof(b)) {
       const bool y = a.sz < b.sz;
       local_vector &longer = y ? b : a;
@@ -5642,12 +5579,12 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   local_vector(IITR from, IITR to) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -5676,7 +5613,7 @@ public:
   iterator insert(const_iterator pos, size_type n, const value_type &x) {
     return insert_n_impl(const_cast<pointer>(pos), n, x);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(const_cast<pointer>(pos), rng(from, to));
   }
@@ -5786,21 +5723,23 @@ public:
 
   template <class R>
   local_vector(from_range_t, R &&r)
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>) {
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>) {
     construct_from_range_impl(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   explicit local_vector(IITR_RANGE &&r) {
     construct_from_range_impl(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -5815,9 +5754,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(const_cast<pointer>(pos), r);
   }
@@ -5827,8 +5766,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }
@@ -5894,7 +5833,7 @@ template <class T, size_t N, class AL = default_allocator<T>>
 class small_vector
   : inner::small_vector_data<T, N, AL>, allocator_wrapper<AL> {
   static_assert(N != 0);
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   template <class, class>
   friend class pointer_vector;
@@ -6124,9 +6063,9 @@ private:
   void swap_data(this_t &v) {
     swap_data_impl(v);
   }
-  template <bool Y = is_trivially_copyable_v<T>
-            && is_trivially_copyable_v<pointer>>
-  enable_if_t<Y> swap_data_impl(this_t &v) noexcept {
+  template <bool Y = (is_trivially_copyable<T>
+                      && is_trivially_copyable<pointer>)>
+  enable_if<Y> swap_data_impl(this_t &v) noexcept {
     if (this != addressof(v)) {
       alignas(data_t) byte tmp[sizeof(data_t)];
       void *const p1 = reinterpret_cast<void *>(addressof(tmp));
@@ -6143,9 +6082,9 @@ private:
         v.p = v.in_object_data();
     }
   }
-  template <bool Y = is_trivially_copyable_v<T>
-            && is_trivially_copyable_v<pointer>>
-  enable_if_t<!Y> swap_data_impl(this_t &v) noexcept {
+  template <bool Y = (is_trivially_copyable<T>
+                      && is_trivially_copyable<pointer>)>
+  enable_if<!Y> swap_data_impl(this_t &v) noexcept {
     if (this != addressof(v)) {
       if (local()) {
         if (v.local()) {
@@ -6241,7 +6180,7 @@ private:
 
   template <class UINT>
   void reserve_raw_space_at_least(UINT n) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
     const auto capa = capacity();
     const size_type rest_n = capa - sz;
     if (n > rest_n) {
@@ -6325,20 +6264,20 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     reserve_raw_space_at_least(size(r));
     sz = uninitialized_copy(r, end()) - begin();
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     for (auto &p : iters(r))
       emplace_back_impl(*p);
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
+  enable_if<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>, pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     pointer pos = cpos - p + p;
     pointer now = p + sz;
@@ -6382,8 +6321,8 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
-              pointer>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            pointer>
   insert_range_impl(const_pointer cpos, IITR_RANGE &&r) {
     pointer pos = cpos - p + p;
     const auto dif_pos = pos - p;
@@ -6402,14 +6341,14 @@ private:
 
   template <class SZT>
   void size_check(SZT n) const {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (n > max_size())
       throw_or_terminate<length_error>
         ("re::small_vector: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     const auto r_sz = size(r);
     size_check(r_sz);
@@ -6436,7 +6375,7 @@ private:
 #endif
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     new_data();
 #ifndef RE_NOEXCEPT
@@ -6476,7 +6415,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     const auto r_sz = size(r);
     if (r_sz <= N) {
@@ -6510,7 +6449,7 @@ private:
     sz = r_sz;
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
@@ -6580,21 +6519,21 @@ public:
     allocator_aware_container_ownership<this_t>::copy_assign(*this, v);
     return *this;
   }
-  small_vector(small_vector &&v) noexcept(is_nothrow_move_constructible_v<T>)
+  small_vector(small_vector &&v) noexcept(is_nothrow_move_constructible<T>)
     : alw_t(move(v.alloc_ref())) {
     new_data(move(v));
   }
   small_vector &operator =(small_vector &&v)
     noexcept((alloc_move_prpg<AL> || alloc_always_equal<AL>)
-             && is_nothrow_move_constructible_v<T>
-             && is_nothrow_move_assignable_v<T>) {
+             && is_nothrow_move_constructible<T>
+             && is_nothrow_move_assignable<T>) {
     allocator_aware_container_ownership<this_t>::move_assign(*this, v);
     return *this;
   }
   friend void swap(small_vector &x, small_vector &y)
     noexcept((alloc_swap_prpg<AL> || alloc_always_equal<AL>)
-             && is_nothrow_swappable_v<T>
-             && is_nothrow_move_constructible_v<T>) {
+             && is_nothrow_swappable<T>
+             && is_nothrow_move_constructible<T>) {
     allocator_aware_container_ownership<this_t>::swap(x, y);
   }
 
@@ -6654,12 +6593,12 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   small_vector(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -6689,7 +6628,7 @@ public:
   iterator insert(const_iterator pos, size_type n, const value_type &x) {
     return insert_n_impl(pos, n, x);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -6819,26 +6758,29 @@ public:
 
   template <class R>
   small_vector(from_range_t, R &&r, const allocator_type &al = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alw_t(al) {
     construct_from_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const allocator_type &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const allocator_type &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit small_vector(R &&r) : small_vector(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   small_vector(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -6853,9 +6795,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -6865,8 +6807,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }
@@ -6926,12 +6868,12 @@ class ptrvec_iterator {
   IT it;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using difference_type = itr_dft<IT>;
   using pointer = T *;
   using reference = T &;
   using iterator_category
-    = conditional_t<is_citr<IT>, random_access_iterator_tag, itr_ctg<IT>>;
+    = conditional<is_citr<IT>, random_access_iterator_tag, itr_ctg<IT>>;
 
   ptrvec_iterator() = default;
   ~ptrvec_iterator() = default;
@@ -6943,10 +6885,10 @@ public:
     adl_swap(x.it, y.it);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  ptrvec_iterator(ptrvec_iterator<remove_const_t<TT>, IT> x) : it(x.it) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  ptrvec_iterator &operator =(ptrvec_iterator<remove_const_t<TT>, IT> x) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  ptrvec_iterator(ptrvec_iterator<remove_const<TT>, IT> x) : it(x.it) {}
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  ptrvec_iterator &operator =(ptrvec_iterator<remove_const<TT>, IT> x) {
     it = x.it;
     return *this;
   }
@@ -7002,29 +6944,29 @@ public:
   }
 
   template <class X, class Y, class ITER>
-  friend enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>, bool>
+  friend enable_if<is_same<remove_const<X>, remove_const<Y>>, bool>
   operator ==(const ptrvec_iterator<X, ITER> &x,
               const ptrvec_iterator<Y, ITER> &y) noexcept;
   template <class X, class Y, class ITER>
-  friend enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>,
-                     synth_3way_result<ITER>>
+  friend enable_if<is_same<remove_const<X>, remove_const<Y>>,
+                   synth_3way_result<ITER>>
   operator <=>(const ptrvec_iterator<X, ITER> &x,
                const ptrvec_iterator<Y, ITER> &y) noexcept;
   template <class X, class Y, class ITER>
-  friend enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>
-                     && itr_is_counted<ITER>,
-                     itr_dft<ptrvec_iterator<X, ITER>>>
+  friend enable_if<(is_same<remove_const<X>, remove_const<Y>>
+                    && itr_is_counted<ITER>),
+                   itr_dft<ptrvec_iterator<X, ITER>>>
   operator -(ptrvec_iterator<X, ITER>, ptrvec_iterator<Y, ITER>);
 };
 template <class X, class Y, class ITER>
-enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>, bool>
+enable_if<is_same<remove_const<X>, remove_const<Y>>, bool>
 operator ==(const ptrvec_iterator<X, ITER> &x,
             const ptrvec_iterator<Y, ITER> &y) noexcept {
   return x.base() == y.base();
 }
 template <class X, class Y, class ITER>
-enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>,
-            synth_3way_result<ITER>>
+enable_if<is_same<remove_const<X>, remove_const<Y>>,
+          synth_3way_result<ITER>>
 operator <=>(const ptrvec_iterator<X, ITER> &x,
              const ptrvec_iterator<Y, ITER> &y) noexcept {
   return synth_3way(x.base(), y.base());
@@ -7048,9 +6990,9 @@ ptrvec_iterator<X, IT> operator -(ptrvec_iterator<X, IT> a,
   return a -= b;
 }
 template <class X, class Y, class ITER>
-enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>
-            && itr_is_counted<ITER>,
-            itr_dft<ptrvec_iterator<X, ITER>>>
+enable_if<(is_same<remove_const<X>, remove_const<Y>>
+           && itr_is_counted<ITER>),
+          itr_dft<ptrvec_iterator<X, ITER>>>
 operator -(ptrvec_iterator<X, ITER> a, ptrvec_iterator<Y, ITER> b) {
   return a.base() - b.base();
 }
@@ -7062,7 +7004,7 @@ class pointer_vector : public conditional_allocator_type<VEC> {
   using base_t = VEC;
   mutable VEC vec;
 
-  static_assert(is_same_v
+  static_assert(is_same
                 <typename pointer_traits<typename base_t::value_type>
                  ::element_type, T>);
 
@@ -7114,7 +7056,7 @@ private:
 
 public:
   using pointer = typename base_t::value_type;
-  using const_pointer = pointer_rebind_t<pointer, const T>;
+  using const_pointer = ptr_rebind<pointer, const T>;
 
   // container
 
@@ -7278,9 +7220,9 @@ public:
     }
   }
   pointer_vector(pointer_vector &&x)
-    noexcept(is_nothrow_move_constructible_v<base_t>) : vec(move(x.base())) {}
+    noexcept(is_nothrow_move_constructible<base_t>) : vec(move(x.base())) {}
   pointer_vector &operator =(pointer_vector &&x)
-    noexcept(is_nothrow_move_assignable_v<base_t>) {
+    noexcept(is_nothrow_move_assignable<base_t>) {
     if constexpr (has_allocator_type<base_t> && alloc_move_prpg<alloc_t>) {
       if (this != addressof(x)) {
         auto a = node_alw();
@@ -7310,7 +7252,7 @@ public:
     }
   }
   friend void swap(pointer_vector &x, pointer_vector &y)
-    noexcept(is_nothrow_swappable_v<base_t>) {
+    noexcept(is_nothrow_swappable<base_t>) {
     if constexpr (has_allocator_type<base_t> && alloc_swap_prpg<alloc_t>) {
       adl_swap(x.base(), y.base());
     }
@@ -7413,17 +7355,17 @@ public:
     assign_range(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   pointer_vector(IITR from, IITR to) : vec{} {
     construct_from_range(rng(from, to));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   pointer_vector(IITR from, IITR to, const alloc_t &a)
     requires has_allocator_type<base_t> : vec(base_alloc_t(a)) {
     construct_from_range(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range(rng(from, to));
   }
 
@@ -7469,7 +7411,7 @@ public:
   iterator insert(const_iterator i, size_type n, const value_type &x) {
     return insert_range(i, rng(n, x));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator i, IITR from, IITR to) {
     return insert_range(i, rng(from, to));
   }
@@ -7870,36 +7812,39 @@ public:
 
   template <class R>
   pointer_vector(from_range_t, R &&r)
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : vec{} {
     construct_from_range(r);
   }
   template <class R>
   pointer_vector(from_range_t, R &&r, const alloc_t &al)
     requires (has_allocator_type<base_t>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : vec(base_alloc_t(al)) {
     construct_from_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const alloc_t &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const alloc_t &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit pointer_vector(R &&r) : vec{} {
     construct_from_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && has_allocator_type<base_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && has_allocator_type<base_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   pointer_vector(R &&r, const alloc_t &al) : vec(base_alloc_t(al)) {
     construct_from_range(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -7934,11 +7879,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range(pos, r);
   }
@@ -7966,10 +7911,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_back(IITR_RANGE &&r) {
     append_range(r);
   }
@@ -7989,10 +7934,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_front(IITR_RANGE &&r) {
     prepend_range(r);
   }
@@ -8043,6 +7988,103 @@ synth_3way_result<T> operator <=>(const pointer_vector<T, VEC> &x,
 
 }
 
+// headed_vector
+namespace re {
+
+struct non_constructible_t {
+  non_constructible_t() = delete;
+};
+
+template <class H, class T>
+struct headed_vector {
+  H h;
+  vector<T> vec;
+
+  template <class H2, class T2>
+  operator headed_vector<H2, T2>() const &
+    requires (is_convertible<const H &, H2>
+              && !is_same<T, T2> && is_convertible<const T &, T2>) {
+    return headed_vector<H2, T2>(h, vector<T2>(vec));
+  }
+  template <class H2, class T2>
+  operator headed_vector<H2, T2>() const &
+    requires (is_convertible<const H &, H2>
+              && !is_same<T, T2> && !is_convertible<const T &, T2>
+              && is_same<T, non_constructible_t>) {
+    return headed_vector<H2, T2>(h, {});
+  }
+  template <class H2>
+  operator headed_vector<H2, T>() const &
+    requires (is_convertible<const H &, H2> && copyable<T>) {
+    return headed_vector<H2, T>(h, vec);
+  }
+
+  template <class H2, class T2>
+  operator headed_vector<H2, T2>() &&
+    requires (is_convertible<H &&, H2>
+              && !is_same<T, T2> && is_convertible<T &&, T2>) {
+    return headed_vector<H2, T2>(move(h), vector<T2>(move_rng(vec)));
+  }
+  template <class H2, class T2>
+  operator headed_vector<H2, T2>() &&
+    requires (is_convertible<const H &, H2>
+              && !is_same<T, T2> && !is_convertible<const T &, T2>
+              && is_same<T, non_constructible_t>) {
+    return headed_vector<H2, T2>(move(h), {});
+  }
+  template <class H2>
+  operator headed_vector<H2, T>() &&
+    requires (is_convertible<H &&, H2> && movable<T>) {
+    return headed_vector<H2, T>(move(h), move(vec));
+  }
+};
+
+template <class H>
+struct headed_vector_maker {
+  H h;
+
+  template <class T, class...S>
+  headed_vector<H, decay<T>> operator ()(T &&x, S &&...s) const {
+    headed_vector<H, decay<T>> hv(h);
+    hv.vec.reserve(sizeof...(S) + 1u);
+    hv.vec.append(forward<T>(x), forward<S>(s)...);
+    return hv;
+  }
+  headed_vector<H, non_constructible_t> operator ()() const {
+    return headed_vector<H, non_constructible_t>(h);
+  }
+};
+struct fo_hvec {
+  template <class T>
+  headed_vector_maker<decay<T>> operator ()(T &&x) const {
+    return headed_vector_maker<decay<T>>(forward<T>(x));
+  }
+  template <class T, class...S>
+  headed_vector_maker<tuple<decay<T>, decay<S>...>>
+  operator ()(T &&x, S &&...s) const
+    requires (sizeof...(S) != 0u) {
+    return headed_vector_maker<tuple<decay<T>, decay<S>...>>
+      (tuple<decay<T>, decay<S>...>(forward<T>(x), forward<S>(s)...));
+  }
+};
+inline constexpr fo_hvec hvec{};
+
+struct fo_vec {
+  template <class T, class...S>
+  vector<decay<T>> operator ()(T &&x, S &&...s) const {
+    vector<decay<T>> v;
+    v.reserve(sizeof...(S) + 1u);
+    v.append(forward<T>(x), forward<S>(s)...);
+    return v;
+  }
+  vector<non_constructible_t> operator ()() const {
+    return {};
+  }
+};
+inline constexpr fo_vec vec{};
+
+}
+
 // circular_vector
 namespace re {
 
@@ -8085,7 +8127,7 @@ class circular_vector_iterator {
   friend class re::circular_vector;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = alloc_dft<AL>;
@@ -8110,11 +8152,11 @@ public:
     adl_swap(x.shared_p, y.shared_p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  circular_vector_iterator(circular_vector_iterator<remove_const_t<TT>, AL> x)
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  circular_vector_iterator(circular_vector_iterator<remove_const<TT>, AL> x)
     : p(x.p), shared_p(x.shared_p) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(circular_vector_iterator<remove_const_t<TT>, AL> x) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  this_t &operator =(circular_vector_iterator<remove_const<TT>, AL> x) {
     p = x.p;
     shared_p = x.shared_p;
     return *this;
@@ -8127,8 +8169,8 @@ private:
 
   circular_vector_iterator(stored_pointer p1, shared_data_pointer p2)
     : p(p1), shared_p(p2) {}
-  auto to_mutable() const requires is_const_v<T> {
-    return circular_vector_iterator<remove_const_t<T>, AL>(p, shared_p);
+  auto to_mutable() const requires is_const<T> {
+    return circular_vector_iterator<remove_const<T>, AL>(p, shared_p);
   }
 
 public:
@@ -8139,7 +8181,7 @@ public:
     return to_address(p);
   }
   template <class TT, class TTT, class AL2>
-  friend enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<TTT>>, bool>
+  friend enable_if<is_same<remove_const<TT>, remove_const<TTT>>, bool>
   operator ==(circular_vector_iterator<TT, AL2>,
               circular_vector_iterator<TTT, AL2>);
 
@@ -8184,18 +8226,18 @@ public:
     return *(copy(*this) += i);
   }
   template <class TT, class TTT, class AL2>
-  friend enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<TTT>>,
-                     itr_dft<circular_vector_iterator<TT, AL2>>>
+  friend enable_if<is_same<remove_const<TT>, remove_const<TTT>>,
+                   itr_dft<circular_vector_iterator<TT, AL2>>>
   operator -(circular_vector_iterator<TTT, AL2>,
              circular_vector_iterator<TT, AL2>);
   template <class TT, class TTT, class AL2>
-  friend enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<TTT>>,
-                     synth_3way_result<alloc_ptr<AL2>>>
+  friend enable_if<is_same<remove_const<TT>, remove_const<TTT>>,
+                   synth_3way_result<alloc_ptr<AL2>>>
   operator <=>(circular_vector_iterator<TT, AL2>,
                circular_vector_iterator<TTT, AL2>);
 };
 template <class TT, class TTT, class AL2>
-enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<TTT>>, bool>
+enable_if<is_same<remove_const<TT>, remove_const<TTT>>, bool>
 operator ==(circular_vector_iterator<TT, AL2> x,
             circular_vector_iterator<TTT, AL2> y) {
   return x.p == y.p;
@@ -8213,8 +8255,8 @@ operator +(itr_dft<circular_vector_iterator<TT, AL2>> i,
   return x += i;
 }
 template <class TT, class TTT, class AL2>
-enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<TTT>>,
-            itr_dft<circular_vector_iterator<TT, AL2>>>
+enable_if<is_same<remove_const<TT>, remove_const<TTT>>,
+          itr_dft<circular_vector_iterator<TT, AL2>>>
 operator -(circular_vector_iterator<TTT, AL2> x,
            circular_vector_iterator<TT, AL2> y) {
   if (x.p == y.p)
@@ -8239,8 +8281,8 @@ operator -(circular_vector_iterator<TT, AL2> x,
   return x -= i;
 }
 template <class TT, class TTT, class AL2>
-enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<TTT>>,
-            synth_3way_result<alloc_ptr<AL2>>>
+enable_if<is_same<remove_const<TT>, remove_const<TTT>>,
+          synth_3way_result<alloc_ptr<AL2>>>
 operator <=>(circular_vector_iterator<TT, AL2> x,
              circular_vector_iterator<TTT, AL2> y) {
   if (x.p == y.p)
@@ -8264,7 +8306,7 @@ template <class T, class AL = default_allocator<T>>
 class circular_vector
   : inner::circular_vector_data<AL>, allocator_wrapper<AL> {
 public:
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   using this_t = circular_vector;
 
@@ -8369,7 +8411,7 @@ public:
   }
 
   size_type max_size() const noexcept {
-    constexpr make_unsigned_t<ptrdiff_t> n = min_value
+    constexpr make_unsigned<ptrdiff_t> n = min_value
       (integral_traits<difference_type>::max(),
        integral_traits<ptrdiff_t>::max() / to_signed(sizeof(value_type)));
     constexpr size_t n2 = min_value(n, integral_traits<size_t>::max());
@@ -8499,7 +8541,7 @@ private:
   }
   template <class UINT>
   void reserve_raw_space_at_least(UINT n) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
     const size_type cp = capacity();
     const size_type rest = --begin() - end();
     if (n > rest) {
@@ -8644,14 +8686,14 @@ private:
 
   template <class SZT>
   void size_check(SZT n) {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (n > max_size())
       throw_or_terminate<length_error>
         ("re::circular_vector: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     size_check(n);
@@ -8659,7 +8701,7 @@ private:
     data_ed() = uninitialized_copy(r, data_ed());
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     new_data();
     for (auto &p : iters(r))
@@ -8673,7 +8715,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     const auto r_sz = size(r);
     const auto sz = size();
@@ -8688,7 +8730,7 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   assign_range_impl(IITR_RANGE &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
@@ -8708,7 +8750,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   prepend_range_impl(IITR_RANGE &&r) {
     const auto r_sz = size(r);
     reserve_raw_space_at_least(r_sz);
@@ -8717,7 +8759,7 @@ private:
     data_op() = new_begin.p;
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   prepend_range_impl(IITR_RANGE &&r) {
     const auto dif = begin() - end();
     for (auto &p : iters(r))
@@ -8726,21 +8768,21 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     reserve_raw_space_at_least(size(r));
     data_ed() = uninitialized_copy(r, end()).p;
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     for (auto &p : iters(r))
       emplace_back_impl(*p);
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>
-              || is_fitr<rng_itr<IITR_RANGE &&>>, iterator>
+  enable_if<rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE &&>>,
+            iterator>
   insert_range_impl(const_iterator cit, IITR_RANGE &&r) {
     iterator new_it = cit.to_mutable();
     if (new_it == end()) {
@@ -8838,8 +8880,8 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!(rng_is_sized<IITR_RANGE>
-                || is_fitr<rng_itr<IITR_RANGE &&>>), iterator>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE &&>>),
+            iterator>
   insert_range_impl(const_iterator cit, IITR_RANGE &&r) {
     const iterator it = cit;
     if (it == begin()) {
@@ -9000,12 +9042,12 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   circular_vector(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -9034,7 +9076,7 @@ public:
   iterator insert(const_iterator pos, size_type n, const T &x) {
     return insert_n_impl(pos, n, x);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -9174,26 +9216,29 @@ public:
   template <class R>
   circular_vector(from_range_t,
                   R &&r, const allocator_type &al = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alw_t(al) {
     construct_from_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const allocator_type &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const allocator_type &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit circular_vector(R &&r) : circular_vector(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   circular_vector(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -9208,9 +9253,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -9220,8 +9265,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }
@@ -9235,8 +9280,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_front(IITR_RANGE &&r) {
     prepend_range_impl(r);
   }
@@ -9292,19 +9337,19 @@ template <class T>
 struct deque_default_lower_buffer_size {
   static constexpr size_t tmp = 128u / sizeof(T);
   static constexpr size_t value
-    = conditional_t
-    <(tmp <= 8),
+    = conditional
+    <(tmp <= 8u),
      size_constant<8>,
-     conditional_t
-     <(tmp <= 16),
+     conditional
+     <(tmp <= 16u),
       size_constant<16>,
-      conditional_t
-      <(tmp <= 32),
+      conditional
+      <(tmp <= 32u),
        size_constant<32>,
-       conditional_t
-       <(tmp <= 64),
+       conditional
+       <(tmp <= 64u),
         size_constant<64>,
-        size_constant<64>
+        size_constant<128>
         >
        >
       >
@@ -9357,7 +9402,7 @@ struct deque_data {
 template <class T, class AL>
 class deque_iterator {
   static constexpr alloc_dft<AL> lower_buffer_ssize() {
-    return deque_default_lower_buffer_size<remove_const_t<T>>::value;
+    return deque_default_lower_buffer_size<remove_const<T>>::value;
   }
 
   using this_t = deque_iterator;
@@ -9377,7 +9422,7 @@ class deque_iterator {
   upper_buffer_pointer upper_bufp;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = T *;
   using reference = T &;
   using difference_type = alloc_dft<AL>;
@@ -9395,11 +9440,11 @@ public:
     adl_swap(x.upper_bufp, y.upper_bufp);
   }
 
-  template <class TT = T, class = enable_if_t<is_const<TT>::value>>
-  deque_iterator(deque_iterator<remove_const_t<TT>, AL> t)
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  deque_iterator(deque_iterator<remove_const<TT>, AL> t)
     : lower_p(t.lower_p), upper_p(t.upper_p), upper_bufp(t.upper_bufp) {}
-  template <class TT = T, class = enable_if_t<is_const<TT>::value>>
-  deque_iterator &operator =(deque_iterator<remove_const_t<TT>, AL> t) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  deque_iterator &operator =(deque_iterator<remove_const<TT>, AL> t) {
     lower_p = t.lower_p;
     upper_p = t.upper_p;
     upper_bufp = t.upper_bufp;
@@ -9413,8 +9458,8 @@ private:
 
   deque_iterator(upper_pointer pp, lower_pointer p, upper_buffer_pointer ppp)
     : lower_p(p), upper_p(pp), upper_bufp(ppp) {}
-  auto to_mutable() const requires is_const_v<T> {
-    return deque_iterator<remove_const_t<T>, AL>(upper_p, lower_p, upper_bufp);
+  auto to_mutable() const requires is_const<T> {
+    return deque_iterator<remove_const<T>, AL>(upper_p, lower_p, upper_bufp);
   }
 
 public:
@@ -9491,18 +9536,18 @@ public:
   }
 
   template <class TT, class UU, class AL2>
-  friend enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<UU>>, bool>
+  friend enable_if<is_same<remove_const<TT>, remove_const<UU>>, bool>
   operator ==(deque_iterator<TT, AL2>, deque_iterator<UU, AL2>);
   template <class TT, class UU, class AL2>
-  friend enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<UU>>,
-                     itr_dft<deque_iterator<TT, AL2>>>
+  friend enable_if<is_same<remove_const<TT>, remove_const<UU>>,
+                   itr_dft<deque_iterator<TT, AL2>>>
   operator -(deque_iterator<TT, AL2>, deque_iterator<UU, AL2>);
   template <class TT, class UU, class AL2>
   friend strong_ordering operator <=>(deque_iterator<TT, AL2>,
                                       deque_iterator<UU, AL2>);
 };
 template <class TT, class UU, class AL2>
-enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<UU>>, bool>
+enable_if<is_same<remove_const<TT>, remove_const<UU>>, bool>
 operator ==(deque_iterator<TT, AL2> p, deque_iterator<UU, AL2> pp) {
   return p.lower_p == pp.lower_p;
 }
@@ -9522,8 +9567,8 @@ operator -(deque_iterator<TT, AL2> p, itr_dft<deque_iterator<TT, AL2>> i) {
   return p += -i;
 }
 template <class TT, class UU, class AL2>
-enable_if_t<is_same_v<remove_const_t<TT>, remove_const_t<UU>>,
-            itr_dft<deque_iterator<TT, AL2>>>
+enable_if<is_same<remove_const<TT>, remove_const<UU>>,
+          itr_dft<deque_iterator<TT, AL2>>>
 operator -(deque_iterator<TT, AL2> p, deque_iterator<UU, AL2> pp) {
   if (p.upper_p == pp.upper_p)
     return p.lower_p - pp.lower_p;
@@ -9572,15 +9617,15 @@ strong_ordering operator <=>(deque_iterator<TT, AL2> p,
 }
 template <class T, class AL = default_allocator<T>>
 class deque : inner::deque_data<AL>, allocator_wrapper<AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   static constexpr
   alloc_szt<AL> lower_buf_size() {
-    return inner::deque_default_lower_buffer_size<remove_const_t<T>>::value;
+    return inner::deque_default_lower_buffer_size<remove_const<T>>::value;
   }
   static constexpr
   alloc_dft<AL> lower_buf_ssize() {
-    return inner::deque_default_lower_buffer_size<remove_const_t<T>>::value;
+    return inner::deque_default_lower_buffer_size<remove_const<T>>::value;
   }
 
   using this_t = deque;
@@ -9956,7 +10001,7 @@ private:
   }
   template <class UINT>
   void reserve_raw_space_back_at_least(UINT n) {
-    static_assert(is_unsigned_v<UINT> && is_integral_v<UINT>);
+    static_assert(is_unsigned<UINT> && is_integral<UINT>);
     if (lower_op == nullptr)
       initialize_buffer_cleanup((n < lower_buf_size())
                                 ? 2u : (n / lower_buf_size() + 1u));
@@ -9984,7 +10029,7 @@ private:
   }
   template <class UINT>
   void reserve_raw_space_front_at_least(UINT n) {
-    static_assert(is_unsigned_v<UINT> && is_integral_v<UINT>);
+    static_assert(is_unsigned<UINT> && is_integral<UINT>);
     if (lower_op == nullptr) {
       initialize_buffer_cleanup((n < lower_buf_size())
                                 ? 2u : (n / lower_buf_size() + 1u));
@@ -10136,14 +10181,14 @@ private:
 
   template <class SZT>
   void size_check(SZT n) {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (n > max_size())
       throw_or_terminate<length_error>
         ("re::deque: size overflow in size_check(n)\n");
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     if (empty(r))
       new_data();
@@ -10156,7 +10201,7 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   construct_from_range_impl(IITR_RANGE &&r) {
     new_data();
     for (auto &p : iters(r))
@@ -10176,7 +10221,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>> assign_range_impl(IITR_RANGE &&r) {
+  enable_if<rng_is_sized<IITR_RANGE>> assign_range_impl(IITR_RANGE &&r) {
     const auto n = size(r);
     const size_type sz = size();
     if (n <= sz)
@@ -10190,7 +10235,7 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>> assign_range_impl(IITR_RANGE &&r) {
+  enable_if<!rng_is_sized<IITR_RANGE>> assign_range_impl(IITR_RANGE &&r) {
     auto r1 = rng(*this);
     auto r2 = rng(r);
     for (;;) {
@@ -10209,7 +10254,7 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   prepend_range_impl(IITR_RANGE &&r) {
     const auto r_sz = size(r);
     reserve_raw_space_front_at_least(r_sz);
@@ -10223,7 +10268,7 @@ private:
 #endif
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   prepend_range_impl(IITR_RANGE &&r) {
     const auto dif = begin() - end();
     for (auto &p : iters(r))
@@ -10232,21 +10277,21 @@ private:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>>
+  enable_if<rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     reserve_raw_space_back_at_least(size(r));
     set_end(uninitialized_copy(r, end()));
   }
   template <class IITR_RANGE>
-  enable_if_t<!rng_is_sized<IITR_RANGE>>
+  enable_if<!rng_is_sized<IITR_RANGE>>
   append_range_impl(IITR_RANGE &&r) {
     for (auto &p : iters(r))
       emplace_back_impl(*p);
   }
 
   template <class IITR_RANGE>
-  enable_if_t<rng_is_sized<IITR_RANGE>
-              || is_fitr<rng_itr<IITR_RANGE>>, iterator>
+  enable_if<(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            iterator>
   insert_range_impl(const_iterator cit, IITR_RANGE &&r) {
     iterator new_it = cit.to_mutable();
     if (new_it == end()) {
@@ -10362,8 +10407,8 @@ private:
     }
   }
   template <class IITR_RANGE>
-  enable_if_t<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
-              iterator>
+  enable_if<!(rng_is_sized<IITR_RANGE> || is_fitr<rng_itr<IITR_RANGE>>),
+            iterator>
   insert_range_impl(const_iterator cit, IITR_RANGE &&r) {
     const iterator it = cit;
     if (it == cbegin()) {
@@ -10538,12 +10583,12 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   deque(IITR from, IITR to, const AL &al = AL{}) : alw_t(al) {
     construct_from_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -10572,7 +10617,7 @@ public:
   iterator insert(const_iterator pos, size_type n, const T &x) {
     return insert_n_impl(pos, n, x);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -10742,26 +10787,29 @@ public:
 
   template <class R>
   deque(from_range_t, R &&r, const allocator_type &a = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alw_t(a) {
     construct_from_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const allocator_type &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const allocator_type &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit deque(R &&r) : deque(r, allocator_type{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   deque(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -10776,8 +10824,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>, iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -10787,8 +10836,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }
@@ -10802,8 +10851,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   push_front(IITR_RANGE &&r) {
     prepend_range_impl(r);
   }
@@ -10972,7 +11021,7 @@ public:
   forward_list_node_handle(this_t &&) noexcept = default;
   forward_list_node_handle &operator =(this_t &&) = default;
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<base_t>) {
+    noexcept(is_nothrow_swappable<base_t>) {
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
@@ -11046,13 +11095,13 @@ struct forward_list_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>
       (addressof(static_cast<node_pointer>(p)->data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
@@ -11063,35 +11112,35 @@ struct forward_list_traits {
   static node_base_pointer before_begin_node(const header_type &h) {
     return pointer_traits<node_base_pointer>::pointer_to(h.op);
   }
-  template <bool Y = STORE_SIZE, class = enable_if_t<Y>>
+  template <bool Y = STORE_SIZE, class = enable_if<Y>>
   static size_type size(const header_type &h) {
     return h.sz;
   }
-  template <bool Y = STORE_SIZE, class = enable_if_t<Y>>
+  template <bool Y = STORE_SIZE, class = enable_if<Y>>
   static void size(header_type &h, size_type n) {
     h.sz = n;
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -11101,12 +11150,12 @@ class forward_list_adaptor;
 template <class T, class AL>
 struct flstt
   : forward_list_traits<forward_list_node<T, AL>, 0, 0, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 struct slstt
   : forward_list_traits<forward_list_node<T, AL>, 0, 1, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL = default_allocator<T>>
 using forward_list = forward_list_adaptor<flstt<T, AL>>;
@@ -11119,7 +11168,7 @@ namespace inner {
 
 template <class T, class TRAITS>
 class forward_list_iterator {
-  static_assert(is_same_v<remove_const_t<T>, typename TRAITS::value_type>);
+  static_assert(is_same<remove_const<T>, typename TRAITS::value_type>);
 
   using this_t = forward_list_iterator;
 
@@ -11134,7 +11183,7 @@ private:
   node_pointer p{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = T *;
   using reference = T &;
   using difference_type = typename TRAITS::difference_type;
@@ -11149,11 +11198,11 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  forward_list_iterator
-  (forward_list_iterator<remove_const_t<TT>, TRAITS> it) : p(it.p) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(forward_list_iterator<remove_const_t<TT>, TRAITS> it) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  forward_list_iterator(forward_list_iterator<remove_const<TT>, TRAITS> it)
+    : p(it.p) {}
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  this_t &operator =(forward_list_iterator<remove_const<TT>, TRAITS> it) {
     p = it.p;
     return *this;
   }
@@ -11162,8 +11211,8 @@ public:
   node_pointer node() const {
     return p;
   }
-  auto to_mutable() const requires is_const_v<T> {
-    return forward_list_iterator<remove_const_t<T>, TRAITS>(p);
+  auto to_mutable() const requires is_const<T> {
+    return forward_list_iterator<remove_const<T>, TRAITS>(p);
   }
 
 private:
@@ -11191,7 +11240,7 @@ public:
   }
 };
 template <class A, class AA, class B>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>, bool>
+enable_if<is_same<remove_const<A>, remove_const<AA>>, bool>
 operator ==(forward_list_iterator<A, B> x, forward_list_iterator<AA, B> y) {
   return x.node() == y.node();
 }
@@ -11204,14 +11253,15 @@ bool operator ==(forward_list_iterator<A, B> x, nullptr_t) {
 template <class TRAITS>
 class forward_list_adaptor
   : TRAITS::header_type
-  , conditional_t<TRAITS::store_node_allocator::value,
-                  typename TRAITS::allocator_type, inner::empty_type> {
+  , conditional<TRAITS::store_node_allocator::value,
+                typename TRAITS::allocator_type,
+                inner::empty_type> {
   using this_t = forward_list_adaptor;
 
   using data_t = typename TRAITS::header_type;
-  using alloc_t = conditional_t<TRAITS::store_node_allocator::value,
-                                typename TRAITS::allocator_type,
-                                inner::empty_type>;
+  using alloc_t = conditional<TRAITS::store_node_allocator::value,
+                              typename TRAITS::allocator_type,
+                              inner::empty_type>;
 
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
@@ -11277,7 +11327,7 @@ public:
     return begin() == nullptr;
   }
   template <class Y = typename TRAITS::store_size>
-  enable_if_t<Y::value, size_type> size() const noexcept {
+  enable_if<Y::value, size_type> size() const noexcept {
     return TRAITS::size(static_cast<const data_t &>(*this));
   }
 
@@ -11285,20 +11335,20 @@ private:
   // inner implements
 
   template <class Y = typename TRAITS::store_size>
-  enable_if_t<Y::value, size_type> get_size() const noexcept {
+  enable_if<Y::value, size_type> get_size() const noexcept {
     return TRAITS::size(static_cast<const data_t &>(*this));
   }
   template <class Y = typename TRAITS::store_size>
-  enable_if_t<Y::value> set_size(size_type n) noexcept {
+  enable_if<Y::value> set_size(size_type n) noexcept {
     TRAITS::size(static_cast<data_t &>(*this), n);
   }
 
   template <class Y = typename TRAITS::store_size>
-  enable_if_t<!Y::value, size_type> get_size() const noexcept {
+  enable_if<!Y::value, size_type> get_size() const noexcept {
     return 0;
   }
   template <class Y = typename TRAITS::store_size>
-  enable_if_t<!Y::value> set_size(size_type) noexcept {}
+  enable_if<!Y::value> set_size(size_type) noexcept {}
 
 public:
   // extensions(node operations):
@@ -11368,12 +11418,12 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator>
+  enable_if<Y, iterator>
   erase_or_unlink_after(const_iterator it) noexcept {
     return erase_after(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator>
+  enable_if<!Y, iterator>
   erase_or_unlink_after(const_iterator it) noexcept {
     return unlink_after(it);
   }
@@ -11739,13 +11789,13 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   forward_list_adaptor(IITR from, IITR to,
                        const alloc_t &al = alloc_t{}) : alloc_t(al) {
     new_data();
     insert_range_after_impl(before_begin(), rng(from, to));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
@@ -11777,7 +11827,7 @@ public:
                         size_type n, const value_type &x) {
     return insert_range_after_impl(pos.to_mutable(), rng(n, ref(x)));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert_after(const_iterator pos, IITR from, IITR to) {
     return insert_range_after_impl(pos.to_mutable(), rng(from, to));
   }
@@ -12015,7 +12065,7 @@ public:
 
   template <class R>
   iterator replace_after(const_iterator ci1, const_iterator ci2, R &&r)
-    requires (!is_convertible_v<R &&, this_t &&>) {
+    requires (!is_convertible<R &&, this_t &&>) {
     const iterator i1 = ci1.to_mutable();
     const iterator i2 = ci2.to_mutable();
     if constexpr (is_frng<R>) {
@@ -12064,28 +12114,31 @@ public:
 
   template <class R>
   forward_list_adaptor(from_range_t, R &&r, const alloc_t &al = alloc_t{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alloc_t(al) {
     new_data();
     insert_range_after_impl(before_begin(), r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const alloc_t &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const alloc_t &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit forward_list_adaptor(R &&r) : forward_list_adaptor(r, alloc_t{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   forward_list_adaptor(R &&r, const alloc_t &al) : alloc_t(al) {
     new_data();
     insert_range_after_impl(before_begin(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -12100,11 +12153,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>),
+            iterator>
   insert_after(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_after_impl(pos.to_mutable(), r);
   }
@@ -12114,10 +12167,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_front(IITR_RANGE &&r) {
     insert_range_after_impl(before_begin(), r);
   }
@@ -12173,7 +12226,7 @@ public:
   list_node_handle(this_t &&) noexcept = default;
   list_node_handle &operator =(this_t &&) = default;
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<base_t>) {
+    noexcept(is_nothrow_swappable<base_t>) {
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
@@ -12193,8 +12246,8 @@ public:
 
 template <size_t ID = 0, class VOID_PTR = void *>
 struct join_list {
-  pointer_rebind_t<VOID_PTR, join_list> prev;
-  pointer_rebind_t<VOID_PTR, join_list> next;
+  ptr_rebind<VOID_PTR, join_list> prev;
+  ptr_rebind<VOID_PTR, join_list> next;
 };
 template <class T, class AL = default_allocator<T>>
 struct list_node : join_list<0, alloc_void_ptr<AL>> {
@@ -12256,13 +12309,13 @@ struct list_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>
       (addressof(static_cast<node_pointer>(p)->data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
@@ -12272,35 +12325,35 @@ struct list_traits {
   static node_base_pointer end_node(const header_type &h) {
     return pointer_traits<node_base_pointer>::pointer_to(h.ed);
   }
-  template <bool Y = store_size::value, class = enable_if_t<Y>>
+  template <bool Y = store_size::value, class = enable_if<Y>>
   static size_type size(const header_type &h) {
     return h.sz;
   }
-  template <bool Y = store_size::value, class = enable_if_t<Y>>
+  template <bool Y = store_size::value, class = enable_if<Y>>
   static void size(header_type &h, size_type n) {
     h.sz = n;
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -12309,11 +12362,11 @@ template <class>
 class list_adaptor;
 template <class T, class AL>
 struct lstt : list_traits<list_node<T, AL>, 0, 1, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 struct bdlstt : list_traits<list_node<T, AL>, 0, 0, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL = default_allocator<T>>
 using list = list_adaptor<lstt<T, AL>>;
@@ -12326,7 +12379,7 @@ namespace inner {
 
 template <class T, class TRAITS>
 class list_iterator {
-  static_assert(is_same_v<remove_const_t<T>, typename TRAITS::value_type>);
+  static_assert(is_same<remove_const<T>, typename TRAITS::value_type>);
 
   template <class>
   friend class re::list_adaptor;
@@ -12339,7 +12392,7 @@ private:
   node_pointer p{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = T *;
   using reference = T &;
   using difference_type = typename TRAITS::difference_type;
@@ -12354,10 +12407,10 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  list_iterator(list_iterator<remove_const_t<TT>, TRAITS> it) : p(it.node()) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(list_iterator<remove_const_t<TT>, TRAITS> it) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  list_iterator(list_iterator<remove_const<TT>, TRAITS> it) : p(it.node()) {}
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  this_t &operator =(list_iterator<remove_const<TT>, TRAITS> it) {
     p = it.node();
     return *this;
   }
@@ -12366,8 +12419,8 @@ public:
   node_pointer node() const {
     return p;
   }
-  auto to_mutable() const requires is_const_v<T> {
-    return list_iterator<remove_const_t<T>, TRAITS>(p);
+  auto to_mutable() const requires is_const<T> {
+    return list_iterator<remove_const<T>, TRAITS>(p);
   }
 
 private:
@@ -12409,7 +12462,7 @@ public:
   }
 };
 template <class A, class AA, class B>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>, bool>
+enable_if<is_same<remove_const<A>, remove_const<AA>>, bool>
 operator ==(list_iterator<A, B> x, list_iterator<AA, B> y) {
   return x.node() == y.node();
 }
@@ -12422,14 +12475,15 @@ bool operator ==(list_iterator<A, B> x, nullptr_t) {
 template <class TRAITS>
 class list_adaptor
   : TRAITS::header_type
-  , conditional_t<TRAITS::store_node_allocator::value,
-                  typename TRAITS::allocator_type, inner::empty_type> {
+  , conditional<TRAITS::store_node_allocator::value,
+                typename TRAITS::allocator_type,
+                inner::empty_type> {
   using this_t = list_adaptor;
 
   using data_t = typename TRAITS::header_type;
-  using alloc_t = conditional_t<TRAITS::store_node_allocator::value,
-                                typename TRAITS::allocator_type,
-                                inner::empty_type>;
+  using alloc_t = conditional<TRAITS::store_node_allocator::value,
+                              typename TRAITS::allocator_type,
+                              inner::empty_type>;
 
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
@@ -12439,7 +12493,7 @@ class list_adaptor
   static auto rbegin(R &&r) {return re::rbegin(r);}
   template <class R>
   static auto rend(R &&r) {return re::rend(r);}
-  template <class R, enable_if_t<is_rng<R>>>
+  template <class R, enable_if<is_rng<R>>>
   static auto size(R &&r) {return re::size(r);}
   template <class R>
   static auto empty(R &&r) {return re::empty(r);}
@@ -12481,16 +12535,16 @@ public:
   size_type max_size() const noexcept {
     return container_regular_max_size<this_t>();
   }
-  template <bool Y = TRAITS::store_size::value, class = enable_if_t<Y>>
+  template <bool Y = TRAITS::store_size::value, class = enable_if<Y>>
   size_type size() const noexcept {
     return TRAITS::size(*this);
   }
   template <bool Y = TRAITS::store_size::value>
-  enable_if_t<Y, bool> empty() const noexcept {
+  enable_if<Y, bool> empty() const noexcept {
     return size() == 0u;
   }
   template <bool Y = TRAITS::store_size::value>
-  enable_if_t<!Y, bool> empty() const noexcept {
+  enable_if<!Y, bool> empty() const noexcept {
     return begin() == end();
   }
 
@@ -12498,43 +12552,43 @@ private:
   // inner implements
 
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y> size(size_type) {}
+  enable_if<Y> size(size_type) {}
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y> size_plus(size_type = 1) {}
+  enable_if<Y> size_plus(size_type = 1) {}
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y> size_minus(size_type = 1) {}
+  enable_if<Y> size_minus(size_type = 1) {}
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y> size_plus(const this_t &) {}
+  enable_if<Y> size_plus(const this_t &) {}
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y> size_minus(const this_t &) {}
+  enable_if<Y> size_minus(const this_t &) {}
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y, size_type>
+  enable_if<Y, size_type>
   size_minus(const_iterator, const_iterator) {
     return 0;
   }
 
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y> size(size_type n) {
+  enable_if<!Y> size(size_type n) {
     TRAITS::size(*this, n);
   }
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y> size_plus(size_type n = 1) {
+  enable_if<!Y> size_plus(size_type n = 1) {
     TRAITS::size(*this, TRAITS::size(*this) + n);
   }
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y> size_minus(size_type n = 1) {
+  enable_if<!Y> size_minus(size_type n = 1) {
     TRAITS::size(*this, TRAITS::size(*this) - n);
   }
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y> size_plus(const this_t &x) {
+  enable_if<!Y> size_plus(const this_t &x) {
     TRAITS::size(*this, TRAITS::size(*this) + TRAITS::size(x));
   }
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y> size_minus(const this_t &x) {
+  enable_if<!Y> size_minus(const this_t &x) {
     TRAITS::size(*this, TRAITS::size(*this) - TRAITS::size(x));
   }
   template <bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y, size_type>
+  enable_if<!Y, size_type>
   size_minus(const_iterator from, const_iterator to) {
     const size_type n = distance(from, to);
     size_minus(n);
@@ -12624,11 +12678,11 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -12705,7 +12759,7 @@ private:
   }
 
   template <class...S, bool Y = !TRAITS::store_size::value>
-  enable_if_t<Y> resize_impl(size_type n, const S &...s) {
+  enable_if<Y> resize_impl(size_type n, const S &...s) {
     const size_type sz = distance(begin(), end());
     if (n < sz) {
       auto last = --end();
@@ -12732,7 +12786,7 @@ private:
     }
   }
   template <class...S, bool Y = !TRAITS::store_size::value>
-  enable_if_t<!Y> resize_impl(size_type n, const S &...s) {
+  enable_if<!Y> resize_impl(size_type n, const S &...s) {
     if (n < size()) {
       auto last = --end();
       do {
@@ -12908,51 +12962,51 @@ private:
   }
 
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y> destruct_impl() {
+  enable_if<Y> destruct_impl() {
     delete_data();
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y> copy_construct_impl(const this_t &x) {
+  enable_if<Y> copy_construct_impl(const this_t &x) {
     new_data(x);
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y> copy_assign_impl(const this_t &x) {
+  enable_if<Y> copy_assign_impl(const this_t &x) {
     allocator_aware_container_ownership<this_t>::copy_assign(*this, x);
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y> move_construct_impl(this_t &x) {
+  enable_if<Y> move_construct_impl(this_t &x) {
     new_data(move(x));
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y> move_assign_impl(this_t &x) {
+  enable_if<Y> move_assign_impl(this_t &x) {
     allocator_aware_container_ownership<this_t>::move_assign(*this, x);
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y> swap_impl(this_t &x) {
+  enable_if<Y> swap_impl(this_t &x) {
     allocator_aware_container_ownership<this_t>::swap(*this, x);
   }
 
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y> destruct_impl() {}
+  enable_if<!Y> destruct_impl() {}
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y> copy_construct_impl(const this_t &x) {
+  enable_if<!Y> copy_construct_impl(const this_t &x) {
     static_assert(Y);
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y> copy_assign_impl(const this_t &x) {
+  enable_if<!Y> copy_assign_impl(const this_t &x) {
     static_assert(Y);
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y> move_construct_impl(this_t &x) {
+  enable_if<!Y> move_construct_impl(this_t &x) {
     new_data(move(x));
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y> move_assign_impl(this_t &x) {
+  enable_if<!Y> move_assign_impl(this_t &x) {
     if (this != addressof(x))
       new_data(move(x));
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y> swap_impl(this_t &x) noexcept {
+  enable_if<!Y> swap_impl(this_t &x) noexcept {
     swap_data(x);
   }
 
@@ -13065,13 +13119,13 @@ public:
     assign_range_impl(rng(n, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   list_adaptor(IITR from, IITR to,
                const alloc_t &al = alloc_t{}) : alloc_t(al) {
     new_data();
     insert_range_impl(end(), rng(from, to));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
@@ -13097,14 +13151,14 @@ public:
     return link(pos, new_node(x));
   }
   template <bool Y = TRAITS::store_node_allocator::value,
-            class = enable_if_t<Y>>
+            class = enable_if<Y>>
   iterator insert(const_iterator pos, value_type &&x) {
     return link(pos, new_node(move(x)));
   }
   iterator insert(const_iterator pos, size_type n, const value_type &x) {
     return insert_range_impl(pos.to_mutable(), rng(n, ref(x)));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos.to_mutable(), rng(from, to));
   }
@@ -13362,7 +13416,7 @@ public:
 
   template <class R>
   iterator replace(const_iterator i1, const_iterator i2, R &&r)
-    requires (!is_convertible_v<R &&, this_t &&>) {
+    requires (!is_convertible<R &&, this_t &&>) {
     return inner::fns::seq_container_replace_impl
       (*this, i1.to_mutable(), i2.to_mutable(), r);
   }
@@ -13445,28 +13499,31 @@ public:
 
   template <class R>
   list_adaptor(from_range_t, R &&r, const alloc_t &al = alloc_t{})
-    requires (is_rng<R> && is_constructible_v<value_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<value_type, rng_ref<R>>)
     : alloc_t(al) {
     new_data();
     insert_range_impl(end(), r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const alloc_t &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const alloc_t &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit list_adaptor(R &&r) : list_adaptor(r, alloc_t{}) {}
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   list_adaptor(R &&r, const alloc_t &al) : alloc_t(al) {
     new_data();
     insert_range_impl(end(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -13481,11 +13538,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos.to_mutable(), r);
   }
@@ -13495,10 +13552,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_back(IITR_RANGE &&r) {
     insert_range_impl(end(), r);
   }
@@ -13512,10 +13569,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_front(IITR_RANGE &&r) {
     insert_range_impl(begin(), r);
   }
@@ -13592,7 +13649,7 @@ public:
   queue(queue &&) = default;
   queue &operator =(queue &&) = default;
   friend void swap(queue &x, queue &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>) {
+    noexcept(is_nothrow_swappable<CONTAINER>) {
     adl_swap(x.c, y.c);
   }
 
@@ -13603,34 +13660,34 @@ public:
                                            const queue<A, B> &);
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit queue(const ALLOC &a) : c(a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   queue(const queue &x, const ALLOC &a) : c(x.c, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   queue(queue &&x, const ALLOC &a) : c(move(x.c), a) {}
 
   explicit queue(const CONTAINER &x) : c(x) {}
   explicit queue(CONTAINER &&x) : c(move(x)) {};
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   queue(const CONTAINER &x, const ALLOC &a) : c(x, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   queue(CONTAINER &&x, const ALLOC &a) : c(move(x), a) {};
 
   template <class IITR>
   queue(IITR first, IITR last) : c(first, last) {}
   template <class IITR, class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   queue(IITR first, IITR last, const ALLOC &a) : c(first, last, a) {}
 
   template <class R>
   queue(from_range_t, R &&r) : c(from_range, r) {};
   template <class R, class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   queue(from_range_t, R &&r, const ALLOC &a) : c(from_range, r, a) {};
 
   bool empty() const {
@@ -13657,8 +13714,9 @@ public:
   void push(value_type &&x) {
     c.push_back(move(x));
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   void push_range(R &&r) {
     c.append_range(r);
   }
@@ -13680,7 +13738,8 @@ synth_3way_result<A> operator <=>(const queue<A, B> &x,
   return lexicographical_synth_3way(x.base(), y.base());
 }
 template <class A, class B, class ALLOC>
-struct uses_allocator<queue<A, B>, ALLOC> : uses_allocator<B, ALLOC>::type {};
+struct template_uses_allocator<queue<A, B>, ALLOC>
+  : template_uses_allocator<B, ALLOC>::type {};
 
 }
 
@@ -13715,7 +13774,7 @@ public:
   stack(stack &&) = default;
   stack &operator =(stack &&) = default;
   friend void swap(stack &x, stack &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>) {
+    noexcept(is_nothrow_swappable<CONTAINER>) {
     adl_swap(x.c, y.c);
   }
 
@@ -13726,35 +13785,38 @@ public:
                                            const stack<A, B> &);
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit stack(const ALLOC &a) : c(a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   stack(const stack &x, const ALLOC &a) : c(x.c, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   stack(stack &&x, const ALLOC &a) : c(move(x.c), a) {}
 
   explicit stack(const CONTAINER &x) : c(x) {}
   explicit stack(CONTAINER &&x) : c(move(x)) {};
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   stack(const CONTAINER &x, const ALLOC &a) : c(x, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   stack(CONTAINER &&x, const ALLOC &a) : c(move(x), a) {};
 
-  template <class IITR, class = enable_if_t<is_iitr<IITR>>>
+  template <class IITR, class = enable_if<is_iitr<IITR>>>
   stack(IITR from, IITR to) : c(from, to) {}
-  template <class IITR, class ALLOC, class = enable_if_t
-            <is_iitr<IITR> && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class IITR, class ALLOC,
+            class = enable_if
+            <is_iitr<IITR> && uses_allocator<CONTAINER, ALLOC>>>
   stack(IITR from, IITR to, const ALLOC &a) : c(from, to, a) {}
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<T, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<T, rng_ref<R>>>>
   stack(from_range_t, R &&r) : c(from_range, r) {}
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<T, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R, class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<T, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   stack(from_range_t, R &&r, const ALLOC &a) : c(from_range, r, a) {}
 
   bool empty() const {
@@ -13775,8 +13837,9 @@ public:
   void push(value_type &&x) {
     c.push_back(move(x));
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   void push_range(R &&r) {
     c.append_range(r);
   }
@@ -13798,7 +13861,8 @@ synth_3way_result<A> operator <=>(const stack<A, B> &x,
   return lexicographical_synth_3way(x.base(), y.base());
 }
 template <class A, class B, class ALLOC>
-struct uses_allocator<stack<A, B>, ALLOC> : uses_allocator<B, ALLOC>::type {};
+struct template_uses_allocator<stack<A, B>, ALLOC>
+  : template_uses_allocator<B, ALLOC>::type {};
 
 }
 
@@ -13836,21 +13900,21 @@ public:
   priority_queue(priority_queue &&) = default;
   priority_queue &operator =(priority_queue &&) = default;
   friend void swap(priority_queue &x, priority_queue &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>
-             && is_nothrow_swappable_v<COMPARE>) {
+    noexcept(is_nothrow_swappable<CONTAINER>
+             && is_nothrow_swappable<COMPARE>) {
     adl_swap(x.c, y.c);
     adl_swap(x.comp, y.comp);
   }
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit priority_queue(const ALLOC &a) : c(a), comp() {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(const priority_queue &x, const ALLOC &a)
     : c(x.c, a), comp(x.comp) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(priority_queue &&x, const ALLOC &a)
     : c(move(x.c), a), comp(move(x.comp)) {}
 
@@ -13865,37 +13929,37 @@ public:
     make_heap(c, comp);
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(const COMPARE &cmp, const ALLOC &a) : c(a), comp(cmp) {
     make_heap(c, ref(comp));
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(const COMPARE &cmp, const CONTAINER &x, const ALLOC &a)
     : c(x, a), comp(cmp) {
     make_heap(c, ref(comp));
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(const COMPARE &cmp, CONTAINER &&x, const ALLOC &a)
     : c(move(x), a), comp(cmp) {
     make_heap(c, ref(comp));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   priority_queue(IITR first, IITR last, const COMPARE &cmp = COMPARE{})
     : c(), comp(cmp) {
     c.insert(c.end(), first, last);
     make_heap(c, comp);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   priority_queue(IITR first, IITR last,
                  const COMPARE &cmp, const CONTAINER &x)
     : c(x), comp(cmp) {
     c.insert(c.end(), first, last);
     make_heap(c, comp);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   priority_queue(IITR first, IITR last,
                  const COMPARE &cmp, CONTAINER &&x)
     : c(move(x)), comp(cmp) {
@@ -13903,24 +13967,24 @@ public:
     make_heap(c, comp);
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t
-            <is_itr<IITR> && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if
+            <is_itr<IITR> && uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(IITR first, IITR last, const ALLOC &a)
     : c(a), comp() {
     c.insert(c.end(), first, last);
     make_heap(c, comp);
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t
-            <is_itr<IITR> && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if
+            <is_itr<IITR> && uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(IITR first, IITR last, const COMPARE &cmp, const ALLOC &a)
     : c(a), comp(cmp) {
     c.insert(c.end(), first, last);
     make_heap(c, comp);
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t
-            <is_itr<IITR> && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if
+            <is_itr<IITR> && uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(IITR first, IITR last,
                  const COMPARE &cmp, const CONTAINER &x,
                  const ALLOC &a)
@@ -13929,8 +13993,8 @@ public:
     make_heap(c, comp);
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t
-            <is_itr<IITR> && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if
+            <is_itr<IITR> && uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(IITR first, IITR last,
                  const COMPARE &cmp, CONTAINER &&x,
                  const ALLOC &a)
@@ -13941,21 +14005,21 @@ public:
 
   template <class R>
   priority_queue(from_range_t, R &&r, const COMPARE &cmp = COMPARE{})
-    requires (is_rng<R> && is_constructible_v<T, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<T, rng_ref<R>>)
     : c(from_range, r), comp(cmp) {
     make_heap(c, comp);
   }
   template <class R, class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(from_range_t, R &&r, const ALLOC &a)
-    requires (is_rng<R> && is_constructible_v<T, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<T, rng_ref<R>>)
     : c(from_range, r, a), comp() {
     make_heap(c, comp);
   }
   template <class R, class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   priority_queue(from_range_t, R &&r, const COMPARE &cmp, const ALLOC &a)
-    requires (is_rng<R> && is_constructible_v<T, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<T, rng_ref<R>>)
     : c(from_range, r, a), comp(cmp) {
     make_heap(c, comp);
   }
@@ -13977,8 +14041,9 @@ public:
     c.push_back(move(x));
     push_heap(c, ref(comp));
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   void push_range(R &&r) {
     for (auto &it : iters(r))
       push(*it);
@@ -13994,8 +14059,8 @@ public:
   }
 };
 template <class A, class B, class C, class D>
-struct uses_allocator<priority_queue<A, B, C>, D>
-  : uses_allocator<B, D>::type {};
+struct template_uses_allocator<priority_queue<A, B, C>, D>
+  : template_uses_allocator<B, D>::type {};
 
 }
 
@@ -14109,8 +14174,8 @@ public:
   flat_set(flat_set &&) = default;
   flat_set &operator =(flat_set &&) = default;
   friend void swap(flat_set &x, flat_set &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<CONTAINER>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.c, y.c);
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -14149,14 +14214,14 @@ public:
   }
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit flat_set(const ALLOC &a) : c(a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_set(const flat_set &x, const ALLOC &a)
     : less_wrapper(x.less_ref()), c(x.c, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_set(flat_set &&x, const ALLOC &a)
     : less_wrapper(move(x.less_ref())), c(move(x.c), a) {}
 
@@ -14174,29 +14239,29 @@ public:
 
   explicit flat_set(const LESS &l) : less_wrapper(l) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_set(const LESS &l, const ALLOC &a) : less_wrapper(l), c(a) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   flat_set(IITR first, IITR last, const LESS &l = LESS{})
     : less_wrapper(l), c(first, last) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<(is_itr<IITR>
+                               && uses_allocator<CONTAINER, ALLOC>)>>
   flat_set(IITR first, IITR last, const ALLOC &a) : c(first, last, a) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<(is_itr<IITR>
+                               && uses_allocator<CONTAINER, ALLOC>)>>
   flat_set(IITR first, IITR last, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(first, last, a) {
     sort_c();
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     c.assign(from, to);
     sort_c();
   }
@@ -14206,13 +14271,13 @@ public:
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_set(initializer_list<value_type> il, const ALLOC &alloc)
     : c(il, alloc) {
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_set(initializer_list<value_type> il,
            const LESS &l, const ALLOC &alloc)
     : less_wrapper(l), c(il, alloc) {
@@ -14287,7 +14352,7 @@ public:
     return insert_impl(move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   pair<iterator, bool> insert(K &&k) {
     return insert_impl(forward<K>(k));
   }
@@ -14298,7 +14363,7 @@ public:
     return insert_impl(hint, move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   iterator insert(const_iterator hint, K &&k) {
     return insert_impl(hint, forward<K>(k));
   }
@@ -14328,8 +14393,8 @@ public:
     return 0;
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     if (const auto i = find(key); i != end()) {
       c.erase(i);
@@ -14486,7 +14551,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
+  void merge(RANGE &&r) requires (!is_convertible<RANGE &&, this_t &&>) {
     c.insert_range(c.end(), r);
     sort_c();
   }
@@ -14529,68 +14594,75 @@ private:
 #endif
   }
 public:
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   flat_set(from_range_t, R &&r, const LESS &l = LESS{})
     : less_wrapper(l), c(from_range, r) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R, class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_set(from_range_t, R &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(from_range, r, a) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R, class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_set(from_range_t, R &&r, const ALLOC &a) : c(from_range, r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !uses_allocator_v<CONTAINER, IITR_RANGE &&>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !uses_allocator<CONTAINER, IITR_RANGE &&>)>>
   explicit flat_set(IITR_RANGE &&r) : c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_set(IITR_RANGE &&r, const LESS &l)
     : less_wrapper(l), c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE, class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_set(IITR_RANGE &&r, const ALLOC &a) : c(r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE, const LESS &>>>
+  template <class IITR_RANGE, class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE, const LESS &>)>>
   flat_set(IITR_RANGE &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(r, a) {
     sort_c();
   }
   template <class IITR_RANGE>
-  enable_if_t<is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>
-              && !is_same_v<decay_t<IITR_RANGE>, this_t>,
-              this_t &>
+  enable_if<(is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>
+             && !is_same<decay<IITR_RANGE>, this_t>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -14606,10 +14678,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<(!is_transparent_function_v<LESS>
-               && !is_convertible_v<IITR_RANGE &&, value_type &&>
-               && !is_convertible_v<IITR_RANGE &&, const value_type &>)
-              || !is_constructible_v<value_type, IITR_RANGE &&>>
+  enable_if<((!is_transparent_function<LESS>
+              && !is_convertible<IITR_RANGE &&, value_type &&>
+              && !is_convertible<IITR_RANGE &&, const value_type &>)
+             || !is_constructible<value_type, IITR_RANGE &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -14746,8 +14818,8 @@ public:
   flat_multiset(flat_multiset &&) = default;
   flat_multiset &operator =(flat_multiset &&) = default;
   friend void swap(flat_multiset &x, flat_multiset &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<CONTAINER>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.c, y.c);
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -14786,14 +14858,14 @@ public:
   }
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit flat_multiset(const ALLOC &a) : c(a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multiset(const flat_multiset &x, const ALLOC &a)
     : less_wrapper(x.less_ref()), c(x.c, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multiset(flat_multiset &&x, const ALLOC &a)
     : less_wrapper(move(x.less_ref())), c(move(x.c), a) {}
 
@@ -14811,30 +14883,30 @@ public:
 
   explicit flat_multiset(const LESS &l) : less_wrapper(l) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multiset(const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(a) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   flat_multiset(IITR first, IITR last, const LESS &l = LESS{})
     : less_wrapper(l), c(first, last) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<is_itr<IITR>
+                              && uses_allocator<CONTAINER, ALLOC>>>
   flat_multiset(IITR first, IITR last, const ALLOC &a) : c(first, last, a) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<(is_itr<IITR>
+                               && uses_allocator<CONTAINER, ALLOC>)>>
   flat_multiset(IITR first, IITR last, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(first, last, a) {
     sort_c();
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     c.assign(from, to);
     sort_c();
   }
@@ -14844,13 +14916,13 @@ public:
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multiset(initializer_list<value_type> il, const ALLOC &alloc)
     : c(il, alloc) {
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multiset(initializer_list<value_type> il,
                 const LESS &l, const ALLOC &alloc)
     : less_wrapper(l), c(il, alloc) {
@@ -14917,7 +14989,7 @@ public:
     return insert_impl(move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   iterator insert(K &&k) {
     return insert_impl(forward<K>(k));
   }
@@ -14928,7 +15000,7 @@ public:
     return insert_impl(hint, move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   iterator insert(const_iterator hint, K &&k) {
     return insert_impl(hint, forward<K>(k));
   }
@@ -14957,8 +15029,8 @@ public:
     return ret;
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     const auto r = equal_range(key);
     const size_type ret = size(r);
@@ -15113,7 +15185,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
+  void merge(RANGE &&r) requires (!is_convertible<RANGE &&, this_t &&>) {
     this_t tmp(move(*this));
     clear();
     re::merge(move_rng(tmp), r, back_inserter(c), less_fn());
@@ -15158,68 +15230,76 @@ private:
 #endif
   }
 public:
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   flat_multiset(from_range_t, R &&r, const LESS &l = LESS{})
     : less_wrapper(l), c(from_range, r) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R, class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_multiset(from_range_t, R &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(from_range, r, a) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R, class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_multiset(from_range_t, R &&r, const ALLOC &a) : c(from_range, r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !uses_allocator_v<CONTAINER, IITR_RANGE &&>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !uses_allocator<CONTAINER, IITR_RANGE &&>)>>
   explicit flat_multiset(IITR_RANGE &&r) : c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE, const LESS &>)>>
   flat_multiset(IITR_RANGE &&r, const LESS &l)
     : less_wrapper(l), c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE, class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_multiset(IITR_RANGE &&r, const ALLOC &a) : c(r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_multiset(IITR_RANGE &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(r, a) {
     sort_c();
   }
   template <class IITR_RANGE>
-  enable_if_t<is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>
-              && !is_same_v<decay_t<IITR_RANGE>, this_t>,
-              this_t &>
+  enable_if<(is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>
+             && !is_same<decay<IITR_RANGE>, this_t>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -15235,10 +15315,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<(!is_transparent_function_v<LESS>
-               && !is_convertible_v<IITR_RANGE &&, value_type &&>
-               && !is_convertible_v<IITR_RANGE &&, const value_type &>)
-              || !is_constructible_v<value_type, IITR_RANGE &&>>
+  enable_if<((!is_transparent_function<LESS>
+              && !is_convertible<IITR_RANGE &&, value_type &&>
+              && !is_convertible<IITR_RANGE &&, const value_type &>)
+             || !is_constructible<value_type, IITR_RANGE &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -15386,8 +15466,8 @@ public:
   flat_map(flat_map &&) = default;
   flat_map &operator =(flat_map &&) = default;
   friend void swap(flat_map &x, flat_map &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<CONTAINER>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.c, y.c);
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -15426,14 +15506,14 @@ public:
   }
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit flat_map(const ALLOC &a) : c(a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_map(const flat_map &x, const ALLOC &a)
     : less_wrapper(x.less_ref()), c(x.c, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_map(flat_map &&x, const ALLOC &a)
     : less_wrapper(move(x.less_ref())), c(move(x.c), a) {}
 
@@ -15456,7 +15536,7 @@ public:
     value_compare(value_compare &&) = default;
     value_compare &operator =(value_compare &&) = default;
     friend void swap(value_compare &x, value_compare &y)
-      noexcept(is_nothrow_swappable_v<LESS>) {
+      noexcept(is_nothrow_swappable<LESS>) {
       adl_swap(x.l, y.l);
     }
 
@@ -15473,29 +15553,29 @@ public:
 
   explicit flat_map(const LESS &l) : less_wrapper(l) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_map(const LESS &l, const ALLOC &a) : less_wrapper(l), c(a) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   flat_map(IITR first, IITR last, const LESS &l = LESS{})
     : less_wrapper(l), c(first, last) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<(is_itr<IITR>
+                               && uses_allocator<CONTAINER, ALLOC>)>>
   flat_map(IITR first, IITR last, const ALLOC &a) : c(first, last, a) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<(is_itr<IITR>
+                               && uses_allocator<CONTAINER, ALLOC>)>>
   flat_map(IITR first, IITR last, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(first, last, a) {
     sort_c();
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     c.assign(from, to);
     sort_c();
   }
@@ -15505,13 +15585,13 @@ public:
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_map(initializer_list<value_type> il, const ALLOC &alloc)
     : c(il, alloc) {
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_map(initializer_list<value_type> il, const LESS &l, const ALLOC &alloc)
     : less_wrapper(l), c(il, alloc) {
     sort_c();
@@ -15656,8 +15736,8 @@ public:
   }
   template <class K, class...S,
             class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, const_iterator>
-                                && !is_convertible_v<K &&, iterator>>>
+            class = enable_if<(!is_convertible<K &&, const_iterator>
+                               && !is_convertible<K &&, iterator>)>>
   pair<iterator, bool> try_emplace(K &&key, S &&...s) {
     return try_emplace_impl(empty_function{}, forward<K>(key),
                             forward<S>(s)...);
@@ -15771,8 +15851,8 @@ public:
     return 0;
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     if (const auto i = find(key); i != end()) {
       c.erase(i);
@@ -15933,7 +16013,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
+  void merge(RANGE &&r) requires (!is_convertible<RANGE &&, this_t &&>) {
     c.insert_range(c.end(), r);
     sort_c();
   }
@@ -15976,68 +16056,79 @@ private:
 #endif
   }
 public:
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   flat_map(from_range_t, R &&r, const LESS &l = LESS{})
     : less_wrapper(l), c(from_range, r) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R,
+            class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_map(from_range_t, R &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(from_range, r, a) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R,
+            class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_map(from_range_t, R &&r, const ALLOC &a) : c(from_range, r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !uses_allocator_v<CONTAINER, IITR_RANGE &&>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !uses_allocator<CONTAINER, IITR_RANGE &&>)>>
   explicit flat_map(IITR_RANGE &&r) : c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_map(IITR_RANGE &&r, const LESS &l)
     : less_wrapper(l), c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_map(IITR_RANGE &&r, const ALLOC &a) : c(r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_map(IITR_RANGE &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(r, a) {
     sort_c();
   }
   template <class IITR_RANGE>
-  enable_if_t<is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>
-              && !is_same_v<decay_t<IITR_RANGE>, this_t>,
-              this_t &>
+  enable_if<(is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>
+             && !is_same<decay<IITR_RANGE>, this_t>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -16053,8 +16144,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -16202,8 +16293,8 @@ public:
   flat_multimap(flat_multimap &&) = default;
   flat_multimap &operator =(flat_multimap &&) = default;
   friend void swap(flat_multimap &x, flat_multimap &y)
-    noexcept(is_nothrow_swappable_v<CONTAINER>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<CONTAINER>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.c, y.c);
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -16242,14 +16333,14 @@ public:
   }
 
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   explicit flat_multimap(const ALLOC &a) : c(a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multimap(const flat_multimap &x, const ALLOC &a)
     : less_wrapper(x.less_ref()), c(x.c, a) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multimap(flat_multimap &&x, const ALLOC &a)
     : less_wrapper(move(x.less_ref())), c(move(x.c), a) {}
 
@@ -16272,7 +16363,7 @@ public:
     value_compare(value_compare &&) = default;
     value_compare &operator =(value_compare &&) = default;
     friend void swap(value_compare &x, value_compare &y)
-      noexcept(is_nothrow_swappable_v<LESS>) {
+      noexcept(is_nothrow_swappable<LESS>) {
       adl_swap(x.l, y.l);
     }
 
@@ -16289,31 +16380,31 @@ public:
 
   explicit flat_multimap(const LESS &l) : less_wrapper(l) {}
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multimap(const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(a) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   flat_multimap(IITR first, IITR last, const LESS &l = LESS{})
     : less_wrapper(l), c(first, last) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<is_itr<IITR>
+                              && uses_allocator<CONTAINER, ALLOC>>>
   flat_multimap(IITR first, IITR last, const ALLOC &a) : c(first, last, a) {
     sort_c();
   }
   template <class IITR, class ALLOC,
-            class = enable_if_t<is_itr<IITR>
-                                && uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<(is_itr<IITR>
+                               && uses_allocator<CONTAINER, ALLOC>)>>
   flat_multimap(IITR first, IITR last,
                 const LESS &l = LESS{}, const ALLOC &a = ALLOC())
     : less_wrapper(l), c(first, last, a) {
     sort_c();
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     c.assign(from, to);
     sort_c();
   }
@@ -16323,13 +16414,13 @@ public:
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multimap(initializer_list<value_type> il, const ALLOC &alloc)
     : c(il, alloc) {
     sort_c();
   }
   template <class ALLOC,
-            class = enable_if_t<uses_allocator_v<CONTAINER, ALLOC>>>
+            class = enable_if<uses_allocator<CONTAINER, ALLOC>>>
   flat_multimap(initializer_list<value_type> il,
                 const LESS &l, const ALLOC &alloc)
     : less_wrapper(l), c(il, alloc) {
@@ -16424,8 +16515,8 @@ public:
     return ret;
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     const auto r = equal_range(key);
     const size_type ret = size(r);
@@ -16584,7 +16675,7 @@ public:
   }
 
   template <class RANGE>
-  void merge(RANGE &&r) requires (!is_convertible_v<RANGE &&, this_t &&>) {
+  void merge(RANGE &&r) requires (!is_convertible<RANGE &&, this_t &&>) {
     this_t tmp(move(*this));
     clear();
     re::merge(move_rng(tmp), r, back_inserter(c),
@@ -16632,69 +16723,80 @@ private:
 #endif
   }
 public:
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   flat_multimap(from_range_t, R &&r, const LESS &l = LESS{})
     : less_wrapper(l), c(from_range, r) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R,
+            class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_multimap(from_range_t, R &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(from_range, r, a) {
     sort_c();
   }
-  template <class R, class ALLOC, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-             && uses_allocator_v<CONTAINER, ALLOC>>>
+  template <class R,
+            class ALLOC,
+            class = enable_if
+            <(is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && uses_allocator<CONTAINER, ALLOC>)>>
   flat_multimap(from_range_t, R &&r, const ALLOC &a)
     : c(from_range, r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !uses_allocator_v<CONTAINER, IITR_RANGE &&>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !uses_allocator<CONTAINER, IITR_RANGE &&>)>>
   explicit flat_multimap(IITR_RANGE &&r) : c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_multimap(IITR_RANGE &&r, const LESS &l)
     : less_wrapper(l), c(r) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_multimap(IITR_RANGE &&r, const ALLOC &a) : c(r, a) {
     sort_c();
   }
-  template <class IITR_RANGE, class ALLOC, class = enable_if_t
-            <((is_rng<IITR_RANGE>
-               && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-               && uses_allocator_v<CONTAINER, ALLOC>))
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class ALLOC,
+            class = enable_if
+            <(((is_rng<IITR_RANGE>
+                && is_constructible<value_type, rng_ref<IITR_RANGE>>
+                && uses_allocator<CONTAINER, ALLOC>))
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   flat_multimap(IITR_RANGE &&r, const LESS &l, const ALLOC &a)
     : less_wrapper(l), c(r, a) {
     sort_c();
   }
   template <class IITR_RANGE>
-  enable_if_t<is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>
-              && !is_same_v<decay_t<IITR_RANGE>, this_t>,
-              this_t &>
+  enable_if<(is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>
+             && !is_same<decay<IITR_RANGE>, this_t>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -16710,8 +16812,8 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -16775,9 +16877,9 @@ namespace re {
 
 template <size_t ID = 0, class VOID_PTR = void *>
 struct rbt_node_base {
-  pointer_rebind_t<VOID_PTR, rbt_node_base> left_child;
-  pointer_rebind_t<VOID_PTR, rbt_node_base> right_child;
-  pointer_rebind_t<VOID_PTR, rbt_node_base> parent;
+  ptr_rebind<VOID_PTR, rbt_node_base> left_child;
+  ptr_rebind<VOID_PTR, rbt_node_base> right_child;
+  ptr_rebind<VOID_PTR, rbt_node_base> parent;
 };
 template <size_t ID = 0, class VOID_PTR = void *>
 struct join_rbtree : rbt_node_base<ID, VOID_PTR> {
@@ -16855,13 +16957,13 @@ struct rbtree_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>
       (addressof(static_cast<node_type &>(*p).data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
@@ -16872,34 +16974,34 @@ struct rbtree_traits {
     return pointer_to<node_base_pointer>(static_cast<node_base_type &>(h.ed));
   }
   template <bool Y = store_size::value>
-  static enable_if_t<Y, size_type> size(const header_type &h) {
+  static enable_if<Y, size_type> size(const header_type &h) {
     return h.sz;
   }
   template <bool Y = store_size::value>
-  static enable_if_t<Y> size(header_type &h, size_type n) {
+  static enable_if<Y> size(header_type &h, size_type n) {
     h.sz = n;
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -16914,7 +17016,7 @@ namespace inner {
 struct bst_helper;
 template <class T, class TRAITS>
 class bst_iterator {
-  static_assert(is_same_v<remove_const_t<T>, typename TRAITS::value_type>);
+  static_assert(is_same<remove_const<T>, typename TRAITS::value_type>);
 
   using this_t = bst_iterator;
 
@@ -16927,7 +17029,7 @@ private:
   node_pointer p{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = T *;
   using reference = T &;
   using difference_type = typename TRAITS::difference_type;
@@ -16942,10 +17044,12 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  bst_iterator(bst_iterator<remove_const_t<TT>, TRAITS> it) : p(it.p) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(bst_iterator<remove_const_t<TT>, TRAITS> it) {
+  template <class TT = T,
+            class = enable_if<is_const<TT>>>
+  bst_iterator(bst_iterator<remove_const<TT>, TRAITS> it) : p(it.p) {}
+  template <class TT = T,
+            class = enable_if<is_const<TT>>>
+  this_t &operator =(bst_iterator<remove_const<TT>, TRAITS> it) {
     p = it.p;
     return *this;
   }
@@ -16954,8 +17058,8 @@ public:
   node_pointer node() const {
     return p;
   }
-  auto to_mutable() const requires is_const_v<T> {
-    return bst_iterator<remove_const_t<T>, TRAITS>(p);
+  auto to_mutable() const requires is_const<T> {
+    return bst_iterator<remove_const<T>, TRAITS>(p);
   }
 
 private:
@@ -16968,19 +17072,19 @@ private:
   this_t left_child() const {
     return this_t(TRAITS::left_child(p));
   }
-  void left_child(bst_iterator<add_const_t<T>, TRAITS> p2) const {
+  void left_child(bst_iterator<add_const<T>, TRAITS> p2) const {
     TRAITS::left_child(p, p2.node());
   }
   this_t right_child() const {
     return this_t(TRAITS::right_child(p));
   }
-  void right_child(bst_iterator<add_const_t<T>, TRAITS> p2) const {
+  void right_child(bst_iterator<add_const<T>, TRAITS> p2) const {
     TRAITS::right_child(p, p2.node());
   }
   this_t parent() const {
     return this_t(TRAITS::parent(p));
   }
-  void parent(bst_iterator<add_const_t<T>, TRAITS> p2) const {
+  void parent(bst_iterator<add_const<T>, TRAITS> p2) const {
     TRAITS::parent(p, p2.node());
   }
   bool red() const {
@@ -17150,7 +17254,8 @@ public:
   }
 };
 template <class A, class AA, class B>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>, bool>
+enable_if<is_same<remove_const<A>, remove_const<AA>>,
+          bool>
 operator ==(bst_iterator<A, B> x, bst_iterator<AA, B> y) {
   return x.node() == y.node();
 }
@@ -17172,7 +17277,7 @@ public:
   set_node_handle(set_node_handle &&) noexcept = default;
   set_node_handle &operator =(set_node_handle &&) = default;
   friend void swap(set_node_handle &x, set_node_handle &y)
-    noexcept(is_nothrow_swappable_v<base_t>) {
+    noexcept(is_nothrow_swappable<base_t>) {
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
@@ -17206,7 +17311,7 @@ public:
   map_node_handle(map_node_handle &&) noexcept = default;
   map_node_handle &operator =(map_node_handle &&) = default;
   friend void swap(map_node_handle &x, map_node_handle &y)
-    noexcept(is_nothrow_swappable_v<base_t>) {
+    noexcept(is_nothrow_swappable<base_t>) {
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
@@ -17340,8 +17445,9 @@ struct bst_helper {
 template <class TRAITS>
 class rbtree_adaptor
   : TRAITS::header_type
-  , conditional_t<!TRAITS::store_node_allocator::value,
-                  inner::empty_type, typename TRAITS::allocator_type> {
+  , conditional<!TRAITS::store_node_allocator::value,
+                inner::empty_type,
+                typename TRAITS::allocator_type> {
   using this_t = rbtree_adaptor;
 
   using data_t = typename TRAITS::header_type;
@@ -17352,9 +17458,9 @@ class rbtree_adaptor
     return static_cast<const data_t &>(*this);
   }
 
-  using alloc_t = conditional_t<!TRAITS::store_node_allocator::value,
-                                inner::empty_type,
-                                typename TRAITS::allocator_type>;
+  using alloc_t = conditional<!TRAITS::store_node_allocator::value,
+                              inner::empty_type,
+                              typename TRAITS::allocator_type>;
 
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
@@ -17408,7 +17514,7 @@ public:
     return container_regular_max_size<this_t>();
   }
   template <bool Y = traits::store_size::value>
-  enable_if_t<Y, size_type> size() const noexcept {
+  enable_if<Y, size_type> size() const noexcept {
     return traits::size(data_ref());
   }
   bool empty() const noexcept {
@@ -17452,18 +17558,18 @@ private:
   }
 
   template <bool Y = traits::store_size::value>
-  enable_if_t<Y> set_size(size_type n) noexcept {
+  enable_if<Y> set_size(size_type n) noexcept {
     traits::size(data_ref(), n);
   }
   template <bool Y = traits::store_size::value>
-  enable_if_t<Y, size_type> get_size() const noexcept {
+  enable_if<Y, size_type> get_size() const noexcept {
     return traits::size(data_ref());
   }
 
   template <bool Y = traits::store_size::value>
-  enable_if_t<!Y> set_size(size_type) noexcept {}
+  enable_if<!Y> set_size(size_type) noexcept {}
   template <bool Y = traits::store_size::value>
-  enable_if_t<!Y, size_type> get_size() const noexcept {
+  enable_if<!Y, size_type> get_size() const noexcept {
     return 0;
   }
 
@@ -18079,9 +18185,9 @@ public:
     return link(i, new_node(move(x)));
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range(pos, r);
   }
@@ -18243,8 +18349,8 @@ public:
                   empty_function{});
   }
   template <class GET_KEY, class KEY_LESS, class...S>
-  enable_if_t<!is_convertible_v<GET_KEY &&, const_iterator>,
-              pair<iterator, bool>>
+  enable_if<!is_convertible<GET_KEY &&, const_iterator>,
+            pair<iterator, bool>>
   emplace(GET_KEY &&get_key, KEY_LESS key_less, S &&...s) {
     const auto it = new_node(forward<S>(s)...);
 #ifndef RE_NOEXCEPT
@@ -18344,10 +18450,10 @@ public:
   }
   template <class ITERATOR, class GET_KEY, class KEY_LESS, class NODE_HANDLE>
   inner::node_handle_insert_return_type
-  <ITERATOR, remove_reference_t<NODE_HANDLE>>
+  <ITERATOR, remove_reference<NODE_HANDLE>>
   insert_node_handle(GET_KEY get_key, KEY_LESS key_less, NODE_HANDLE &&nh) {
     inner::node_handle_insert_return_type
-      <ITERATOR, remove_reference_t<NODE_HANDLE>> ret;
+      <ITERATOR, remove_reference<NODE_HANDLE>> ret;
     if (nh.empty()) {
       ret.position = end();
       ret.inserted = false;
@@ -18564,9 +18670,9 @@ namespace re {
   
 template <size_t ID = 0, class VOID_PTR = void *>
 struct avlt_node_base {
-  pointer_rebind_t<VOID_PTR, avlt_node_base> left_child;
-  pointer_rebind_t<VOID_PTR, avlt_node_base> right_child;
-  pointer_rebind_t<VOID_PTR, avlt_node_base> parent;
+  ptr_rebind<VOID_PTR, avlt_node_base> left_child;
+  ptr_rebind<VOID_PTR, avlt_node_base> right_child;
+  ptr_rebind<VOID_PTR, avlt_node_base> parent;
 };
 template <size_t ID = 0, class VOID_PTR = void *>
 struct join_avltree : public avlt_node_base<ID, VOID_PTR> {
@@ -18647,13 +18753,13 @@ struct avltree_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>
       (addressof(static_cast<node_type &>(*p).data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
@@ -18665,34 +18771,38 @@ struct avltree_traits {
       ::pointer_to(static_cast<node_base_type &>(h.ed));
   }
   template <bool Y = store_size::value>
-  static enable_if_t<Y, size_type> size(const header_type &h) {
+  static enable_if<Y, size_type> size(const header_type &h) {
     return h.sz;
   }
   template <bool Y = store_size::value>
-  static enable_if_t<Y> size(header_type &h, size_type n) {
+  static enable_if<Y> size(header_type &h, size_type n) {
     h.sz = n;
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static
+  enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static
+  enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static
+  enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static
+  enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -18701,8 +18811,9 @@ struct avltree_traits {
 template <class TRAITS>
 class avltree_adaptor
   : TRAITS::header_type
-  , conditional_t<!TRAITS::store_node_allocator::value,
-                  inner::empty_type, typename TRAITS::allocator_type> {
+  , conditional<!TRAITS::store_node_allocator::value,
+                inner::empty_type,
+                typename TRAITS::allocator_type> {
   using this_t = avltree_adaptor;
 
   using data_t = typename TRAITS::header_type;
@@ -18713,9 +18824,9 @@ class avltree_adaptor
     return static_cast<const data_t &>(*this);
   }
 
-  using alloc_t = conditional_t<!TRAITS::store_node_allocator::value,
-                                inner::empty_type,
-                                typename TRAITS::allocator_type>;
+  using alloc_t = conditional<!TRAITS::store_node_allocator::value,
+                              inner::empty_type,
+                              typename TRAITS::allocator_type>;
 
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
@@ -18769,7 +18880,7 @@ public:
     return container_regular_max_size<this_t>();
   }
   template <bool Y = traits::store_size::value>
-  enable_if_t<Y, size_type> size() const noexcept {
+  enable_if<Y, size_type> size() const noexcept {
     return traits::size(data_ref());
   }
   bool empty() const noexcept {
@@ -18814,17 +18925,17 @@ private:
   }
 
   template <bool Y = traits::store_size::value>
-  enable_if_t<Y> set_size(size_type n) noexcept {
+  enable_if<Y> set_size(size_type n) noexcept {
     traits::size(data_ref(), n);
   }
   template <bool Y = traits::store_size::value>
-  enable_if_t<Y, size_type> get_size() const noexcept {
+  enable_if<Y, size_type> get_size() const noexcept {
     return traits::size(data_ref());
   }
   template <bool Y = traits::store_size::value>
-  enable_if_t<!Y> set_size(size_type) noexcept {}
+  enable_if<!Y> set_size(size_type) noexcept {}
   template <bool Y = traits::store_size::value>
-  enable_if_t<!Y, size_type> get_size() const noexcept {
+  enable_if<!Y, size_type> get_size() const noexcept {
     return 0;
   }
 
@@ -19423,9 +19534,9 @@ public:
     return link(i, new_node(move(x)));
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range(pos, r);
   }
@@ -19587,8 +19698,8 @@ public:
                   empty_function{});
   }
   template <class GET_KEY, class KEY_LESS, class...S>
-  enable_if_t<!is_convertible_v<GET_KEY &&, const_iterator>,
-              pair<iterator, bool>>
+  enable_if<!is_convertible<GET_KEY &&, const_iterator>,
+            pair<iterator, bool>>
   emplace(GET_KEY &&get_key, KEY_LESS key_less, S &&...s) {
     const auto it = new_node(forward<S>(s)...);
 #ifndef RE_NOEXCEPT
@@ -19688,10 +19799,10 @@ public:
   }
   template <class ITERATOR, class GET_KEY, class KEY_LESS, class NODE_HANDLE>
   inner::node_handle_insert_return_type
-  <ITERATOR, remove_reference_t<NODE_HANDLE>>
+  <ITERATOR, remove_reference<NODE_HANDLE>>
   insert_node_handle(GET_KEY get_key, KEY_LESS key_less, NODE_HANDLE &&nh) {
     inner::node_handle_insert_return_type
-      <ITERATOR, remove_reference_t<NODE_HANDLE>> ret;
+      <ITERATOR, remove_reference<NODE_HANDLE>> ret;
     if (nh.empty()) {
       ret.position = end();
       ret.inserted = false;
@@ -19897,9 +20008,9 @@ namespace re {
 
 template <size_t ID = 0, class VOID_PTR = void *>
 struct rrbt_node_base {
-  pointer_rebind_t<VOID_PTR, rrbt_node_base> left_child;
-  pointer_rebind_t<VOID_PTR, rrbt_node_base> right_child;
-  pointer_rebind_t<VOID_PTR, rrbt_node_base> parent;
+  ptr_rebind<VOID_PTR, rrbt_node_base> left_child;
+  ptr_rebind<VOID_PTR, rrbt_node_base> right_child;
+  ptr_rebind<VOID_PTR, rrbt_node_base> parent;
 };
 template <size_t ID = 0, class VOID_PTR = void *>
 struct join_ranked_rbtree : public rrbt_node_base<ID, VOID_PTR> {
@@ -19970,13 +20081,13 @@ struct ranked_rbtree_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>(addressof
                                           (static_cast<node_type &>(*p).data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
@@ -19989,25 +20100,25 @@ struct ranked_rbtree_traits {
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -20019,7 +20130,7 @@ namespace inner {
 
 template <class T, class TRAITS, bool PROMOTED = false>
 class rrbt_iterator {
-  static_assert(is_same_v<remove_const_t<T>, typename TRAITS::value_type>);
+  static_assert(is_same<remove_const<T>, typename TRAITS::value_type>);
 
   using this_t = rrbt_iterator;
 
@@ -20033,11 +20144,11 @@ class rrbt_iterator {
   node_pointer p{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = T *;
   using reference = T &;
   using difference_type = typename TRAITS::difference_type;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <PROMOTED, random_access_iterator_tag, bidirectional_iterator_tag>;
 
   rrbt_iterator() = default;
@@ -20049,12 +20160,12 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  rrbt_iterator(rrbt_iterator<remove_const_t<TT>, TRAITS, PROMOTED> it)
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  rrbt_iterator(rrbt_iterator<remove_const<TT>, TRAITS, PROMOTED> it)
     : p(it.p) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
+  template <class TT = T, class = enable_if<is_const<TT>>>
   this_t &operator =(rrbt_iterator
-                     <remove_const_t<TT>, TRAITS, PROMOTED> it) {
+                     <remove_const<TT>, TRAITS, PROMOTED> it) {
     p = it.p;
     return *this;
   }
@@ -20063,8 +20174,8 @@ public:
   node_pointer node() const {
     return p;
   }
-  auto to_mutable() const requires is_const_v<T> {
-    return rrbt_iterator<remove_const_t<T>, TRAITS, PROMOTED>(p);
+  auto to_mutable() const requires is_const<T> {
+    return rrbt_iterator<remove_const<T>, TRAITS, PROMOTED>(p);
   }
 
   auto promote() const requires (!PROMOTED) {
@@ -20374,13 +20485,13 @@ public:
   }
 };
 template <class A, class AA, class B, bool P>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>, bool>
+enable_if<is_same<remove_const<A>, remove_const<AA>>, bool>
 operator ==(rrbt_iterator<A, B, P> x, rrbt_iterator<AA, B, P> y) {
   return x.node() == y.node();
 }
 template <class A, class AA, class B, bool P>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>,
-            strong_ordering>
+enable_if<is_same<remove_const<A>, remove_const<AA>>,
+          strong_ordering>
 operator <=>(rrbt_iterator<A, B, P> x, rrbt_iterator<AA, B, P> y) {
   return x.nth() <=> y.nth();
 }
@@ -20407,7 +20518,7 @@ operator -(rrbt_iterator<T, TRAITS, P> x,
   return copy(x) -= i;
 }
 template <class T, class TT, class TRAITS, bool P,
-          class = enable_if_t<is_same_v<remove_const_t<T>, remove_const_t<TT>>>>
+          class = enable_if<is_same<remove_const<T>, remove_const<TT>>>>
 auto operator -(rrbt_iterator<T, TRAITS, P> x,
                 rrbt_iterator<TT, TRAITS, P> y) {
   return x.nth() - y.nth();
@@ -20417,8 +20528,9 @@ auto operator -(rrbt_iterator<T, TRAITS, P> x,
 template <class TRAITS>
 class ranked_rbtree_adaptor
   : TRAITS::header_type
-  , conditional_t<!TRAITS::store_node_allocator::value,
-                  inner::empty_type, typename TRAITS::allocator_type> {
+  , conditional<!TRAITS::store_node_allocator::value,
+                inner::empty_type,
+                typename TRAITS::allocator_type> {
   using this_t = ranked_rbtree_adaptor;
 
   using data_t = typename TRAITS::header_type;
@@ -20429,9 +20541,9 @@ class ranked_rbtree_adaptor
     return static_cast<const data_t &>(*this);
   }
 
-  using alloc_t = conditional_t<!TRAITS::store_node_allocator::value,
-                                inner::empty_type,
-                                typename TRAITS::allocator_type>;
+  using alloc_t = conditional<!TRAITS::store_node_allocator::value,
+                              inner::empty_type,
+                              typename TRAITS::allocator_type>;
 
   template <class R>
   static auto begin(R &&r) {return re::begin(r);}
@@ -21210,11 +21322,11 @@ public:
     return link(i, new_node(move(x)));
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, inner::node_handle<TRAITS>>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, inner::node_handle<TRAITS>>
+             && !is_convertible<IITR_RANGE &&, this_t &&>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range(pos, r);
   }
@@ -21376,8 +21488,8 @@ public:
                   empty_function{});
   }
   template <class GET_KEY, class KEY_LESS, class...S>
-  enable_if_t<!is_convertible_v<GET_KEY &&, const_iterator>,
-              pair<iterator, bool>>
+  enable_if<!is_convertible<GET_KEY &&, const_iterator>,
+            pair<iterator, bool>>
   emplace(GET_KEY &&get_key, KEY_LESS key_less, S &&...s) {
     const auto it = new_node(forward<S>(s)...);
 #ifndef RE_NOEXCEPT
@@ -21394,15 +21506,15 @@ public:
 #endif
   }
   template <class GET_KEY, class KEY_LESS>
-  enable_if_t<!is_convertible_v<GET_KEY &&, const_iterator>,
-              pair<iterator, bool>>
+  enable_if<!is_convertible<GET_KEY &&, const_iterator>,
+            pair<iterator, bool>>
   insert(GET_KEY &&get_key, KEY_LESS key_less, const value_type &x) {
     return insert(get_key, key_less, get_key(x),
                   [&]() {return new_node(x);}, empty_function{});
   }
   template <class GET_KEY, class KEY_LESS>
-  enable_if_t<!is_convertible_v<GET_KEY &&, const_iterator>,
-              pair<iterator, bool>>
+  enable_if<!is_convertible<GET_KEY &&, const_iterator>,
+            pair<iterator, bool>>
   insert(GET_KEY &&get_key, KEY_LESS key_less, value_type &&x) {
     return insert(get_key, key_less, get_key(x),
                   [&]() {return new_node(move(x));}, empty_function{});
@@ -21479,10 +21591,10 @@ public:
   }
   template <class ITERATOR, class GET_KEY, class KEY_LESS, class NODE_HANDLE>
   inner::node_handle_insert_return_type
-  <ITERATOR, remove_reference_t<NODE_HANDLE>>
+  <ITERATOR, remove_reference<NODE_HANDLE>>
   insert_node_handle(GET_KEY get_key, KEY_LESS key_less, NODE_HANDLE &&nh) {
     inner::node_handle_insert_return_type
-      <ITERATOR, remove_reference_t<NODE_HANDLE>> ret;
+      <ITERATOR, remove_reference<NODE_HANDLE>> ret;
     if (nh.empty()) {
       ret.position = end();
       ret.inserted = false;
@@ -21846,16 +21958,16 @@ public:
     return insert_range(pos, rng(n, ref(x)));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   ranked_rbtree_adaptor(IITR from, IITR to, const alloc_t &al = alloc_t{})
     : ranked_rbtree_adaptor(al) {
     insert_range(end(), rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range(rng(from, to));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range(pos, rng(from, to));
   }
@@ -21876,36 +21988,40 @@ public:
     return insert_range(pos, l);
   }
 
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   ranked_rbtree_adaptor(from_range_t, IITR_RANGE &&r,
                         const alloc_t &al = alloc_t{})
     : ranked_rbtree_adaptor(al) {
     insert_range(end(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   explicit ranked_rbtree_adaptor(IITR_RANGE &&r)
     : ranked_rbtree_adaptor(alloc_t{}) {
     insert_range(end(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   ranked_rbtree_adaptor(IITR_RANGE &&r, const alloc_t &al)
     : ranked_rbtree_adaptor(al) {
     insert_range(end(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -21920,10 +22036,10 @@ public:
     insert_range(end(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, inner::node_handle<TRAITS> &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, inner::node_handle<TRAITS> &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_back(IITR_RANGE &&r) {
     append_range(r);
   }
@@ -21941,10 +22057,10 @@ public:
     insert_range(begin(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, inner::node_handle<TRAITS> &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, inner::node_handle<TRAITS> &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_front(IITR_RANGE &&r) {
     prepend_range(r);
   }
@@ -22194,11 +22310,11 @@ public:
   }
 
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = TRAITS::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
   template <class UPRED>
@@ -22303,7 +22419,7 @@ public:
 
   template <class R>
   iterator replace(const_iterator i1, const_iterator i2, R &&r)
-    requires (!is_convertible_v<R &&, this_t &&>) {
+    requires (!is_convertible<R &&, this_t &&>) {
     return inner::fns::seq_container_replace_impl
       (*this, i1.to_mutable(), i2.to_mutable(), r);
   }
@@ -22524,7 +22640,7 @@ public:
     return base_t::max_size();
   }
   template <bool Y = rng_is_sized<TREE>>
-  enable_if_t<Y, size_type> size() const noexcept {
+  enable_if<Y, size_type> size() const noexcept {
     return base_t::size();
   }
   bool empty() const noexcept {
@@ -22538,8 +22654,8 @@ public:
   set_adaptor(set_adaptor &&) = default;
   set_adaptor &operator =(set_adaptor &&) = default;
   friend void swap(set_adaptor &x, set_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -22601,18 +22717,18 @@ public:
   set_adaptor(const LESS &less, const alloc_t &al)
     : base_t(al), less_wrapper(less) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   set_adaptor(IITR first, IITR last,
               const LESS &less = LESS{}, const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   set_adaptor(IITR first, IITR last, const allocator_type &al)
     : base_t(al) {
     base_t::insert_range(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -22650,7 +22766,7 @@ public:
     return base_t::insert(get_key(), key_less(), move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   pair<iterator, bool> insert(K &&key) {
     return try_link(key, [&]() {return new_node(forward<K>(key));});
   }
@@ -22661,7 +22777,7 @@ public:
     return base_t::insert(get_key(), key_less(), hint.to_mutable(), move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   iterator insert(const_iterator hint, K &&key) {
     return try_link_hint(hint.to_mutable(), key,
                          [&]() {return new_node(forward<K>(key));});
@@ -22681,8 +22797,8 @@ public:
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<!is_convertible<K &&, iterator>
+                              && !is_convertible<K &&, const_iterator>>>
   node_type extract(K &&key) {
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
@@ -22713,8 +22829,8 @@ public:
     return 1;
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<!is_convertible<K &&, iterator>
+                              && !is_convertible<K &&, const_iterator>>>
   size_type erase(K &&key) {
     const auto it = base_t::find(get_key(), key_less(), key);
     if (it == end())
@@ -22946,15 +23062,15 @@ public:
   }
 
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, iterator> nth(difference_type n) noexcept {
+  enable_if<Y, iterator> nth(difference_type n) noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, const_iterator> nth(difference_type n) const noexcept {
+  enable_if<Y, const_iterator> nth(difference_type n) const noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, difference_type> nth(const_iterator it) const noexcept {
+  enable_if<Y, difference_type> nth(const_iterator it) const noexcept {
     return base_t::nth(it);
   }
 
@@ -22966,11 +23082,11 @@ private:
 
 public:
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -22980,52 +23096,58 @@ public:
     list_unique(*this, eql, [this](auto it) {return erase_or_unlink(it);});
   };
 
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   set_adaptor(from_range_t, IITR_RANGE &&r, const LESS &l = LESS{},
               const allocator_type &al = allocator_type{})
     : base_t(al), less_wrapper(l) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   set_adaptor(from_range_t, IITR_RANGE &&r, const allocator_type &al)
     : base_t(al) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit set_adaptor(IITR_RANGE &&r) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   set_adaptor(IITR_RANGE &&r, const LESS &less, const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   set_adaptor(IITR_RANGE &&r, const alloc_t &al) : base_t(al) {
     insert_range(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -23041,11 +23163,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<(!is_transparent_function_v<LESS>
-               && !is_convertible_v<IITR_RANGE &&, value_type &&>
-               && !is_convertible_v<IITR_RANGE &&, const value_type &>
-               && !is_convertible_v<IITR_RANGE &&, node_type &&>)
-              || !is_constructible_v<value_type, IITR_RANGE &&>>
+  enable_if<((!is_transparent_function<LESS>
+              && !is_convertible<IITR_RANGE &&, value_type &&>
+              && !is_convertible<IITR_RANGE &&, const value_type &>
+              && !is_convertible<IITR_RANGE &&, node_type &&>)
+             || !is_constructible<value_type, IITR_RANGE &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -23171,7 +23293,7 @@ public:
     return base_t::max_size();
   }
   template <bool Y = rng_is_sized<TREE>>
-  enable_if_t<Y, size_type> size() const noexcept {
+  enable_if<Y, size_type> size() const noexcept {
     return base_t::size();
   }
   bool empty() const noexcept {
@@ -23185,8 +23307,8 @@ public:
   multiset_adaptor(multiset_adaptor &&) = default;
   multiset_adaptor &operator =(multiset_adaptor &&) = default;
   friend void swap(multiset_adaptor &x, multiset_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -23247,18 +23369,18 @@ public:
   multiset_adaptor(const LESS &less, const alloc_t &al)
     : base_t(al), less_wrapper(less) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   multiset_adaptor(IITR first, IITR last,
                    const LESS &less = LESS{}, const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range_equal(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   multiset_adaptor(IITR first, IITR last, const allocator_type &al)
     : base_t(al) {
     base_t::insert_range_equal(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -23296,7 +23418,7 @@ public:
     return base_t::emplace_equal(get_key(), key_less(), move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   iterator insert(K &&key) {
     return try_link(forward<K>(key),
                     [&]() {return new_node(forward<K>(key));});
@@ -23310,7 +23432,7 @@ public:
                                       hint.to_mutable(), move(x));
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<is_constructible_v<value_type, K &&>>>
+            class = enable_if<is_constructible<value_type, K &&>>>
   iterator insert(const_iterator hint, K &&key) {
     return try_link_hint(hint.to_mutable(), forward<K>(key),
                          [&]() {return new_node(forward<K>(key));});
@@ -23330,9 +23452,9 @@ public:
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t
-            <!is_convertible_v<K &&, iterator>
-             && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if
+            <(!is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>)>>
   node_type extract(K &&key) {
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
@@ -23358,8 +23480,8 @@ public:
     return base_t::erase(get_key(), key_less(), key);
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     return base_t::erase(get_key(), key_less(), key);
   }
@@ -23575,15 +23697,15 @@ public:
   }
 
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, iterator> nth(difference_type n) noexcept {
+  enable_if<Y, iterator> nth(difference_type n) noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, const_iterator> nth(difference_type n) const noexcept {
+  enable_if<Y, const_iterator> nth(difference_type n) const noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, difference_type> nth(const_iterator it) const noexcept {
+  enable_if<Y, difference_type> nth(const_iterator it) const noexcept {
     return base_t::nth(it);
   }
 
@@ -23595,11 +23717,11 @@ private:
 
 public:
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -23612,53 +23734,59 @@ public:
     list_unique(*this, eql, [this](auto it) {return erase_or_unlink(it);});
   };
 
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   multiset_adaptor(from_range_t, IITR_RANGE &&r, const LESS &l = LESS{},
                    const allocator_type &al = allocator_type{})
     : base_t(al), less_wrapper(l) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   multiset_adaptor(from_range_t, IITR_RANGE &&r, const allocator_type &al)
     : base_t(al) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit multiset_adaptor(IITR_RANGE &&r) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   multiset_adaptor(IITR_RANGE &&r, const LESS &less,
                    const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   multiset_adaptor(IITR_RANGE &&r, const alloc_t &al) : base_t(al) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     base_t::assign_range_equal(get_key(), key_less(), r);
     return *this;
@@ -23673,11 +23801,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<(!is_transparent_function_v<LESS>
-               && !is_convertible_v<IITR_RANGE &&, value_type &&>
-               && !is_convertible_v<IITR_RANGE &&, const value_type &>
-               && !is_convertible_v<IITR_RANGE &&, node_type &&>)
-              || !is_constructible_v<value_type, IITR_RANGE &&>>
+  enable_if<((!is_transparent_function<LESS>
+              && !is_convertible<IITR_RANGE &&, value_type &&>
+              && !is_convertible<IITR_RANGE &&, const value_type &>
+              && !is_convertible<IITR_RANGE &&, node_type &&>)
+             || !is_constructible<value_type, IITR_RANGE &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -23807,7 +23935,7 @@ public:
     return base_t::max_size();
   }
   template <bool Y = rng_is_sized<TREE>>
-  enable_if_t<Y, size_type> size() const noexcept {
+  enable_if<Y, size_type> size() const noexcept {
     return base_t::size();
   }
   bool empty() const noexcept {
@@ -23821,8 +23949,8 @@ public:
   map_adaptor(map_adaptor &&) = default;
   map_adaptor &operator =(map_adaptor &&) = default;
   friend void swap(map_adaptor &x, map_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -23883,7 +24011,7 @@ public:
     value_compare(value_compare &&) = default;
     value_compare &operator =(value_compare &&) = default;
     friend void swap(value_compare &x, value_compare &y)
-      noexcept(is_nothrow_swappable_v<LESS>) {
+      noexcept(is_nothrow_swappable<LESS>) {
       adl_swap(x.l, y.l);
     }
 
@@ -23906,18 +24034,18 @@ public:
   map_adaptor(const LESS &less, const alloc_t &al)
     : base_t(al), less_wrapper(less) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   map_adaptor(IITR first, IITR last,
               const LESS &less = LESS{}, const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   map_adaptor(IITR first, IITR last, const allocator_type &al)
     : base_t(al) {
     base_t::insert_range(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -23975,8 +24103,8 @@ public:
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   node_type extract(K &&key) {
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
@@ -24000,10 +24128,10 @@ public:
                                forward<S>(s)...);
   }
   template <class K, class...S>
-  enable_if_t<is_transparent_function_v<LESS>
-              && !is_convertible_v<K &&, const_iterator>
-              && !is_convertible_v<K &&, iterator>,
-              pair<iterator, bool>>
+  enable_if<(is_transparent_function<LESS>
+             && !is_convertible<K &&, const_iterator>
+             && !is_convertible<K &&, iterator>),
+            pair<iterator, bool>>
   try_emplace(K &&key, S &&...s) {
     return base_t::try_emplace(get_key(), key_less(), forward<K>(key),
                                forward<S>(s)...);
@@ -24125,8 +24253,8 @@ public:
     return 1;
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     const auto it = base_t::find(get_key(), key_less(), key);
     if (it == end())
@@ -24357,15 +24485,15 @@ public:
   }
 
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, iterator> nth(difference_type n) noexcept {
+  enable_if<Y, iterator> nth(difference_type n) noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, const_iterator> nth(difference_type n) const noexcept {
+  enable_if<Y, const_iterator> nth(difference_type n) const noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, difference_type> nth(const_iterator it) const noexcept {
+  enable_if<Y, difference_type> nth(const_iterator it) const noexcept {
     return base_t::nth(it);
   }
 
@@ -24377,11 +24505,11 @@ private:
 
 public:
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -24391,51 +24519,57 @@ public:
     list_unique(*this, eql, [this](auto it) {return erase_or_unlink(it);});
   };
 
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   map_adaptor(from_range_t, IITR_RANGE &&r, const LESS &l = LESS{},
               const allocator_type &al = allocator_type{})
     : base_t(al), less_wrapper(l) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   map_adaptor(from_range_t, IITR_RANGE &&r, const allocator_type &al)
     : base_t(al) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit map_adaptor(IITR_RANGE &&r) {
     base_t::insert_range(get_key(), key_less(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   map_adaptor(IITR_RANGE &&r, const LESS &less, const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range(get_key(), key_less(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   map_adaptor(IITR_RANGE &&r, const alloc_t &al) : base_t(al) {
     base_t::insert_range(get_key(), key_less(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     base_t::assign_range(get_key(), key_less(), r);
     return *this;
@@ -24450,9 +24584,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     base_t::insert_range(get_key(), key_less(), r);
   }
@@ -24581,7 +24715,7 @@ public:
     return base_t::max_size();
   }
   template <bool Y = rng_is_sized<TREE>>
-  enable_if_t<Y, size_type> size() const noexcept {
+  enable_if<Y, size_type> size() const noexcept {
     return base_t::size();
   }
   bool empty() const noexcept {
@@ -24595,8 +24729,8 @@ public:
   multimap_adaptor(multimap_adaptor &&) = default;
   multimap_adaptor &operator =(multimap_adaptor &&) = default;
   friend void swap(multimap_adaptor &x, multimap_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<LESS>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<LESS>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.less_ref(), y.less_ref());
   }
@@ -24658,7 +24792,7 @@ public:
     value_compare(value_compare &&) = default;
     value_compare &operator =(value_compare &&) = default;
     friend void swap(value_compare &x, value_compare &y)
-      noexcept(is_nothrow_swappable_v<LESS>) {
+      noexcept(is_nothrow_swappable<LESS>) {
       adl_swap(x.l, y.l);
     }
 
@@ -24679,18 +24813,18 @@ public:
   multimap_adaptor(const LESS &less, const alloc_t &al)
     : base_t(al), less_wrapper(less) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   multimap_adaptor(IITR first, IITR last,
                    const LESS &less = LESS{}, const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range_equal(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   multimap_adaptor(IITR first, IITR last, const allocator_type &al)
     : base_t(al) {
     base_t::insert_range_equal(get_key(), key_less(), rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -24750,8 +24884,8 @@ public:
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   node_type extract(K &&key) {
     return base_t::template extract<node_type>(get_key(), key_less(), key);
   }
@@ -24777,8 +24911,8 @@ public:
     return base_t::erase(get_key(), key_less(), key);
   }
   template <class K, class X = LESS, class = typename X::is_transparent,
-            class = enable_if_t<!is_convertible_v<K &&, iterator>
-                                && !is_convertible_v<K &&, const_iterator>>>
+            class = enable_if<(!is_convertible<K &&, iterator>
+                               && !is_convertible<K &&, const_iterator>)>>
   size_type erase(K &&key) {
     return base_t::erase(get_key(), key_less(), key);
   }
@@ -24994,15 +25128,15 @@ public:
   }
 
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, iterator> nth(difference_type n) noexcept {
+  enable_if<Y, iterator> nth(difference_type n) noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, const_iterator> nth(difference_type n) const noexcept {
+  enable_if<Y, const_iterator> nth(difference_type n) const noexcept {
     return base_t::nth(n);
   }
   template <bool Y = inner::has_mfn_nth<base_t>>
-  enable_if_t<Y, difference_type> nth(const_iterator it) const noexcept {
+  enable_if<Y, difference_type> nth(const_iterator it) const noexcept {
     return base_t::nth(it);
   }
 
@@ -25014,11 +25148,11 @@ private:
 
 public:
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -25032,52 +25166,58 @@ public:
     list_unique(*this, eql, [this](auto it) {return erase_or_unlink(it);});
   };
 
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   multimap_adaptor(from_range_t, IITR_RANGE &&r, const LESS &l = LESS{},
                    const allocator_type &al = allocator_type{})
     : base_t(al), less_wrapper(l) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>)>>
   multimap_adaptor(from_range_t, IITR_RANGE &&r, const allocator_type &al)
     : base_t(al) {
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   explicit multimap_adaptor(IITR_RANGE &&r) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   multimap_adaptor(IITR_RANGE &&r, const LESS &less,
                    const alloc_t &al = alloc_t{})
     : base_t(al), less_wrapper(less) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <!is_same_v<decay_t<IITR_RANGE>, this_t>
-             && is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_convertible_v<IITR_RANGE &&, const LESS &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(!is_same<decay<IITR_RANGE>, this_t>
+              && is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_convertible<IITR_RANGE &&, const LESS &>)>>
   multimap_adaptor(IITR_RANGE &&r, const alloc_t &al) : base_t(al) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     base_t::assign_range_equal(get_key(), key_less(), r);
     return *this;
@@ -25092,9 +25232,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     base_t::insert_range_equal(get_key(), key_less(), r);
   }
@@ -25132,7 +25272,7 @@ namespace re {
 template <class T, class AL>
 struct rbtt : rbtree_traits<rbtree_node<T, alloc_void_ptr<AL>>,
                             0, 1, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 class rbsett : public rbtt<T, AL> {
@@ -25166,7 +25306,7 @@ public:
 template <class T, class AL>
 struct nosz_rbtt : rbtree_traits<rbtree_node<T, alloc_void_ptr<AL>>,
                                  0, 0, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 class nosz_rbsett : public nosz_rbtt<T, AL> {
@@ -25240,7 +25380,7 @@ namespace re {
 
 template <class T, class AL>
 struct avltt : avltree_traits<avltree_node<T, AL>, 0, 1, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 class avlsett : public avltt<T, AL> {
@@ -25273,7 +25413,7 @@ public:
 };
 template <class T, class AL>
 struct nosz_avltt : avltree_traits<avltree_node<T, AL>, 0, 0, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 class nosz_avlsett : public nosz_avltt<T, AL> {
@@ -25384,7 +25524,7 @@ template <class T, class AL>
 struct rrbtt
   : ranked_rbtree_traits<ranked_rbtree_node<T, alloc_void_ptr<AL>>,
                          0, 1, AL> {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 };
 template <class T, class AL>
 class rsett : public rrbtt<T, AL> {
@@ -25461,11 +25601,11 @@ namespace re {
 
 template <size_t ID = 0, class VOID_PTR = void *>
 struct htb_node_base {
-  pointer_rebind_t<VOID_PTR, htb_node_base> next;
+  ptr_rebind<VOID_PTR, htb_node_base> next;
 };
 template <size_t ID = 0, class VOID_PTR = void *>
 struct join_hashtable : htb_node_base<ID, VOID_PTR> {
-  pointer_rebind_t<VOID_PTR, htb_node_base<ID, VOID_PTR>> prev;
+  ptr_rebind<VOID_PTR, htb_node_base<ID, VOID_PTR>> prev;
 };
 template <class T, class VOID_PTR = void *>
 struct hashtable_node : join_hashtable<0, VOID_PTR> {
@@ -25520,13 +25660,13 @@ struct hashtable_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>
       (addressof(static_cast<node_type &>(*p).data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
@@ -25554,25 +25694,25 @@ struct hashtable_traits {
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -25610,7 +25750,7 @@ template <class, class>
 class htb_local_iterator;
 template <class T, class TRAITS>
 class htb_iterator {
-  static_assert(is_same_v<remove_const_t<T>, typename TRAITS::value_type>);
+  static_assert(is_same<remove_const<T>, typename TRAITS::value_type>);
 
   using this_t = htb_iterator;
 
@@ -25625,7 +25765,7 @@ class htb_iterator {
   node_pointer p{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = T *;
   using reference = T &;
   using difference_type = typename TRAITS::difference_type;
@@ -25640,10 +25780,10 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  htb_iterator(htb_iterator<remove_const_t<TT>, TRAITS> it) : p(it.p) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(htb_iterator<remove_const_t<TT>, TRAITS> it) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  htb_iterator(htb_iterator<remove_const<TT>, TRAITS> it) : p(it.p) {}
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  this_t &operator =(htb_iterator<remove_const<TT>, TRAITS> it) {
     p = it.p;
     return *this;
   }
@@ -25652,8 +25792,8 @@ public:
   node_pointer node() const {
     return p;
   }
-  auto to_mutable() const requires is_const_v<T> {
-    return htb_iterator<remove_const_t<T>, TRAITS>(p);
+  auto to_mutable() const requires is_const<T> {
+    return htb_iterator<remove_const<T>, TRAITS>(p);
   }
 
 private:
@@ -25696,7 +25836,8 @@ public:
   }
 };
 template <class A, class AA, class B>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>, bool>
+enable_if<is_same<remove_const<A>, remove_const<AA>>,
+          bool>
 operator ==(htb_iterator<A, B> x, htb_iterator<AA, B> y) {
   return x.node() == y.node();
 }
@@ -25729,16 +25870,16 @@ public:
     adl_swap(x.iter, y.iter);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  htb_local_iterator(htb_local_iterator<remove_const_t<TT>, TRAITS> it)
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  htb_local_iterator(htb_local_iterator<remove_const<TT>, TRAITS> it)
     : iter(it.node()) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(htb_local_iterator<remove_const_t<TT>, TRAITS> it) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  this_t &operator =(htb_local_iterator<remove_const<TT>, TRAITS> it) {
     iter = it.node();
     return *this;
   }
-  auto to_mutable() requires is_const_v<T> {
-    return htb_local_iterator<remove_const_t<T>, TRAITS>(iter);
+  auto to_mutable() requires is_const<T> {
+    return htb_local_iterator<remove_const<T>, TRAITS>(iter);
   }
 
   using node_pointer = typename base_t::node_pointer;
@@ -25781,7 +25922,8 @@ public:
   }
 };
 template <class A, class AA, class B>
-enable_if_t<is_same_v<remove_const_t<A>, remove_const_t<AA>>, bool>
+enable_if<is_same<remove_const<A>, remove_const<AA>>,
+          bool>
 operator ==(htb_local_iterator<A, B> x, htb_local_iterator<AA, B> y) {
   return x.base() == y.base();
 }
@@ -25795,21 +25937,21 @@ template <class TRAITS>
 class hashtable_adaptor
   : TRAITS::header_type
   , allocator_wrapper<typename TRAITS::allocator_type> {
-  static_assert(is_same_v<typename TRAITS::value_type,
+  static_assert(is_same<typename TRAITS::value_type,
                           alloc_vt<typename TRAITS::allocator_type>>);
 
   using this_t = hashtable_adaptor;
 
   template <class SZ_T = alloc_szt<typename TRAITS::allocator_type>>
-  static enable_if_t<(sizeof(SZ_T) > sizeof(int32_t)
-                      && sizeof(SZ_T) <= sizeof(int64_t)),
-                     decltype(inner::htb_prime_table_64) &>
+  static enable_if<(sizeof(SZ_T) > sizeof(int32_t)
+                    && sizeof(SZ_T) <= sizeof(int64_t)),
+                   decltype(inner::htb_prime_table_64) &>
   prime_table() noexcept {
     return inner::htb_prime_table_64;
   }
   template <class SZ_T = alloc_szt<typename TRAITS::allocator_type>>
-  static enable_if_t<(sizeof(SZ_T) <= sizeof(int32_t)),
-                     decltype(inner::htb_prime_table_32) &>
+  static enable_if<(sizeof(SZ_T) <= sizeof(int32_t)),
+                   decltype(inner::htb_prime_table_32) &>
   prime_table() noexcept {
     return inner::htb_prime_table_32;
   }
@@ -25953,8 +26095,8 @@ private:
     placeholder_node().next(end());
     end().prev().next().next(end());
   }
-  void relink_end(bool is_empty) noexcept {
-    is_empty ? relink_end_empty() : relink_end_non_empty();
+  void relink_end(bool empt) noexcept {
+    empt ? relink_end_empty() : relink_end_non_empty();
   }
 
   void new_data_impl_prepare_for(const this_t &v) {
@@ -26077,9 +26219,9 @@ private:
   void new_data_individually(this_t &&v) {
     index_array = index_array_alw()
       .new_array_move_individually(v.index_array, v.index_array_alw().get());
-    const bool v_is_empty = v.empty();
+    const bool v_empt = v.empty();
     head() = move(v.head());
-    relink_end(v_is_empty);
+    relink_end(v_empt);
     v.new_data();
   }
   void new_data_individually(this_t &&v)
@@ -26091,7 +26233,7 @@ private:
     new_data_impl(v, [&](value_type &x) {return new_node(move(x));});
   }
   void assign_data_individually(this_t &&v) {
-    const bool v_is_empty = v.empty();
+    const bool v_empt = v.empty();
 
     index_array_alw().delete_array
       (exchange(index_array,
@@ -26099,7 +26241,7 @@ private:
                 (v.index_array, v.index_array_alw().get())));
 
     head() = move(v.head());
-    relink_end(v_is_empty);
+    relink_end(v_empt);
 
     v.new_data();
   }
@@ -26135,11 +26277,11 @@ public:
   }
 private:
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y> delete_node_if_storing_node_alloc(iterator it) {
+  enable_if<Y> delete_node_if_storing_node_alloc(iterator it) {
     delete_node(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y> delete_node_if_storing_node_alloc(iterator) {}
+  enable_if<!Y> delete_node_if_storing_node_alloc(iterator) {}
 
 public:
 
@@ -26826,11 +26968,11 @@ public:
   template <class ITERATOR, class GET_KEY, class HASH, class EQUAL,
             class NODE_HANDLE>
   inner::node_handle_insert_return_type
-  <ITERATOR, remove_reference_t<NODE_HANDLE>>
+  <ITERATOR, remove_reference<NODE_HANDLE>>
   insert_node_handle(GET_KEY get_key, HASH hash, EQUAL eq,
                      NODE_HANDLE &&nh) {
     inner::node_handle_insert_return_type
-      <ITERATOR, remove_reference_t<NODE_HANDLE>> ret;
+      <ITERATOR, remove_reference<NODE_HANDLE>> ret;
     if (nh.empty()) {
       ret.position = end();
       ret.inserted = false;
@@ -26978,7 +27120,7 @@ public:
 
   template <class GET_KEY, class HASH, class EQUAL, class R,
             class INSERT>
-  enable_if_t<rng_is_sized<R>>
+  enable_if<rng_is_sized<R>>
   insert_range(GET_KEY get_key, HASH hash, EQUAL eq, R &&r, INSERT ins) {
     const auto n = size(r);
     auto_rehash(get_key, hash, eq,
@@ -26989,7 +27131,7 @@ public:
       ins(*i);
   }
   template <class GET_KEY, class HASH, class EQUAL, class R, class INSERT>
-  enable_if_t<!rng_is_sized<R>>
+  enable_if<!rng_is_sized<R>>
   insert_range(GET_KEY get_key, HASH hash, EQUAL eq, R &&r, INSERT ins) {
     for (auto &i : iters(r)) {
       auto_rehash(get_key, hash, eq, size() + 1u);
@@ -27031,7 +27173,7 @@ public:
   }
 
   template <class GET_KEY, class HASH, class EQUAL, class R, class INSERT>
-  enable_if_t<rng_is_sized<R>>
+  enable_if<rng_is_sized<R>>
   assign_range(GET_KEY get_key, HASH hash, EQUAL eq, R &&r, INSERT ins) {
     iterator it = begin();
     end().next(end());
@@ -27061,7 +27203,7 @@ public:
     }
   }
   template <class GET_KEY, class HASH, class EQUAL, class R, class INSERT>
-  enable_if_t<!rng_is_sized<R>>
+  enable_if<!rng_is_sized<R>>
   assign_range(GET_KEY get_key, HASH hash, EQUAL eq, R &&r, INSERT ins) {
     iterator it = begin();
     end().next(end());
@@ -27125,7 +27267,7 @@ public:
   }
 
   template <class GET_KEY, class HASH, class EQUAL, class R>
-  enable_if_t<rng_is_sized<R>>
+  enable_if<rng_is_sized<R>>
   insert_range_equal(GET_KEY get_key, HASH hash, EQUAL eq, R &&r) {
     const auto n = size(r);
     if (n > integral_traits<size_type>::max() - size())
@@ -27151,14 +27293,14 @@ public:
     }
   }
   template <class GET_KEY, class HASH, class EQUAL, class R>
-  enable_if_t<!rng_is_sized<R>>
+  enable_if<!rng_is_sized<R>>
   insert_range_equal(GET_KEY get_key, HASH hash, EQUAL eq, R &&r) {
     for (auto &it : iters(r))
       emplace_equal(get_key, hash, eq, *it);
   }
 
   template <class GET_KEY, class HASH, class EQUAL, class R>
-  enable_if_t<rng_is_sized<R>>
+  enable_if<rng_is_sized<R>>
   assign_range_equal(GET_KEY get_key, HASH hash, EQUAL eq, R &&r) {
     iterator it = begin();
     end().next(end());
@@ -27200,7 +27342,7 @@ public:
     }
   }
   template <class GET_KEY, class HASH, class EQUAL, class R>
-  enable_if_t<!rng_is_sized<R>>
+  enable_if<!rng_is_sized<R>>
   assign_range_equal(GET_KEY get_key, HASH hash, EQUAL eq, R &&r) {
     iterator it = begin();
     end().next(end());
@@ -27289,7 +27431,7 @@ class unordered_set_adaptor
   }
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>;
 
 public:
   using traits = typename base_t::traits;
@@ -27377,9 +27519,9 @@ public:
   unordered_set_adaptor(unordered_set_adaptor &&) = default;
   unordered_set_adaptor &operator =(unordered_set_adaptor &&) = default;
   friend void swap(unordered_set_adaptor &x, unordered_set_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<HASH>
-             && is_nothrow_swappable_v<EQ>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<HASH>
+             && is_nothrow_swappable<EQ>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.hash_ref(), y.hash_ref());
     adl_swap(x.eq_ref(), y.eq_ref());
@@ -27461,7 +27603,7 @@ public:
   unordered_set_adaptor(size_type n, const hasher &hf, const alloc_t &al)
     : unordered_set_adaptor(n, hf, key_equal{}, al) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_set_adaptor(IITR f, IITR l,
                         size_type n = base_t::default_bucket_count,
                         const hasher &hf = hasher{},
@@ -27471,18 +27613,18 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     insert_range(rng(f, l));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_set_adaptor(IITR f, IITR l, const alloc_t &al)
     : unordered_set_adaptor(f, l, base_t::default_bucket_count,
                             HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_set_adaptor(IITR f, IITR l, size_type n, const alloc_t &al)
     : unordered_set_adaptor(f, l, n, HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_set_adaptor(IITR f, IITR l,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_set_adaptor(f, l, n, hf, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR f, IITR l) {
     assign_range(rng(f, l));
   }
@@ -27529,7 +27671,7 @@ public:
   }
   template <class K>
   pair<iterator, bool> insert(K &&key)
-    requires (transparent && is_constructible_v<value_type, K &&>) {
+    requires (transparent && is_constructible<value_type, K &&>) {
     return base_t::insert(get_key(), hash(), eq(), key,
                           [&]() {return new_node(forward<K>(key));},
                           empty_function{});
@@ -27542,7 +27684,7 @@ public:
   }
   template <class K>
   iterator insert(const_iterator hint, K &&key)
-    requires (transparent && is_constructible_v<value_type, K &&>) {
+    requires (transparent && is_constructible<value_type, K &&>) {
     return insert(forward<K>(key)).first;
   }
   template <class IITR>
@@ -27562,8 +27704,8 @@ public:
   template <class K>
   node_type extract(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return base_t::template extract<node_type>(get_key(), hash(), eq(), key);
   }
   insert_return_type insert(node_type &&nh) {
@@ -27599,8 +27741,8 @@ public:
   template <class K>
   size_type erase(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     const auto it = base_t::find(get_key(), hash(), eq(), key);
     if (it == end())
       return 0;
@@ -27819,11 +27961,11 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -27855,20 +27997,22 @@ public:
   unordered_set_adaptor(from_range_t, IITR_RANGE &&r,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_set_adaptor(from_range, r, n, hf, EQ{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit unordered_set_adaptor(IITR_RANGE &&r) {
     base_t::reserve(get_key(), hash(), eq(), base_t::default_bucket_count);
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_set_adaptor(IITR_RANGE &&r, size_type n,
                         const hasher &hf = hasher{},
                         const key_equal &eql = key_equal{},
@@ -27877,35 +28021,38 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     insert_range(r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_set_adaptor(IITR_RANGE &&r, const alloc_t &al)
     : unordered_set_adaptor(r, base_t::default_bucket_count,
                             hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_set_adaptor(IITR_RANGE &&r, size_type n, const alloc_t &al)
     : unordered_set_adaptor(r, n, hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_set_adaptor(IITR_RANGE &&r,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_set_adaptor(r, n, hf, key_equal{}, al) {}
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>,
-              this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range(r);
     return *this;
@@ -27917,7 +28064,7 @@ public:
   template <class IITR_RANGE>
   void assign_range(IITR_RANGE &&r)
     requires (transparent
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE &&>>) {
+              && is_constructible<value_type, rng_ref<IITR_RANGE &&>>) {
     base_t::assign_range_transparent(get_key(), hash(), eq(), r);
   }
   template <class IITR_RANGE>
@@ -27926,11 +28073,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<(!transparent
-               && !is_convertible_v<IITR_RANGE &&, value_type &&>
-               && !is_convertible_v<IITR_RANGE &&, const value_type &>
-               && !is_convertible_v<IITR_RANGE &&, node_type &&>)
-              || !is_constructible_v<value_type, IITR_RANGE &&>>
+  enable_if<((!transparent
+              && !is_convertible<IITR_RANGE &&, value_type &&>
+              && !is_convertible<IITR_RANGE &&, const value_type &>
+              && !is_convertible<IITR_RANGE &&, node_type &&>)
+             || !is_constructible<value_type, IITR_RANGE &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -27941,7 +28088,7 @@ public:
   template <class IITR_RANGE>
   void insert_range(IITR_RANGE &&r)
     requires (transparent
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE &&>>) {
+              && is_constructible<value_type, rng_ref<IITR_RANGE &&>>) {
     base_t::insert_range_transparent(get_key(), hash(), eq(), r);
   }
 
@@ -27974,7 +28121,7 @@ class unordered_multiset_adaptor
   }
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>;
 
 public:
   using traits = typename base_t::traits;
@@ -28063,9 +28210,9 @@ public:
   this_t &operator =(unordered_multiset_adaptor &&) = default;
   friend void swap(unordered_multiset_adaptor &x,
                    unordered_multiset_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<HASH>
-             && is_nothrow_swappable_v<EQ>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<HASH>
+             && is_nothrow_swappable<EQ>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.hash_ref(), y.hash_ref());
     adl_swap(x.eq_ref(), y.eq_ref());
@@ -28147,7 +28294,7 @@ public:
   unordered_multiset_adaptor(size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multiset_adaptor(n, hf, key_equal{}, al) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multiset_adaptor(IITR f, IITR l,
                              size_type n = base_t::default_bucket_count,
                              const hasher &hf = hasher{},
@@ -28157,18 +28304,18 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     base_t::insert_range_equal(get_key(), hash(), eq(), rng(f, l));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multiset_adaptor(IITR f, IITR l, const alloc_t &al)
     : unordered_multiset_adaptor(f, l, base_t::default_bucket_count,
                                  HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multiset_adaptor(IITR f, IITR l, size_type n, const alloc_t &al)
     : unordered_multiset_adaptor(f, l, n, HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multiset_adaptor(IITR f, IITR l,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multiset_adaptor(f, l, n, hf, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR f, IITR l) {
     assign_range(rng(f, l));
   }
@@ -28240,8 +28387,8 @@ public:
   template <class K>
   node_type extract(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return base_t::template extract<node_type>(get_key(), hash(), eq(), key);
   }
   iterator insert(node_type &&nh) {
@@ -28271,8 +28418,8 @@ public:
   template <class K>
   size_type erase(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return base_t::erase(get_key(), hash(), eq(), key);
   }
 
@@ -28478,11 +28625,11 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -28516,20 +28663,22 @@ public:
   unordered_multiset_adaptor(from_range_t, IITR_RANGE &&r,
                              size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multiset_adaptor(from_range, r, n, hf, EQ{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit unordered_multiset_adaptor(IITR_RANGE &&r) {
     base_t::reserve(get_key(), hash(), eq(), base_t::default_bucket_count);
     base_t::insert_range_equal(get_key(), hash(), eq(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multiset_adaptor(IITR_RANGE &&r, size_type n,
                              const hasher &hf = hasher{},
                              const key_equal &eql = key_equal{},
@@ -28538,35 +28687,38 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     base_t::insert_range_equal(get_key(), hash(), eq(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multiset_adaptor(IITR_RANGE &&r, const alloc_t &al)
     : unordered_multiset_adaptor(r, base_t::default_bucket_count,
                                  hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multiset_adaptor(IITR_RANGE &&r, size_type n, const alloc_t &al)
     : unordered_multiset_adaptor(r, n, hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multiset_adaptor(IITR_RANGE &&r,
                              size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multiset_adaptor(r, n, hf, key_equal{}, al) {}
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>,
-              this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     base_t::assign_range_equal(get_key(), hash(), eq(), r);
     return *this;
@@ -28581,9 +28733,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     base_t::insert_range_equal(get_key(), hash(), eq(), r);
   }
@@ -28622,7 +28774,7 @@ class unordered_map_adaptor
   }
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>;
 
 public:
   using traits = typename base_t::traits;
@@ -28716,9 +28868,9 @@ public:
   unordered_map_adaptor &operator =(unordered_map_adaptor &&) = default;
   friend void swap(unordered_map_adaptor &x,
                    unordered_map_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<HASH>
-             && is_nothrow_swappable_v<EQ>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<HASH>
+             && is_nothrow_swappable<EQ>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.hash_ref(), y.hash_ref());
     adl_swap(x.eq_ref(), y.eq_ref());
@@ -28801,7 +28953,7 @@ public:
   unordered_map_adaptor(size_type n, const hasher &hf, const alloc_t &al)
     : unordered_map_adaptor(n, hf, key_equal{}, al) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_map_adaptor(IITR f, IITR l,
                         size_type n = base_t::default_bucket_count,
                         const hasher &hf = hasher{},
@@ -28811,18 +28963,18 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     base_t::insert_range(get_key(), hash(), eq(), rng(f, l));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_map_adaptor(IITR f, IITR l, const alloc_t &al)
     : unordered_map_adaptor(f, l, base_t::default_bucket_count,
                             HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_map_adaptor(IITR f, IITR l, size_type n, const alloc_t &al)
     : unordered_map_adaptor(f, l, n, HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_map_adaptor(IITR f, IITR l,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_map_adaptor(f, l, n, hf, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR f, IITR l) {
     assign_range(rng(f, l));
   }
@@ -28893,8 +29045,8 @@ public:
   template <class K, class...S>
   pair<iterator, bool> try_emplace(K &&k, S &&...s)
     requires (transparent
-              && !is_convertible_v<K &&, const_iterator>
-              && !is_convertible_v<K &&, iterator>) {
+              && !is_convertible<K &&, const_iterator>
+              && !is_convertible<K &&, iterator>) {
     return base_t::try_emplace(get_key(), hash(), eq(), forward<K>(k),
                                forward<S>(s)...);
   }
@@ -29011,8 +29163,8 @@ public:
   template <class K>
   node_type extract(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return base_t::template extract<node_type>(get_key(), hash(), eq(), key);
   }
 
@@ -29049,8 +29201,8 @@ public:
   template <class K>
   size_type erase(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     const auto it = base_t::find(get_key(), hash(), eq(), key);
     if (it == end())
       return 0;
@@ -29269,11 +29421,11 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -29305,20 +29457,22 @@ public:
   unordered_map_adaptor(from_range_t, IITR_RANGE &&r,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_map_adaptor(from_range, r, n, hf, EQ{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit unordered_map_adaptor(IITR_RANGE &&r) {
     base_t::reserve(get_key(), hash(), eq(), base_t::default_bucket_count);
     base_t::insert_range(get_key(), hash(), eq(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_map_adaptor(IITR_RANGE &&r, size_type n,
                         const hasher &hf = hasher{},
                         const key_equal &eql = key_equal{},
@@ -29327,35 +29481,38 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     base_t::insert_range(get_key(), hash(), eq(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_map_adaptor(IITR_RANGE &&r, const alloc_t &al)
     : unordered_map_adaptor(r, base_t::default_bucket_count,
                             hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_map_adaptor(IITR_RANGE &&r, size_type n, const alloc_t &al)
     : unordered_map_adaptor(r, n, hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_map_adaptor(IITR_RANGE &&r,
                         size_type n, const hasher &hf, const alloc_t &al)
     : unordered_map_adaptor(r, n, hf, key_equal{}, al) {}
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>,
-              this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     base_t::assign_range(get_key(), hash(), eq(), r);
     return *this;
@@ -29370,9 +29527,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     base_t::insert_range(get_key(), hash(), eq(), r);
   }
@@ -29410,7 +29567,7 @@ class unordered_multimap_adaptor
   }
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>;
 
 public:
   using traits = typename base_t::traits;
@@ -29499,9 +29656,9 @@ public:
   this_t &operator =(unordered_multimap_adaptor &&) = default;
   friend void swap(unordered_multimap_adaptor &x,
                    unordered_multimap_adaptor &y)
-    noexcept(is_nothrow_swappable_v<base_t>
-             && is_nothrow_swappable_v<HASH>
-             && is_nothrow_swappable_v<EQ>) {
+    noexcept(is_nothrow_swappable<base_t>
+             && is_nothrow_swappable<HASH>
+             && is_nothrow_swappable<EQ>) {
     adl_swap(x.base(), y.base());
     adl_swap(x.hash_ref(), y.hash_ref());
     adl_swap(x.eq_ref(), y.eq_ref());
@@ -29584,7 +29741,7 @@ public:
   unordered_multimap_adaptor(size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multimap_adaptor(n, hf, key_equal{}, al) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multimap_adaptor(IITR f, IITR l,
                              size_type n = base_t::default_bucket_count,
                              const hasher &hf = hasher{},
@@ -29594,18 +29751,18 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     base_t::insert_range_equal(get_key(), hash(), eq(), rng(f, l));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multimap_adaptor(IITR f, IITR l, const alloc_t &al)
     : unordered_multimap_adaptor(f, l, base_t::default_bucket_count,
                                  HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multimap_adaptor(IITR f, IITR l, size_type n, const alloc_t &al)
     : unordered_multimap_adaptor(f, l, n, HASH{}, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   unordered_multimap_adaptor(IITR f, IITR l,
                              size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multimap_adaptor(f, l, n, hf, EQ{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR f, IITR l) {
     assign_range(rng(f, l));
   }
@@ -29676,8 +29833,8 @@ public:
   template <class K>
   node_type extract(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return base_t::template extract<node_type>(get_key(), hash(), eq(), key);
   }
 
@@ -29708,8 +29865,8 @@ public:
   template <class K>
   size_type erase(K &&key)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return base_t::erase(get_key(), hash(), eq(), key);
   }
 
@@ -29915,11 +30072,11 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -29954,20 +30111,22 @@ public:
   unordered_multimap_adaptor(from_range_t, IITR_RANGE &&r,
                              size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multimap_adaptor(from_range, r, n, hf, EQ{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const alloc_t &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const alloc_t &>)>>
   explicit unordered_multimap_adaptor(IITR_RANGE &&r) {
     base_t::reserve(get_key(), hash(), eq(), base_t::default_bucket_count);
     base_t::insert_range_equal(get_key(), hash(), eq(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multimap_adaptor(IITR_RANGE &&r, size_type n,
                              const hasher &hf = hasher{},
                              const key_equal &eql = key_equal{},
@@ -29976,34 +30135,38 @@ public:
     base_t::reserve(get_key(), hash(), eq(), n);
     base_t::insert_range_equal(get_key(), hash(), eq(), r);
   }
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multimap_adaptor(IITR_RANGE &&r, const alloc_t &al)
     : unordered_multimap_adaptor(r, base_t::default_bucket_count,
                                  hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multimap_adaptor(IITR_RANGE &&r, size_type n, const alloc_t &al)
     : unordered_multimap_adaptor(r, n, hasher{}, key_equal{}, al) {}
-  template <class IITR_RANGE, class = enable_if_t
-            <is_rng<IITR_RANGE>
-             && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-             && !is_same_v<decay_t<IITR_RANGE>, this_t>
-             && !is_convertible_v<IITR_RANGE &&, const hasher &>>>
+  template <class IITR_RANGE,
+            class = enable_if
+            <(is_rng<IITR_RANGE>
+              && is_constructible<value_type, rng_ref<IITR_RANGE>>
+              && !is_same<decay<IITR_RANGE>, this_t>
+              && !is_convertible<IITR_RANGE &&, const hasher &>)>>
   unordered_multimap_adaptor(IITR_RANGE &&r,
                              size_type n, const hasher &hf, const alloc_t &al)
     : unordered_multimap_adaptor(r, n, hf, key_equal{}, al) {}
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     base_t::assign_range_equal(get_key(), hash(), eq(), r);
     return *this;
@@ -30018,9 +30181,9 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     base_t::insert_range_equal(get_key(), hash(), eq(), r);
   }
@@ -30636,13 +30799,13 @@ class mixed_set_adaptor
   using tree_t = set_adaptor<typename TRAITS::tree, LESS>;
 
   using alloc_t = typename unordered_t::allocator_type;
-  static_assert(is_same_v
+  static_assert(is_same
                 <typename unordered_t::allocator_type,
                  typename tree_t::allocator_type>);
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>
-    && is_transparent_function_v<LESS>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>
+    && is_transparent_function<LESS>;
 
   using actual_node_pointer = typename tree_t::traits::node_pointer;
 
@@ -30790,12 +30953,12 @@ public:
   mixed_set_adaptor(const mixed_set_adaptor &) = delete;
   mixed_set_adaptor &operator =(const mixed_set_adaptor &) = delete;
   mixed_set_adaptor(const mixed_set_adaptor &x)
-    requires is_copy_constructible_v<unordered_t>
+    requires is_copy_constructible<unordered_t>
     : unordered_t(x.unordered()) {
     link_to_tree();
   }
   mixed_set_adaptor &operator =(const mixed_set_adaptor &x)
-    requires is_copy_assignable_v<unordered_t> {
+    requires is_copy_assignable<unordered_t> {
     if (this != addressof(x)) {
       unordered() = x.unordered();
       tree() = tree_t(x.tree().key_comp());
@@ -30805,7 +30968,7 @@ public:
   }
   mixed_set_adaptor(mixed_set_adaptor &&x) = default;
   mixed_set_adaptor &operator =(mixed_set_adaptor &&x)
-    noexcept(is_nothrow_move_assignable_v<unordered_t>) {
+    noexcept(is_nothrow_move_assignable<unordered_t>) {
     if constexpr (!TRAITS::hashtable_traits::store_node_allocator::value) {
       unordered() = move(x.unordered());
       tree() = move(x.tree());
@@ -30826,7 +30989,7 @@ public:
     }
   }
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<unordered_t>) {
+    noexcept(is_nothrow_swappable<unordered_t>) {
     inner::mixed_helper::swap(x, y);
   }
 
@@ -30896,18 +31059,18 @@ public:
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_set_adaptor(IITR first, IITR last,
                     const HASH &hf, const EQ &eq, const LESS &cmp,
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_set_adaptor(IITR first, IITR last,
                     const allocator_type &al = allocator_type{})
     : mixed_set_adaptor(first, last, HASH{}, EQ{}, LESS{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -30945,7 +31108,7 @@ public:
   }
   template <class K>
   pair<iterator, bool> insert(K &&key)
-    requires (transparent && is_constructible_v<value_type, K &&>) {
+    requires (transparent && is_constructible<value_type, K &&>) {
     return inner::mixed_helper::set_insert_transparent(*this, forward<K>(key));
   }
   iterator insert(const_iterator hint, const value_type &x) {
@@ -30956,7 +31119,7 @@ public:
   }
   template <class K>
   iterator insert(const_iterator hint, K &&key)
-    requires (transparent && is_constructible_v<value_type, K &&>) {
+    requires (transparent && is_constructible<value_type, K &&>) {
     return inner::mixed_helper::set_insert_hint_transparent
       (*this, hint, forward<K>(key));
   }
@@ -31015,8 +31178,8 @@ public:
   template <class K>
   size_type erase(const K &key)
     requires (transparent
-              && !is_convertible_v<const K &, iterator>
-              && !is_convertible_v<const K &, const_iterator>) {
+              && !is_convertible<const K &, iterator>
+              && !is_convertible<const K &, const_iterator>) {
     return inner::mixed_helper::set_erase_key(*this, key);
   }
 
@@ -31053,14 +31216,14 @@ public:
     merge(x);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iterator find(const K &key) {
     return tree_iter(unordered().find(key));
   }
   iterator find(const key_type &key) {
     return tree_iter(unordered().find(key));
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   const_iterator find(const K &key) const {
     return tree_iter(unordered().find(key));
   }
@@ -31068,7 +31231,7 @@ public:
     return tree_iter(unordered().find(key));
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   bool contains(const K &key) const {
     return unordered().contains(key);
   }
@@ -31076,7 +31239,7 @@ public:
     return unordered().contains(key);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type count(const K &key) const {
     return unordered().count(key);
   }
@@ -31087,14 +31250,14 @@ public:
   using tree_t::lower_bound;
   using tree_t::upper_bound;
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<iterator> equal_range(const K &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
   iter_pair<iterator> equal_range(const key_type &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<const_iterator> equal_range(const K &key) const {
     return inner::mixed_helper::equal_range(*this, key);
   }
@@ -31132,7 +31295,7 @@ public:
   size_type unlink_key(const key_type &key) {
     return inner::mixed_helper::set_unlink_key(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type unlink_key(const K &key) {
     return inner::mixed_helper::set_unlink_key(*this, key);
   }
@@ -31211,47 +31374,53 @@ public:
     return unordered().cend(n);
   }
 
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_set_adaptor(from_range_t, R &&r,
                     const allocator_type &al = allocator_type{})
     : unordered_t(al) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_set_adaptor(from_range_t, R &&r,
                     const HASH &hf, const EQ &eq, const LESS &cmp,
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_convertible_v<R &&, const allocator_type &>
-             && !is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_convertible<R &&, const allocator_type &>
+              && !is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit mixed_set_adaptor(R &&r) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_set_adaptor(R &&r, const HASH &hf, const EQ &eq, const LESS &cmp,
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   mixed_set_adaptor(R &&r, const allocator_type &al)
     : unordered_t(al), tree_t() {
     insert_range(r);
   }
 
   template <class R>
-  enable_if_t<!is_same_v<decay_t<R>, this_t>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && is_assignable_v<value_type &, rng_ref<R>>, this_t &>
+  enable_if<(!is_same<decay<R>, this_t>
+             && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+             && is_assignable<value_type &, rng_ref<R>>),
+            this_t &>
   operator =(R &&r) {
     assign_range(r);
     return *this;
@@ -31270,11 +31439,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<(!transparent
-               && !is_convertible_v<IITR_RANGE &&, value_type &&>
-               && !is_convertible_v<IITR_RANGE &&, const value_type &>
-               && !is_convertible_v<IITR_RANGE &&, node_type &&>)
-              || !is_constructible_v<value_type, IITR_RANGE &&>>
+  enable_if<((!transparent
+              && !is_convertible<IITR_RANGE &&, value_type &&>
+              && !is_convertible<IITR_RANGE &&, const value_type &>
+              && !is_convertible<IITR_RANGE &&, node_type &&>)
+             || !is_constructible<value_type, IITR_RANGE &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -31330,13 +31499,13 @@ class mixed_map_adaptor
   using tree_t = map_adaptor<typename TRAITS::tree, LESS>;
 
   using alloc_t = typename unordered_t::allocator_type;
-  static_assert(is_same_v
+  static_assert(is_same
                 <typename unordered_t::allocator_type,
                  typename tree_t::allocator_type>);
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>
-    && is_transparent_function_v<LESS>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>
+    && is_transparent_function<LESS>;
 
   using actual_node_pointer = typename tree_t::traits::node_pointer;
 
@@ -31481,12 +31650,12 @@ public:
   mixed_map_adaptor(const mixed_map_adaptor &) = delete;
   mixed_map_adaptor &operator =(const mixed_map_adaptor &) = delete;
   mixed_map_adaptor(const mixed_map_adaptor &x)
-    requires is_copy_constructible_v<unordered_t>
+    requires is_copy_constructible<unordered_t>
     : unordered_t(x.unordered()) {
     link_to_tree();
   }
   mixed_map_adaptor &operator =(const mixed_map_adaptor &x)
-    requires is_copy_assignable_v<unordered_t> {
+    requires is_copy_assignable<unordered_t> {
     if (this != addressof(x)) {
       unordered() = x.unordered();
       tree() = tree_t(x.tree().key_comp());
@@ -31496,7 +31665,7 @@ public:
   }
   mixed_map_adaptor(mixed_map_adaptor &&) = default;
   mixed_map_adaptor &operator =(mixed_map_adaptor &&x)
-    noexcept(is_nothrow_move_assignable_v<unordered_t>) {
+    noexcept(is_nothrow_move_assignable<unordered_t>) {
     if constexpr (!TRAITS::hashtable_traits::store_node_allocator::value) {
       unordered() = move(x.unordered());
       tree() = move(x.tree());
@@ -31517,7 +31686,7 @@ public:
     }
   }
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<unordered_t>) {
+    noexcept(is_nothrow_swappable<unordered_t>) {
     inner::mixed_helper::swap(x, y);
   }
 
@@ -31588,18 +31757,18 @@ public:
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_map_adaptor(IITR first, IITR last,
                     const HASH &hf, const EQ &eq, const LESS &cmp,
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_map_adaptor(IITR first, IITR last,
                     const allocator_type &al = allocator_type{})
     : mixed_map_adaptor(first, last, HASH{}, EQ{}, LESS{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -31665,7 +31834,7 @@ public:
     return inner::mixed_helper::extract_key(*this, key);
   }
   template <class K>
-  enable_if_t<is_constructible_v<key_type, const K &>, node_type>
+  enable_if<is_constructible<key_type, const K &>, node_type>
   extract(const K &key) {
     return inner::mixed_helper::extract_key(*this, key);
   }
@@ -31697,8 +31866,8 @@ public:
   template <class K, class...S>
   pair<iterator, bool> try_emplace(K &&key, S &&...s)
     requires (transparent
-              && !is_convertible_v<K &&, iterator>
-              && !is_convertible_v<K &&, const_iterator>) {
+              && !is_convertible<K &&, iterator>
+              && !is_convertible<K &&, const_iterator>) {
     return inner::mixed_helper::set_try_link
       (*this, key, [&]() {
         return new_node(piecewise_construct,
@@ -31749,7 +31918,7 @@ public:
                      [&]() {return new_node(move(key), forward<X>(x));},
                      [&](iterator it) {get_mapped()(*it) = forward<X>(x);});
   }
-  template <class K, class X, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, class X, bool Y = transparent, class = enable_if<Y>>
   pair<iterator, bool> insert_or_assign(K &&key, X &&x) {
     return inner::mixed_helper
       ::set_try_link(*this, key,
@@ -31771,7 +31940,7 @@ public:
        [&]() {return new_node(move(key), forward<X>(x));},
        [&](iterator it) {get_mapped()(*it) = forward<X>(x);});
   }
-  template <class K, class X, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, class X, bool Y = transparent, class = enable_if<Y>>
   iterator insert_or_assign(const_iterator hint, K &&key, X &&x) {
     return inner::mixed_helper::set_try_link_hint
       (*this, hint, key,
@@ -31785,14 +31954,14 @@ public:
   mapped_type &operator [](key_type &&key) {
     return get_mapped()(*try_emplace(move(key)).first);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   mapped_type &operator [](K &&key) {
     return get_mapped()(*try_emplace(forward<K>(key)).first);
   }
   const mapped_type &operator [](const key_type &key) const {
     return get_mapped()(*find(key));
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   const mapped_type &operator [](const K &key) const {
     return get_mapped()(*find(key));
   }
@@ -31803,7 +31972,7 @@ public:
         ("re::mixed_map_adaptor: at(key) failed\n");
     return get_mapped()(*it);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   mapped_type &at(const K &key) {
     const iterator it = find(key);
     if (it == end())
@@ -31818,7 +31987,7 @@ public:
         ("re::mixed_map_adaptor: at(key) failed\n");
     return get_mapped()(*it);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   const mapped_type &at(const K &key) const {
     const const_iterator it = find(key);
     if (it == end())
@@ -31848,8 +32017,8 @@ public:
   template <class K>
   size_type erase(const K &key)
     requires (transparent
-              && !is_convertible_v<const K &, iterator>
-              && !is_convertible_v<const K &, const_iterator>) {
+              && !is_convertible<const K &, iterator>
+              && !is_convertible<const K &, const_iterator>) {
     return inner::mixed_helper::set_erase_key(*this, key);
   }
 
@@ -31886,14 +32055,14 @@ public:
     merge(x);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iterator find(const K &key) {
     return tree_iter(unordered().find(key));
   }
   iterator find(const key_type &key) {
     return tree_iter(unordered().find(key));
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   const_iterator find(const K &key) const {
     return tree_iter(unordered().find(key));
   }
@@ -31901,7 +32070,7 @@ public:
     return tree_iter(unordered().find(key));
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   bool contains(const K &key) const {
     return unordered().contains(key);
   }
@@ -31909,7 +32078,7 @@ public:
     return unordered().contains(key);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type count(const K &key) const {
     return unordered().count(key);
   }
@@ -31920,14 +32089,14 @@ public:
   using tree_t::lower_bound;
   using tree_t::upper_bound;
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<iterator> equal_range(const K &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
   iter_pair<iterator> equal_range(const key_type &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<const_iterator> equal_range(const K &key) const {
     return inner::mixed_helper::equal_range(*this, key);
   }
@@ -31965,7 +32134,7 @@ public:
   size_type unlink_key(const key_type &key) {
     return inner::mixed_helper::set_unlink_key(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type unlink_key(const K &key) {
     return inner::mixed_helper::set_unlink_key(*this, key);
   }
@@ -32044,47 +32213,53 @@ public:
     return unordered().cend(n);
   }
 
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_map_adaptor(from_range_t, R &&r,
                     const allocator_type &al = allocator_type{})
     : unordered_t(al) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_map_adaptor(from_range_t, R &&r,
                     const HASH &hf, const EQ &eq, const LESS &cmp,
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_convertible_v<R &&, const allocator_type &>
-             && !is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_convertible<R &&, const allocator_type &>
+              && !is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit mixed_map_adaptor(R &&r) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_map_adaptor(R &&r, const HASH &hf, const EQ &eq, const LESS &cmp,
                     const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   mixed_map_adaptor(R &&r, const allocator_type &al)
     : unordered_t(al), tree_t() {
     insert_range(r);
   }
 
   template <class R>
-  enable_if_t<!is_same_v<decay_t<R>, this_t>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && is_assignable_v<value_type &, rng_ref<R>>, this_t &>
+  enable_if<(!is_same<decay<R>, this_t>
+             && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+             && is_assignable<value_type &, rng_ref<R>>),
+            this_t &>
   operator =(R &&r) {
     assign_range(r);
     return *this;
@@ -32108,9 +32283,9 @@ public:
       emplace(*i);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -32161,13 +32336,13 @@ class mixed_multiset_adaptor
   using tree_t = multiset_adaptor<typename TRAITS::tree, LESS>;
 
   using alloc_t = typename unordered_t::allocator_type;
-  static_assert(is_same_v
+  static_assert(is_same
                 <typename unordered_t::allocator_type,
                  typename tree_t::allocator_type>);
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>
-    && is_transparent_function_v<LESS>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>
+    && is_transparent_function<LESS>;
 
   using actual_node_pointer = typename tree_t::traits::node_pointer;
 
@@ -32311,12 +32486,12 @@ public:
   mixed_multiset_adaptor(const mixed_multiset_adaptor &) = delete;
   mixed_multiset_adaptor &operator =(const mixed_multiset_adaptor &) = delete;
   mixed_multiset_adaptor(const mixed_multiset_adaptor &x)
-    requires is_copy_constructible_v<unordered_t>
+    requires is_copy_constructible<unordered_t>
     : unordered_t(x.unordered()) {
     link_to_tree();
   }
   mixed_multiset_adaptor &operator =(const mixed_multiset_adaptor &x)
-    requires is_copy_assignable_v<unordered_t> {
+    requires is_copy_assignable<unordered_t> {
     if (this != addressof(x)) {
       unordered() = x.unordered();
       tree() = tree_t(x.tree().key_comp());
@@ -32326,7 +32501,7 @@ public:
   }
   mixed_multiset_adaptor(mixed_multiset_adaptor &&) = default;
   mixed_multiset_adaptor &operator =(mixed_multiset_adaptor &&x)
-    noexcept(is_nothrow_move_assignable_v<unordered_t>) {
+    noexcept(is_nothrow_move_assignable<unordered_t>) {
     if constexpr (!TRAITS::hashtable_traits::store_node_allocator::value) {
       unordered() = move(x.unordered());
       tree() = move(x.tree());
@@ -32346,7 +32521,7 @@ public:
     }
   }
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<unordered_t>) {
+    noexcept(is_nothrow_swappable<unordered_t>) {
     inner::mixed_helper::swap(x, y);
   }
 
@@ -32416,18 +32591,18 @@ public:
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_multiset_adaptor(IITR first, IITR last,
                          const HASH &hf, const EQ &eq, const LESS &cmp,
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_multiset_adaptor(IITR first, IITR last,
                          const allocator_type &al = allocator_type{})
     : mixed_multiset_adaptor(first, last, HASH{}, EQ{}, LESS{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -32489,7 +32664,7 @@ public:
     return inner::mixed_helper::extract_key(*this, key);
   }
   template <class K>
-  enable_if_t<is_constructible_v<key_type, const K &>, node_type>
+  enable_if<is_constructible<key_type, const K &>, node_type>
   extract(const K &key) {
     return inner::mixed_helper::extract_key(*this, key);
   }
@@ -32522,8 +32697,8 @@ public:
   template <class K>
   size_type erase(const K &key)
     requires (transparent
-              && !is_convertible_v<const K &, iterator>
-              && !is_convertible_v<const K &, const_iterator>) {
+              && !is_convertible<const K &, iterator>
+              && !is_convertible<const K &, const_iterator>) {
     return inner::mixed_helper::multiset_erase_key(*this, key);
   }
 
@@ -32560,14 +32735,14 @@ public:
     merge(x);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iterator find(const K &key) {
     return tree_iter(unordered().find(key));
   }
   iterator find(const key_type &key) {
     return tree_iter(unordered().find(key));
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   const_iterator find(const K &key) const {
     return tree_iter(unordered().find(key));
   }
@@ -32575,7 +32750,7 @@ public:
     return tree_iter(unordered().find(key));
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   bool contains(const K &key) const {
     return unordered().contains(key);
   }
@@ -32583,7 +32758,7 @@ public:
     return unordered().contains(key);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type count(const K &key) const {
     return unordered().count(key);
   }
@@ -32594,14 +32769,14 @@ public:
   using tree_t::lower_bound;
   using tree_t::upper_bound;
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<iterator> equal_range(const K &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
   iter_pair<iterator> equal_range(const key_type &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<const_iterator> equal_range(const K &key) const {
     return inner::mixed_helper::equal_range(*this, key);
   }
@@ -32639,7 +32814,7 @@ public:
   size_type unlink_key(const key_type &key) {
     return inner::mixed_helper::multiset_unlink_key(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type unlink_key(const K &key) {
     return inner::mixed_helper::multiset_unlink_key(*this, key);
   }
@@ -32723,47 +32898,53 @@ public:
     return unordered().cend(n);
   }
 
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_multiset_adaptor(from_range_t, R &&r,
                          const allocator_type &al = allocator_type{})
     : unordered_t(al) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_multiset_adaptor(from_range_t, R &&r,
                          const HASH &hf, const EQ &eq, const LESS &cmp,
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_convertible_v<R &&, const allocator_type &>
-             && !is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_convertible<R &&, const allocator_type &>
+              && !is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit mixed_multiset_adaptor(R &&r) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_multiset_adaptor(R &&r, const HASH &hf, const EQ &eq, const LESS &cmp,
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   mixed_multiset_adaptor(R &&r, const allocator_type &al)
     : unordered_t(al), tree_t() {
     insert_range(r);
   }
 
   template <class R>
-  enable_if_t<!is_same_v<decay_t<R>, this_t>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && is_assignable_v<value_type &, rng_ref<R>>, this_t &>
+  enable_if<(!is_same<decay<R>, this_t>
+             && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+             && is_assignable<value_type &, rng_ref<R>>),
+            this_t &>
   operator =(R &&r) {
     assign_range(r);
     return *this;
@@ -32787,9 +32968,9 @@ public:
       emplace(*i);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -32840,13 +33021,13 @@ class mixed_multimap_adaptor
   using tree_t = multimap_adaptor<typename TRAITS::tree, LESS>;
 
   using alloc_t = typename unordered_t::allocator_type;
-  static_assert(is_same_v
+  static_assert(is_same
                 <typename unordered_t::allocator_type,
                  typename tree_t::allocator_type>);
 
   static constexpr bool transparent
-    = is_transparent_function_v<HASH> && is_transparent_function_v<EQ>
-    && is_transparent_function_v<LESS>;
+    = is_transparent_function<HASH> && is_transparent_function<EQ>
+    && is_transparent_function<LESS>;
 
   using actual_node_pointer = typename tree_t::traits::node_pointer;
 
@@ -32991,12 +33172,12 @@ public:
   mixed_multimap_adaptor(const mixed_multimap_adaptor &) = delete;
   mixed_multimap_adaptor &operator =(const mixed_multimap_adaptor &) = delete;
   mixed_multimap_adaptor(const mixed_multimap_adaptor &x)
-    requires is_copy_constructible_v<unordered_t>
+    requires is_copy_constructible<unordered_t>
     : unordered_t(x.unordered()) {
     link_to_tree();
   }
   mixed_multimap_adaptor &operator =(const mixed_multimap_adaptor &x)
-    requires is_copy_assignable_v<unordered_t> {
+    requires is_copy_assignable<unordered_t> {
     if (this != addressof(x)) {
       unordered() = x.unordered();
       tree() = tree_t(x.tree().key_comp());
@@ -33006,7 +33187,7 @@ public:
   }
   mixed_multimap_adaptor(mixed_multimap_adaptor &&) = default;
   mixed_multimap_adaptor &operator =(mixed_multimap_adaptor &&x)
-    noexcept(is_nothrow_move_assignable_v<unordered_t>) {
+    noexcept(is_nothrow_move_assignable<unordered_t>) {
     if constexpr (!TRAITS::hashtable_traits::store_node_allocator::value) {
       unordered() = move(x.unordered());
       tree() = move(x.tree());
@@ -33026,7 +33207,7 @@ public:
     }
   }
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<unordered_t>) {
+    noexcept(is_nothrow_swappable<unordered_t>) {
     inner::mixed_helper::swap(x, y);
   }
 
@@ -33097,18 +33278,18 @@ public:
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {}
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_multimap_adaptor(IITR first, IITR last,
                          const HASH &hf, const EQ &eq, const LESS &cmp,
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(rng(first, last));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   mixed_multimap_adaptor(IITR first, IITR last,
                          const allocator_type &al = allocator_type{})
     : mixed_multimap_adaptor(first, last, HASH{}, EQ{}, LESS{}, al) {}
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   void assign(IITR first, IITR last) {
     assign_range(rng(first, last));
   }
@@ -33170,7 +33351,7 @@ public:
     return inner::mixed_helper::extract_key(*this, key);
   }
   template <class K>
-  enable_if_t<is_constructible_v<key_type, const K &>, node_type>
+  enable_if<is_constructible<key_type, const K &>, node_type>
   extract(const K &key) {
     return inner::mixed_helper::extract_key(*this, key);
   }
@@ -33203,8 +33384,8 @@ public:
   template <class K>
   size_type erase(const K &key)
     requires (transparent
-              && !is_convertible_v<const K &, iterator>
-              && !is_convertible_v<const K &, const_iterator>) {
+              && !is_convertible<const K &, iterator>
+              && !is_convertible<const K &, const_iterator>) {
     return inner::mixed_helper::multiset_erase_key(*this, key);
   }
 
@@ -33241,14 +33422,14 @@ public:
     merge(x);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iterator find(const K &key) {
     return tree_iter(unordered().find(key));
   }
   iterator find(const key_type &key) {
     return tree_iter(unordered().find(key));
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   const_iterator find(const K &key) const {
     return tree_iter(unordered().find(key));
   }
@@ -33256,7 +33437,7 @@ public:
     return tree_iter(unordered().find(key));
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   bool contains(const K &key) const {
     return unordered().contains(key);
   }
@@ -33264,7 +33445,7 @@ public:
     return unordered().contains(key);
   }
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type count(const K &key) const {
     return unordered().count(key);
   }
@@ -33275,14 +33456,14 @@ public:
   using tree_t::lower_bound;
   using tree_t::upper_bound;
 
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<iterator> equal_range(const K &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
   iter_pair<iterator> equal_range(const key_type &key) {
     return inner::mixed_helper::equal_range(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   iter_pair<const_iterator> equal_range(const K &key) const {
     return inner::mixed_helper::equal_range(*this, key);
   }
@@ -33320,7 +33501,7 @@ public:
   size_type unlink_key(const key_type &key) {
     return inner::mixed_helper::multiset_unlink_key(*this, key);
   }
-  template <class K, bool Y = transparent, class = enable_if_t<Y>>
+  template <class K, bool Y = transparent, class = enable_if<Y>>
   size_type unlink_key(const K &key) {
     return inner::mixed_helper::multiset_unlink_key(*this, key);
   }
@@ -33404,46 +33585,52 @@ public:
     return unordered().cend(n);
   }
 
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_multimap_adaptor(from_range_t, R &&r,
                          const allocator_type &al = allocator_type{})
     : unordered_t(al) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_multimap_adaptor(from_range_t, R &&r,
                          const HASH &hf, const EQ &eq, const LESS &cmp,
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_convertible_v<R &&, const allocator_type &>
-             && !is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_convertible<R &&, const allocator_type &>
+              && !is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit mixed_multimap_adaptor(R &&r) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   mixed_multimap_adaptor(R &&r, const HASH &hf, const EQ &eq, const LESS &cmp,
                          const allocator_type &al = allocator_type{})
     : unordered_t(hf, eq, al), tree_t(cmp) {
     insert_range(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   mixed_multimap_adaptor(R &&r, const allocator_type &al)
     : unordered_t(al), tree_t() {
     insert_range(r);
   }
   template <class R>
-  enable_if_t<!is_same_v<decay_t<R>, this_t>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && is_assignable_v<value_type &, rng_ref<R>>, this_t &>
+  enable_if<(!is_same<decay<R>, this_t>
+             && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+             && is_assignable<value_type &, rng_ref<R>>),
+            this_t &>
   operator =(R &&r) {
     assign_range(r);
     return *this;
@@ -33467,9 +33654,9 @@ public:
       emplace(*i);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>)>
   insert(IITR_RANGE &&r) {
     insert_range(r);
   }
@@ -33556,8 +33743,7 @@ class stable_vector_adaptor;
 
 template <size_t ID = 0, class VOID_PTR = void *>
 struct join_stable_vector {
-  pointer_rebind_t<VOID_PTR,
-                   pointer_rebind_t<VOID_PTR, join_stable_vector>> iter;
+  ptr_rebind<VOID_PTR, ptr_rebind<VOID_PTR, join_stable_vector>> iter;
 };
 template <class T, class AL = default_allocator<T>>
 struct stable_vector_node : join_stable_vector<0, alloc_void_ptr<AL>> {
@@ -33597,37 +33783,37 @@ struct stable_vector_traits {
   }
 
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, value_type *>
+  static enable_if<!is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return reinterpret_cast<value_type *>
       (addressof(static_cast<node_pointer>(p)->data));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, value_type *>
+  static enable_if<is_same<VT, node_type>, value_type *>
   data(node_base_pointer p) {
     return to_address(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<!is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return allocator_wrapper<AL>(al)
       .template new_node<node_type>(forward<S>(s)...);
   }
   template <class VT = value_type>
-  static enable_if_t<!is_same_v<VT, node_type>>
+  static enable_if<!is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_node(static_cast<node_pointer>(p));
   }
 
   template <class...S, class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>, node_base_pointer>
+  static enable_if<is_same<VT, node_type>, node_base_pointer>
   new_node(AL &al, S &&...s) {
     return static_cast<node_base_pointer>
       (allocator_wrapper<AL>(al).new_1(forward<S>(s)...));
   }
   template <class VT = value_type>
-  static enable_if_t<is_same_v<VT, node_type>>
+  static enable_if<is_same<VT, node_type>>
   delete_node(AL &al, node_base_pointer p) noexcept {
     allocator_wrapper<AL>(al).delete_1(static_cast<node_pointer>(p));
   }
@@ -33670,7 +33856,7 @@ public:
   stable_vector_node_handle(this_t &&) noexcept = default;
   stable_vector_node_handle &operator =(this_t &&) = default;
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<base_t>) {
+    noexcept(is_nothrow_swappable<base_t>) {
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
@@ -33700,7 +33886,7 @@ class stable_vector_iterator {
   node_base_pointer p{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = typename TRAITS::difference_type;
@@ -33717,11 +33903,11 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  stable_vector_iterator(stable_vector_iterator<remove_const_t<TT>, TRAITS> x)
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  stable_vector_iterator(stable_vector_iterator<remove_const<TT>, TRAITS> x)
     : p(x.p) {}
-  template <class TT = T, class = enable_if_t<is_const_v<TT>>>
-  this_t &operator =(stable_vector_iterator<remove_const_t<TT>, TRAITS> x) {
+  template <class TT = T, class = enable_if<is_const<TT>>>
+  this_t &operator =(stable_vector_iterator<remove_const<TT>, TRAITS> x) {
     p = x.p;
     return *this;
   }
@@ -33730,8 +33916,8 @@ public:
   node_base_pointer node() const {
     return p;
   }
-  auto to_mutable() const requires is_const_v<T> {
-    return stable_vector_iterator<remove_const_t<T>, TRAITS>(p);
+  auto to_mutable() const requires is_const<T> {
+    return stable_vector_iterator<remove_const<T>, TRAITS>(p);
   }
 
 private:
@@ -33782,15 +33968,15 @@ public:
   friend auto operator <=>(stable_vector_iterator<X, Z> x,
                            stable_vector_iterator<Y, Z> y)
     ->decltype(x.index_iter() <=> y.index_iter())
-    requires is_same_v<remove_const_t<X>, remove_const_t<Y>>;
+    requires is_same<remove_const<X>, remove_const<Y>>;
   template <class X, class Y, class Z>
-  friend enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>,
-                     itr_dft<stable_vector_iterator<X, Z>>>
+  friend enable_if<is_same<remove_const<X>, remove_const<Y>>,
+                   itr_dft<stable_vector_iterator<X, Z>>>
   operator -(stable_vector_iterator<X, Z>,
              stable_vector_iterator<Y, Z>);
 };
 template <class T, class U, class TRAITS>
-enable_if_t<is_same_v<remove_const_t<T>, remove_const_t<U>>, bool>
+enable_if<is_same<remove_const<T>, remove_const<U>>, bool>
 operator ==(stable_vector_iterator<T, TRAITS> x,
             stable_vector_iterator<U, TRAITS> y) {
   return x.node() == y.node();
@@ -33799,12 +33985,12 @@ template <class X, class Y, class Z>
 auto operator <=>(stable_vector_iterator<X, Z> x,
                   stable_vector_iterator<Y, Z> y)
   ->decltype(x.index_iter() <=> y.index_iter())
-  requires is_same_v<remove_const_t<X>, remove_const_t<Y>> {
+  requires is_same<remove_const<X>, remove_const<Y>> {
   return x.index_iter() <=> y.index_iter();
 }
 template <class X, class Y, class Z>
-enable_if_t<is_same_v<remove_const_t<X>, remove_const_t<Y>>,
-            itr_dft<stable_vector_iterator<X, Z>>>
+enable_if<is_same<remove_const<X>, remove_const<Y>>,
+          itr_dft<stable_vector_iterator<X, Z>>>
 operator -(stable_vector_iterator<X, Z> x,
            stable_vector_iterator<Y, Z> y) {
   return x.index_iter() - y.index_iter();
@@ -34162,7 +34348,7 @@ private:
 
   template <class UINT>
   void reserve_raw_space_at_least(UINT nn) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
 
     const size_type &cp = n;
     const size_type rest_space = cp - size();
@@ -34179,7 +34365,7 @@ private:
   }
   template <class UINT>
   void reserve_raw_space_at_least(UINT nn) requires (N != 0u) {
-    static_assert(is_integral_v<UINT> && is_unsigned_v<UINT>);
+    static_assert(is_integral<UINT> && is_unsigned<UINT>);
   }
 
   void increase_capacity_at_least_1() {
@@ -34261,7 +34447,7 @@ private:
   }
 
   template <class R>
-  enable_if_t<rng_is_sized<R>> append_range_impl(R &&r) {
+  enable_if<rng_is_sized<R>> append_range_impl(R &&r) {
     reserve_raw_space_at_least(size(r));
     auto it = end().index_iter();
 #ifndef RE_NOEXCEPT
@@ -34283,13 +34469,13 @@ private:
     node_sync(end(), it);
   }
   template <class R>
-  enable_if_t<!rng_is_sized<R>> append_range_impl(R &&r) {
+  enable_if<!rng_is_sized<R>> append_range_impl(R &&r) {
     for (auto &p : iters(r))
       emplace_back_impl(*p);
   }
 
   template <class R, class TT = value_type>
-  enable_if_t<rng_is_sized<R> || is_fitr<rng_itr<R>>, iterator>
+  enable_if<rng_is_sized<R> || is_fitr<rng_itr<R>>, iterator>
   insert_range_impl(const_iterator cpos, R &&r) {
     const auto r_sz = size(r);
     reserve_raw_space_at_least(r_sz);
@@ -34315,7 +34501,7 @@ private:
     return iterator(*j);
   }
   template <class R, class TT = value_type>
-  enable_if_t<!(rng_is_sized<R> || is_fitr<rng_itr<R>>), iterator>
+  enable_if<!(rng_is_sized<R> || is_fitr<rng_itr<R>>), iterator>
   insert_range_impl(const_iterator cpos, R &&r) {
     const auto ed_dif = end() - begin();
     const auto pos_dif = cpos - begin();
@@ -34329,7 +34515,7 @@ private:
 
   template <class SZT>
   void size_check(SZT n) const {
-    static_assert(is_integral_v<SZT> && is_unsigned_v<SZT>);
+    static_assert(is_integral<SZT> && is_unsigned<SZT>);
     if (n > max_size())
       throw_or_terminate<length_error>("re::stable_vector_adaptor: "
                                        "size overflow in size_check(n)\n");
@@ -34672,13 +34858,13 @@ public:
     assign_range_impl(rng(nn, x));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   stable_vector_adaptor(IITR from, IITR to, const alloc_t &al = alloc_t{})
     : alw_t(al) {
     construct_from_range_impl(rng(from, to));;
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range_impl(rng(from, to));
   }
 
@@ -34708,7 +34894,7 @@ public:
   iterator insert(const_iterator pos, size_type nn, const value_type &x) {
     return insert_range_impl(pos, rng(nn, x));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -34874,11 +35060,10 @@ public:
               ::const_iterator from,
               typename stable_vector_adaptor<TRAITS, NN>
               ::const_iterator to) requires (N == NN) {
-    const size_type sz = to - from;
-    reserve_raw_space_at_least(sz);
-    const auto to_iter = to.index_iter();
-
     if (addressof(l) != this) {
+      const size_type sz = to - from;
+      reserve_raw_space_at_least(sz);
+      const auto to_iter = to.index_iter();
       if (sz != 0) {
         const auto j = next.index_iter();
         for (auto &i : r_iters(j, end().index_iter() + 1))
@@ -34890,6 +35075,7 @@ public:
       }
     }
     else {
+      const auto to_iter = to.index_iter();
       iter_pair<node_base_ptr_ptr> r;
       node_base_ptr_ptr i;
       if (next < from) {
@@ -34929,11 +35115,11 @@ public:
   }
 
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return erase(it);
   }
   template <bool Y = traits::store_node_allocator::value>
-  enable_if_t<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
+  enable_if<!Y, iterator> erase_or_unlink(const_iterator it) noexcept {
     return unlink(it);
   }
 
@@ -35150,7 +35336,7 @@ public:
 
   template <class R>
   iterator replace(const_iterator i1, const_iterator i2, R &&r)
-    requires (!is_convertible_v<R &&, this_t &&>) {
+    requires (!is_convertible<R &&, this_t &&>) {
     return inner::fns::seq_container_replace_impl
       (*this, i1.to_mutable(), i2.to_mutable(), r);
   }
@@ -35223,31 +35409,35 @@ private:
   }
 
 public:
-  template <class R, class = enable_if_t
-            <is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <is_rng<R> && is_constructible<value_type, rng_ref<R>>>>
   stable_vector_adaptor(from_range_t, R &&r,
                         const allocator_type &al = allocator_type{})
     : alw_t(al) {
     construct_from_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const allocator_type &>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const allocator_type &>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   explicit stable_vector_adaptor(R &&r) {
     construct_from_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>>>
+  template <class R,
+            class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>)>>
   stable_vector_adaptor(R &&r, const allocator_type &al) : alw_t(al) {
     construct_from_range_impl(r);
   }
   template <class IITR_RANGE>
-  enable_if_t<!is_same_v<decay_t<IITR_RANGE>, this_t>
-              && is_rng<IITR_RANGE>
-              && is_constructible_v<value_type, rng_ref<IITR_RANGE>>
-              && is_assignable_v<value_type &, rng_ref<IITR_RANGE>>, this_t &>
+  enable_if<(!is_same<decay<IITR_RANGE>, this_t>
+             && is_rng<IITR_RANGE>
+             && is_constructible<value_type, rng_ref<IITR_RANGE>>
+             && is_assignable<value_type &, rng_ref<IITR_RANGE>>),
+            this_t &>
   operator =(IITR_RANGE &&r) {
     assign_range_impl(r);
     return *this;
@@ -35262,11 +35452,11 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>,
-              iterator>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>),
+            iterator>
   insert(const_iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -35276,10 +35466,10 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type &&>
-              && !is_convertible_v<IITR_RANGE &&, const value_type &>
-              && !is_convertible_v<IITR_RANGE &&, node_type &&>
-              && !is_convertible_v<IITR_RANGE &&, this_t &&>>
+  enable_if<(!is_convertible<IITR_RANGE &&, value_type &&>
+             && !is_convertible<IITR_RANGE &&, const value_type &>
+             && !is_convertible<IITR_RANGE &&, node_type &&>
+             && !is_convertible<IITR_RANGE &&, this_t &&>)>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }
@@ -35398,7 +35588,7 @@ public:
 
   template <class IT2>
   tree_first_order_iterator(const tree_first_order_iterator<IT2> x)
-    requires is_convertible_v<IT, const IT2 &> : root_it(x.root_it), it(x.it) {}
+    requires is_convertible<IT, const IT2 &> : root_it(x.root_it), it(x.it) {}
 
   bool operator ==(nullptr_t) const {
     return it == nullptr;
@@ -35557,7 +35747,7 @@ public:
 
   template <class IT2>
   tree_last_order_iterator(const tree_last_order_iterator<IT2> x)
-    requires is_convertible_v<IT, const IT2 &> : root_it(x.root_it), it(x.it) {}
+    requires is_convertible<IT, const IT2 &> : root_it(x.root_it), it(x.it) {}
 
   bool operator ==(nullptr_t) const {
     return it == nullptr;
@@ -35672,7 +35862,7 @@ public:
 
   template <class IT2>
   tree_nth_order_iterator(const tree_nth_order_iterator<IT2> x)
-    requires is_convertible_v<IT, const IT2 &>
+    requires is_convertible<IT, const IT2 &>
     : root_it(x.root_it), it(x.it), d(x.dd) {}
 
   bool operator ==(nullptr_t) const {
@@ -35831,10 +36021,10 @@ class tree_iterator {
   I i{};
 
 public:
-  using value_type = remove_cvref_t<decltype(traits_t
-                                             ::dereference(declval<I>()))>;
+  using value_type = remove_cvref<decltype(traits_t
+                                           ::dereference(declval<I>()))>;
   using reference = decltype(traits_t::dereference(declval<I>()));
-  using pointer = add_pointer_t<remove_reference_t<reference>>;
+  using pointer = add_pointer<remove_reference<reference>>;
   using difference_type = typename I::difference_type;
   using iterator_category = typename I::iterator_category;
 
@@ -35853,17 +36043,16 @@ public:
   }
 
   template <class I2>
-  tree_iterator(tree_iterator<I2> x) requires is_convertible_v<const I2 &, I>
+  tree_iterator(tree_iterator<I2> x) requires is_convertible<const I2 &, I>
     : i(x.i) {}
   template <class I2>
   tree_iterator &operator =(tree_iterator<I2> x)
-    requires (is_convertible_v<const I2 &, I>
-              && is_assignable_v<I &, const I2 &>) {
+    requires (is_convertible<const I2 &, I>
+              && is_assignable<I &, const I2 &>) {
     i = x.i;
     return *this;
   }
 
-private:
   explicit tree_iterator(I x) : i(x) {}
   I base() const {
     return i;
@@ -35875,6 +36064,7 @@ private:
     return tree_iterator<decltype(i.to_mutable())>(i.to_mutable());
   }
 
+private:
   template <class I2>
   void parent(tree_iterator<I2> x) const {
     traits_t::tree_parent(i.node(), x.base().node());
@@ -35885,15 +36075,17 @@ public:
   }
 
   using children_type = tree_node_children<traits_t>;
-  conditional_t<is_const_v<remove_reference_t<reference>>,
-                const children_type &, children_type &>
+  conditional<is_const<remove_reference<reference>>,
+              const children_type &,
+              children_type &>
   children() const {
     return *i;
   }
 
   using tree_node_type = tree_node<traits_t>;
-  conditional_t<is_const_v<remove_reference_t<reference>>,
-                const tree_node<traits_t> &, tree_node<traits_t> &>
+  conditional<is_const<remove_reference<reference>>,
+              const tree_node<traits_t> &,
+              tree_node<traits_t> &>
   tree_node() const {
     return *i;
   }
@@ -36029,8 +36221,8 @@ auto operator -(const tree_iterator<I1> &x,
 
 template <class VOID_PTR>
 struct tree_base {
-  pointer_rebind_t<VOID_PTR, pointer_rebind_t<VOID_PTR, tree_base>> iter{};
-  pointer_rebind_t<VOID_PTR, tree_base> p{};
+  ptr_rebind<VOID_PTR, ptr_rebind<VOID_PTR, tree_base>> iter{};
+  ptr_rebind<VOID_PTR, tree_base> p{};
 
   tree_base() = default;
   ~tree_base() = default;
@@ -36464,7 +36656,7 @@ public:
 
 template <class T, class AL, size_t N>
 struct gtt {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   using value_type = inner::tree_node_impl<gtt>;
   using allocator_type = alloc_rebind<AL, value_type>;
@@ -36537,9 +36729,9 @@ struct gtt {
 
 template <class VOID_PTR>
 struct linked_tree_base {
-  pointer_rebind_t<VOID_PTR, linked_tree_base> prev = nullptr;
-  pointer_rebind_t<VOID_PTR, linked_tree_base> next = nullptr;
-  pointer_rebind_t<VOID_PTR, linked_tree_base> p = nullptr;
+  ptr_rebind<VOID_PTR, linked_tree_base> prev = nullptr;
+  ptr_rebind<VOID_PTR, linked_tree_base> next = nullptr;
+  ptr_rebind<VOID_PTR, linked_tree_base> p = nullptr;
 
   linked_tree_base() = default;
   ~linked_tree_base() = default;
@@ -36566,7 +36758,7 @@ struct linked_tree_header {
 
 template <class T, class AL>
 struct ltt {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   using value_type = inner::tree_node_impl<ltt>;
   using allocator_type = alloc_rebind<AL, value_type>;
@@ -36655,10 +36847,10 @@ struct ltt {
 
 template <class VOID_PTR>
 struct logn_tree_base {
-  pointer_rebind_t<VOID_PTR, logn_tree_base> left_child{};
-  pointer_rebind_t<VOID_PTR, logn_tree_base> right_child{};
-  pointer_rebind_t<VOID_PTR, logn_tree_base> parent{};
-  pointer_rebind_t<VOID_PTR, logn_tree_base> p{};
+  ptr_rebind<VOID_PTR, logn_tree_base> left_child{};
+  ptr_rebind<VOID_PTR, logn_tree_base> right_child{};
+  ptr_rebind<VOID_PTR, logn_tree_base> parent{};
+  ptr_rebind<VOID_PTR, logn_tree_base> p{};
 
   struct header {
     mutable logn_tree_base ed;
@@ -36690,7 +36882,7 @@ struct logn_tree_base2 : logn_tree_base<VOID_PTR> {
 
 template <class T, class AL>
 struct lgtt {
-  static_assert(is_same_v<T, alloc_vt<AL>>);
+  static_assert(is_same<T, alloc_vt<AL>>);
 
   using value_type = inner::tree_node_impl<lgtt>;
   using allocator_type = alloc_rebind<AL, value_type>;
@@ -37056,20 +37248,19 @@ public:
   }
 
   template <class TRAITS2,
-            class = enable_if_t
-            <!is_same_v<TRAITS, TRAITS2>
-             && is_constructible_v<key_type,
-                                   const typename TRAITS2::key_type &>>>
+            class = enable_if
+            <(!is_same<TRAITS, TRAITS2>
+              && is_constructible<key_type,
+                                  const typename TRAITS2::key_type &>)>>
   explicit tree_adaptor(const tree_adaptor<TRAITS2> &x,
                         const allocator_type &al = allocator_type{})
     : key_alw_t(al) {
     iter = (!x.empty() ? clone_node(x.root()) : iterator{});
   }
   template <class TRAITS2>
-  enable_if_t<!is_same_v<TRAITS, TRAITS2>
-              && is_assignable_v<key_type &,
-                                 const typename TRAITS2::key_type &>,
-              tree_adaptor &>
+  enable_if<(!is_same<TRAITS, TRAITS2>
+             && is_assignable<key_type &, const typename TRAITS2::key_type &>),
+            tree_adaptor &>
   operator =(const tree_adaptor<TRAITS2> &x) {
     const iterator tmp = (!x.empty() ? clone_node(x.root()) : iterator{});
     clear();
@@ -37078,10 +37269,10 @@ public:
   }
 
   template <class TRAITS2,
-            class = enable_if_t
-            <!is_same_v<TRAITS, TRAITS2>
-             && is_constructible_v<key_type,
-                                   typename TRAITS2::key_type &&>>>
+            class = enable_if
+            <(!is_same<TRAITS, TRAITS2>
+              && is_constructible<key_type,
+                                  typename TRAITS2::key_type &&>)>>
   explicit tree_adaptor(tree_adaptor<TRAITS2> &&x,
                         const allocator_type &al = allocator_type{})
     : key_alw_t(al) {
@@ -37092,10 +37283,9 @@ public:
     x.new_data();
   }
   template <class TRAITS2>
-  enable_if_t<!is_same_v<TRAITS, TRAITS2>
-              && is_assignable_v<key_type &,
-                                 typename TRAITS2::key_type &&>,
-              tree_adaptor &>
+  enable_if<(!is_same<TRAITS, TRAITS2>
+             && is_assignable<key_type &, typename TRAITS2::key_type &&>),
+            tree_adaptor &>
   operator =(tree_adaptor<TRAITS2> &&x) {
     const iterator tmp
       = (!x.empty()
@@ -37209,8 +37399,8 @@ public:
   template <class...S>
   reference emplace(S &&...s)
     requires (sizeof...(s) == 0u
-              || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
-                  && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
+              || (!is_convertible<nth_type<0, S &&...>, const_iterator>
+                  && !is_convertible<nth_type<0, S &&...>, iterator>)) {
     clear();
     iter = new_node(forward<S>(s)...);
     iter.parent(iterator{});
@@ -37480,7 +37670,7 @@ public:
   iterator insert(const_iterator i, size_type n, const key_type &x) {
     return insert_range(i, rng(n, ref(x)));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator i, IITR from, IITR to) {
     return insert_range(i, rng(from, to));
   }
@@ -37498,13 +37688,13 @@ public:
     return iterator(it);
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, this_t &&>
-              && !is_convertible_v<R &&, vector_type &&>
-              && is_rng<R>
-              && is_constructible_v<key_type, rng_ref<R>>,
-              iterator>
+  enable_if<(!is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, this_t &&>
+             && !is_convertible<R &&, vector_type &&>
+             && is_rng<R>
+             && is_constructible<key_type, rng_ref<R>>),
+            iterator>
   insert(const_iterator i, R &&r) {
     return insert_range(i, r);
   }
@@ -37559,10 +37749,10 @@ public:
     }
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, this_t &&>
-              && !is_convertible_v<R &&, vector_type &&>>
+  enable_if<(!is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, this_t &&>
+             && !is_convertible<R &&, vector_type &&>)>
   push_back(const_iterator ci, R &&r) {
     append_range(ci, r);
   }
@@ -37621,10 +37811,10 @@ public:
     }
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, this_t &&>
-              && !is_convertible_v<R &&, vector_type &&>>
+  enable_if<(!is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, this_t &&>
+             && !is_convertible<R &&, vector_type &&>)>
   push_front(const_iterator ci, R &&r) {
     prepend_range(ci, r);
   }
@@ -38208,20 +38398,19 @@ public:
   }
 
   template <class TRAITS2,
-            class = enable_if_t
-            <!is_same_v<TRAITS, TRAITS2>
-             && is_constructible_v<key_type,
-                                   const typename TRAITS2::key_type &>>>
+            class = enable_if
+            <(!is_same<TRAITS, TRAITS2>
+              && is_constructible<key_type,
+                                  const typename TRAITS2::key_type &>)>>
   explicit tree_vector_adaptor(const tree_vector_adaptor<TRAITS2> &x,
                                const allocator_type &a = allocator_type{})
     : v(a) {
     append_data(x);
   }
   template <class TRAITS2>
-  enable_if_t<!is_same_v<TRAITS, TRAITS2>
-              && is_assignable_v<key_type &,
-                                 const typename TRAITS2::key_type &>,
-              this_t &>
+  enable_if<(!is_same<TRAITS, TRAITS2>
+             && is_assignable<key_type &, const typename TRAITS2::key_type &>),
+            this_t &>
   operator =(const tree_vector_adaptor<TRAITS2> &x) {
     clear();
     append_data(x);
@@ -38229,9 +38418,9 @@ public:
   }
 
   template <class TRAITS2,
-            class = enable_if_t
-            <!is_same_v<TRAITS, TRAITS2>
-             && is_constructible_v<key_type, typename TRAITS2::key_type &&>>>
+            class = enable_if
+            <(!is_same<TRAITS, TRAITS2>
+              && is_constructible<key_type, typename TRAITS2::key_type &&>)>>
   explicit tree_vector_adaptor(tree_vector_adaptor<TRAITS2> &&x,
                                const allocator_type &a = allocator_type{})
     : v(a) {
@@ -38239,9 +38428,9 @@ public:
     x.clear();
   }
   template <class TRAITS2>
-  enable_if_t<!is_same_v<TRAITS, TRAITS2>
-              && is_assignable_v<key_type &, typename TRAITS2::key_type &&>,
-              this_t &>
+  enable_if<(!is_same<TRAITS, TRAITS2>
+             && is_assignable<key_type &, typename TRAITS2::key_type &&>),
+            this_t &>
   operator =(tree_vector_adaptor<TRAITS2> &&x) {
     clear();
     append_data_from_rv(x);
@@ -38264,14 +38453,14 @@ public:
     assign_range(rng(n, k));
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   tree_vector_adaptor(IITR from, IITR to,
                       const allocator_type &a = allocator_type{})
     : v(a) {
     append_range(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     assign_range(rng(from, to));
   }
 
@@ -38291,14 +38480,14 @@ public:
   template <class R>
   explicit tree_vector_adaptor(R &&r,
                                const allocator_type &a = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<key_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<key_type, rng_ref<R>>)
     : v(a) {
     append_range(r);
   }
   template <class R>
   tree_vector_adaptor(from_range_t, R &&r,
                       const allocator_type &a = allocator_type{})
-    requires (is_rng<R> && is_constructible_v<key_type, rng_ref<R>>)
+    requires (is_rng<R> && is_constructible<key_type, rng_ref<R>>)
     : v(a) {
     append_range(r);
   }
@@ -38336,13 +38525,13 @@ private:
 public:
   template <class...S>
   explicit tree_vector_adaptor(tree_type &&x, S &&...s)
-    requires (is_convertible_v<S &&, tree_type &&> && ...) {
+    requires (... && is_convertible<S &&, tree_type &&>) {
     cat_impl(move(x), forward<S>(s)...);
   }
   template <class...S>
   explicit tree_vector_adaptor(allocator_arg_t, const allocator_type &a,
                                tree_type &&x, S &&...s)
-    requires (is_convertible_v<S &&, tree_type &&> && ...)
+    requires (... && is_convertible<S &&, tree_type &&>)
     : v(a) {
     cat_impl(move(x), forward<S>(s)...);
   }
@@ -38614,7 +38803,7 @@ public:
   iterator insert(const_iterator i, size_type n, const key_type &x) {
     return insert_range(i, rng(n, ref(x)));
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(const_iterator i, IITR from, IITR to) {
     return insert_range(i, rng(from, to));
   }
@@ -38633,11 +38822,11 @@ public:
     return iterator(it);
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, this_t &&>
-              && !is_convertible_v<R &&, vector_type &&>,
-              iterator>
+  enable_if<(!is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, this_t &&>
+             && !is_convertible<R &&, vector_type &&>),
+            iterator>
   insert(const_iterator i, R &&r) {
     return insert_range(i, r);
   }
@@ -38663,8 +38852,8 @@ public:
   template <class...S>
   reference emplace_back(S &&...s)
     requires (sizeof...(s) == 0u
-              || (!is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
-                  && !is_convertible_v<nth_type_t<0, S &&...>, iterator>)) {
+              || (!is_convertible<nth_type<0, S &&...>, const_iterator>
+                  && !is_convertible<nth_type<0, S &&...>, iterator>)) {
     reference ret = v.emplace_back(get_allocator(), forward<S>(s)...);
     return *ret.iter();
   }
@@ -38689,10 +38878,10 @@ public:
     }
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, tree_type &&>
-              && !is_convertible_v<R &&, this_t &&>>
+  enable_if<(!is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, tree_type &&>
+             && !is_convertible<R &&, this_t &&>)>
   push_back(R &&r) {
     append_range(r);
   }
@@ -38712,8 +38901,8 @@ public:
   }
   template <class X, class...S>
   this_t &append(X &&x, S &&...s)
-    requires (!is_convertible_v<X &&, iterator>
-              && !is_convertible_v<X &&, const_iterator>) {
+    requires (!is_convertible<X &&, iterator>
+              && !is_convertible<X &&, const_iterator>) {
     push_back(forward<X>(x));
     append(forward<S>(s)...);
     return *this;
@@ -38755,10 +38944,10 @@ public:
     }
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, tree_type &&>
-              && !is_convertible_v<R &&, this_t &&>>
+  enable_if<(!is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, tree_type &&>
+             && !is_convertible<R &&, this_t &&>)>
   push_back(const_iterator i, R &&r) {
     append_range(i, r);
   }
@@ -38789,8 +38978,8 @@ public:
   template <class...S>
   reference emplace_front(S &&...s)
     requires (sizeof...(s) > 0u
-              && !is_convertible_v<nth_type_t<0, S &&...>, const_iterator>
-              && !is_convertible_v<nth_type_t<0, S &&...>, iterator>) {
+              && !is_convertible<nth_type<0, S &&...>, const_iterator>
+              && !is_convertible<nth_type<0, S &&...>, iterator>) {
     return *v.emplace_front(get_allocator(), forward<S>(s)...).iter();
   }
   void push_front(const key_type &x) {
@@ -38814,10 +39003,10 @@ public:
     }
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, tree_type &&>
-              && !is_convertible_v<R &&, this_t &&>>
+  enable_if<(!is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, tree_type &&>
+             && !is_convertible<R &&, this_t &&>)>
   push_front(R &&r) {
     prepend_range(r);
   }
@@ -38833,8 +39022,8 @@ public:
   }
   template <class X, class...S>
   this_t &prepend(X &&x, S &&...s)
-    requires (!is_convertible_v<X &&, iterator>
-              && !is_convertible_v<X &&, const_iterator>) {
+    requires (!is_convertible<X &&, iterator>
+              && !is_convertible<X &&, const_iterator>) {
     prepend(forward<S>(s)...);
     push_front(forward<X>(x));
     return *this;
@@ -38876,10 +39065,10 @@ public:
     }
   }  
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const key_type &>
-              && !is_convertible_v<R &&, key_type &&>
-              && !is_convertible_v<R &&, tree_type &&>
-              && !is_convertible_v<R &&, this_t &&>>
+  enable_if<(!is_convertible<R &&, const key_type &>
+             && !is_convertible<R &&, key_type &&>
+             && !is_convertible<R &&, tree_type &&>
+             && !is_convertible<R &&, this_t &&>)>
   push_front(const_iterator i, R &&r) {
     prepend_range(i, r);
   }
@@ -39659,7 +39848,7 @@ public:
   matrix(matrix &&x) noexcept : c(move(x.c)), w(x.w), h(x.h) {
     x.clear();
   }
-  matrix(matrix &&x) requires (!is_nothrow_move_constructible_v<base_t>)
+  matrix(matrix &&x) requires (!is_nothrow_move_constructible<base_t>)
 #ifndef RE_NOEXCEPT
     try : c(move(x.c)), w(x.w), h(x.h) {
       x.clear();
@@ -39681,7 +39870,7 @@ public:
     return *this;
   }
   matrix &operator =(matrix &&x)
-    requires (!is_nothrow_move_assignable_v<base_t>) {
+    requires (!is_nothrow_move_assignable<base_t>) {
 #ifndef RE_NOEXCEPT
     try {
 #endif
@@ -39699,8 +39888,8 @@ public:
 #endif
     return *this;
   }
-  void swap(matrix &x, matrix &y) noexcept(is_nothrow_swappable_v<base_t>)
-    requires is_swappable_v<base_t> {
+  void swap(matrix &x, matrix &y) noexcept(is_nothrow_swappable<base_t>)
+    requires is_swappable<base_t> {
 #ifndef RE_NOEXCEPT
     try {
 #endif
@@ -39799,37 +39988,37 @@ private:
 public:
   template <class R>
   matrix(int ww, int hh, R &&r)
-    requires (!is_matrix<remove_reference_t<R>>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && !is_convertible_v<R &&, const value_type &>)
+    requires (!is_matrix<remove_reference<R>>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && !is_convertible<R &&, const value_type &>)
     : c(get_w_mul_h(ww, hh)), w(ww), h(hh) {
     assign_range(r);
   }
   template <class R>
   matrix(int ww, int hh, R &&r, const alloc_t &a)
     requires (has_allocator_type<base_t>
-              && !is_matrix<remove_reference_t<R>>
-              && is_rng<R> && is_constructible_v<value_type, rng_ref<R>>
-              && !is_convertible_v<R &&, const value_type &>)
+              && !is_matrix<remove_reference<R>>
+              && is_rng<R> && is_constructible<value_type, rng_ref<R>>
+              && !is_convertible<R &&, const value_type &>)
     : c(get_w_mul_h(ww, hh), a), w(ww), h(hh) {
     assign_range(r);
   }
 
   template <class T2, class C2>
   explicit matrix(const matrix<T2, C2> &x)
-    requires (!(is_same_v<T2, T> && is_same_v<C2, C>
-                && is_constructible_v<value_type, const T2 &>))
+    requires (!(is_same<T2, T> && is_same<C2, C>
+                && is_constructible<value_type, const T2 &>))
     : c(x.c), w(x.w), h(x.h) {}
   template <class T2, class C2>
   matrix(const matrix<T2, C2> &x, const alloc_t &a)
     requires (has_allocator_type<base_t>
-              && !(is_same_v<T2, T> && is_same_v<C2, C>
-                   && is_constructible_v<value_type, const T2 &>))
+              && !(is_same<T2, T> && is_same<C2, C>
+                   && is_constructible<value_type, const T2 &>))
     : c(x.c, a), w(x.w), h(x.h) {}
   template <class T2, class C2>
   matrix &operator =(const matrix<T2, C2> &x)
-    requires (!(is_same_v<T2, T> && is_same_v<C2, C>
-                && is_assignable_v<value_type &, const T2 &>)) {
+    requires (!(is_same<T2, T> && is_same<C2, C>
+                && is_assignable<value_type &, const T2 &>)) {
 #ifndef RE_NOEXCEPT
     try {
 #endif
@@ -39848,7 +40037,7 @@ public:
 
   template <class T2, class C2>
   explicit matrix(matrix<T2, C2> &&x)
-    requires (!(is_same_v<T2, T> && is_same_v<C2, C>))
+    requires (!(is_same<T2, T> && is_same<C2, C>))
 #ifndef RE_NOEXCEPT
     try : c(from_range, move(x.c)), w(x.w), h(x.h) {
       x.clear();
@@ -39865,7 +40054,7 @@ public:
   template <class T2, class C2>
   matrix(matrix<T2, C2> &&x, const alloc_t &a)
     requires (has_allocator_type<base_t>
-              && !(is_same_v<T2, T> && is_same_v<C2, C>))
+              && !(is_same<T2, T> && is_same<C2, C>))
 #ifndef RE_NOEXCEPT
     try : c(from_range, move(x.c), a), w(x.w), h(x.h) {
       x.clear();
@@ -39881,8 +40070,8 @@ public:
 #endif
   template <class T2, class C2>
   matrix &operator =(matrix<T2, C2> &&x)
-    requires (!(is_same_v<T2, T> && is_same_v<C2, C>
-                && is_assignable_v<value_type &, const T2 &>)) {
+    requires (!(is_same<T2, T> && is_same<C2, C>
+                && is_assignable<value_type &, const T2 &>)) {
 #ifndef RE_NOEXCEPT
     try {
 #endif
@@ -40323,6 +40512,166 @@ public:
       }
     return ret;
   }
+
+  template <class F>
+  string sprint(F f) const;
+  string sprint() const;
+
+private:
+  void make_echelon_impl(double zero_threshold, vector<pair<int, bool>> &buf)
+    requires is_same<T, double> {
+    if (width() == 0)
+      return;
+
+    buf.clear();
+      // after buf is fully built:
+      //   buf[n].first = {zero_based_row_number_to_remove_x_n, or -1 for nil}
+      //   buf[n].second = if elements except the nth and the back are all zero
+      //   n belongs to [0, width() - 1) (note: buf may be empty)
+      //   for example
+      //     buf[3] == 2
+      //     the 2th row is {0, 0, 0, 1, 0, 0, 6}, which means that x_3 = 6
+
+    const auto is_zero = [zero_threshold](double x) {
+      return -zero_threshold <= x && x <= zero_threshold;
+    };
+    int ii = 0;
+    const int n = width() - 1;
+    int i_quit = n;
+    for (int &i : iters(0, n)) {
+      if (ii >= height()) {
+        i_quit = i;
+        break;
+      }
+
+      const auto r = row(ii);
+      int j = i;
+      double abs_value = abs(ref(r, i));
+      if (abs_value <= zero_threshold) {
+        abs_value = 0.0;
+        ref(r, i) = 0.0;
+      }
+
+      for (int &k : iters(ii + 1, height())) {
+        const auto r2 = row(k);
+        const double tmp_abs = abs(ref(r2, i));
+        if (tmp_abs < zero_threshold)
+          ref(r2, i) = 0.0;
+        else {
+          if (tmp_abs > abs_value) {
+            j = k;
+            abs_value = tmp_abs;
+          }
+        }
+      }
+      if (i != j)
+        swap_ranges(row(j), r.begin());
+
+      if (ref(r, i) != 0.0) {
+        bool row_is_perfect = true;
+        const double u = 1.0 / ref(r, i);
+        ref(r, i) = 1.0;
+        for_each_excluding_last(rng(nth(r, i + 1), r.end()),
+                                [u, is_zero, &row_is_perfect](double &x) {
+                                  x *= u;
+                                  if (is_zero(x)) 
+                                    x = 0.0;
+                                  else
+                                    row_is_perfect = false;
+                                },
+                                [=](double &x) {
+                                  x *= u;
+                                  if (is_zero(x)) 
+                                    x = 0.0;
+                                });
+
+        for (int &k : iters(ii + 1, height())) {
+          const auto r2 = row(k);
+          if (ref(r2, i) != 0.0) {
+            const double f = re::exchange(ref(r2, i), 0.0);
+            auto it = nth(r, i + 1);
+            for (double &x : rng(nth(r2, i + 1), r2.end())) {
+              x -= f * *it;
+              if (is_zero(x))
+                x = 0.0;
+              ++it;
+            }
+          }
+        }
+
+        buf.push_back({ii, row_is_perfect});
+        ++ii;
+      }
+      else
+        buf.push_back({-1, false});
+    }
+    for (int &i : iters(i_quit, n))
+      buf.push_back({-1, false});
+
+    for (int &j : iters(ii, height())) {
+      double &x = back(row(j));
+      if (!is_zero(x)) {
+        x = 1.0;
+        if (buf.size() != to_unsigned(width()))
+          buf.push_back({j, false});
+      }
+      else
+        x = 0.0;
+    }
+    if (buf.size() != to_unsigned(width()))
+      buf.push_back({-1, false});
+
+    // now buf is ready
+
+    for (int &i : r_iters(0, i_quit)) {
+      const int i_row_num = buf[i].first;
+      if (i_row_num < 0)
+        continue;
+
+      const auto r = row(i_row_num);
+      bool r_is_perfect = true;
+      for (int &j : iters(i + 1, n)) {
+        if (ref(r, j) == 0.0)
+          continue;
+        if (is_zero(ref(r, j))) {
+          ref(r, j) = 0.0;
+          continue;
+        }
+
+        const auto [ii2, row_is_perfect] = buf[j];
+        if (ii2 < 0) {
+          r_is_perfect = false;
+          continue;
+        }
+        const auto r2 = row(ii2);
+        const double f = ref(r, j);
+        if (row_is_perfect) {
+          double &tmp = (back(r) -= f * back(r2));
+          if (is_zero(tmp))
+            tmp = 0.0;
+        }
+        else {
+          for (int &k : iters(j + 1, width()))
+            ref(r, k) -= f * ref(r2, k);
+        }
+        ref(r, j) = 0.0;
+      }
+      buf[i].second = r_is_perfect;
+    }
+  }
+public:
+  matrix make_echelon(double zero_threshold = 0.000001) const
+    requires is_same<T, double> {
+    matrix ret = *this;
+    vector<pair<int, bool>> buf;
+    ret.make_echelon_impl(zero_threshold, buf);
+    return ret;
+  }
+
+  string
+  sprint_solutions_of_linear_equations(size_t precision = 5,
+                                       double zero_threshold = 0.000001) const
+    requires is_same<T, double>;
 };
 
 }
@@ -40351,7 +40700,7 @@ class dup_compressed_array_iterator {
   count_t n = count_t{};
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using pointer = void;
   using reference = T;
   using difference_type = typename container_t::difference_type;
@@ -40481,7 +40830,7 @@ public:
   dup_compressed_array(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend void swap(this_t &a, this_t &b)
-    noexcept(is_nothrow_swappable_v<container_t>) {
+    noexcept(is_nothrow_swappable<container_t>) {
     adl_swap(a.v, b.v);
   }
 
@@ -40584,13 +40933,13 @@ public:
     append_n_impl(n, x);
   }
 
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   dup_compressed_array(IITR from, IITR to, const AL &al = AL{})
     : v(container_alloc_t(al)) {
     append_range_impl(rng(from, to));
   }
   template <class IITR>
-  enable_if_t<is_itr<IITR>> assign(IITR from, IITR to) {
+  enable_if<is_itr<IITR>> assign(IITR from, IITR to) {
     v.clear();
     append_range_impl(rng(from, to));
   }
@@ -40741,7 +41090,7 @@ public:
   iterator insert(iterator pos, size_type n, value_type x) {
     return insert_n_impl(pos, n, x);
   }
-  template <class IITR, class = enable_if_t<is_itr<IITR>>>
+  template <class IITR, class = enable_if<is_itr<IITR>>>
   iterator insert(iterator pos, IITR from, IITR to) {
     return insert_range_impl(pos, rng(from, to));
   }
@@ -40810,7 +41159,7 @@ public:
 
   template <class T2, class AL2>
   explicit dup_compressed_array(const dup_compressed_array<T2, AL2> &x)
-    requires (!is_same_v<T, T2> && is_constructible_v<T, const T2 &>)
+    requires (!is_same<T, T2> && is_constructible<T, const T2 &>)
     : v(from_range, x.v) {}
   template <class T2, class AL2, class F>
   dup_compressed_array(const dup_compressed_array<T2, AL2> &x, F f)
@@ -40823,30 +41172,32 @@ public:
   template <class R>
   dup_compressed_array(from_range_t,
                        R &&r, const AL &al = AL{})
-    requires (is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>)
+    requires (is_rng<R> && is_convertible<rng_ref<R>, const value_type &>)
     : v(container_alloc_t(al)) {
     append_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const AL &>
-             && is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>>>
+  template <class R, class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const AL &>
+              && is_rng<R>
+              && is_convertible<rng_ref<R>, const value_type &>)>>
   explicit dup_compressed_array(R &&r) {
     append_range_impl(r);
   }
-  template <class R, class = enable_if_t
-            <!is_same_v<decay_t<R>, this_t>
-             && !is_convertible_v<R &&, const AL &>
-             && is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>>>
+  template <class R, class = enable_if
+            <(!is_same<decay<R>, this_t>
+              && !is_convertible<R &&, const AL &>
+              && is_rng<R>
+              && is_convertible<rng_ref<R>, const value_type &>)>>
   dup_compressed_array(R &&r, const AL &al)
     : v(container_alloc_t(al)) {
     construct_from_range_impl(r);
   }
   template <class R>
-  enable_if_t<!is_same_v<decay_t<R>, this_t>
-              && !is_convertible_v<R &&, const AL &>
-              && is_rng<R> && is_convertible_v<rng_ref<R>, const value_type &>,
-              this_t &>
+  enable_if<(!is_same<decay<R>, this_t>
+             && !is_convertible<R &&, const AL &>
+             && is_rng<R> && is_convertible<rng_ref<R>, const value_type &>),
+            this_t &>
   operator =(R &&r) {
     v.clear();
     append_range_impl(r);
@@ -40864,7 +41215,7 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>, iterator>
+  enable_if<!is_convertible<IITR_RANGE &&, value_type>, iterator>
   insert(iterator pos, IITR_RANGE &&r) {
     return insert_range_impl(pos, r);
   }
@@ -40874,7 +41225,7 @@ public:
   }
 
   template <class IITR_RANGE>
-  enable_if_t<!is_convertible_v<IITR_RANGE &&, value_type>>
+  enable_if<!is_convertible<IITR_RANGE &&, value_type>>
   push_back(IITR_RANGE &&r) {
     append_range_impl(r);
   }

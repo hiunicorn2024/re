@@ -7,10 +7,6 @@
 #include "dynamic.h"
 #include "random.h"
 
-// todo:
-//   boyer_moore_searcher
-//   two_way_searcher
-
 // equal
 namespace re {
 
@@ -56,8 +52,8 @@ struct fo_equal {
   template <class IR, class IR2>
   constexpr bool operator ()(IR &&r, IR2 &&r2) const
     requires (is_rng<IR> && is_rng<IR2>) {
-    if constexpr (is_scalar_v<rng_vt<IR>>
-                  && is_same_v<rng_vt<IR>, rng_vt<IR2>>
+    if constexpr (is_integral<rng_vt<IR>>
+                  && is_same<rng_vt<IR>, rng_vt<IR2>>
                   && is_citr<rng_itr<IR>>
                   && is_citr<rng_itr<IR2>>) {
       if (!is_constant_evaluated()) {
@@ -94,8 +90,8 @@ struct fo_equal {
   template <class IR, class II>
   constexpr bool operator ()(IR &&r, const II &it) const
     requires (is_rng<IR> && !is_rng<II>) {
-    if constexpr (is_scalar_v<rng_vt<IR>>
-                  && is_same_v<rng_vt<IR>, itr_vt<II>>
+    if constexpr (is_integral<rng_vt<IR>>
+                  && is_same<rng_vt<IR>, itr_vt<II>>
                   && is_citr<rng_itr<IR>> && is_citr<II>) {
       if (!is_constant_evaluated()) {
         if (to_address(it) != nullptr)
@@ -177,9 +173,11 @@ inline constexpr fo_none_of_equal none_of_equal{};
 
 }
 
-// for_each(_plus)
+// for_each
 // for_each_excluding_first
 // for_each_excluding_last
+// for_each_excluding_first_n
+// for_each_excluding_last_n
 namespace re {
 
 struct fo_for_each_plus {
@@ -235,7 +233,7 @@ inline constexpr fo_for_each for_each{};
 
 struct fo_for_each_excluding_first {
   template <class R, class F, class FF = empty_function>
-  constexpr void operator ()(R &&r, F f, FF ff = {}) const
+  constexpr rng_itr<R> operator ()(R &&r, F f, FF ff = {}) const
     requires is_rng<R> {
     const auto ed = end(r);
     auto it = begin(r);
@@ -245,12 +243,13 @@ struct fo_for_each_excluding_first {
       for (; it != ed; ++it)
         f(*it);
     }
+    return it;
   }
 };
 inline constexpr fo_for_each_excluding_first for_each_excluding_first{};
 struct fo_for_each_excluding_last {
   template <class FR, class F, class FF = empty_function>
-  constexpr void operator ()(FR &&r, F f, FF ff = {}) const
+  constexpr rng_itr<FR> operator ()(FR &&r, F f, FF ff = {}) const
     requires is_frng<FR> {
     if constexpr (is_brng<FR>) {
       const auto ed = end(r);
@@ -260,7 +259,9 @@ struct fo_for_each_excluding_last {
         for (; it != prev_ed; ++it)
           f(*it);
         ff(*it);
+        ++it;
       }
+      return it;
     }
     else {
       const auto ed = end(r);
@@ -278,11 +279,88 @@ struct fo_for_each_excluding_last {
           it = it2;
           ++it2;
         }
+        ++it;
       }
+      return it;
     }
   }
 };
 inline constexpr fo_for_each_excluding_last for_each_excluding_last{};
+
+struct fo_for_each_excluding_first_n {
+  template <class R, class F, class FF = empty_function>
+  constexpr rng_itr<R> operator ()(R &&r, rng_dft<R> n, F f, FF ff = {}) const
+    requires is_rng<R> {
+    if constexpr (is_frng<R>) {
+      const auto ed = end(r);
+      const auto op = begin(r);
+      const auto mid_it = next(op, n, ed);
+      for (auto &i : iters(op, mid_it))
+        ff(*i);
+      auto i = mid_it;
+      for (; i != ed; ++i)
+        f(*i);
+      return i;
+    }
+    else {
+      const auto ed = end(r);
+      auto it = begin(r);
+      while (it != ed && n != 0) {
+        ff(*it);
+        ++it;
+        --n;
+      }
+      auto i = it;
+      for (; i != ed; ++i)
+        f(*i);
+      return i;
+    }
+  }
+};
+inline constexpr fo_for_each_excluding_first_n for_each_excluding_first_n{};
+struct fo_for_each_excluding_last_n {
+  template <class FR, class F, class FF = empty_function>
+  constexpr rng_itr<FR> operator ()(FR &&r, rng_dft<FR> n,
+                                    F f, FF ff = {}) const
+    requires is_frng<FR> {
+    if constexpr (is_brng<FR>) {
+      const auto ed = end(r);
+      const auto op = begin(r);
+      const auto mid_it = prev(ed, n, op);
+      for (auto &i : iters(op, mid_it))
+        f(*i);
+      auto i = mid_it;
+      for (; i != ed; ++i)
+        ff(*i);
+      return i;
+    }
+    else {
+      const auto sz = ssize(r);
+      if (n < sz) {
+        auto nn = sz - n;
+        const auto ed = end(r);
+        auto it = begin(r);
+        while (nn != 0) {
+          f(*it);
+          ++it;
+          --nn;
+        }
+        auto i = it;
+        for (; i != ed; ++i)
+          ff(*i);
+        return i;
+      }
+      else {
+        auto i = begin(r);
+        const auto ed = end(r);
+        for (; i != ed; ++i)
+          ff(*i);
+        return i;
+      }
+    }
+  }
+};
+inline constexpr fo_for_each_excluding_last_n for_each_excluding_last_n{};
 
 }
 
@@ -636,10 +714,11 @@ struct fo_find_subrange {
         return rng(op, op);
       const auto eq2 = bind(eq, _2, _1);
       if (size(r) >= n)
-        for (auto &p : iters(op, prev(ed, n - 1)))
+        for (auto &p : iters(op, prev(ed, to_signed(n) - 1))) {
           if (auto [tmp, pp] = mismatch(pattern, p, eq2);
               tmp == end(pattern))
             return rng(p, pp);
+        }
       return rng(ed, ed);
     }
     else if constexpr (!rng_is_n_value<FR2>
@@ -659,7 +738,8 @@ struct fo_find_subrange {
 
       const auto eq2 = bind(eq, _2, _1);
       for (auto &p : iters(op, it))
-        if (auto [tmp, pp] = mismatch(pattern, p, eq2); tmp == end(pattern))
+        if (auto [tmp, pp] = mismatch(pattern, p, eq2);
+            tmp == end(pattern))
           return rng(p, pp);
       return rng(ed, ed);
     }
@@ -674,7 +754,8 @@ struct fo_find_subrange {
       if (sz1 >= sz2) {
         auto p = op;
         for (auto c = sz1 - (sz2 - 1); c; --c) {
-          if (auto [tmp, pp] = mismatch(pattern, p, eq2); tmp == end(pattern))
+          if (auto [tmp, pp] = mismatch(pattern, p, eq2);
+              tmp == end(pattern))
             return rng(p, pp);
           ++p;
         }
@@ -714,9 +795,10 @@ struct fo_find_last_subrange {
       const auto ed = end(r);
       const auto eq2 = bind(eq, _2, _1);
       if (n != 0 && size(r) >= n)
-        for (auto p = prev(ed, n - 1); p != op;) {
+        for (auto p = prev(ed, to_signed(n) - 1); p != op;) {
           --p;
-          if (auto [tmp, pp] = mismatch(pattern, p, eq2); tmp == end(pattern))
+          if (auto [tmp, pp] = mismatch(pattern, p, eq2);
+              tmp == end(pattern))
             return rng(p, pp);
         }
       return rng(ed, ed);
@@ -741,7 +823,8 @@ struct fo_find_last_subrange {
       const auto eq2 = bind(eq, _2, _1);
       while (p != op) {
         --p;
-        if (auto [tmp, pp] = mismatch(pattern, p, eq2); tmp == end(pattern))
+        if (auto [tmp, pp] = mismatch(pattern, p, eq2);
+            tmp == end(pattern))
           return rng(p, pp);
       }
       return rng(ed, ed);
@@ -755,7 +838,8 @@ struct fo_find_last_subrange {
       const auto eq2 = bind(eq, _2, _1);
       auto it = begin(r);
       for (auto c = sz1 - sz2 + 1u; c != 0; --c) {
-        if (auto [tmp, it2] = mismatch(pattern, it, eq2); tmp == end(pattern))
+        if (auto [tmp, it2] = mismatch(pattern, it, eq2);
+            tmp == end(pattern))
           ret = rng(it, it2);
         ++it;
       }
@@ -866,16 +950,16 @@ inline constexpr fo_ends_with ends_with{};
 
 }
 
-// fold_left(_plus)
-// fold_left_first(_plus)
+// fold_left
+// fold_left_first
 // fold_right
 namespace re {
 
 struct fo_fold_left_plus {
   template <class IR, class T, class F>
-  constexpr pair<rng_itr<IR>, decay_t<invoke_result_t<F &, T, rng_ref<IR>>>>
+  constexpr pair<rng_itr<IR>, decay<invoke_result<F &, T, rng_ref<IR>>>>
   operator ()(IR &&r, T init, F f) const requires is_rng<IR> {
-    using t = decay_t<invoke_result_t<F &, T, rng_ref<IR>>>;
+    using t = decay<invoke_result<F &, T, rng_ref<IR>>>;
     const auto ed = end(r);
     auto it = begin(r);
     if (it == ed)
@@ -918,11 +1002,12 @@ struct fo_fold_left_first {
   }
 };
 inline constexpr fo_fold_left_first fold_left_first{};
+
 struct fo_fold_right {
   template <class BR, class T, class F>
-  constexpr decay_t<invoke_result_t<F &, rng_ref<BR>, T>>
+  constexpr decay<invoke_result<F &, rng_ref<BR>, T>>
   operator ()(BR &&r, T init, F f) const requires is_brng<BR> {
-    using t = decay_t<invoke_result_t<F &, rng_ref<BR>, T>>;
+    using t = decay<invoke_result<F &, rng_ref<BR>, T>>;
     const auto op = begin(r);
     auto it = end(r);
     if (op == it)
@@ -951,13 +1036,13 @@ inline constexpr fo_fold_right_last fold_right_last{};
 
 }
 
-// copy(_plus)
-// copy_if(_plus)
+// copy
+// copy_if
 // copy_backward
-// move(_plus)
+// move
 // move_backward
-// copy_from(_plus)
-// move_from(_plus)
+// copy_from
+// move_from
 namespace re {
 
 namespace inner::fns {
@@ -965,8 +1050,8 @@ namespace inner::fns {
 template <class IR, class OI>
 constexpr pair<rng_itr<IR>, OI> copy_plus_impl(IR &&r, OI o) {
   if constexpr (is_citr<rng_itr<IR>> && is_citr<OI>
-                && is_trivially_copyable_v<itr_vt<OI>>
-                && is_same_v<rng_vt<IR>, itr_vt<OI>>) {
+                && is_trivially_copyable<itr_vt<OI>>
+                && is_same<rng_vt<IR>, itr_vt<OI>>) {
     const auto n = size(r);
     const auto i = begin(r);
     memmove(static_cast<void *>(to_address(o)),
@@ -1039,9 +1124,9 @@ struct fo_copy_backward {
   template <class BR, class BI>
   constexpr BI operator ()(BR &&r, BI o) const
     requires (is_brng<BR> && is_bitr<BI>) {
-    if constexpr (is_citr<rng_itr<BR>> && is_trivially_copyable_v<rng_vt<BR>>
-                  && is_citr<BI> && is_trivially_copyable_v<itr_vt<BI>>
-                  && is_same_v<itr_vt<BI>, rng_vt<BR>>) {
+    if constexpr (is_citr<rng_itr<BR>> && is_trivially_copyable<rng_vt<BR>>
+                  && is_citr<BI> && is_trivially_copyable<itr_vt<BI>>
+                  && is_same<itr_vt<BI>, rng_vt<BR>>) {
       const auto n = size(r);
       memmove(static_cast<void *>
               (reinterpret_cast<char *>(to_address(o))
@@ -1072,9 +1157,9 @@ struct fo_copy_from_plus {
   template <class FR, class II>
   constexpr pair<rng_itr<FR>, II> operator ()(FR &&r, II i) const
     requires (is_frng<FR> && is_itr<II>) {
-    if constexpr (is_citr<rng_itr<FR>> && is_trivially_copyable_v<rng_vt<FR>>
-                  && is_citr<II> && is_trivially_copyable_v<itr_vt<II>>
-                  && is_same_v<rng_vt<FR>, itr_vt<II>>) {
+    if constexpr (is_citr<rng_itr<FR>> && is_trivially_copyable<rng_vt<FR>>
+                  && is_citr<II> && is_trivially_copyable<itr_vt<II>>
+                  && is_same<rng_vt<FR>, itr_vt<II>>) {
       auto n = size(r);
       memmove(static_cast<void *>(to_address(begin(r))),
               static_cast<const void *>(to_address(i)),
@@ -1121,7 +1206,7 @@ inline constexpr fo_move_from move_from{};
 
 }
 
-// swap_ranges(_plus)
+// swap_ranges
 namespace re {
 
 struct fo_swap_ranges {
@@ -1148,7 +1233,7 @@ inline constexpr fo_swap_ranges_plus swap_ranges_plus{};
 
 }
 
-// transform(_plus)
+// transform
 namespace re {
 
 struct fo_transform {
@@ -1205,10 +1290,10 @@ inline constexpr fo_transform_plus transform_plus{};
 
 }
 
-// replace(_plus)
-// replace_if(_plus)
-// replace_copy(_plus)
-// replace_copy_if(_plus)
+// replace
+// replace_if
+// replace_copy
+// replace_copy_if
 namespace re {
 
 struct fo_replace_if_plus {
@@ -1294,8 +1379,8 @@ inline constexpr fo_replace_copy replace_copy{};
 
 }
 
-// fill(_plus)
-// fill_zero(_plus)
+// fill
+// fill_zero
 // bytewise_fill
 namespace re {
 
@@ -1328,7 +1413,7 @@ constexpr rng_itr<IR> fill_zero_plus_impl(IR &&r) {
 }
 template <class IR>
 constexpr rng_itr<IR> fill_zero_plus_impl(IR &&r)
-  requires is_crng<IR> && is_integral_v<rng_vt<IR>> {
+  requires is_crng<IR> && is_integral<rng_vt<IR>> {
   memset(static_cast<void *>(to_address(begin(r))), 0,
          sizeof(rng_vt<IR>) * size(r));
   return end(r);
@@ -1368,7 +1453,7 @@ inline constexpr fo_bytewise_fill bytewise_fill{};
 
 }
 
-// generate(_plus)
+// generate
 namespace re {
 
 struct fo_generate {
@@ -1396,8 +1481,8 @@ inline constexpr fo_generate_plus generate_plus{};
 
 // remove
 // remove_if
-// remove_copy(_plus)
-// remove_copy_if(_plus)
+// remove_copy
+// remove_copy_if
 namespace re {
 
 struct fo_remove_if {
@@ -1488,6 +1573,7 @@ struct fo_unique {
   }
 };
 inline constexpr fo_unique unique{};
+
 struct fo_unique_copy_plus {
   template <class IR, class OI, class BF = equal_to<>>
   constexpr pair<rng_itr<IR>, OI> operator ()(IR &&r, OI o, BF eq = {}) const
@@ -1522,7 +1608,7 @@ inline constexpr fo_unique_copy unique_copy{};
 namespace re {
 
 struct fo_reverse {
-  template <class BR, class DO_SWAP = decay_t<decltype(adl_swap)>>
+  template <class BR, class DO_SWAP = decay<decltype(adl_swap)>>
   constexpr void operator ()(BR &&r, DO_SWAP do_swap = adl_swap) const
     requires is_brng<BR> {
     if constexpr (is_rrng<BR>) {
@@ -1568,7 +1654,7 @@ inline constexpr fo_reverse_copy reverse_copy{};
 namespace re {
 
 struct fo_rotate {
-  template <class FR, class SWAP_FN = decay_t<decltype(adl_swap)>>
+  template <class FR, class SWAP_FN = decay<decltype(adl_swap)>>
   constexpr rng_itr<FR> operator ()(FR &&r, rng_itr<FR> mid,
                                     SWAP_FN do_swap = adl_swap) const
     requires is_frng<FR> {
@@ -1845,7 +1931,8 @@ struct fo_bs_find {
   constexpr rng_itr<FR> operator ()(FR &&r, const T &x, BF less = {}) const
     requires is_frng<FR> {
     auto p = lower_bound(r, x, less);
-    if (const auto ed = end(r); p != ed && less(x, *p))
+    if (const auto ed = end(r);
+        p != ed && less(x, *p))
       p = ed;
     return p;
   }
@@ -1915,17 +2002,39 @@ struct fo_partition {
       const auto ed = end(r);
       auto it = find_if_not(r, eq);
       if (it != ed)
-        for (auto &p : iters(next(it), ed))
+        for (auto &p : iters(next(it), ed)) {
           if (eq(*p)) {
             adl_swap(*it, *p);
             ++it;
           }
+        }
       return it;
     }
   }
 };
 inline constexpr fo_partition partition{};
 
+struct fo_partition_copy_plus {
+  template <class IR, class OI, class OI2, class UF>
+  constexpr tuple<rng_itr<IR>, OI, OI2>
+  operator ()(IR &&r, OI o_true, OI2 o_false, UF eq) const
+    requires (is_rng<IR> && is_itr<OI> && is_itr<OI2>) {
+    const auto ed = end(r);
+    auto p = begin(r);
+    for (; p != ed; ++p) {
+      if (eq(*p)) {
+        *o_true = *p;
+        ++o_true;
+      }
+      else {
+        *o_false = *p;
+        ++o_false;
+      }
+    }
+    return {p, o_true, o_false};
+  }
+};
+inline constexpr fo_partition_copy_plus partition_copy_plus{};
 struct fo_partition_copy {
   template <class IR, class OI, class OI2, class UF>
   constexpr pair<OI, OI2>
@@ -2137,7 +2246,7 @@ constexpr void inplace_merge_nobuf_recurse(BI op, BI mid, BI ed, BF less) {
   //           && op != mid && mid != ed
   const auto n1 = distance(op, mid);
   const auto n2 = distance(mid, ed);
-  using szt = make_unsigned_t<itr_dft<BI>>;
+  using szt = make_unsigned<itr_dft<BI>>;
   if ((szt)n1 < (szt)n2) {
     auto it = next(mid, n2 / 2);
     if (it == mid)
@@ -2905,7 +3014,7 @@ inline constexpr fo_lexicographical_compare lexicographical_compare{};
 struct fo_lexicographical_compare_three_way {
   template <class IR1, class IR2, class BF = compare_three_way>
   constexpr auto operator ()(IR1 &&r, IR2 &&r2, BF cmp = {}) const
-    ->decltype(*begin(r) <=> *begin(r2))
+    ->decltype(cmp(*begin(r), *begin(r2)))
     requires (is_rng<IR1> && is_rng<IR2>) {
     auto it = begin(r);
     const auto ed = end(r);
@@ -3099,7 +3208,7 @@ struct fo_stable_sort_with_no_buffer {
     requires is_rrng<RR> {
     const auto len = ssize(r);
     const auto ed = end(r);
-    for (make_signed_t<rng_szt<RR>> stride = 1; stride < len; stride *= 2) {
+    for (make_signed<rng_szt<RR>> stride = 1; stride < len; stride *= 2) {
       auto p = begin(r);
       for (;;) {
         if (ed - p <= stride)
@@ -3291,8 +3400,8 @@ inline constexpr fo_nth_element nth_element{};
 
 }
 
-// accumulate(_plus)
-// reduce(_plus)
+// accumulate
+// reduce
 namespace re {
 
 struct fo_accumulate_plus {
@@ -3344,8 +3453,8 @@ inline constexpr fo_reduce reduce{};
 
 }
 
-// inner_product(_plus)
-// transform_reduce(_plus)
+// inner_product
+// transform_reduce
 namespace re {
 
 struct fo_inner_product_plus {
@@ -3446,11 +3555,11 @@ inline constexpr fo_transform_reduce transform_reduce{};
 
 }
 
-// partial_sum(_plus)
-// transform_exclusive_scan(_plus)
-// exclusive_scan(_plus)
-// transform_inclusive_scan(_plus)
-// inclusive_scan(_plus)
+// partial_sum
+// transform_exclusive_scan
+// exclusive_scan
+// transform_inclusive_scan
+// inclusive_scan
 namespace re {
 
 struct fo_partial_sum_plus {
@@ -3618,7 +3727,7 @@ inline constexpr fo_inclusive_scan inclusive_scan{};
 
 }
 
-// adjacent_difference(_plus)
+// adjacent_difference
 namespace re {
 
 struct fo_adjacent_difference_plus {
@@ -3675,7 +3784,7 @@ namespace inner::fns {
 
 template <class X>
 constexpr void gcd_lcm_impl_set_as_abs(X &x) {
-  if constexpr (is_signed_v<X>) {
+  if constexpr (is_signed<X>) {
     if (x < 0)
       x = -x;
   }
@@ -3684,17 +3793,17 @@ constexpr void gcd_lcm_impl_set_as_abs(X &x) {
 }
 struct fo_gcd {
   template <class T, class S>
-  constexpr common_type_t<T, S> operator ()(T t, S s) const
+  constexpr common_type<T, S> operator ()(T t, S s) const
     requires (integral<T> && integral<S>
-              && !is_same_v<remove_cvref_t<T>, bool>
-              && !is_same_v<remove_cvref_t<S>, bool>) {
+              && !is_same<remove_cvref<T>, bool>
+              && !is_same<remove_cvref<S>, bool>) {
     inner::fns::gcd_lcm_impl_set_as_abs(t);
     inner::fns::gcd_lcm_impl_set_as_abs(s);
     if (t == 0)
       return s;
     if (s == 0)
       return t;
-    common_type_t<T, S> a = 0, b = 0, c = 0;
+    common_type<T, S> a = 0, b = 0, c = 0;
     if (to_unsigned(s) < to_unsigned(t)) {
       a = t;
       b = s;
@@ -3716,15 +3825,15 @@ inline constexpr fo_gcd gcd{};
 
 struct fo_lcm {
   template <class T, class S>
-  constexpr common_type_t<T, S> operator ()(T t, S s) const
+  constexpr common_type<T, S> operator ()(T t, S s) const
     requires (integral<T> && integral<S>
-              && !is_same_v<remove_cvref_t<T>, bool>
-              && !is_same_v<remove_cvref_t<S>, bool>) {
+              && !is_same<remove_cvref<T>, bool>
+              && !is_same<remove_cvref<S>, bool>) {
     inner::fns::gcd_lcm_impl_set_as_abs(t);
     inner::fns::gcd_lcm_impl_set_as_abs(s);
     return (t == 0 || s == 0)
-      ? static_cast<common_type_t<T, S>>(0)
-      : static_cast<common_type_t<T, S>>(t / gcd(t, s) * s);
+      ? static_cast<common_type<T, S>>(0)
+      : static_cast<common_type<T, S>>(t / gcd(t, s) * s);
   }
 };
 inline constexpr fo_lcm lcm{};
@@ -3734,11 +3843,10 @@ inline constexpr fo_lcm lcm{};
 // midpoint
 namespace re {
 
-// todo: float point version
 struct fo_midpoint {
   template <class T>
   constexpr T operator ()(T x, T y) const
-    requires (unsigned_integral<T> && !is_same_v<remove_cvref_t<T>, bool>) {
+    requires (unsigned_integral<T> && !is_same<remove_cvref<T>, bool>) {
     using uint_t = T;
     if (x > y) {
       uint_t dif = x - y;
@@ -3751,9 +3859,9 @@ struct fo_midpoint {
   }
   template <class T>
   constexpr T operator ()(T x, T y) const
-    requires (signed_integral<T> && !is_same_v<remove_cvref_t<T>, bool>) {
+    requires (signed_integral<T> && !is_same<remove_cvref<T>, bool>) {
     using int_t = T;
-    using uint_t = make_unsigned_t<T>;
+    using uint_t = make_unsigned<T>;
     if (x > y) {
       uint_t dif = x - y;
       return y
@@ -3767,7 +3875,81 @@ struct fo_midpoint {
   }
 
   template <class T>
-  constexpr T *operator ()(T *a, T *b) const requires is_object_v<T> {
+  constexpr T operator ()(T x1, T x2) const
+    requires (is_same<T, float> || is_same<T, double>) {
+    using ts = floating_point_traits<T>;
+    if (ts::is_nan(x1) || ts::is_nan(x2))
+      return ts::nan();
+
+    T x1_abs = abs(x1);
+    T x2_abs = abs(x2);
+    T min_for_div = ts::min() * 2;
+    if (x1_abs >= min_for_div && x2_abs >= min_for_div)
+      return x1 / 2 + x2 / 2;
+    else {
+      const T sum = x1 + x2;
+      if (ts::is_infinity(sum)) {
+        if (x1_abs > x2_abs)
+          return x1 / 2 + x2;
+        else
+          return x1 + x2 / 2;
+      }
+      else if (abs(sum) >= min_for_div)
+        return sum / 2;
+      else {
+        // known:
+        //   (x1_abs or x2_abs) < min_for_div
+        //   x1_x2_sum < min_for_div
+        //
+        // guess: the_bigger_abs < min_for_div * 2
+        //
+        // demonstrate:
+        //   4 * min                       100.00
+        //   2 * min (min_for_div)          10.000
+        //   min                             1.0000
+        //   denorm_value                    0.XXXXX
+        //
+        //   if the_bigger_abs >= min_for_div * 2,
+        //     try image the other number,
+        //     then it's surely impossible
+
+        using int_t = ts::int_t;
+        using uint_t = ts::uint_t;
+        using info_t = ts::info_t;
+
+        const info_t x1_info = ts::info(x1);
+        const info_t x2_info = ts::info(x2);
+
+        const auto to_int = [](const info_t &u)->int_t {
+          uint_t tmp{};
+          if (u.e != 0u) {
+            tmp = (u.f | (uint_t)((uint_t)1u << ts::k));
+            tmp <<= (uint_t)(u.e - 1u);
+          }
+          else
+            tmp = u.f;
+          if (u.sign)
+            return (int_t)tmp;
+          else
+            return -(int_t)tmp;
+        };
+        const int_t i1 = to_int(x1_info);
+        const int_t i2 = to_int(x2_info);
+        const int_t ii = (*this)(i1, i2);
+
+        const uint_t pole = (uint_t)(uint_t(1u) << ts::k);
+        const bool sign = (ii >= 0);
+        const uint_t u = abs(ii);
+        const info_t tmp = ((u >= pole)
+                            ? info_t(sign, 1u, u - pole)
+                            : info_t(sign, 0u, u));
+        return ts::make(tmp);
+      }
+    }
+  }
+
+  template <class T>
+  constexpr T *operator ()(T *a, T *b) const requires is_object<T> {
     return a + (b - a) / 2;
   }
 };
@@ -3887,8 +4069,8 @@ public:
 struct fo_list_fns {
   template <class GET_NEXT, class SET_NEXT,
             class GET_PREV, class SET_PREV>
-  list_functions<decay_t<GET_NEXT>, decay_t<SET_NEXT>,
-                 decay_t<GET_PREV>, decay_t<SET_PREV>>
+  list_functions<decay<GET_NEXT>, decay<SET_NEXT>,
+                 decay<GET_PREV>, decay<SET_PREV>>
   operator ()(GET_NEXT get_next, SET_NEXT set_next,
               GET_PREV get_prev, SET_PREV set_prev) const {
     return {get_next, set_next, get_prev, set_prev};
@@ -3951,7 +4133,7 @@ public:
 };
 struct fo_forward_list_fns {
   template <class GET_NEXT, class SET_NEXT>
-  forward_list_functions<decay_t<GET_NEXT>, decay_t<SET_NEXT>>
+  forward_list_functions<decay<GET_NEXT>, decay<SET_NEXT>>
   operator ()(GET_NEXT get_next, SET_NEXT set_next) const {
     return {get_next, set_next};
   }
@@ -3963,6 +4145,133 @@ struct fo_forward_list_fns {
   }
 };
 inline constexpr fo_forward_list_fns forward_list_fns{};
+
+}
+
+// two_way_search
+namespace re {
+
+namespace inner::fns {
+
+template <class R, class F>
+pair<rng_itr<R>, rng_dft<R>>
+maximal_suffix_and_its_period(R &&r, F comp_3way) {
+  rng_dft<R> i = 0;
+  rng_dft<R> j = 1;
+  rng_dft<R> k = 0;
+  rng_dft<R> p = 0;
+  const rng_dft<R> r_sz = ssize(r);
+  if (r_sz > 0)
+    p = 1;
+  while (j + k < r_sz) {
+    decltype(auto) ref_i = ref(r, i + k);
+    decltype(auto) ref_j = ref(r, j + k);
+    const auto o = comp_3way(ref_i, ref_j);
+    if (o > 0) {
+      j += (k + 1);
+      k = 0;
+      p = j - i;
+    }
+    else if (o < 0) {
+      i = j;
+      j = i + 1;
+      k = 0;
+      p = 1;
+    }
+    else {
+      if (k == p) {
+        j += p;
+        k = 0;
+      }
+      else
+        ++k;
+    }
+  }
+  return {nth(r, i), p};
+}
+template <class R>
+pair<rng_itr<R>, rng_dft<R>>
+maximal_suffix_and_its_period(R &&r) {
+  return inner::fns::maximal_suffix_and_its_period(r, synth_3way);
+}
+
+template <class R, class RX, class F = equal_to<>>
+rng_itr<R> two_way_search_impl(R &&t, RX &&x, F eq = F{}) {
+  using dft = common_type<rng_dft<R>, rng_dft<RX>>;
+  const dft n = ssize(x);
+  const dft t_n = ssize(t);
+  const auto [l1, p1]
+    = inner::fns::maximal_suffix_and_its_period(x, synth_3way);
+  const auto [l2, p2]
+    = inner::fns::maximal_suffix_and_its_period(x, bind(synth_3way, _2, _1));
+  dft l{};
+  dft p{};
+  if (l1 >= l2) {
+    l = l1 - begin(x);
+    p = p1;
+  }
+  else {
+    l = l2 - begin(x);
+    p = p2;
+  }
+  if (l < n / 2 && ends_with(rng(nth(x, l), p), rng(begin(x), l), eq)) {
+    dft pos = 0;
+    dft s = 0;
+    dft i = 0;
+    dft j = 0;
+    while (pos + n <= t_n) {
+      i = max(l, s) + 1;
+      while (i <= n && eq(ref(x, i - 1), ref(t, pos + i - 1)))
+        ++i;
+      if (i <= n) {
+        pos = pos + max(i - l, s - p + 1);
+        s = 0;
+      }
+      else {
+        j = l;
+        while (j > s && eq(ref(x, j - 1), ref(t, pos + j - 1)))
+          --j;
+        if (j <= s)
+          return nth(t, pos);
+        pos += p;
+        s = n - p;
+      }
+    }
+    return end(t);
+  }
+  else {
+    dft q = max(l, n - l) + 1;
+    dft pos = 0;
+    dft i = 0;
+    dft j = 0;
+    while (pos + n <= t_n) {
+      i = l + 1;
+      while (i <= n && eq(ref(x, i - 1), ref(t, pos + i - 1)))
+        ++i;
+      if (i <= n)
+        pos += (i - l);
+      else {
+        j = l;
+        while (j > 0 && ref(x, j - 1) == ref(t, pos + j - 1))
+          --j;
+        if (j == 0)
+          return nth(t, pos);
+        pos += q;
+      }
+    }
+    return end(t);
+  }
+}
+
+}
+
+struct fo_two_way_search {
+  template <class R, class RX, class F = equal_to<>>
+  rng_itr<R> operator ()(R &&r, RX &&pattern, F eq = F{}) const {
+    return inner::fns::two_way_search_impl(r, pattern, eq);
+  }
+};
+inline constexpr fo_two_way_search two_way_search{};
 
 }
 
@@ -4057,7 +4366,7 @@ class combination_iterator {
   R_ITR r_ed = R_ITR{};
 
 public:
-  using value_type = bind_range<buf_t &, decay_t<decltype(deref)>>;
+  using value_type = bind_range<buf_t &, decay<decltype(deref)>>;
   using reference = value_type;
   using pointer = void;
   using difference_type = rng_dft<buf_t>;
@@ -4071,7 +4380,7 @@ public:
   combination_iterator &operator =(combination_iterator &&) = default;
   friend constexpr void swap(combination_iterator &x,
                              combination_iterator &y)
-    noexcept(is_nothrow_swappable_v<R_ITR>) {
+    noexcept(is_nothrow_swappable<R_ITR>) {
     adl_swap(x.p, y.p);
     adl_swap(x.r_ed, y.r_ed);
   }
@@ -4161,7 +4470,7 @@ class combination_range : range_fns {
 
 public:
   combination_range() = delete;
-  combination_range() requires is_default_constructible_v<R> = default;
+  combination_range() requires is_default_constructible<R> = default;
   ~combination_range() = default;
   combination_range(const combination_range &) = default;
   combination_range &operator =(const combination_range &) = default;
@@ -4169,8 +4478,8 @@ public:
   combination_range &operator =(combination_range &&) = default;
   template <class RR = R>
   friend void swap(combination_range &x, combination_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR>
               && default_swappable<combination_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.n, y.n);
@@ -4248,7 +4557,7 @@ inline constexpr fo_combination combination{};
 
 }
 
-// filter(_plus)
+// filter
 // filter_range
 namespace re {
 
@@ -4293,7 +4602,7 @@ public:
   using reference = itr_ref<II>;
   using pointer = II;
   using iterator_category
-    = conditional_t<is_fitr<II>, forward_iterator_tag, itr_ctg<II>>;
+    = conditional<is_fitr<II>, forward_iterator_tag, itr_ctg<II>>;
 
   filter_iterator() = default;
   ~filter_iterator() = default;
@@ -4302,8 +4611,8 @@ public:
   filter_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<II>
-             && is_nothrow_swappable_v<semiregular_function<F>>) {
+    noexcept(is_nothrow_swappable<II>
+             && is_nothrow_swappable<semiregular_function<F>>) {
     adl_swap(x.it, y.it);
     adl_swap(x.ed, y.ed);
     adl_swap(x.f, y.f);
@@ -4319,9 +4628,9 @@ public:
 
   template <class II2, class F2>
   constexpr filter_iterator(const filter_iterator<II2, F2> &x)
-    requires (!(is_same_v<II, II2> && is_same_v<F2, F>)
-              && is_convertible_v<const II2 &, II>
-              && is_convertible_v<const F2 &, F>)
+    requires (!(is_same<II, II2> && is_same<F2, F>)
+              && is_convertible<const II2 &, II>
+              && is_convertible<const F2 &, F>)
     : it(x.it), ed(x.ed), f(x.f) {}
 
   constexpr reference operator *() const {
@@ -4367,8 +4676,9 @@ class filter_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  using cache_t = conditional_t<is_rng_ref<R>, simple_wrapper<rng_itr<R>>,
-                                non_propagating_cache<rng_itr<R>>>;
+  using cache_t = conditional<is_rng_ref<R>,
+                              simple_wrapper<rng_itr<R>>,
+                              non_propagating_cache<rng_itr<R>>>;
 
   R r = R{};
   copyable_wrapper<F> f = copyable_wrapper<F>{};
@@ -4388,8 +4698,8 @@ class filter_range : range_fns {
 
 public:
   filter_range() = delete;
-  constexpr filter_range() requires (is_default_constructible_v<R>
-                                     && is_default_constructible_v<F>) {
+  constexpr filter_range() requires (is_default_constructible<R>
+                                     && is_default_constructible<F>) {
     init();
   }
   ~filter_range() = default;
@@ -4399,9 +4709,9 @@ public:
   filter_range &operator =(filter_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(filter_range &x, filter_range &y)
-    noexcept(is_nothrow_swappable_v<RR>
-             && is_nothrow_swappable_v<rng_itr<RR>>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<rng_itr<RR>>)
+    requires (is_swappable<RR>
               && default_swappable<filter_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.f, y.f);
@@ -4413,7 +4723,7 @@ public:
   }
 
   constexpr auto begin() {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       delayed_init();
       return filter_iterator<rng_itr<R>, F>(*c, end(r), *f);
     }
@@ -4423,7 +4733,7 @@ public:
     }
   }
   constexpr auto end() {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       const auto ed = end(r);
       return filter_iterator<rng_itr<R>, F>(ed, ed, *f);
     }
@@ -4432,8 +4742,8 @@ public:
       return filter_iterator<rng_itr<R>, const F *>(ed, ed, addressof(*f));
     }
   }
-  constexpr auto begin() const requires is_rng_ref<add_const_t<R>> {
-    if constexpr (is_default_constructible_v<F>) {
+  constexpr auto begin() const requires is_rng_ref<add_const<R>> {
+    if constexpr (is_default_constructible<F>) {
       return filter_iterator<rng_itr<const R>, F>(*c, end(r), *f);
     }
     else {
@@ -4441,8 +4751,8 @@ public:
         (*c, end(r), addressof(*f));
     }
   }
-  constexpr auto end() const requires is_rng_ref<add_const_t<R>> {
-    if constexpr (is_default_constructible_v<F>) {
+  constexpr auto end() const requires is_rng_ref<add_const<R>> {
+    if constexpr (is_default_constructible<F>) {
       const auto ed = end(r);
       return filter_iterator<rng_itr<const R>, F>(ed, ed, *f);
     }
@@ -4457,14 +4767,14 @@ public:
     delayed_init();
     return *c == end(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<R>> {
     return *c == end(r);
   }
 };
 template <class R, class F>
-struct is_range_reference<filter_range<R, F>>
-  : bool_constant<is_range_reference<R>::value
-                  && is_default_constructible_v<F>> {};
+struct template_is_range_reference<filter_range<R, F>>
+  : bool_constant<template_is_range_reference<R>::value
+                  && is_default_constructible<F>> {};
 struct fo_filter_rng {
   template <class R, class F>
   constexpr auto operator ()(R &&r, F f) const requires is_rng<R> {
@@ -4475,7 +4785,7 @@ inline constexpr fo_filter_rng filter_rng{};
 
 }
 
-// take(_plus)
+// take
 // take_range
 namespace re {
 
@@ -4519,7 +4829,7 @@ public:
   using reference = itr_ref<I>;
   using difference_type = itr_dft<I>;
   using pointer = I;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <is_fitr<I>, forward_iterator_tag, itr_ctg<I>>;
 
   take_iterator() = default;
@@ -4529,7 +4839,7 @@ public:
   take_iterator(take_iterator &&) = default;
   take_iterator &operator =(take_iterator &&) = default;
   friend constexpr void swap(take_iterator &x, take_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.i, y.i);
     adl_swap(x.d, y.d);
   }
@@ -4544,13 +4854,13 @@ public:
 
   template <class I2>
   constexpr take_iterator(const take_iterator<I2> &x)
-    requires (!is_same_v<I, I2> && is_convertible_v<const I2 &, I>)
+    requires (!is_same<I, I2> && is_convertible<const I2 &, I>)
     : i(x.i), d(x.d) {}
 
   template <class I1, class I2>
   friend constexpr bool operator ==(const take_iterator<I1> &x,
                                     const take_iterator<I2> &y)
-    requires (is_same_v<itr_dft<I1>, itr_dft<I2>>
+    requires (is_same<itr_dft<I1>, itr_dft<I2>>
               && can_apply_equal_to<const I1 &, const I2 &>);
 
   constexpr reference operator *() const {
@@ -4573,7 +4883,7 @@ public:
 template <class I1, class I2>
 constexpr bool operator ==(const take_iterator<I1> &x,
                            const take_iterator<I2> &y)
-  requires (is_same_v<itr_dft<I1>, itr_dft<I2>>
+  requires (is_same<itr_dft<I1>, itr_dft<I2>>
             && can_apply_equal_to<const I1 &, const I2 &>) {
   return x.i == y.i || x.d == y.d;
 }
@@ -4597,7 +4907,7 @@ class take_range : range_fns {
 
 public:
   take_range() = delete;
-  take_range() requires is_default_constructible_v<R> = default;
+  take_range() requires is_default_constructible<R> = default;
   ~take_range() = default;
   take_range(const take_range &) = default;
   take_range &operator =(const take_range &) = default;
@@ -4605,8 +4915,8 @@ public:
   take_range &operator =(take_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(take_range &x, take_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<take_range<RR>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<take_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
   }
@@ -4630,7 +4940,7 @@ public:
       return take_iterator<rng_itr<R>>(end(r), d);
     }
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     if constexpr (is_rrng<const R>) {
       return begin(r);
     }
@@ -4638,7 +4948,7 @@ public:
       return take_iterator<rng_itr<const R>>(begin(r), 0);
     }
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     if constexpr (is_rrng<const R>) {
       return next(begin(r), d, end(r));
     }
@@ -4650,7 +4960,7 @@ public:
   constexpr bool empty() {
     return empty(r) || d == 0;
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r) || d == 0;
   }
 
@@ -4658,13 +4968,13 @@ public:
     return min_value(d, ssize(r));
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
     return min_value(d, ssize(r));
   }  
 };
 template <class R>
-struct is_range_reference<take_range<R>>
-  : bool_constant<is_range_reference<R>::value> {};
+struct template_is_range_reference<take_range<R>>
+  : bool_constant<template_is_range_reference<R>::value> {};
 struct fo_take_rng {
   template <class R>
   constexpr auto operator ()(R &&r, rng_dft<R> d) const requires is_rng<R> {
@@ -4675,7 +4985,7 @@ inline constexpr fo_take_rng take_rng{};
 
 }
 
-// drop(_plus)
+// drop
 // drop_range
 namespace re {
 
@@ -4714,9 +5024,9 @@ class drop_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  using cache_t = conditional_t<is_rng_ref<R>,
-                                simple_wrapper<rng_itr<R>>,
-                                non_propagating_cache<rng_itr<R>>>;
+  using cache_t = conditional<is_rng_ref<R>,
+                              simple_wrapper<rng_itr<R>>,
+                              non_propagating_cache<rng_itr<R>>>;
 
   R r = R{};
   rng_dft<R> d = rng_dft<R>{};
@@ -4736,7 +5046,7 @@ class drop_range : range_fns {
 
 public:
   drop_range() = delete;
-  constexpr drop_range() requires is_default_constructible_v<R> {
+  constexpr drop_range() requires is_default_constructible<R> {
     init();
   }
   ~drop_range() = default;
@@ -4746,8 +5056,8 @@ public:
   drop_range &operator =(drop_range &&) = default;
   template <class RR>
   friend constexpr void swap(drop_range &x, drop_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<drop_range<RR>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<drop_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
     adl_swap(x.c, y.c);
@@ -4765,12 +5075,12 @@ public:
   constexpr rng_itr<R> end() {
     return end(r);
   }
-  constexpr rng_itr<add_const_t<R>> begin() const
-    requires is_rng_ref<add_const_t<R>> {
+  constexpr rng_itr<add_const<R>> begin() const
+    requires is_rng_ref<add_const<R>> {
     return *c;
   }
-  constexpr rng_itr<add_const_t<R>> end() const
-    requires is_rng_ref<add_const_t<R>> {
+  constexpr rng_itr<add_const<R>> end() const
+    requires is_rng_ref<add_const<R>> {
     return end(r);
   }
 
@@ -4778,7 +5088,7 @@ public:
     delayed_init();
     return *c == end(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<R>> {
     return *c == end(r);
   }
 
@@ -4787,14 +5097,14 @@ public:
     return sz - min_value(d, sz);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng_ref<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng_ref<add_const<R>> && rng_is_sized<add_const<R>>) {
     const auto sz = ssize(r);
     return sz - min_value(d, sz);
   }
 };
 template <class R>
-struct is_range_reference<drop_range<R>>
-  : bool_constant<is_range_reference<R>::value> {};
+struct template_is_range_reference<drop_range<R>>
+  : bool_constant<template_is_range_reference<R>::value> {};
 struct fo_drop_rng {
   template <class R>
   constexpr auto operator ()(R &&r, rng_dft<R> d) const requires is_rng<R> {
@@ -4805,7 +5115,7 @@ inline constexpr fo_drop_rng drop_rng{};
 
 }
 
-// take_while(_plus)
+// take_while
 // take_while_range
 namespace re {
 
@@ -4849,7 +5159,7 @@ public:
   using reference = itr_ref<I>;
   using difference_type = itr_dft<I>;
   using pointer = I;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <is_fitr<I>, forward_iterator_tag, itr_ctg<I>>;
 
   take_while_iterator() = default;
@@ -4860,7 +5170,7 @@ public:
   take_while_iterator &operator =(take_while_iterator &&) = default;
   friend constexpr void swap(take_while_iterator &x,
                              take_while_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.i, y.i);
     adl_swap(x.ed, y.ed);
     adl_swap(x.f, y.f);
@@ -4876,14 +5186,14 @@ public:
 
   template <class I2, class F2>
   constexpr take_while_iterator(const take_while_iterator<I2, F2> &x)
-    requires (!is_same_v<I, I2> && is_convertible_v<const I2 &, I>
-              && is_convertible_v<const F2 &, F>)
+    requires (!is_same<I, I2> && is_convertible<const I2 &, I>
+              && is_convertible<const F2 &, F>)
     : i(x.i), ed(x.ed), f(x.f) {}
 
   template <class I1, class I2, class FF>
   friend constexpr bool operator ==(const take_while_iterator<I1, FF> &x,
                                     const take_while_iterator<I2, FF> &y)
-    requires (is_same_v<itr_dft<I1>, itr_dft<I2>>
+    requires (is_same<itr_dft<I1>, itr_dft<I2>>
               && can_apply_equal_to<const I1 &, const I2 &>);
 
   constexpr reference operator *() const {
@@ -4905,7 +5215,7 @@ public:
 template <class I1, class I2, class FF>
 constexpr bool operator ==(const take_while_iterator<I1, FF> &x,
                            const take_while_iterator<I2, FF> &y)
-  requires (is_same_v<itr_dft<I1>, itr_dft<I2>>
+  requires (is_same<itr_dft<I1>, itr_dft<I2>>
             && can_apply_equal_to<const I1 &, const I2 &>) {
   if (x.i == y.i)
     return true;
@@ -4941,7 +5251,7 @@ class take_while_range : range_fns {
 public:
   take_while_range() = delete;
   take_while_range()
-    requires (is_default_constructible_v<R> && is_default_constructible_v<F>)
+    requires (is_default_constructible<R> && is_default_constructible<F>)
     = default;
   ~take_while_range() = default;
   take_while_range(const take_while_range &) = default;
@@ -4950,8 +5260,8 @@ public:
   take_while_range &operator =(take_while_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(take_while_range &x, take_while_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR>
               && default_swappable<take_while_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.f, y.f);
@@ -4960,7 +5270,7 @@ public:
   constexpr explicit take_while_range(R rr, F ff) : r(forward<R>(rr)), f(ff) {}
 
   constexpr auto begin() {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       return take_while_iterator<rng_itr<R>, F>(begin(r), end(r), *f);
     }
     else {
@@ -4969,7 +5279,7 @@ public:
     }
   }
   constexpr auto end() {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       return take_while_iterator<rng_itr<R>, F>(end(r), end(r), *f);
     }
     else {
@@ -4977,8 +5287,8 @@ public:
                                                         addressof(*f));
     }
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
-    if constexpr (is_default_constructible_v<F>) {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
+    if constexpr (is_default_constructible<F>) {
       return take_while_iterator<rng_itr<const R>, F>(begin(r), end(r), *f);
     }
     else {
@@ -4986,8 +5296,8 @@ public:
                                                               addressof(*f));
     }
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
-    if constexpr (is_default_constructible_v<F>) {
+  constexpr auto end() const requires is_rng<add_const<R>> {
+    if constexpr (is_default_constructible<F>) {
       return take_while_iterator<rng_itr<const R>, F>(end(r), end(r), *f);
     }
     else {
@@ -4999,14 +5309,14 @@ public:
   constexpr bool empty() {
     return empty(r) || !(*f)(*begin(r));
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r) || !(*f)(*begin(r));
   }
 };
 template <class R, class F>
-struct is_range_reference<take_while_range<R, F>>
-  : bool_constant<is_range_reference<R>::value
-                  && is_default_constructible_v<F>> {};
+struct template_is_range_reference<take_while_range<R, F>>
+  : bool_constant<template_is_range_reference<R>::value
+                  && is_default_constructible<F>> {};
 struct fo_take_while_rng {
   template <class R, class F>
   constexpr auto operator ()(R &&r, F f) const {
@@ -5017,7 +5327,7 @@ inline constexpr fo_take_while_rng take_while_rng{};
 
 }
 
-// drop_while(_plus)
+// drop_while
 // drop_while_range
 namespace re {
 
@@ -5051,9 +5361,9 @@ class drop_while_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  using cache_t = conditional_t<is_rng_ref<R>,
-                                simple_wrapper<rng_itr<R>>,
-                                non_propagating_cache<rng_itr<R>>>;
+  using cache_t = conditional<is_rng_ref<R>,
+                              simple_wrapper<rng_itr<R>>,
+                              non_propagating_cache<rng_itr<R>>>;
 
   R r = R{};
   copyable_wrapper<F> f = copyable_wrapper<F>{};
@@ -5074,8 +5384,8 @@ class drop_while_range : range_fns {
 public:
   drop_while_range() = delete;
   constexpr drop_while_range()
-    requires (is_default_constructible_v<R>
-              && is_default_constructible_v<F>) {
+    requires (is_default_constructible<R>
+              && is_default_constructible<F>) {
     init();
   }
   ~drop_while_range() = default;
@@ -5085,8 +5395,8 @@ public:
   drop_while_range &operator =(drop_while_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(drop_while_range &x, drop_while_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR>
               && default_swappable<drop_while_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.f, y.f);
@@ -5105,12 +5415,12 @@ public:
   constexpr rng_itr<R> end() {
     return end(r);
   }
-  constexpr rng_itr<add_const_t<R>> begin() const
-    requires is_rng_ref<add_const_t<R>> {
+  constexpr rng_itr<add_const<R>> begin() const
+    requires is_rng_ref<add_const<R>> {
     return *c;
   }
-  constexpr rng_itr<add_const_t<R>> end() const
-    requires is_rng_ref<add_const_t<R>> {
+  constexpr rng_itr<add_const<R>> end() const
+    requires is_rng_ref<add_const<R>> {
     return end(r);
   }
 
@@ -5118,7 +5428,7 @@ public:
     delayed_init();
     return *c == end(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<R>> {
     return *c == end(r);
   }
 
@@ -5127,14 +5437,14 @@ public:
     return end(r) - *c;
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng_ref<add_const_t<R>>
-              && rng_is_counted<add_const_t<R>>) {
+    requires (is_rng_ref<add_const<R>>
+              && rng_is_counted<add_const<R>>) {
     return end(r) - *c;
   }
 };
 template <class R, class F>
-struct is_range_reference<drop_while_range<R, F>>
-  : bool_constant<is_range_reference<R>::value> {};
+struct template_is_range_reference<drop_while_range<R, F>>
+  : bool_constant<template_is_range_reference<R>::value> {};
 struct fo_drop_while_rng {
   template <class R, class F>
   constexpr auto operator ()(R &&r, F f) const {
@@ -5177,15 +5487,15 @@ class join_iterator {
 
 public:
   using value_type = itr_vt<inner_iter_t>;
-  using difference_type = common_type_t<itr_dft<II>, itr_dft<inner_iter_t>>;
+  using difference_type = common_type<itr_dft<II>, itr_dft<inner_iter_t>>;
   using pointer = inner_iter_t;
   using reference = itr_ref<inner_iter_t>;
   using iterator_category
-    = conditional_t<is_bitr<II> && is_bitr<inner_iter_t>,
-                    bidirectional_iterator_tag,
-                    conditional_t<is_fitr<II> && is_fitr<inner_iter_t>,
-                                  forward_iterator_tag,
-                                  input_iterator_tag>>;
+    = conditional<is_bitr<II> && is_bitr<inner_iter_t>,
+                  bidirectional_iterator_tag,
+                  conditional<is_fitr<II> && is_fitr<inner_iter_t>,
+                              forward_iterator_tag,
+                              input_iterator_tag>>;
 
   join_iterator() = default;
   ~join_iterator() = default;
@@ -5194,8 +5504,8 @@ public:
   join_iterator(join_iterator &&) = default;
   join_iterator &operator =(join_iterator &&) = default;
   friend constexpr void swap(join_iterator &x, join_iterator &y)
-    noexcept(is_nothrow_swappable_v<II>
-             && is_nothrow_swappable_v<inner_iter_t>) {
+    noexcept(is_nothrow_swappable<II>
+             && is_nothrow_swappable<inner_iter_t>) {
     adl_swap(x.it, y.it);
     adl_swap(x.i, y.i);
     adl_swap(x.ed, y.ed);
@@ -5211,8 +5521,8 @@ public:
 
   template <class X>
   constexpr join_iterator(const join_iterator<X> &x)
-    requires (!is_same_v<X, II> && is_convertible_v<const X &, II>
-              && is_convertible_v
+    requires (!is_same<X, II> && is_convertible<const X &, II>
+              && is_convertible
               <const typename join_iterator<X>::inner_iter_t &, inner_iter_t>)
     : it(x.it), i(x.i), ed(x.ed) {}
 
@@ -5298,9 +5608,9 @@ class join_range<R> : range_fns {
   using const_inner_iter_t = rng_itr<itr_ref<const_iter_t>>;
 
   using cache_data_t = pair<iter_t, inner_iter_t>;
-  using cache_t = conditional_t<is_rng_ref<R>,
-                                simple_wrapper<cache_data_t>,
-                                non_propagating_cache<cache_data_t>>;
+  using cache_t = conditional<is_rng_ref<R>,
+                              simple_wrapper<cache_data_t>,
+                              non_propagating_cache<cache_data_t>>;
 
   R r = R{};
   cache_t c = cache_t{};
@@ -5332,7 +5642,7 @@ class join_range<R> : range_fns {
 
 public:
   join_range() = delete;
-  constexpr join_range() requires is_default_constructible_v<R> {
+  constexpr join_range() requires is_default_constructible<R> {
     init();
   }
   ~join_range() = default;
@@ -5342,9 +5652,9 @@ public:
   this_t &operator =(this_t &&) = default;
   template <class RR = R>
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<RR>
-             && is_nothrow_swappable_v<typename join_range<RR>::cache_t>)
-    requires is_swappable_v<RR> && default_swappable<join_range<RR>> {
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<typename join_range<RR>::cache_t>)
+    requires is_swappable<RR> && default_swappable<join_range<RR>> {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -5361,10 +5671,10 @@ public:
     const auto ed = end(r);
     return join_iterator<iter_t>(ed, inner_iter_t{}, ed);
   }
-  constexpr auto begin() const requires is_rng_ref<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng_ref<add_const<R>> {
     return join_iterator<const_iter_t>(c->first, c->second, end(r));
   }
-  constexpr auto end() const requires is_rng_ref<add_const_t<R>> {
+  constexpr auto end() const requires is_rng_ref<add_const<R>> {
     const auto ed = end(r);
     return join_iterator<const_iter_t>(ed, const_inner_iter_t{}, ed);
   }
@@ -5373,7 +5683,7 @@ public:
     delayed_init();
     return c->first == end(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<R>> {
     return c->first == end(r);
   }
 
@@ -5385,9 +5695,9 @@ public:
   }
 };
 template <class R>
-struct is_range_reference<join_range<R>>
-  : bool_constant<is_range_reference<R>::value
-                  && is_range_reference<rng_ref<R>>::value> {};
+struct template_is_range_reference<join_range<R>>
+  : bool_constant<template_is_range_reference<R>::value
+                  && template_is_range_reference<rng_ref<R>>::value> {};
 struct fo_join_rng {
   template <class R>
   constexpr auto operator ()(R &&r) const requires is_rng<R> {
@@ -5414,7 +5724,7 @@ class join_input_iterator {
 public:
   using value_type = itr_vt<inner_iter_t>;
   using reference = itr_ref<inner_iter_t>;
-  using difference_type = common_type_t<itr_dft<iter_t>, itr_dft<inner_iter_t>>;
+  using difference_type = common_type<itr_dft<iter_t>, itr_dft<inner_iter_t>>;
   using pointer = inner_iter_t;
   using iterator_category = input_iterator_tag;
 
@@ -5527,9 +5837,9 @@ public:
   this_t &operator =(this_t &&) = default;
   template <class RR = R>
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<RR>
-             && is_nothrow_swappable_v<typename join_range<RR>::cache_t>)
-    requires (is_swappable_v<RR> && default_swappable<join_range<RR>>) {
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<typename join_range<RR>::cache_t>)
+    requires (is_swappable<RR> && default_swappable<join_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -5593,20 +5903,20 @@ class join_with_iterator {
   FI ed2;
 
 public:
-  using value_type = common_type_t<itr_vt<inner_iter_t>, itr_vt<FI>>;
-  using difference_type = common_type_t<itr_dft<II>,
-                                        itr_dft<inner_iter_t>,
-                                        itr_dft<FI>>;
+  using value_type = common_type<itr_vt<inner_iter_t>, itr_vt<FI>>;
+  using difference_type = common_type<itr_dft<II>,
+                                      itr_dft<inner_iter_t>,
+                                      itr_dft<FI>>;
   using pointer = void;
-  using reference = common_reference_t<itr_ref<inner_iter_t>, itr_ref<FI>>;
+  using reference = common_reference<itr_ref<inner_iter_t>, itr_ref<FI>>;
   using iterator_category
-    = conditional_t<is_bitr<II> && is_bitr<inner_iter_t> && is_bitr<FI>,
-                    bidirectional_iterator_tag,
-                    conditional_t<is_fitr<II>
-                                  && is_fitr<inner_iter_t>
-                                  && is_fitr<FI>,
-                                  forward_iterator_tag,
-                                  input_iterator_tag>>;
+    = conditional<is_bitr<II> && is_bitr<inner_iter_t> && is_bitr<FI>,
+                  bidirectional_iterator_tag,
+                  conditional<(is_fitr<II>
+                               && is_fitr<inner_iter_t>
+                               && is_fitr<FI>),
+                              forward_iterator_tag,
+                              input_iterator_tag>>;
 
   join_with_iterator() = default;
   ~join_with_iterator() = default;
@@ -5615,9 +5925,9 @@ public:
   join_with_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<II>
-             && is_nothrow_swappable_v<inner_iter_t>
-             && is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<II>
+             && is_nothrow_swappable<inner_iter_t>
+             && is_nothrow_swappable<FI>) {
     adl_swap(x.it, y.it);
     adl_swap(x.i, y.i);
     adl_swap(x.ed, y.ed);
@@ -5631,10 +5941,10 @@ public:
 
   template <class II2, class FI2>
   constexpr join_with_iterator(const join_with_iterator<II2, FI2> &x)
-    requires (!(is_same_v<II, II2> && is_same_v<FI, FI2>)
-              && is_convertible_v<const II2 &, II>
-              && is_convertible_v<const rng_itr<itr_ref<II2>> &, inner_iter_t>
-              && is_convertible_v<const FI2 &, FI>)
+    requires (!(is_same<II, II2> && is_same<FI, FI2>)
+              && is_convertible<const II2 &, II>
+              && is_convertible<const rng_itr<itr_ref<II2>> &, inner_iter_t>
+              && is_convertible<const FI2 &, FI>)
     : it(x.it), i(x.i), ed(x.ed)
     , op2(x.op2), it2(x.it2), ed2(x.ed2) {}
 
@@ -5844,8 +6154,8 @@ class join_with_range<R, R2> : range_fns {
 public:
   join_with_range() = delete;
   join_with_range()
-    requires (is_default_constructible_v<R>
-              && is_default_constructible_v<R2>) {
+    requires (is_default_constructible<R>
+              && is_default_constructible<R2>) {
     init();
   }
   join_with_range(const join_with_range &) = default;
@@ -5853,24 +6163,24 @@ public:
   join_with_range(join_with_range &&) = default;
   join_with_range &operator =(join_with_range &&) = default;
   constexpr join_with_range &operator =(const join_with_range &x)
-    requires (is_copy_assignable_v<R> && is_copy_assignable_v<R2>
-              && !is_reference_v<R> && !is_reference_v<R2>
-              && (!is_nothrow_copy_assignable_v<R>
-                  || !is_nothrow_copy_assignable_v<R2>)) {
+    requires (is_copy_assignable<R> && is_copy_assignable<R2>
+              && !is_reference<R> && !is_reference<R2>
+              && (!is_nothrow_copy_assignable<R>
+                  || !is_nothrow_copy_assignable<R2>)) {
     copy_and_swap(x, *this);
     return *this;
   }
   template <class RR = R, class RR2 = R2>
   friend constexpr void swap(join_with_range &x, join_with_range &y)
-    noexcept(is_nothrow_swappable_v<RR>
-             && is_nothrow_swappable_v<RR2>
-             && is_nothrow_swappable_v
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<RR2>
+             && is_nothrow_swappable
              <typename join_with_range<RR, RR2>::iter_t>
-             && is_nothrow_swappable_v
+             && is_nothrow_swappable
              <typename join_with_range<RR, RR2>::inner_iter_t>
-             && is_nothrow_swappable_v
+             && is_nothrow_swappable
              <typename join_with_range<RR, RR2>::iter2_t>)
-    requires (is_swappable_v<RR> && is_swappable_v<RR2>
+    requires (is_swappable<RR> && is_swappable<RR2>
               && default_swappable<join_with_range<RR, RR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.r2, y.r2);
@@ -5894,12 +6204,12 @@ public:
   }
 
   constexpr join_with_iterator<const_iter_t, const_iter2_t> begin() const
-    requires (is_rng<add_const_t<R>> && is_rng<add_const_t<R2>>) {
+    requires (is_rng<add_const<R>> && is_rng<add_const<R2>>) {
     return join_with_iterator<const_iter_t, const_iter2_t>
       (it, inner_it, end(r), begin(r2), it2, end(r2));
   }
   constexpr join_with_iterator<const_iter_t, const_iter2_t> end() const
-    requires (is_rng<add_const_t<R>> && is_rng<add_const_t<R2>>) {
+    requires (is_rng<add_const<R>> && is_rng<add_const<R2>>) {
     return join_with_iterator<const_iter_t, const_iter2_t>
       (end(r), inner_iter_t{}, end(r), begin(r2), end(r2), end(r2));
   }
@@ -5908,12 +6218,12 @@ public:
     return it == end(r);
   }
   constexpr bool empty() const
-    requires (is_rng<add_const_t<R>> && is_rng<add_const_t<R2>>) {
+    requires (is_rng<add_const<R>> && is_rng<add_const<R2>>) {
     return it == end(r);
   }
 };
 template <class R, class R2>
-struct is_range_reference<join_with_range<R, R2>>
+struct template_is_range_reference<join_with_range<R, R2>>
   : bool_constant<is_rng_ref<R> && is_rng_ref<rng_ref<R>> && is_rng_ref<R2>> {};
 
 namespace inner {
@@ -5929,11 +6239,12 @@ class join_with_input_iterator {
   using inner_iter_t = rng_itr<rng_ref<r_t>>;
 
 public:
-  using value_type = common_type_t<rng_vt<rng_ref<r_t>>, rng_vt<r2_t>>;
-  using difference_type = common_type_t<rng_dft<r_t>, rng_dft<rng_ref<r_t>>,
-                                        rng_dft<r2_t>>;
+  using value_type = common_type<rng_vt<rng_ref<r_t>>, rng_vt<r2_t>>;
+  using difference_type = common_type<rng_dft<r_t>,
+                                      rng_dft<rng_ref<r_t>>,
+                                      rng_dft<r2_t>>;
   using pointer = void;
-  using reference = common_reference_t<rng_ref<rng_ref<r_t>>, rng_ref<r2_t>>;
+  using reference = common_reference<rng_ref<rng_ref<r_t>>, rng_ref<r2_t>>;
   using iterator_category = input_iterator_tag;
 
   join_with_input_iterator() = default;
@@ -6105,25 +6416,25 @@ class join_with_range<R, R2> : range_fns {
 public:
   join_with_range() = delete;
   join_with_range()
-    requires (is_default_constructible_v<R>
-              && is_default_constructible_v<R2>) = default;
+    requires (is_default_constructible<R>
+              && is_default_constructible<R2>) = default;
   join_with_range(const join_with_range &) = default;
   join_with_range &operator =(const join_with_range &) = default;
   join_with_range(join_with_range &&) = default;
   join_with_range &operator =(join_with_range &&) = default;
   constexpr join_with_range &operator =(const join_with_range &x)
-    requires (is_copy_assignable_v<R> && is_copy_assignable_v<R2>
-              && !is_reference_v<R> && !is_reference_v<R2>
-              && (!is_nothrow_copy_assignable_v<R>
-                  || !is_nothrow_copy_assignable_v<R2>)) {
+    requires (is_copy_assignable<R> && is_copy_assignable<R2>
+              && !is_reference<R> && !is_reference<R2>
+              && (!is_nothrow_copy_assignable<R>
+                  || !is_nothrow_copy_assignable<R2>)) {
     copy_and_swap(x, *this);
     return *this;
   }
   template <class RR = R, class RR2 = R2>
   friend constexpr void swap(join_with_range &x, join_with_range &y)
-    noexcept(is_nothrow_swappable_v<RR>
-             && is_nothrow_swappable_v<RR2>)
-    requires (is_swappable_v<RR> && is_swappable_v<RR2>
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<RR2>)
+    requires (is_swappable<RR> && is_swappable<RR2>
               && default_swappable<join_with_range<RR, RR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.r2, y.r2);
@@ -6169,8 +6480,8 @@ struct fo_adjacent_plus {
   template <class R, class OI>
   constexpr pair<rng_itr<R>, OI> operator ()(R &&r, OI o) const
     requires (is_frng<R> && N > 0) {
-    using t = type_pack_apply_t<tuple, n_type_pack_t<N, rng_itr<R>>>;
-    using ref_t = type_pack_apply_t<tuple, n_type_pack_t<N, rng_ref<R>>>;
+    using t = type_pack_apply<tuple, n_type_pack<N, rng_itr<R>>>;
+    using ref_t = type_pack_apply<tuple, n_type_pack<N, rng_ref<R>>>;
 
     const auto ed = end(r);
     t x{};
@@ -6227,18 +6538,18 @@ class adjacent_iterator {
   requires (NN > 0)
   friend class adjacent_iterator;
 
-  using t = type_pack_apply_t<tuple, n_type_pack_t<N, FI>>;
+  using t = type_pack_apply<tuple, n_type_pack<N, FI>>;
 
   t x = t{};
 
 public:
-  using value_type = type_pack_apply_t<tuple, n_type_pack_t<N, itr_vt<FI>>>;
-  using reference = type_pack_apply_t<tuple, n_type_pack_t<N, itr_ref<FI>>>;
+  using value_type = type_pack_apply<tuple, n_type_pack<N, itr_vt<FI>>>;
+  using reference = type_pack_apply<tuple, n_type_pack<N, itr_ref<FI>>>;
   using difference_type = itr_dft<FI>;
   using pointer = void;
-  using iterator_category = conditional_t<is_citr<FI>,
-                                          random_access_iterator_tag,
-                                          itr_ctg<FI>>;
+  using iterator_category = conditional<is_citr<FI>,
+                                        random_access_iterator_tag,
+                                        itr_ctg<FI>>;
 
   adjacent_iterator() = default;
   ~adjacent_iterator() = default;
@@ -6247,7 +6558,7 @@ public:
   adjacent_iterator(adjacent_iterator &&) = default;
   adjacent_iterator &operator =(adjacent_iterator &&) = default;
   friend constexpr void swap(adjacent_iterator &a, adjacent_iterator &b)
-    noexcept(is_nothrow_swappable_v<t>) {
+    noexcept(is_nothrow_swappable<t>) {
     adl_swap(a.x, b.x);
   }
 
@@ -6258,8 +6569,8 @@ public:
 
   template <class FI2>
   constexpr adjacent_iterator(const adjacent_iterator<FI2, N> &u)
-    requires (!is_same_v<FI, FI2>
-              && is_convertible_v<const FI2 &, FI>) : x(u.x) {}
+    requires (!is_same<FI, FI2>
+              && is_convertible<const FI2 &, FI>) : x(u.x) {}
 
   pointer operator ->() const = delete;
   constexpr reference operator *() const {
@@ -6362,7 +6673,7 @@ operator <=>(const adjacent_iterator<FI1, NN> &a,
 struct fo_adjacent_itr {
   template <class X, class...S>
   constexpr auto operator ()(X x, S...s) const
-    requires (is_same_v<X, S> && ...) {
+    requires (... && is_same<X, S>) {
     return adjacent_iterator<X, sizeof...(s) + 1>(tuple(x, s...));
   }
 };
@@ -6389,8 +6700,8 @@ public:
   adjacent_range &operator =(adjacent_range &&) = default;
   template <class FR2 = FR>
   friend constexpr void swap(adjacent_range &x, adjacent_range &y)
-    noexcept(is_nothrow_swappable_v<FR2>)
-    requires (is_swappable_v<FR2>
+    noexcept(is_nothrow_swappable<FR2>)
+    requires (is_swappable<FR2>
               && default_swappable<adjacent_range<FR2, N>>) {
     adl_swap(x.r, y.r);
   }
@@ -6400,7 +6711,7 @@ public:
 private:
   template <class R>
   static constexpr auto get_begin(R &rr) {
-    using t = type_pack_apply_t<tuple, n_type_pack_t<N, rng_itr<R>>>;
+    using t = type_pack_apply<tuple, n_type_pack<N, rng_itr<R>>>;
     t x;
 
     const auto ed = end(rr);
@@ -6428,7 +6739,7 @@ private:
   template <class R>
   static constexpr auto get_end(R &rr) {
     if constexpr (is_just_frng<R>) {
-      using t = type_pack_apply_t<tuple, n_type_pack_t<N, rng_itr<R>>>;
+      using t = type_pack_apply<tuple, n_type_pack<N, rng_itr<R>>>;
       t x;
       auto it = end(rr);
       type_pack_for_each<make_index_sequence<N>>([&](auto tag) {
@@ -6437,7 +6748,7 @@ private:
       return x;
     }
     else {
-      using t = type_pack_apply_t<tuple, n_type_pack_t<N, rng_itr<R>>>;
+      using t = type_pack_apply<tuple, n_type_pack<N, rng_itr<R>>>;
       t x;
 
       const auto op = begin(rr);
@@ -6470,11 +6781,11 @@ public:
   constexpr auto end() {
     return adjacent_iterator<rng_itr<FR>, N>(get_end(r));
   }
-  constexpr auto begin() const requires is_rng<add_const_t<FR>> {
-    return adjacent_iterator<rng_itr<add_const_t<FR>>, N>(get_begin(r));
+  constexpr auto begin() const requires is_rng<add_const<FR>> {
+    return adjacent_iterator<rng_itr<add_const<FR>>, N>(get_begin(r));
   }
-  constexpr auto end() const requires is_rng<add_const_t<FR>> {
-    return adjacent_iterator<rng_itr<add_const_t<FR>>, N>(get_end(r));
+  constexpr auto end() const requires is_rng<add_const<FR>> {
+    return adjacent_iterator<rng_itr<add_const<FR>>, N>(get_end(r));
   }
 
 private:
@@ -6497,7 +6808,7 @@ public:
   constexpr bool empty() {
     return empty_impl(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<FR>> {
+  constexpr bool empty() const requires is_rng<add_const<FR>> {
     return empty_impl(r);
   }
 
@@ -6505,12 +6816,12 @@ public:
     return empty() ? 0u : (size(r) - N + 1u);
   }
   constexpr rng_szt<FR> size() const
-    requires (is_rng<add_const_t<FR>> && rng_is_sized<add_const_t<FR>>) {
+    requires (is_rng<add_const<FR>> && rng_is_sized<add_const<FR>>) {
     return empty() ? 0u : (size(r) - N + 1u);
   }
 };
 template <class FR, size_t N>
-struct is_range_reference<adjacent_range<FR, N>>
+struct template_is_range_reference<adjacent_range<FR, N>>
   : bool_constant<is_rng_ref<FR>> {};
 template <size_t N>
 struct fo_adjacent_rng {
@@ -6571,9 +6882,9 @@ public:
   using reference = iter_pair<FI>;
   using difference_type = itr_dft<FI>;
   using pointer = void;
-  using iterator_category = conditional_t<is_citr<FI>,
-                                          random_access_iterator_tag,
-                                          itr_ctg<FI>>;
+  using iterator_category = conditional<is_citr<FI>,
+                                        random_access_iterator_tag,
+                                        itr_ctg<FI>>;
 
   slide_iterator() = default;
   ~slide_iterator() = default;
@@ -6582,7 +6893,7 @@ public:
   slide_iterator(slide_iterator &&) = default;
   slide_iterator &operator =(slide_iterator &&) = default;
   friend constexpr void swap(slide_iterator &x, slide_iterator &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.i, y.i);
     adl_swap(x.ii, y.ii);
   }
@@ -6596,7 +6907,7 @@ public:
 
   template <class FI2>
   constexpr slide_iterator(const slide_iterator<FI2> &u)
-    requires (!is_same_v<FI, FI2> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI, FI2> && is_convertible<const FI2 &, FI>)
     : i(u.i), ii(u.ii) {}
 
   pointer operator ->() const = delete;
@@ -6698,12 +7009,12 @@ class slide_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  using cache_data_t = conditional_t<is_brng<FR>,
-                                     tuple<rng_itr<FR>, rng_itr<FR>>,
-                                     tuple<rng_itr<FR>>>;
-  using cache_t = conditional_t<is_rng_ref<FR>,
-                                simple_wrapper<cache_data_t>,
-                                non_propagating_cache<cache_data_t>>;
+  using cache_data_t = conditional<is_brng<FR>,
+                                   tuple<rng_itr<FR>, rng_itr<FR>>,
+                                   tuple<rng_itr<FR>>>;
+  using cache_t = conditional<is_rng_ref<FR>,
+                              simple_wrapper<cache_data_t>,
+                              non_propagating_cache<cache_data_t>>;
 
   FR r = FR{};
   rng_dft<FR> n = 1;
@@ -6744,7 +7055,7 @@ class slide_range : range_fns {
 
 public:
   slide_range() = delete;
-  constexpr slide_range() requires is_default_constructible_v<FR> {
+  constexpr slide_range() requires is_default_constructible<FR> {
     init();
   }
   ~slide_range() = default;
@@ -6754,8 +7065,8 @@ public:
   slide_range &operator =(slide_range &&) = default;
   template <class FR2 = FR>
   friend constexpr void swap(slide_range &x, slide_range &y)
-    noexcept(is_nothrow_swappable_v<FR2>)
-    requires is_swappable_v<FR2> && default_swappable<slide_range<FR2>> {
+    noexcept(is_nothrow_swappable<FR2>)
+    requires is_swappable<FR2> && default_swappable<slide_range<FR2>> {
     adl_swap(x.r, y.r);
     adl_swap(x.n, y.n);
     adl_swap(x.c, y.c);
@@ -6779,15 +7090,15 @@ public:
       return slide_iterator<rng_itr<FR>>(at<1>(*c), end(r));
     }
   }
-  constexpr auto begin() const requires is_rng_ref<add_const_t<FR>> {
-    return slide_iterator<rng_itr<add_const_t<FR>>>(begin(r), at<0>(*c));
+  constexpr auto begin() const requires is_rng_ref<add_const<FR>> {
+    return slide_iterator<rng_itr<add_const<FR>>>(begin(r), at<0>(*c));
   }
-  constexpr auto end() const requires is_rng_ref<add_const_t<FR>> {
+  constexpr auto end() const requires is_rng_ref<add_const<FR>> {
     if constexpr (is_just_frng<FR>) {
-      return slide_iterator<rng_itr<add_const_t<FR>>>(end(r), end(r));
+      return slide_iterator<rng_itr<add_const<FR>>>(end(r), end(r));
     }
     else {
-      return slide_iterator<rng_itr<add_const_t<FR>>>(at<1>(*c), end(r));
+      return slide_iterator<rng_itr<add_const<FR>>>(at<1>(*c), end(r));
     }
   }
 
@@ -6795,7 +7106,7 @@ public:
     delayed_init();
     return at<0>(*c) == end(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<FR>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<FR>> {
     return at<0>(*c) == end(r);
   }
 
@@ -6804,14 +7115,14 @@ public:
     return end(r) - at<0>(*c);
   }
   constexpr rng_szt<FR> size() const
-    requires (is_rng_ref<add_const_t<FR>>
-              && itr_is_counted<rng_itr<add_const_t<FR>>>) {
+    requires (is_rng_ref<add_const<FR>>
+              && itr_is_counted<rng_itr<add_const<FR>>>) {
     return end(r) - at<0>(*c);
   }
 };
 template <class FR>
-struct is_range_reference<slide_range<FR>>
-  : bool_constant<is_range_reference<FR>::value> {};
+struct template_is_range_reference<slide_range<FR>>
+  : bool_constant<template_is_range_reference<FR>::value> {};
 struct fo_slide_rng {
   template <class FR>
   constexpr auto operator ()(FR &&r, rng_dft<FR> n) const
@@ -6860,7 +7171,7 @@ public:
   using pointer = I;
   using difference_type = itr_dft<I>;
   using iterator_category
-    = conditional_t<is_ritr<I>, random_access_iterator_tag, itr_ctg<I>>;
+    = conditional<is_ritr<I>, random_access_iterator_tag, itr_ctg<I>>;
 
   aligned_stride_iterator() = default;
   ~aligned_stride_iterator() = default;
@@ -6869,7 +7180,7 @@ public:
   aligned_stride_iterator(aligned_stride_iterator &&) = default;
   this_t &operator =(aligned_stride_iterator &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.i, y.i);
     adl_swap(x.d, y.d);
   }
@@ -6879,7 +7190,7 @@ public:
 
   template <class I2>
   constexpr aligned_stride_iterator(const aligned_stride_iterator<I2> &x)
-    requires (!is_same_v<I, I2> && is_convertible_v<const I2 &, I>)
+    requires (!is_same<I, I2> && is_convertible<const I2 &, I>)
     : i(x.i), d(x.d) {}
 
   constexpr I base() const {
@@ -6980,7 +7291,7 @@ class aligned_stride_range : range_fns {
 
 public:
   aligned_stride_range() = delete;
-  aligned_stride_range() requires is_default_constructible_v<R> = default;
+  aligned_stride_range() requires is_default_constructible<R> = default;
   ~aligned_stride_range() = default;
   aligned_stride_range(const aligned_stride_range &) = default;
   aligned_stride_range &operator =(const aligned_stride_range &) = default;
@@ -6988,8 +7299,8 @@ public:
   aligned_stride_range &operator =(aligned_stride_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(aligned_stride_range &x, aligned_stride_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR>
               && default_swappable<aligned_stride_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
@@ -7004,29 +7315,30 @@ public:
   constexpr auto end() {
     return aligned_stride_itr(end(r), d);
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return aligned_stride_itr(begin(r), d);
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return aligned_stride_itr(end(r), d);
   }
 
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r);
   }
   constexpr rng_szt<R> size() requires rng_is_sized<R> {
     return size(r) / to_unsigned(d);
   }
   constexpr rng_szt<R> size() const
-    requires is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>> {
+    requires is_rng<add_const<R>> && rng_is_sized<add_const<R>> {
     return size(r) / to_unsigned(d);
   }
 };
 template <class R>
-struct is_range_reference<aligned_stride_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<aligned_stride_range<R>>
+  : template_is_range_reference<R> {};
 struct fo_aligned_stride_rng {
   template <class R>
   constexpr auto operator ()(R &&r, rng_dft<R> d) const requires is_rng<R> {
@@ -7074,7 +7386,7 @@ public:
   using pointer = I;
   using difference_type = itr_dft<I>;
   using iterator_category
-    = conditional_t<is_ritr<I>, random_access_iterator_tag, itr_ctg<I>>;
+    = conditional<is_ritr<I>, random_access_iterator_tag, itr_ctg<I>>;
 
   stride_iterator() = default;
   ~stride_iterator() = default;
@@ -7083,7 +7395,7 @@ public:
   stride_iterator(stride_iterator &&) = default;
   stride_iterator &operator =(stride_iterator &&) = default;
   friend constexpr void swap(stride_iterator &x, stride_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.i, y.i);
     adl_swap(x.ed, y.ed);
     adl_swap(x.s, y.s);
@@ -7096,7 +7408,7 @@ public:
 
   template <class I2>
   constexpr stride_iterator(const stride_iterator<I2> &x)
-    requires (!is_same_v<I, I2> && is_convertible_v<const I2 &, I>)
+    requires (!is_same<I, I2> && is_convertible<const I2 &, I>)
     : i(x.i), ed(x.ed), s(x.s), missing(x.missing) {}
 
   constexpr I base() const {
@@ -7217,9 +7529,9 @@ class stride_range : range_fns {
 
   static constexpr bool store_missing = is_brng<R>;
   static constexpr bool delay_init = store_missing && !is_rng_ref<R>;
-  using cache_t = conditional_t<delay_init,
-                                non_propagating_cache<rng_dft<R>>,
-                                simple_wrapper<rng_dft<R>>>;
+  using cache_t = conditional<delay_init,
+                              non_propagating_cache<rng_dft<R>>,
+                              simple_wrapper<rng_dft<R>>>;
 
   R r = R{};
   rng_dft<R> s = 1;
@@ -7239,7 +7551,7 @@ class stride_range : range_fns {
 
 public:
   stride_range() = delete;
-  constexpr stride_range() requires is_default_constructible_v<R> {
+  constexpr stride_range() requires is_default_constructible<R> {
     init();
   }
   ~stride_range() = default;
@@ -7249,8 +7561,8 @@ public:
   stride_range &operator =(stride_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(stride_range &x, stride_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<stride_range<RR>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<stride_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.s, y.s);
     adl_swap(x.c, y.c);
@@ -7268,11 +7580,11 @@ public:
     return stride_itr(end(r), end(r), s, *c);
   }
   constexpr auto begin() const
-    requires (is_rng<add_const_t<R>> && !delay_init) {
+    requires (is_rng<add_const<R>> && !delay_init) {
     return stride_itr(begin(r), end(r), s);
   }
   constexpr auto end() const
-    requires (is_rng<add_const_t<R>> && !delay_init) {
+    requires (is_rng<add_const<R>> && !delay_init) {
     return stride_itr(end(r), end(r), s, *c);
   }
 
@@ -7280,7 +7592,7 @@ public:
     return empty(r);
   }
   constexpr bool empty() const
-    requires (is_rng<add_const_t<R>> && !delay_init) {
+    requires (is_rng<add_const<R>> && !delay_init) {
     return empty(r);
   }
 
@@ -7293,8 +7605,8 @@ public:
     }
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && !delay_init
-              && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && !delay_init
+              && rng_is_sized<add_const<R>>) {
     if constexpr (itr_is_counted<rng_itr<R>> && store_missing) {
       return to_unsigned(end() - begin());
     }
@@ -7304,7 +7616,8 @@ public:
   }
 };
 template <class R>
-struct is_range_reference<stride_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<stride_range<R>>
+  : template_is_range_reference<R> {};
 struct fo_stride_rng {
   template <class R>
   constexpr auto operator ()(R &&r, rng_dft<R> s) const requires is_rng<R> {
@@ -7354,7 +7667,7 @@ public:
   using pointer = void;
   using difference_type = itr_dft<FI>;
   using iterator_category
-    = conditional_t<is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
+    = conditional<is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
 
   aligned_chunk_iterator() = default;
   ~aligned_chunk_iterator() = default;
@@ -7363,7 +7676,7 @@ public:
   aligned_chunk_iterator(aligned_chunk_iterator &&) = default;
   this_t &operator =(aligned_chunk_iterator &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.i, y.i);
     adl_swap(x.s, y.s);
   }
@@ -7372,7 +7685,7 @@ public:
 
   template <class FI2>
   constexpr aligned_chunk_iterator(const aligned_chunk_iterator<FI2> &x)
-    requires (!is_same_v<FI, FI2> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI, FI2> && is_convertible<const FI2 &, FI>)
     : i(x.i), s(x.s) {}
 
   constexpr FI base() const {
@@ -7485,7 +7798,7 @@ class aligned_chunk_range : range_fns {
 
 public:
   aligned_chunk_range() = delete;
-  aligned_chunk_range() requires is_default_constructible_v<FR> = default;
+  aligned_chunk_range() requires is_default_constructible<FR> = default;
   ~aligned_chunk_range() = default;
   aligned_chunk_range(const aligned_chunk_range &) = default;
   aligned_chunk_range &operator =(const aligned_chunk_range &) = default;
@@ -7493,8 +7806,8 @@ public:
   aligned_chunk_range &operator =(aligned_chunk_range &&) = default;
   template <class FR2 = FR>
   friend constexpr void swap(aligned_chunk_range &x, aligned_chunk_range &y)
-    noexcept(is_nothrow_swappable_v<FR2>)
-    requires (is_swappable_v<FR2>
+    noexcept(is_nothrow_swappable<FR2>)
+    requires (is_swappable<FR2>
               && default_swappable<aligned_chunk_range<FR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.d, y.d);
@@ -7509,29 +7822,30 @@ public:
   constexpr auto end() {
     return aligned_chunk_itr(end(r), d);
   }
-  constexpr auto begin() const requires is_rng<add_const_t<FR>> {
+  constexpr auto begin() const requires is_rng<add_const<FR>> {
     return aligned_chunk_itr(begin(r), d);
   }
-  constexpr auto end() const requires is_rng<add_const_t<FR>> {
+  constexpr auto end() const requires is_rng<add_const<FR>> {
     return aligned_chunk_itr(end(r), d);
   }
 
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<FR>> {
+  constexpr bool empty() const requires is_rng<add_const<FR>> {
     return empty(r);
   }
   constexpr rng_szt<FR> size() requires rng_is_sized<FR> {
     return size(r) / to_unsigned(d);
   }
   constexpr rng_szt<FR> size() const
-    requires is_rng<add_const_t<FR>> && rng_is_sized<add_const_t<FR>> {
+    requires is_rng<add_const<FR>> && rng_is_sized<add_const<FR>> {
     return size(r) / to_unsigned(d);
   }
 };
 template <class FR>
-struct is_range_reference<aligned_chunk_range<FR>> : is_range_reference<FR> {};
+struct template_is_range_reference<aligned_chunk_range<FR>>
+  : template_is_range_reference<FR> {};
 struct fo_aligned_chunk_rng {
   template <class FR>
   constexpr auto operator ()(FR &&r, rng_dft<FR> d) const requires is_rng<FR> {
@@ -7597,9 +7911,9 @@ public:
   using reference = iter_pair<FI>;
   using difference_type = itr_dft<FI>;
   using pointer = void;
-  using iterator_category = conditional_t<is_ritr<FI>,
-                                          random_access_iterator_tag,
-                                          itr_ctg<FI>>;
+  using iterator_category = conditional<is_ritr<FI>,
+                                        random_access_iterator_tag,
+                                        itr_ctg<FI>>;
 
   chunk_iterator() = default;
   ~chunk_iterator() = default;
@@ -7608,7 +7922,7 @@ public:
   chunk_iterator(chunk_iterator &&) = default;
   chunk_iterator &operator =(chunk_iterator &&) = default;
   friend constexpr void swap(chunk_iterator &x, chunk_iterator &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.i, y.i);
     adl_swap(x.i2, y.i2);
     adl_swap(x.ed, y.ed);
@@ -7628,7 +7942,7 @@ public:
 
   template <class FI2>
   constexpr chunk_iterator(const chunk_iterator<FI2> &u)
-    requires (!is_same_v<FI, FI2> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI, FI2> && is_convertible<const FI2 &, FI>)
     : i(u.i), i2(u.i2), ed(u.ed), s(u.s), missing(u.missing) {}
 
   pointer operator ->() const = delete;
@@ -7759,9 +8073,9 @@ class chunk_range : range_fns {
     rng_dft<FR> m1;
     rng_dft<FR> m2;
   };
-  using cache_t = conditional_t<is_rng_ref<FR>,
-                                simple_wrapper<cache_data_t>,
-                                non_propagating_cache<cache_data_t>>;
+  using cache_t = conditional<is_rng_ref<FR>,
+                              simple_wrapper<cache_data_t>,
+                              non_propagating_cache<cache_data_t>>;
 
   FR r = FR{};
   rng_dft<FR> s = 1;
@@ -7789,7 +8103,7 @@ class chunk_range : range_fns {
 
 public:
   chunk_range() = delete;
-  constexpr chunk_range() requires is_default_constructible_v<FR> {
+  constexpr chunk_range() requires is_default_constructible<FR> {
     init();
   }
   ~chunk_range() = default;
@@ -7799,8 +8113,8 @@ public:
   chunk_range &operator =(chunk_range &&) = default;
   template <class FR2 = FR>
   friend constexpr void swap(chunk_range &x, chunk_range &y)
-    noexcept(is_nothrow_swappable_v<FR2>)
-    requires (is_swappable_v<FR2> && default_swappable<chunk_range<FR2>>) {
+    noexcept(is_nothrow_swappable<FR2>)
+    requires (is_swappable<FR2> && default_swappable<chunk_range<FR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.s, y.s);
     adl_swap(x.c, y.c);
@@ -7819,11 +8133,11 @@ public:
     const auto ed = end(r);
     return chunk_itr(ed, ed, ed, s, c->m2);
   }
-  constexpr auto begin() const requires is_rng_ref<add_const_t<FR>> {
-    return chunk_iterator<rng_itr<add_const_t<FR>>>
+  constexpr auto begin() const requires is_rng_ref<add_const<FR>> {
+    return chunk_iterator<rng_itr<add_const<FR>>>
       (begin(r), c->i, end(r), s, c->m1);
   }
-  constexpr auto end() const requires is_rng_ref<add_const_t<FR>> {
+  constexpr auto end() const requires is_rng_ref<add_const<FR>> {
     const auto ed = end(r);
     return chunk_itr(ed, ed, ed, s, c->m2);
   }
@@ -7831,7 +8145,7 @@ public:
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<FR>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<FR>> {
     return empty(r);
   }
 
@@ -7839,12 +8153,13 @@ public:
     return to_unsigned(div_round_up(ssize(r), s));
   }
   constexpr rng_szt<FR> size() const
-    requires is_rng_ref<add_const_t<FR>> && rng_is_sized<add_const_t<FR>> {
+    requires is_rng_ref<add_const<FR>> && rng_is_sized<add_const<FR>> {
     return to_unsigned(div_round_up(ssize(r), s));
   }
 };
 template <class FR>
-struct is_range_reference<chunk_range<FR>> : is_range_reference<FR> {};
+struct template_is_range_reference<chunk_range<FR>>
+  : template_is_range_reference<FR> {};
 struct fo_chunk_rng {
   template <class FR>
   constexpr auto operator ()(FR &&r, rng_dft<FR> n) const
@@ -7909,9 +8224,9 @@ public:
   using reference = value_type;
   using difference_type = itr_dft<FI>;
   using pointer = void;
-  using iterator_category = conditional_t<is_bitr<FI>,
-                                          bidirectional_iterator_tag,
-                                          forward_iterator_tag>;
+  using iterator_category = conditional<is_bitr<FI>,
+                                        bidirectional_iterator_tag,
+                                        forward_iterator_tag>;
 
   chunk_by_iterator() = default;
   ~chunk_by_iterator() = default;
@@ -7920,8 +8235,8 @@ public:
   chunk_by_iterator(chunk_by_iterator &&) = default;
   chunk_by_iterator &operator =(chunk_by_iterator &&) = default;
   friend constexpr void swap(chunk_by_iterator &x, chunk_by_iterator &y)
-    noexcept(is_nothrow_swappable_v<FI>
-             && is_nothrow_swappable_v<semiregular_function<F>>) {
+    noexcept(is_nothrow_swappable<FI>
+             && is_nothrow_swappable<semiregular_function<F>>) {
     adl_swap(x.i, y.i);
     adl_swap(x.i2, y.i2);
     adl_swap(x.op, y.op);
@@ -7934,8 +8249,8 @@ public:
 
   template <class FI2, class F2>
   constexpr chunk_by_iterator(const chunk_by_iterator<FI2, F2> &x)
-    requires (!is_same_v<FI, FI2> && is_convertible_v<const FI2 &, FI>
-              && is_convertible_v<const F2 &, F>)
+    requires (!is_same<FI, FI2> && is_convertible<const FI2 &, FI>
+              && is_convertible<const F2 &, F>)
     : i(x.i), i2(x.i2), op(x.op), ed(x.ed), f(x.f) {}
 
   constexpr value_type base() const {
@@ -7991,9 +8306,9 @@ class chunk_by_range : range_fns {
   using range_fns::empty;
 
   using cache_data_t = rng_itr<FR>;
-  using cache_t = conditional_t<is_rng_ref<FR>,
-                                simple_wrapper<cache_data_t>,
-                                non_propagating_cache<cache_data_t>>;
+  using cache_t = conditional<is_rng_ref<FR>,
+                              simple_wrapper<cache_data_t>,
+                              non_propagating_cache<cache_data_t>>;
 
   FR r = FR{};
   copyable_wrapper<EQ> eq = copyable_wrapper<EQ>{};
@@ -8022,8 +8337,8 @@ class chunk_by_range : range_fns {
 
 public:
   chunk_by_range() = delete;
-  constexpr chunk_by_range() requires (is_default_constructible_v<FR>
-                                       && is_default_constructible_v<EQ>) {
+  constexpr chunk_by_range() requires (is_default_constructible<FR>
+                                       && is_default_constructible<EQ>) {
     init();
   }
   ~chunk_by_range() = default;
@@ -8033,8 +8348,8 @@ public:
   chunk_by_range &operator =(chunk_by_range &&) = default;
   template <class FR2 = FR>
   friend constexpr void swap(chunk_by_range &x, chunk_by_range &y)
-    noexcept(is_nothrow_swappable_v<FR2>)
-    requires (is_swappable_v<FR2>
+    noexcept(is_nothrow_swappable<FR2>)
+    requires (is_swappable<FR2>
               && default_swappable<chunk_by_range<FR2, EQ>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.eq, y.eq);
@@ -8046,7 +8361,7 @@ public:
   }
 
   constexpr auto begin() {
-    if constexpr (is_default_constructible_v<EQ>) {
+    if constexpr (is_default_constructible<EQ>) {
       delayed_init();
       const auto op = begin(r);
       return chunk_by_itr(op, *c, op, end(r), *eq);
@@ -8058,7 +8373,7 @@ public:
     }
   }
   constexpr auto end() {
-    if constexpr (is_default_constructible_v<EQ>) {
+    if constexpr (is_default_constructible<EQ>) {
       delayed_init();
       const auto ed = end(r);
       return chunk_by_itr(ed, ed, begin(r), ed, *eq);
@@ -8069,8 +8384,8 @@ public:
       return chunk_by_itr(ed, ed, begin(r), ed, addressof(as_const(*eq)));
     }
   }
-  constexpr auto begin() const requires is_rng_ref<add_const_t<FR>> {
-    if constexpr (is_default_constructible_v<EQ>) {
+  constexpr auto begin() const requires is_rng_ref<add_const<FR>> {
+    if constexpr (is_default_constructible<EQ>) {
       const auto op = begin(r);
       return chunk_by_itr(op, *c, op, end(r), *eq);
     }
@@ -8079,8 +8394,8 @@ public:
       return chunk_by_itr(op, *c, op, end(r), addressof(as_const(*eq)));
     }
   }
-  constexpr auto end() const requires is_rng_ref<add_const_t<FR>> {
-    if constexpr (is_default_constructible_v<EQ>) {
+  constexpr auto end() const requires is_rng_ref<add_const<FR>> {
+    if constexpr (is_default_constructible<EQ>) {
       const auto ed = end(r);
       return chunk_by_itr(ed, ed, begin(r), ed, *eq);
     }
@@ -8093,14 +8408,14 @@ public:
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng_ref<add_const_t<FR>> {
+  constexpr bool empty() const requires is_rng_ref<add_const<FR>> {
     return empty(r);
   }
 };
 template <class FR, class EQ>
-struct is_range_reference<chunk_by_range<FR, EQ>>
-  : bool_constant<is_range_reference<FR>::value
-                  && is_default_constructible_v<EQ>> {};
+struct template_is_range_reference<chunk_by_range<FR, EQ>>
+  : bool_constant<template_is_range_reference<FR>::value
+                  && is_default_constructible<EQ>> {};
 struct fo_chunk_by_rng {
   template <class FR, class F>
   constexpr auto operator ()(FR &&r, F f) const requires is_frng<FR> {
@@ -8123,7 +8438,7 @@ struct fo_inner_cartesian_product_plus {
       return {next(begin(fr), end(fr)), o};
 
     if (auto tmp = size(fr);
-        tmp > to_unsigned(numeric_limits<make_signed_t<size_t>>::max()))
+        tmp > to_unsigned(numeric_limits<make_signed<size_t>>::max()))
       throw_or_terminate<length_error>
         ("re::inner_cartesian_product(r, o): too big range size\n");
 
@@ -8257,7 +8572,7 @@ class inner_cartesian_product_range : range_fns {
       tmp.y = !(empty(r) || any_of(r, re::empty));
       if (tmp.y) {
         if (auto tmp2 = size(r);
-            tmp2 > to_unsigned(numeric_limits<make_signed_t<size_t>>::max()))
+            tmp2 > to_unsigned(numeric_limits<make_signed<size_t>>::max()))
           throw_or_terminate<length_error>
             ("re::inner_cartesian_product_range::delayed_init(): "
              "too big range size\n");
@@ -8270,7 +8585,7 @@ class inner_cartesian_product_range : range_fns {
 
 public:
   inner_cartesian_product_range() = delete;
-  inner_cartesian_product_range() requires is_default_constructible_v<FR>
+  inner_cartesian_product_range() requires is_default_constructible<FR>
     = default;
   ~inner_cartesian_product_range() = default;
   inner_cartesian_product_range(const this_t &) = default;
@@ -8279,8 +8594,8 @@ public:
   this_t &operator =(this_t &&) = default;
   template <class FR2 = FR>  
   friend void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FR2>)
-    requires (is_swappable_v<FR2>
+    noexcept(is_nothrow_swappable<FR2>)
+    requires (is_swappable<FR2>
               && default_swappable<inner_cartesian_product_range<FR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
@@ -8350,7 +8665,7 @@ constexpr bool cartesian_product_impl_plus_plus(T &x) {
 template <class T, class OI, size_t...IDS>
 constexpr void cartesian_product_impl_assign0(T &x, OI &o,
                                               index_sequence<IDS...>) {
-  *o = tuple<itr_ref<tuple_element_t<0, tuple_element_t<IDS, T>>>...>
+  *o = tuple<itr_ref<tuple_element<0, tuple_element<IDS, T>>>...>
     (*at<IDS>(x)[0]...);
   ++o;
 }
@@ -8388,7 +8703,7 @@ constexpr auto cartesian_product_impl2(T &&x) {
 }
 template <size_t N, class T>
 constexpr auto cartesian_product_impl(T &&x) {
-  return cartesian_product_impl2<tuple_size_v<remove_reference_t<T>>>
+  return cartesian_product_impl2<tuple_size<remove_reference<T>>>
     (forward<T>(x));
 }
 
@@ -8417,7 +8732,7 @@ constexpr void cartesian_product_iterator_impl_pp_fitr(T &x) {
     auto &z = at<0>(x);
     ++z[0];
     if (z[0] == z[2]) {
-      type_pack_for_each<make_index_sequence<tuple_size_v<T>>>
+      type_pack_for_each<make_index_sequence<tuple_size<T>>>
         ([&](auto tt) {
           constexpr size_t i = decltype(tt)::type::value;
           auto &zz = at<i>(x);
@@ -8441,13 +8756,13 @@ constexpr void cartesian_product_iterator_impl_pp(T &x) {
     auto &z = at<0>(x);
     ++z[0];
     if (z[0] == z[2]) {
-      type_pack_for_each<make_index_sequence<tuple_size_v<T>>>
+      type_pack_for_each<make_index_sequence<tuple_size<T>>>
         ([&](auto tt) {
           constexpr size_t i = decltype(tt)::type::value;
           auto &zz = at<i>(x);
           zz[0] = prev(zz[2], 1, zz[1]);
         });
-      auto &&zz = at<tuple_size_v<T> - 1u>(x);
+      auto &&zz = at<tuple_size<T> - 1u>(x);
       zz[0] = zz[2];
     }
   }
@@ -8488,13 +8803,13 @@ public:
   using value_type = tuple<itr_vt<IT>, itr_vt<S>...>;
   using reference = tuple<itr_ref<IT>, itr_ref<S>...>;
   using pointer = void;
-  using difference_type = common_type_t<itr_dft<IT>, itr_dft<S>...>;
-  using iterator_category = conditional_t
-    <is_ritr<IT> && (is_ritr<S> && ...), random_access_iterator_tag,
-     conditional_t
-     <is_bitr<IT> && (is_bitr<S> && ...), bidirectional_iterator_tag,
-      conditional_t
-      <is_fitr<IT> && (is_fitr<S> && ...), forward_iterator_tag,
+  using difference_type = common_type<itr_dft<IT>, itr_dft<S>...>;
+  using iterator_category = conditional
+    <is_ritr<IT> && (... && is_ritr<S>), random_access_iterator_tag,
+     conditional
+     <is_bitr<IT> && (... && is_bitr<S>), bidirectional_iterator_tag,
+      conditional
+      <is_fitr<IT> && (... && is_fitr<S>), forward_iterator_tag,
        input_iterator_tag>>>;
 
   cartesian_product_iterator() = default;
@@ -8504,8 +8819,8 @@ public:
   cartesian_product_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<tuple<array<IT, 3>, array<S, 3>...>>)
-    requires is_swappable_v<tuple<array<IT, 3>, array<S, 3>...>> {
+    noexcept(is_nothrow_swappable<tuple<array<IT, 3>, array<S, 3>...>>)
+    requires is_swappable<tuple<array<IT, 3>, array<S, 3>...>> {
     adl_swap(x.a, y.a);
   }
 
@@ -8515,7 +8830,7 @@ public:
                                     const cartesian_product_iterator
                                     <IT2, S2...> &)
     requires (can_apply_equal_to<const IT1 &, const IT2 &>
-              && (can_apply_equal_to<const S1 &, const S2 &> && ...));
+              && (... && can_apply_equal_to<const S1 &, const S2 &>));
 
   constexpr explicit cartesian_product_iterator
   (const tuple<array<IT, 3>, array<S, 3>...> &x) : a(x) {}
@@ -8527,16 +8842,16 @@ public:
   template <class IT2, class...SS>
   constexpr cartesian_product_iterator
   (const cartesian_product_iterator<IT2, SS...> &x)
-    requires (is_convertible_v<const IT2 &, IT2>
-              && (is_convertible_v<const SS &, S> && ...)) : a(x.a) {}
+    requires (is_convertible<const IT2 &, IT2>
+              && (... && is_convertible<const SS &, S>)) : a(x.a) {}
 
   void operator ->() const = delete;
   constexpr reference operator *() const {
     return bind_tuple(a, [](auto &x)->decltype(auto) {return *x[0];});
   }
   constexpr this_t &operator ++() {
-    if constexpr (is_same_v<iterator_category, forward_iterator_tag>
-                  || is_same_v<iterator_category, input_iterator_tag>) {
+    if constexpr (is_same<iterator_category, forward_iterator_tag>
+                  || is_same<iterator_category, input_iterator_tag>) {
       auto tmp = *this;
       inner::fns::cartesian_product_iterator_impl_pp_fitr
         <sizeof...(S) + 1u>(tmp.a);
@@ -8599,7 +8914,7 @@ private:
     type_pack_for_each<make_index_sequence<sizeof...(S) + 1u>>
       ([&](auto tt) {
         constexpr size_t i = decltype(tt)::type::value;
-        if constexpr (i == 0 && tuple_size_v<decltype(x.a)> != 1) {
+        if constexpr (i == 0 && tuple_size<decltype(x.a)> != 1) {
           auto &z = at<sizeof...(S)>(x.a);
           const auto tmp = (z[2] - z[1]);
           if (const auto d = tmp; k >= d) {
@@ -8614,7 +8929,7 @@ private:
           if (z[0] != z[2])
             y = false;
         }
-        else if constexpr (i == 0 && tuple_size_v<decltype(x.a)> == 1) {
+        else if constexpr (i == 0 && tuple_size<decltype(x.a)> == 1) {
           auto &z = at<sizeof...(S)>(x.a);
           const auto tmp = (z[2] - z[1]);
           z[0] = z[1] + k;
@@ -8663,14 +8978,14 @@ public:
     requires (is_bitr<cartesian_product_iterator<IT1, S1...>>
               && is_bitr<cartesian_product_iterator<IT2, S2...>>
               && itr_is_counted<IT1> && itr_is_counted<IT2>
-              && (itr_is_counted<S1> && ...)
-              && (itr_is_counted<S2> && ...)
+              && (... && itr_is_counted<S1>)
+              && (... && itr_is_counted<S2>)
               && can_apply_minus<const IT1 &, const IT2 &>
-              && (can_apply_minus<const S1 &, const S2 &> && ...));
+              && (... && can_apply_minus<const S1 &, const S2 &>));
   template <class IT1, class IT2, class...S1, class...S2>
   friend
-  constexpr common_comparison_category_t<synth_3way_result<IT1, IT2>,
-                                         synth_3way_result<S1, S2>...>
+  constexpr common_comparison_category<synth_3way_result<IT1, IT2>,
+                                       synth_3way_result<S1, S2>...>
   operator <=>(const cartesian_product_iterator<IT1, S1...> &,
                const cartesian_product_iterator<IT2, S2...> &);
 };
@@ -8678,7 +8993,7 @@ template <class IT1, class IT2, class...S1, class...S2>
 constexpr bool operator ==(const cartesian_product_iterator<IT1, S1...> &x,
                            const cartesian_product_iterator<IT2, S2...> &y)
   requires (can_apply_equal_to<const IT1 &, const IT2 &>
-            && (can_apply_equal_to<const S1 &, const S2 &> && ...)) {
+            && (... && can_apply_equal_to<const S1 &, const S2 &>)) {
   return bind_tuple(x.a, bind(ref, _1, 0)) == bind_tuple(y.a, bind(ref, _1, 0));
 }
 template <class IT1, class IT2, class...S1, class...S2>
@@ -8687,10 +9002,10 @@ constexpr auto operator -(const cartesian_product_iterator<IT1, S1...> &x,
   requires (is_bitr<cartesian_product_iterator<IT1, S1...>>
             && is_bitr<cartesian_product_iterator<IT2, S2...>>
             && itr_is_counted<IT1> && itr_is_counted<IT2>
-            && (itr_is_counted<S1> && ...)
-            && (itr_is_counted<S2> && ...)
+            && (... && itr_is_counted<S1>)
+            && (... && itr_is_counted<S2>)
             && can_apply_minus<const IT1 &, const IT2 &>
-            && (can_apply_minus<const S1 &, const S2 &> && ...)) {
+            && (... && can_apply_minus<const S1 &, const S2 &>)) {
   return x.id() - y.id();
 }
 template <class IT1, class...S1>
@@ -8701,8 +9016,8 @@ constexpr auto operator +(typename cartesian_product_iterator<IT1, S1...>
   return it.operator +(d);
 }
 template <class IT1, class IT2, class...S1, class...S2>
-constexpr common_comparison_category_t<synth_3way_result<IT1, IT2>,
-                                       synth_3way_result<S1, S2>...>
+constexpr common_comparison_category<synth_3way_result<IT1, IT2>,
+                                     synth_3way_result<S1, S2>...>
 operator <=>(const cartesian_product_iterator<IT1, S1...> &x,
              const cartesian_product_iterator<IT2, S2...> &y) {
   return bind_tuple(x.a, bind(ref, _1, 0))
@@ -8734,29 +9049,29 @@ public:
   cartesian_product_range(const this_t &) = default;
   this_t &operator =(const this_t &) = delete;
   this_t &operator =(const this_t &)
-    requires (is_copy_assignable_v<FR> && (is_copy_assignable_v<S> && ...)
-              && !is_reference_v<FR> && ((!is_reference_v<S>) && ...)
-              && (is_nothrow_copy_assignable_v<FR>
-                  && (is_nothrow_copy_assignable_v<S> && ...)))
+    requires (is_copy_assignable<FR> && (... && is_copy_assignable<S>)
+              && !is_reference<FR> && (... && (!is_reference<S>))
+              && (is_nothrow_copy_assignable<FR>
+                  && (... && is_nothrow_copy_assignable<S>)))
     = default;
   cartesian_product_range(this_t &&) = default;
   this_t &operator =(this_t &&) = delete;
   this_t &operator =(this_t &&)
-    requires (is_move_assignable_v<FR> && (is_move_assignable_v<S> && ...)
-              && !is_reference_v<FR> && ((!is_reference_v<S>) && ...))
+    requires (is_move_assignable<FR> && (... && is_move_assignable<S>)
+              && !is_reference<FR> && (... && (!is_reference<S>)))
     = default;
   this_t &operator =(const this_t &x)
-    requires (is_copy_assignable_v<FR> && (is_copy_assignable_v<S> && ...)
-              && !is_reference_v<FR> && (!is_reference_v<S> && ...)
-              && !(is_nothrow_copy_assignable_v<FR>
-                   && (is_nothrow_copy_assignable_v<S> && ...))) {
+    requires (is_copy_assignable<FR> && (... && is_copy_assignable<S>)
+              && !is_reference<FR> && (... && (!is_reference<S>))
+              && !(is_nothrow_copy_assignable<FR>
+                   && (... && is_nothrow_copy_assignable<S>))) {
     copy_and_swap(x.t, t);
     return *this;
   }
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<tuple<FR, S...>>)
-    requires (is_swappable_v<tuple<FR, S...>>
-              && (!is_reference_v<FR> && ((!is_reference_v<S>) && ...))) {
+    noexcept(is_nothrow_swappable<tuple<FR, S...>>)
+    requires (is_swappable<tuple<FR, S...>>
+              && (!is_reference<FR> && (... && (!is_reference<S>)))) {
     adl_swap(x.t, y.t);
   }
 
@@ -8811,33 +9126,33 @@ public:
     }
   }
   constexpr auto begin() const
-    requires (is_rng<add_const_t<FR>>
-              && (is_rng<add_const_t<S>> && ...)) {
+    requires (is_rng<add_const<FR>>
+              && (... && is_rng<add_const<S>>)) {
     if (any_of_mpt())
       return end();
     else
-      return cartesian_product_iterator<rng_itr<add_const_t<FR>>,
-                                        rng_itr<add_const_t<S>>...>
+      return cartesian_product_iterator<rng_itr<add_const<FR>>,
+                                        rng_itr<add_const<S>>...>
         (bind_tuple(t, [](auto &&r) {
           return seq(begin(r), begin(r), end(r));
         }));
   }
   constexpr auto end() const
-    requires (is_rng<add_const_t<FR>>
-              && (is_rng<add_const_t<S>> && ...)) {
+    requires (is_rng<add_const<FR>>
+              && (... && is_rng<add_const<S>>)) {
     if constexpr (!is_bitr
                   <cartesian_product_iterator
-                   <rng_itr<add_const_t<FR>>,
-                    rng_itr<add_const_t<S>>...>>) {
+                   <rng_itr<add_const<FR>>,
+                    rng_itr<add_const<S>>...>>) {
       return cartesian_product_iterator
-        <rng_itr<add_const_t<FR>>, rng_itr<add_const_t<S>>...>
+        <rng_itr<add_const<FR>>, rng_itr<add_const<S>>...>
         (bind_tuple(t, [&](auto &&r) {
           return seq(end(r), begin(r), end(r));
         }));
     }
     else {
-      return cartesian_product_iterator<rng_itr<add_const_t<FR>>,
-                                        rng_itr<add_const_t<S>>...>
+      return cartesian_product_iterator<rng_itr<add_const<FR>>,
+                                        rng_itr<add_const<S>>...>
         (bind_tuple(t, [&](auto &&r) {
           return seq(addressof(r) == addressof(at<sizeof...(S)>(t))
                      ? end(r)
@@ -8851,14 +9166,14 @@ public:
     return begin() == end();
   }
   constexpr bool empty() const
-    requires (is_rng<add_const_t<FR>>
-              && (is_rng<add_const_t<S>> && ...)) {
+    requires (is_rng<add_const<FR>>
+              && (... && is_rng<add_const<S>>)) {
     return begin() == end();
   }
 
-  constexpr common_type_t<rng_szt<FR>, rng_szt<S>...> size()
-    requires (rng_is_sized<FR> && (rng_is_sized<S> && ...)) {
-    common_type_t<rng_szt<FR>, rng_szt<S>...> ret = 1;
+  constexpr common_type<rng_szt<FR>, rng_szt<S>...> size()
+    requires (rng_is_sized<FR> && (... && rng_is_sized<S>)) {
+    common_type<rng_szt<FR>, rng_szt<S>...> ret = 1;
     type_pack_for_each<make_index_sequence<sizeof...(S) + 1u>>
       ([&](auto tt) {
         constexpr auto i = decltype(tt)::type::value;
@@ -8866,11 +9181,11 @@ public:
       });
     return ret;
   }
-  constexpr common_type_t<rng_szt<FR>, rng_szt<S>...> size() const
-    requires (is_rng<add_const_t<FR>> && (is_rng<add_const_t<S>> && ...)
-              && (rng_is_sized<add_const_t<FR>>
-                  && (rng_is_sized<add_const_t<S>> && ...))) {
-    common_type_t<rng_szt<add_const_t<FR>>, rng_szt<add_const_t<S>>...> ret = 1;
+  constexpr common_type<rng_szt<FR>, rng_szt<S>...> size() const
+    requires (is_rng<add_const<FR>> && (... && is_rng<add_const<S>>)
+              && (rng_is_sized<add_const<FR>>
+                  && (... && rng_is_sized<add_const<S>>))) {
+    common_type<rng_szt<add_const<FR>>, rng_szt<add_const<S>>...> ret = 1;
     type_pack_for_each<make_index_sequence<sizeof...(S) + 1u>>
       ([&](auto tt) {
         constexpr auto i = decltype(tt)::type::value;
@@ -8880,13 +9195,13 @@ public:
   }
 };
 template <class FR, class...S>
-struct is_range_reference<cartesian_product_range<FR, S...>>
-  : bool_constant<is_range_reference<FR>::value
-                  && (is_range_reference<S>::value && ...)> {};
+struct template_is_range_reference<cartesian_product_range<FR, S...>>
+  : bool_constant<template_is_range_reference<FR>::value
+                  && (... && template_is_range_reference<S>::value)> {};
 struct fo_cartesian_product_rng {
   template <class FR, class...S>
   constexpr auto operator ()(FR &&fr, S &&...s) const
-    requires (is_frng<FR> && (is_frng<S> && ...)) {
+    requires (is_frng<FR> && (... && is_frng<S>)) {
     return cartesian_product_range<rng_forward_t<FR>, rng_forward_t<S>...>
       (forward<FR>(fr), forward<S>(s)...);
   }
@@ -8952,7 +9267,7 @@ public:
   split_iterator(split_iterator &&) = default;
   split_iterator &operator =(split_iterator &&) = default;
   friend constexpr void swap(split_iterator &x, split_iterator &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.i, y.i);
     adl_swap(x.i2, y.i2);
     adl_swap(x.ed, y.ed);
@@ -8964,7 +9279,7 @@ public:
 
   template <class FI2>
   constexpr split_iterator(const split_iterator<FI2> &x)
-    requires (!is_same_v<FI, FI2> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI, FI2> && is_convertible<const FI2 &, FI>)
     : i(x.i), i2(x.i2), ed(x.ed), k(x.k) {}
 
   constexpr value_type base() const {
@@ -9019,9 +9334,9 @@ class split_range : range_fns {
     rng_itr<FR> it;
     rng_dft<FR2> k;
   };
-  using cache_t = conditional_t<is_rng_ref<FR> && is_rng_ref<FR2>,
-                                simple_wrapper<cache_data_t>,
-                                non_propagating_cache<cache_data_t>>;
+  using cache_t = conditional<is_rng_ref<FR> && is_rng_ref<FR2>,
+                              simple_wrapper<cache_data_t>,
+                              non_propagating_cache<cache_data_t>>;
 
   FR r = FR{};
   FR2 r2 = FR2{};
@@ -9040,7 +9355,7 @@ class split_range : range_fns {
     }
   }
   constexpr void delayed_init() {
-    if constexpr (!is_rng_ref<FR>) {
+    if constexpr (!(is_rng_ref<FR> && is_rng_ref<FR2>)) {
       if (c.empty()) {
         cache_data_t tmp{};
         init_impl(tmp);
@@ -9051,8 +9366,8 @@ class split_range : range_fns {
 
 public:
   split_range() = delete;
-  constexpr split_range() requires (is_default_constructible_v<FR>
-                                    && is_default_constructible_v<FR2>) {
+  constexpr split_range() requires (is_default_constructible<FR>
+                                    && is_default_constructible<FR2>) {
     init();
   }
   ~split_range() = default;
@@ -9061,18 +9376,18 @@ public:
   split_range(split_range &&) = default;
   split_range &operator =(split_range &&) = default;
   constexpr split_range &operator =(const split_range &x)
-    requires (is_copy_assignable_v<FR> && is_copy_assignable_v<FR2>
-              && !is_reference_v<FR> && !is_reference_v<FR2>
-              && (!is_nothrow_copy_assignable_v<FR>
-                  || !is_nothrow_copy_assignable_v<FR2>)) {
+    requires (is_copy_assignable<FR> && is_copy_assignable<FR2>
+              && !is_reference<FR> && !is_reference<FR2>
+              && (!is_nothrow_copy_assignable<FR>
+                  || !is_nothrow_copy_assignable<FR2>)) {
     copy_and_swap(x, *this);
     return *this;
   }
   template <class RR = FR, class RR2 = FR2>
   friend constexpr void swap(split_range &x, split_range &y)
-    noexcept(is_nothrow_swappable_v<RR>
-             && is_nothrow_swappable_v<RR2>)
-    requires (is_swappable_v<RR> && is_swappable_v<RR2>
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<RR2>)
+    requires (is_swappable<RR> && is_swappable<RR2>
               && default_swappable<split_range<RR, RR2>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.r2, y.r2);
@@ -9093,11 +9408,11 @@ public:
     return split_itr(ed, ed, ed, 0);
   }
   constexpr auto begin() const
-    requires is_rng_ref<add_const_t<FR>> && is_rng_ref<add_const_t<FR2>> {
+    requires is_rng_ref<add_const<FR>> && is_rng_ref<add_const<FR2>> {
     return split_itr(begin(r), c->it, end(r), c->k);
   }
   constexpr auto end() const
-    requires is_rng_ref<add_const_t<FR>> && is_rng_ref<add_const_t<FR2>> {
+    requires is_rng_ref<add_const<FR>> && is_rng_ref<add_const<FR2>> {
     const auto ed = end(r);
     return split_itr(ed, ed, ed, 0);
   }
@@ -9106,14 +9421,14 @@ public:
     return empty(r);
   }
   constexpr bool empty() const
-    requires is_rng_ref<add_const_t<FR>> && is_rng_ref<add_const_t<FR2>> {
+    requires is_rng_ref<add_const<FR>> && is_rng_ref<add_const<FR2>> {
     return empty(r);
   }
 };
 template <class FR, class FR2>
-struct is_range_reference<split_range<FR, FR2>>
-  : bool_constant<is_range_reference<FR>::value
-                  && is_range_reference<FR2>::value> {};
+struct template_is_range_reference<split_range<FR, FR2>>
+  : bool_constant<template_is_range_reference<FR>::value
+                  && template_is_range_reference<FR2>::value> {};
 struct fo_split_rng {
   template <class FR, class FR2>
   constexpr auto operator ()(FR &&r, FR2 &&r2) const
@@ -9172,13 +9487,13 @@ constexpr decltype(auto) zip_help_deref(T &x) {
 }
 template <class T, size_t...IDS>
 constexpr void zip_help_assign(T &x, index_sequence<IDS...>) {
-  auto &o = at<tuple_size_v<T> - 1>(x);
+  auto &o = at<tuple_size<T> - 1>(x);
   *o = forward_as_tuple(zip_help_deref(at<IDS>(x))...);
   ++o;
 }
 template <class T>
 constexpr void zip_help_assign(T &x) {
-  zip_help_assign(x, make_index_sequence<tuple_size_v<T> - 1>{});
+  zip_help_assign(x, make_index_sequence<tuple_size<T> - 1>{});
 }
 
 template <class T>
@@ -9196,7 +9511,7 @@ constexpr auto zip_help_extract(T &x, index_sequence<IDS...>) {
 }
 template <class T>
 constexpr auto zip_help_extract(T &x) {
-  return zip_help_extract(x, make_index_sequence<tuple_size_v<T>>{});
+  return zip_help_extract(x, make_index_sequence<tuple_size<T>>{});
 }
 
 template <class T>
@@ -9231,10 +9546,10 @@ constexpr auto zip_top_help_rrng_get(T &x) {
 struct fo_zip_top {
   template <class R, class...S>
   constexpr auto operator ()(R &&r, S &&...s) const
-    requires ((is_rng<R> || is_itr<decay_t<R>>)
-              && ((is_rng<S> || is_itr<decay_t<S>>) && ...)) {
-    if constexpr (!((is_rrng<R> || is_itr<decay_t<R>>)
-                    && ((is_rrng<S> || is_itr<decay_t<S>>) && ...))) {
+    requires ((is_rng<R> || is_itr<decay<R>>)
+              && (... && (is_rng<S> || is_itr<decay<S>>))) {
+    if constexpr (!((is_rrng<R> || is_itr<decay<R>>)
+                    && (... && (is_rrng<S> || is_itr<decay<S>>)))) {
       auto t = tuple(inner::fns::zip_help_make(r),
                      inner::fns::zip_help_make(s)...);
       for (;;) {
@@ -9257,9 +9572,9 @@ struct fo_zip_top {
       return inner::fns::zip_help_extract(t);
     }
     else {
-      using dft = common_type_t
-        <conditional_t<is_rng<R>, rng_dft<R>, itr_dft<decay_t<R>>>,
-         conditional_t<is_rng<S>, rng_dft<S>, itr_dft<decay_t<S>>>...>;
+      using dft = common_type
+        <conditional<is_rng<R>, rng_dft<R>, itr_dft<decay<R>>>,
+         conditional<is_rng<S>, rng_dft<S>, itr_dft<decay<S>>>...>;
       optional<dft> d;
       inner::fns::zip_top_help_rrng(d, r, s...);
       return tuple(next(inner::fns::zip_top_help_rrng_get(r), *d),
@@ -9304,7 +9619,7 @@ struct zip_node_iter {
 };
 template <class I>
 requires (!is_itr<I>)
-struct zip_node_iter<I> : tuple_element<0, I> {};
+struct zip_node_iter<I> : template_tuple_element<0, I> {};
 template <class I>
 using zip_node_iter_t = typename zip_node_iter<I>::type;
 
@@ -9313,7 +9628,7 @@ namespace inner::fns {
 
 template <class T>
 constexpr auto &zip_node_ref(T &x) {
-  if constexpr (is_itr<decay_t<T>>) {
+  if constexpr (is_itr<decay<T>>) {
     return x;
   }
   else {
@@ -9366,14 +9681,14 @@ public:
     <itr_vt<inner::zip_node_iter_t<I>>, itr_vt<inner::zip_node_iter_t<S>>...>;
   using reference = tuple
     <itr_ref<inner::zip_node_iter_t<I>>, itr_ref<inner::zip_node_iter_t<S>>...>;
-  using difference_type = common_type_t
+  using difference_type = common_type
     <itr_dft<inner::zip_node_iter_t<I>>,
      itr_dft<inner::zip_node_iter_t<S>>...>;
   using pointer = void;
   using iterator_category
-    = conditional_t
+    = conditional
     <is_fitr<inner::zip_node_iter_t<I>>
-     && (is_fitr<inner::zip_node_iter_t<S>> && ...),
+     && (... && is_fitr<inner::zip_node_iter_t<S>>),
      forward_iterator_tag,
      input_iterator_tag>;
 
@@ -9384,7 +9699,7 @@ public:
   zip_iterator(zip_iterator &&) = default;
   zip_iterator &operator =(zip_iterator &&) = default;
   friend constexpr void swap(zip_iterator &x, zip_iterator &y)
-    noexcept(is_nothrow_swappable_v<tuple<I, S...>>) {
+    noexcept(is_nothrow_swappable<tuple<I, S...>>) {
     adl_swap(x.t, y.t);
   }
 
@@ -9396,9 +9711,10 @@ public:
 
   template <class I2, class...S2>
   constexpr zip_iterator(const zip_iterator<I2, S2...> &x)
-    requires (!is_same_v<I2, I> && is_convertible_v<const I2 &, I>
-              && ((!is_same_v<S2, S> && is_convertible_v<const S2 &, S>)
-                  && ...))
+    requires (!is_same<I2, I> && is_convertible<const I2 &, I>
+              && (...
+                  && (!is_same<S2, S> && is_convertible<const S2 &, S>)
+                  ))
     : t(x.t) {}
 
   constexpr auto operator *() const {
@@ -9409,7 +9725,7 @@ public:
   constexpr void operator ->() const = delete;
   constexpr zip_iterator &operator ++() {
     auto ret = *this;
-    type_pack_for_each<make_index_sequence<tuple_size_v<data_t>>>
+    type_pack_for_each<make_index_sequence<tuple_size<data_t>>>
       ([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
         ++inner::fns::zip_node_ref(at<i>(ret.t));
@@ -9425,7 +9741,7 @@ public:
   constexpr zip_iterator &operator --()
     requires is_bitr_ctg<iterator_category> {
     auto ret = *this;
-    type_pack_for_each<make_index_sequence<tuple_size_v<data_t>>>
+    type_pack_for_each<make_index_sequence<tuple_size<data_t>>>
       ([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
         --inner::fns::zip_node_ref(at<i>(ret.t));
@@ -9442,21 +9758,21 @@ public:
   friend constexpr bool operator ==(const zip_iterator<I1, S1...> &,
                                     const zip_iterator<I2, S2...> &)
     requires (can_apply_equal_to<const I1 &, const I2 &>
-              && (can_apply_equal_to<const S1 &, const S2 &> && ...));
+              && (... && can_apply_equal_to<const S1 &, const S2 &>));
 };
 template <class I1, class I2, class...S1, class...S2>
 constexpr bool operator ==(const zip_iterator<I1, S1...> &x,
                            const zip_iterator<I2, S2...> &y)
   requires (can_apply_equal_to<const I1 &, const I2 &>
-            && (can_apply_equal_to<const S1 &, const S2 &> && ...)) {
+            && (... && can_apply_equal_to<const S1 &, const S2 &>)) {
   bool ret = false;
   type_pack_for_each_until_false
     <make_index_sequence
-     <tuple_size_v<typename zip_iterator<I1, S1...>::data_t>>>
+     <tuple_size<typename zip_iterator<I1, S1...>::data_t>>>
     ([&](auto tag) {
       constexpr size_t i = decltype(tag)::type::value;
-      if constexpr (!is_itr<decay_t<decltype(at<i>(x.t))>>
-                    && !is_itr<decay_t<decltype(at<i>(y.t))>>) {
+      if constexpr (!is_itr<decay<decltype(at<i>(x.t))>>
+                    && !is_itr<decay<decltype(at<i>(y.t))>>) {
         if (at<0>(at<i>(x.t)) == at<0>(at<i>(y.t))) {
           ret = true;
           return false;
@@ -9489,7 +9805,7 @@ namespace inner {
 
 template <class T>
 struct zip_rng_forward {
-  using type = decay_t<T>;
+  using type = decay<T>;
 };
 template <class T>
 requires is_rng<T>
@@ -9501,14 +9817,14 @@ using zip_rng_forward_t = typename zip_rng_forward<T>::type;
 
 template <class X, class...S>
 inline constexpr bool zip_rng_args_are_valid
-  = ((is_rng<X> || (is_itr<decay_t<X>>))
-     && ((is_rng<S> || (is_itr<decay_t<S>>)) && ...));
+  = ((is_rng<X> || (is_itr<decay<X>>))
+     && (... && (is_rng<S> || (is_itr<decay<S>>))));
 
 }
 namespace inner::fns {
 
 template <class T>
-constexpr decay_t<T> zip_rng_begin(T &&x) {
+constexpr decay<T> zip_rng_begin(T &&x) {
   return x;
 }
 template <class T>
@@ -9517,7 +9833,7 @@ constexpr auto zip_rng_begin(T &&x) requires is_rng<T> {
 }
 
 template <class T>
-constexpr decay_t<T> zip_rng_end(T &&x) {
+constexpr decay<T> zip_rng_end(T &&x) {
   return x;
 }
 template <class T>
@@ -9534,7 +9850,7 @@ class zip_range : range_fns {
   using range_fns::size;
 
   static constexpr bool enable_const = inner::zip_rng_args_are_valid
-    <add_const_t<X>, add_const_t<S>...>;
+    <add_const<X>, add_const<S>...>;
 
   tuple<X, S...> t;
 
@@ -9544,29 +9860,29 @@ public:
   zip_range(const zip_range &) = default;
   zip_range &operator =(const zip_range &) = delete;
   zip_range &operator =(const zip_range &)
-    requires (is_copy_assignable_v<X> && (is_copy_assignable_v<S> && ...)
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...)
-              && (is_nothrow_copy_assignable_v<X>
-                  && (is_nothrow_copy_assignable_v<S> && ...)))
+    requires (is_copy_assignable<X> && (... && is_copy_assignable<S>)
+              && !is_reference<X> && (... && (!is_reference<S>))
+              && (is_nothrow_copy_assignable<X>
+                  && (... && is_nothrow_copy_assignable<S>)))
     = default;
   zip_range(zip_range &&) = default;
   zip_range &operator =(zip_range &&) = delete;
   zip_range &operator =(zip_range &&)
-    requires (is_move_assignable_v<X> && (is_move_assignable_v<S> && ...)
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...))
+    requires (is_move_assignable<X> && (... && is_move_assignable<S>)
+              && !is_reference<X> && (... && (!is_reference<S>)))
     = default;
   constexpr zip_range &operator =(const zip_range &x)
-    requires (is_copy_assignable_v<X> && (is_copy_assignable_v<S> && ...)
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...)
-              && (!is_nothrow_copy_assignable_v<X>
-                  || ((!is_nothrow_copy_assignable_v<S>) || ...))) {
+    requires (is_copy_assignable<X> && (... && is_copy_assignable<S>)
+              && !is_reference<X> && (... && (!is_reference<S>))
+              && (!is_nothrow_copy_assignable<X>
+                  || (... || (!is_nothrow_copy_assignable<S>)))) {
     copy_and_swap(x, *this);
     return *this;
   }
   friend constexpr void swap(zip_range &x, zip_range &y)
-    noexcept(is_nothrow_swappable_v<tuple<X, S...>>)
-    requires (is_swappable_v<tuple<X, S...>>
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...)) {
+    noexcept(is_nothrow_swappable<tuple<X, S...>>)
+    requires (is_swappable<tuple<X, S...>>
+              && !is_reference<X> && (... && (!is_reference<S>))) {
     adl_swap(x.t, y.t);
   }
 
@@ -9601,9 +9917,9 @@ public:
   }
 };
 template <class X, class...S>
-struct is_range_reference<zip_range<X, S...>>
+struct template_is_range_reference<zip_range<X, S...>>
   : bool_constant<(is_rng_ref<X> || !is_rng<X>)
-                  && ((is_rng_ref<S> || !is_rng<S>) && ...)> {};
+                  && (... && (is_rng_ref<S> || !is_rng<S>))> {};
 struct fo_zip_rng {
   template <class X, class...S>
   constexpr auto operator ()(X &&x, S &&...s) const {
@@ -9632,14 +9948,14 @@ class aligned_zip_iterator {
 public:
   using value_type = tuple<itr_vt<FI>, itr_vt<S>...>;
   using reference = tuple<itr_ref<FI>, itr_ref<S>...>;
-  using difference_type = common_type_t<itr_dft<FI>, itr_dft<S>...>;
+  using difference_type = common_type<itr_dft<FI>, itr_dft<S>...>;
   using pointer = void;
   using iterator_category
-    = conditional_t<is_ritr<FI> && (is_ritr<S> && ...),
-                    random_access_iterator_tag,
-                    conditional_t<is_bitr<FI> && (is_bitr<S> && ...),
-                                  bidirectional_iterator_tag,
-                                  forward_iterator_tag>>;
+    = conditional<is_ritr<FI> && (... && is_ritr<S>),
+                  random_access_iterator_tag,
+                  conditional<is_bitr<FI> && (... && is_bitr<S>),
+                              bidirectional_iterator_tag,
+                              forward_iterator_tag>>;
 
   aligned_zip_iterator() = default;
   ~aligned_zip_iterator() = default;
@@ -9648,7 +9964,7 @@ public:
   aligned_zip_iterator(aligned_zip_iterator &&) = default;
   aligned_zip_iterator &operator =(aligned_zip_iterator &&) = default;
   friend constexpr void swap(aligned_zip_iterator &x, aligned_zip_iterator &y)
-    noexcept(is_nothrow_swappable_v<tuple<FI, S...>>) {
+    noexcept(is_nothrow_swappable<tuple<FI, S...>>) {
     adl_swap(x.t, y.t);
   }
 
@@ -9661,9 +9977,10 @@ public:
 
   template <class FI2, class...S2>
   constexpr aligned_zip_iterator(const aligned_zip_iterator<FI2, S2...> &x)
-    requires (!is_same_v<FI2, FI> && is_convertible_v<const FI2 &, FI>
-              && ((!is_same_v<S2, S> && is_convertible_v<const S2 &, S>)
-                  && ...))
+    requires (!is_same<FI2, FI> && is_convertible<const FI2 &, FI>
+              && (...
+                  && (!is_same<S2, S> && is_convertible<const S2 &, S>)
+                  ))
     : t(x.t) {}
 
   constexpr reference operator *() const {
@@ -9672,7 +9989,7 @@ public:
   constexpr void operator ->() const = delete;
   constexpr aligned_zip_iterator &operator ++() {
     auto ret = *this;
-    type_pack_for_each<make_index_sequence<tuple_size_v<data_t>>>
+    type_pack_for_each<make_index_sequence<tuple_size<data_t>>>
       ([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
         ++at<i>(ret.t);
@@ -9688,7 +10005,7 @@ public:
   constexpr aligned_zip_iterator &operator --()
     requires is_bitr_ctg<iterator_category> {
     auto ret = *this;
-    type_pack_for_each<make_index_sequence<tuple_size_v<data_t>>>
+    type_pack_for_each<make_index_sequence<tuple_size<data_t>>>
       ([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
         --at<i>(ret.t);
@@ -9712,7 +10029,7 @@ public:
   constexpr aligned_zip_iterator operator +(difference_type n) const
     requires is_ritr_ctg<iterator_category> {
     auto ret = *this;
-    type_pack_for_each<make_index_sequence<tuple_size_v<data_t>>>
+    type_pack_for_each<make_index_sequence<tuple_size<data_t>>>
       ([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
         at<i>(ret.t) += n;
@@ -9732,9 +10049,9 @@ public:
   friend constexpr bool operator ==(const aligned_zip_iterator<FI1, S1...> &,
                                     const aligned_zip_iterator<FI2, S2...> &)
     requires (can_apply_equal_to<const FI1 &, const FI2 &>
-              && (can_apply_equal_to<const S1 &, const S2 &> && ...));
+              && (... && can_apply_equal_to<const S1 &, const S2 &>));
   template <class FI1, class FI2, class...S1, class...S2>
-  friend constexpr common_comparison_category_t
+  friend constexpr common_comparison_category
   <synth_3way_result<FI1, FI2>, synth_3way_result<S1, S2>...>
   operator <=>(const aligned_zip_iterator<FI1, S1...> &,
                const aligned_zip_iterator<FI2, S2...> &);
@@ -9743,19 +10060,19 @@ public:
   operator -(const aligned_zip_iterator<FI1, S1...> &,
              const aligned_zip_iterator<FI2, S2...> &)
     requires (can_apply_minus<const FI1 &, const FI2 &>
-              && (can_apply_minus<const S1 &, const S2 &> && ...)
+              && (... && can_apply_minus<const S1 &, const S2 &>)
               && itr_is_counted<FI1> && itr_is_counted<FI2>
-              && ((itr_is_counted<S1> && itr_is_counted<S2>) && ...));
+              && (... && (itr_is_counted<S1> && itr_is_counted<S2>)));
 };
 template <class FI1, class FI2, class...S1, class...S2>
 constexpr bool operator ==(const aligned_zip_iterator<FI1, S1...> &x,
                            const aligned_zip_iterator<FI2, S2...> &y)
   requires (can_apply_equal_to<const FI1 &, const FI2 &>
-            && (can_apply_equal_to<const S1 &, const S2 &> && ...)) {
+            && (... && can_apply_equal_to<const S1 &, const S2 &>)) {
   return at<0>(x.t) == at<0>(y.t);
 }
 template <class FI1, class FI2, class...S1, class...S2>
-constexpr common_comparison_category_t
+constexpr common_comparison_category
 <synth_3way_result<FI1, FI2>, synth_3way_result<S1, S2>...>
 operator <=>(const aligned_zip_iterator<FI1, S1...> &x,
              const aligned_zip_iterator<FI2, S2...> &y) {
@@ -9766,9 +10083,9 @@ constexpr itr_dft<aligned_zip_iterator<FI1, S1...>>
 operator -(const aligned_zip_iterator<FI1, S1...> &x,
            const aligned_zip_iterator<FI2, S2...> &y)
   requires (can_apply_minus<const FI1 &, const FI2 &>
-            && (can_apply_minus<const S1 &, const S2 &> && ...)
+            && (... && can_apply_minus<const S1 &, const S2 &>)
             && itr_is_counted<FI1> && itr_is_counted<FI2>
-            && ((itr_is_counted<S1> && itr_is_counted<S2>) && ...)) {
+            && (... && (itr_is_counted<S1> && itr_is_counted<S2>))) {
   return at<0>(x.t) - at<0>(y.t);
 }
 template <class FI1, class...S1>
@@ -9797,7 +10114,7 @@ namespace inner {
 
 template <class X>
 struct aligned_zip_iter {
-  using type = decay_t<X>;
+  using type = decay<X>;
 };
 template <class X>
 requires is_rng<X>
@@ -9811,7 +10128,7 @@ using aligned_zip_iter_t = typename aligned_zip_iter<X>::type;
 namespace inner::fns {
 
 template <class T>
-constexpr decay_t<T> aligned_zip_rng_begin(T &&x) {
+constexpr decay<T> aligned_zip_rng_begin(T &&x) {
   return x;
 }
 template <class T>
@@ -9830,15 +10147,15 @@ class aligned_zip_range : range_fns {
   using range_fns::size;
 
   static constexpr bool enable_const
-    = inner::zip_rng_args_are_valid<add_const_t<X>, add_const_t<S>...>;
+    = inner::zip_rng_args_are_valid<add_const<X>, add_const<S>...>;
   static constexpr bool delay_init
     = !((is_rng_ref<X> || !is_rng<X>)
-        && ((is_rng_ref<S> || !is_rng<S>) && ...));
+        && (... && (is_rng_ref<S> || !is_rng<S>)));
   using cache_data_t
     = tuple<inner::aligned_zip_iter_t<X>, inner::aligned_zip_iter_t<S>...>;
-  using cache_t = conditional_t
-    <!delay_init,
-     simple_wrapper<cache_data_t>, non_propagating_cache<cache_data_t>>;
+  using cache_t = conditional<!delay_init,
+                              simple_wrapper<cache_data_t>,
+                              non_propagating_cache<cache_data_t>>;
 
   tuple<X, S...> t;
   cache_t c = cache_t{};
@@ -9868,37 +10185,37 @@ class aligned_zip_range : range_fns {
 public:
   aligned_zip_range() = delete;
   constexpr aligned_zip_range()
-    requires (is_default_constructible_v<tuple<X, S...>>
-              && is_default_constructible_v<cache_t>) {
+    requires (is_default_constructible<tuple<X, S...>>
+              && is_default_constructible<cache_t>) {
     init();
   }
   ~aligned_zip_range() = default;
   aligned_zip_range(const aligned_zip_range &) = default;
   aligned_zip_range &operator =(const aligned_zip_range &) = delete;
   constexpr aligned_zip_range &operator =(const aligned_zip_range &)
-    requires (is_copy_assignable_v<X> && (is_copy_assignable_v<S> && ...)
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...)
-              && (is_nothrow_copy_assignable_v<X>
-                  && (is_nothrow_copy_assignable_v<S> && ...)))
+    requires (is_copy_assignable<X> && (... && is_copy_assignable<S>)
+              && !is_reference<X> && (... && (!is_reference<S>))
+              && (is_nothrow_copy_assignable<X>
+                  && (... && is_nothrow_copy_assignable<S>)))
     = default;
   aligned_zip_range(aligned_zip_range &&) = default;
   aligned_zip_range &operator =(aligned_zip_range &&) = delete;
   aligned_zip_range &operator =(aligned_zip_range &&)
-    requires (is_move_assignable_v<X> && (is_move_assignable_v<S> && ...)
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...))
+    requires (is_move_assignable<X> && (... && is_move_assignable<S>)
+              && !is_reference<X> && (... && (!is_reference<S>)))
     = default;
   constexpr aligned_zip_range &operator =(const aligned_zip_range &x)
-    requires (is_copy_assignable_v<X> && (is_copy_assignable_v<S> && ...)
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...)
-              && (!is_nothrow_copy_assignable_v<X>
-                  || ((!is_nothrow_copy_assignable_v<S>) || ...))) {
+    requires (is_copy_assignable<X> && (... && is_copy_assignable<S>)
+              && !is_reference<X> && (... && (!is_reference<S>))
+              && (!is_nothrow_copy_assignable<X>
+                  || (... || (!is_nothrow_copy_assignable<S>)))) {
     copy_and_swap(x, *this);
     return *this;
   }
   friend constexpr void swap(aligned_zip_range &x, aligned_zip_range &y)
-    noexcept(is_nothrow_swappable_v<tuple<X, S...>>)
-    requires (is_swappable_v<tuple<X, S...>>
-              && !is_reference_v<X> && ((!is_reference_v<S>) && ...)) {
+    noexcept(is_nothrow_swappable<tuple<X, S...>>)
+    requires (is_swappable<tuple<X, S...>>
+              && !is_reference<X> && (... && (!is_reference<S>))) {
     adl_swap(x.t, y.t);
     adl_swap(x.c, y.c);
   }
@@ -9924,8 +10241,8 @@ public:
   }
   constexpr auto end() const requires (enable_const && !delay_init) {
     return aligned_zip_iterator
-      <inner::aligned_zip_iter_t<add_const_t<X>>,
-       inner::aligned_zip_iter_t<add_const_t<S>>...>(*c);
+      <inner::aligned_zip_iter_t<add_const<X>>,
+       inner::aligned_zip_iter_t<add_const<S>>...>(*c);
   }
 
   constexpr bool empty() {
@@ -9937,14 +10254,15 @@ public:
 
   constexpr auto size()
     requires ((!is_rng<X> || rng_is_sized<X>)
-              && ((!is_rng<S> || rng_is_sized<S>) && ...)) {
-    optional<common_type_t
-             <conditional_t<is_rng<X>, rng_szt<X>, unsigned char>,
-              conditional_t<is_rng<S>, rng_szt<S>, unsigned char>...>> ret;
+              && (... && (!is_rng<S> || rng_is_sized<S>))) {
+    optional<make_unsigned
+             <common_type
+              <conditional<is_rng<X>, rng_szt<X>, unsigned char>,
+               conditional<is_rng<S>, rng_szt<S>, unsigned char>...>>> ret;
     type_pack_for_each
       <make_index_sequence<sizeof...(S) + 1>>([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
-        if constexpr (is_rng<tuple_element_t<i, tuple<X, S...>>>) {
+        if constexpr (is_rng<tuple_element<i, tuple<X, S...>>>) {
           auto &x = at<i>(t);
           const auto n = size(x);
           if (ret.has_value()) {
@@ -9960,14 +10278,15 @@ public:
   constexpr auto size() const
     requires ((enable_const && !delay_init)
               && (!is_rng<X> || rng_is_sized<X>)
-              && ((!is_rng<S> || rng_is_sized<S>) && ...)) {
-    optional<common_type_t
-             <conditional_t<is_rng<X>, rng_szt<X>, unsigned char>,
-              conditional_t<is_rng<S>, rng_szt<S>, unsigned char>...>> ret;
+              && (... && (!is_rng<S> || rng_is_sized<S>))) {
+    optional<make_unsigned
+             <common_type
+              <conditional<is_rng<X>, rng_szt<X>, unsigned char>,
+               conditional<is_rng<S>, rng_szt<S>, unsigned char>...>>> ret;
     type_pack_for_each
       <make_index_sequence<sizeof...(S) + 1>>([&](auto tag) {
         constexpr size_t i = decltype(tag)::type::value;
-        if constexpr (is_rng<tuple_element_t<i, tuple<X, S...>>>) {
+        if constexpr (is_rng<tuple_element<i, tuple<X, S...>>>) {
           auto &x = at<i>(t);
           const auto n = size(x);
           if (ret.has_value()) {
@@ -9982,9 +10301,9 @@ public:
   }
 };
 template <class X, class...S>
-struct is_range_reference<aligned_zip_range<X, S...>>
+struct template_is_range_reference<aligned_zip_range<X, S...>>
   : bool_constant<(is_rng_ref<X> || !is_rng<X>)
-                  && ((is_rng_ref<S> || !is_rng<S>) && ...)> {};
+                  && (... && (is_rng_ref<S> || !is_rng<S>))> {};
 struct fo_aligned_zip_rng {
   template <class X, class...S>
   constexpr auto operator ()(X &&x, S &&...s) const {
@@ -10038,7 +10357,7 @@ public:
   using reference = pair<itr_dft<I>, itr_ref<I>>;
   using pointer = void;
   using difference_type = itr_dft<I>;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <is_ritr<I>, random_access_iterator_tag, itr_ctg<I>>;
 
   enumerate_iterator() = default;
@@ -10048,7 +10367,7 @@ public:
   enumerate_iterator(enumerate_iterator &&) = default;
   enumerate_iterator &operator =(enumerate_iterator &&) = default;
   friend constexpr void swap(enumerate_iterator &x, enumerate_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.i, y.i);
     adl_swap(x.it, y.it);
   }
@@ -10057,7 +10376,7 @@ public:
 
   template <class II>
   constexpr enumerate_iterator(const enumerate_iterator<II> &x)
-    requires (!same_as<I, II> && is_convertible_v<const II &, I>)
+    requires (!same_as<I, II> && is_convertible<const II &, I>)
     : i(x.i), it(x.it) {}
 
   constexpr I base() const {
@@ -10159,12 +10478,12 @@ class enumerate_range : range_fns {
   using range_fns::size;
 
   static constexpr bool delay_init = !is_rng_ref<R>;
-  static constexpr bool enable_const = is_rng<add_const_t<R>>;
+  static constexpr bool enable_const = is_rng<add_const<R>>;
 
   using cache_data_t = rng_dft<R>;
-  using cache_t = conditional_t<delay_init,
-                                non_propagating_cache<cache_data_t>,
-                                simple_wrapper<cache_data_t>>;
+  using cache_t = conditional<delay_init,
+                              non_propagating_cache<cache_data_t>,
+                              simple_wrapper<cache_data_t>>;
 
   R r = R{};
   cache_t c = cache_t{};
@@ -10189,7 +10508,7 @@ class enumerate_range : range_fns {
 
 public:
   enumerate_range() = delete;
-  constexpr enumerate_range() requires is_default_constructible_v<R> {
+  constexpr enumerate_range() requires is_default_constructible<R> {
     init();
   }
   ~enumerate_range() = default;
@@ -10198,8 +10517,8 @@ public:
   enumerate_range(enumerate_range &&) = default;
   enumerate_range &operator =(enumerate_range &&) = default;
   friend constexpr void swap(enumerate_range &x, enumerate_range &y)
-    noexcept(is_nothrow_swappable_v<R>)
-    requires (is_swappable_v<R> && !is_reference_v<R>) {
+    noexcept(is_nothrow_swappable<R>)
+    requires (is_swappable<R> && !is_reference<R>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -10215,13 +10534,13 @@ public:
     delayed_init();
     return enumerate_iterator<rng_itr<R>>(end(r), *c);
   }
-  constexpr enumerate_iterator<rng_itr<add_const_t<R>>> begin() const
+  constexpr enumerate_iterator<rng_itr<add_const<R>>> begin() const
     requires (enable_const && !delay_init) {
-    return enumerate_iterator<rng_itr<add_const_t<R>>>(begin(r), 0);
+    return enumerate_iterator<rng_itr<add_const<R>>>(begin(r), 0);
   }
-  constexpr enumerate_iterator<rng_itr<add_const_t<R>>> end() const
+  constexpr enumerate_iterator<rng_itr<add_const<R>>> end() const
     requires (enable_const && !delay_init) {
-    return enumerate_iterator<rng_itr<add_const_t<R>>>(end(r), *c);
+    return enumerate_iterator<rng_itr<add_const<R>>>(end(r), *c);
   }
 
   constexpr bool empty() {
@@ -10240,7 +10559,8 @@ public:
   }
 };
 template <class R>
-struct is_range_reference<enumerate_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<enumerate_range<R>>
+  : template_is_range_reference<R> {};
 struct fo_enumerate_rng {
   template <class R>
   constexpr auto operator ()(R &&r) const {
@@ -10297,7 +10617,7 @@ public:
   using pointer = FI;
   using difference_type = itr_dft<FI>;
   using iterator_category
-    = conditional_t<is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
+    = conditional<is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
 
   constexpr exclusive_rotate_iterator() = default;
   ~exclusive_rotate_iterator() = default;
@@ -10307,7 +10627,7 @@ public:
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(exclusive_rotate_iterator &x,
                              exclusive_rotate_iterator &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.op, y.op);
     adl_swap(x.wall, y.wall);
     adl_swap(x.ed, y.ed);
@@ -10323,7 +10643,7 @@ public:
   template <class FI2>
   constexpr exclusive_rotate_iterator
   (const exclusive_rotate_iterator<FI2> &x)
-    requires (!is_same_v<FI2, FI> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI2, FI> && is_convertible<const FI2 &, FI>)
     : op(x.op), wall(x.wall), ed(x.ed), it(x.it) {}
 
   constexpr FI operator ->() const
@@ -10455,7 +10775,7 @@ class exclusive_rotate_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  static constexpr bool enable_const = is_rng<add_const_t<FR>>;
+  static constexpr bool enable_const = is_rng<add_const<FR>>;
   static constexpr bool delay_init = !is_rng_ref<FR>;
 
   struct cache_data_t {
@@ -10469,7 +10789,7 @@ class exclusive_rotate_range : range_fns {
     rng_dft<FR> n = 0;
     non_propagating_cache<cache_data_t> c;
   };
-  using cache_t = conditional_t<delay_init, cache_t2, cache_t1>;
+  using cache_t = conditional<delay_init, cache_t2, cache_t1>;
 
   FR r = FR{};
   cache_t c = cache_t{};
@@ -10511,7 +10831,7 @@ class exclusive_rotate_range : range_fns {
 public:
   exclusive_rotate_range() = delete;
   constexpr exclusive_rotate_range()
-    requires is_default_constructible_v<FR> {
+    requires is_default_constructible<FR> {
     init(end(r));
   }
   ~exclusive_rotate_range() = default;
@@ -10520,8 +10840,8 @@ public:
   exclusive_rotate_range(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires (is_swappable_v<FR> && !is_reference_v<FR>) {
+    noexcept(is_nothrow_swappable<FR>)
+    requires (is_swappable<FR> && !is_reference<FR>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -10572,24 +10892,24 @@ public:
   }
   constexpr rng_szt<FR> size() const
     requires (enable_const && !delay_init
-              && rng_is_sized<add_const_t<FR>>) {
+              && rng_is_sized<add_const<FR>>) {
     const auto n = size(r);
     return (n == 0) ? n : (n - 1u);
   }
 };
 template <class FR>
-struct is_range_reference<exclusive_rotate_range<FR>>
-  : is_range_reference<FR> {};
+struct template_is_range_reference<exclusive_rotate_range<FR>>
+  : template_is_range_reference<FR> {};
 struct fo_exclusive_rotate_rng {
   template <class FR, class T>
   constexpr auto operator ()(FR &&r, T i) const
-    requires is_frng<FR> && is_integral_v<T> {
+    requires is_frng<FR> && is_integral<T> {
     return exclusive_rotate_range<rng_forward_t<FR>>
       (forward<FR>(r), static_cast<rng_dft<FR>>(i));
   }
   template <class FR, class T>
   constexpr auto operator ()(FR &&r, T i) const
-    requires (is_frng<FR> && is_rng_ref<FR> && !is_integral_v<T>) {
+    requires (is_frng<FR> && is_rng_ref<FR> && !is_integral<T>) {
     return exclusive_rotate_range<rng_forward_t<FR>>
       (forward<FR>(r), static_cast<rng_itr<FR>>(i));
   }
@@ -10616,7 +10936,7 @@ public:
   using pointer = FI;
   using difference_type = itr_dft<FI>;
   using iterator_category
-    = conditional_t<is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
+    = conditional<is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
 
   rotate_iterator() = default;
   ~rotate_iterator() = default;
@@ -10625,7 +10945,7 @@ public:
   rotate_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.f, y.f);
     adl_swap(x.l, y.l);
     adl_swap(x.wall, y.wall);
@@ -10634,7 +10954,7 @@ public:
 
   template <class FI2>
   constexpr rotate_iterator(const rotate_iterator<FI2> &x)
-    requires (!is_same_v<FI2, FI> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI2, FI> && is_convertible<const FI2 &, FI>)
     : f(x.f), l(x.l), wall(x.wall), it(x.it) {}
 
   constexpr rotate_iterator(FI a, FI b, FI c, FI d)
@@ -10797,7 +11117,7 @@ class rotate_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  static constexpr bool enable_const = is_rng<add_const_t<FR>>;
+  static constexpr bool enable_const = is_rng<add_const<FR>>;
   static constexpr bool delay_init = !is_rng_ref<FR>;
 
   using cache_data_t = rng_itr<FR>;
@@ -10808,7 +11128,7 @@ class rotate_range : range_fns {
     rng_dft<FR> n = 0;
     non_propagating_cache<cache_data_t> c;
   };
-  using cache_t = conditional_t<delay_init, cache_t2, cache_t1>;
+  using cache_t = conditional<delay_init, cache_t2, cache_t1>;
 
   FR r = FR{};
   cache_t c = cache_t{};
@@ -10837,7 +11157,7 @@ class rotate_range : range_fns {
 public:
   rotate_range() = delete;
   constexpr rotate_range()
-    requires is_default_constructible_v<FR> {
+    requires is_default_constructible<FR> {
     init(begin(r));
   }
   ~rotate_range() = default;
@@ -10846,8 +11166,8 @@ public:
   rotate_range(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires (is_swappable_v<FR> && !is_reference_v<FR>) {
+    noexcept(is_nothrow_swappable<FR>)
+    requires (is_swappable<FR> && !is_reference<FR>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -10894,22 +11214,23 @@ public:
   }
   constexpr rng_szt<FR> size() const
     requires (enable_const && !delay_init
-              && rng_is_sized<add_const_t<FR>>) {
+              && rng_is_sized<add_const<FR>>) {
     return size(r);
   }
 };
 template <class FR>
-struct is_range_reference<rotate_range<FR>> : is_range_reference<FR> {};
+struct template_is_range_reference<rotate_range<FR>>
+  : template_is_range_reference<FR> {};
 struct fo_rotate_rng {
   template <class FR, class T>
   constexpr auto operator ()(FR &&r, T i) const
-    requires is_frng<FR> && is_integral_v<T> {
+    requires is_frng<FR> && is_integral<T> {
     return rotate_range<rng_forward_t<FR>>
       (forward<FR>(r), static_cast<rng_dft<FR>>(i));
   }
   template <class FR, class T>
   constexpr auto operator ()(FR &&r, T i) const
-    requires (is_frng<FR> && is_rng_ref<FR> && !is_integral_v<T>) {
+    requires (is_frng<FR> && is_rng_ref<FR> && !is_integral<T>) {
     return rotate_range<rng_forward_t<FR>>
       (forward<FR>(r), static_cast<rng_itr<FR>>(i));
   }
@@ -10961,7 +11282,7 @@ public:
   using reference = itr_ref<FI>;
   using pointer = FI;
   using difference_type = itr_dft<FI>;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <is_ritr<FI>, random_access_iterator_tag, itr_ctg<FI>>;
 
   loop_iterator() = default;
@@ -10971,7 +11292,7 @@ public:
   loop_iterator(this_t &&) = default;
   loop_iterator &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FI>) {
+    noexcept(is_nothrow_swappable<FI>) {
     adl_swap(x.f, y.f);
     adl_swap(x.l, y.l);
     adl_swap(x.it, y.it);
@@ -10980,7 +11301,7 @@ public:
 
   template <class FI2>
   constexpr loop_iterator(const loop_iterator<FI2> &x)
-    requires (!is_same_v<FI, FI2> && is_convertible_v<const FI2 &, FI>)
+    requires (!is_same<FI, FI2> && is_convertible<const FI2 &, FI>)
     : f(x.f), l(x.l), it(x.it), n(x.n) {}
 
   constexpr loop_iterator(FI f, FI l, FI it, itr_dft<FI> n)
@@ -11096,7 +11417,7 @@ class loop_range : range_fns {
   using range_fns::empty;
   using range_fns::size;
 
-  static constexpr bool enable_const = is_rng<add_const_t<FR>>;
+  static constexpr bool enable_const = is_rng<add_const<FR>>;
   static constexpr bool delay_init = !is_rng_ref<FR>;
 
   using cache_data_t = pair<rng_itr<FR>, rng_itr<FR>>;
@@ -11109,7 +11430,7 @@ class loop_range : range_fns {
     non_propagating_cache<cache_data_t> c;
     rng_dft<FR> n = 0;
   };
-  using cache_t = conditional_t<delay_init, cache_t2, cache_t1>;
+  using cache_t = conditional<delay_init, cache_t2, cache_t1>;
 
   FR r = FR{};
   cache_t c = cache_t{};
@@ -11157,7 +11478,7 @@ class loop_range : range_fns {
 
 public:
   loop_range() = delete;
-  constexpr loop_range() requires is_default_constructible_v<FR> {
+  constexpr loop_range() requires is_default_constructible<FR> {
     init(begin(r), 0);
   }
   ~loop_range() = default;
@@ -11166,8 +11487,8 @@ public:
   loop_range(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<FR>)
-    requires (is_swappable_v<FR> && !is_reference_v<FR>) {
+    noexcept(is_nothrow_swappable<FR>)
+    requires (is_swappable<FR> && !is_reference<FR>) {
     adl_swap(x.r, y.r);
     adl_swap(x.c, y.c);
   }
@@ -11223,18 +11544,19 @@ public:
   }
 };
 template <class FR>
-struct is_range_reference<loop_range<FR>> : is_range_reference<FR> {};
+struct template_is_range_reference<loop_range<FR>>
+  : template_is_range_reference<FR> {};
 struct fo_loop_rng {
   template <class FR, class T>
   constexpr auto operator ()(FR &&r, T i, rng_dft<FR> n) const
-    requires (is_frng<FR> && is_rng_ref<FR> && !is_integral_v<T>) {
+    requires (is_frng<FR> && is_rng_ref<FR> && !is_integral<T>) {
     return loop_range<rng_forward_t<FR>>(forward<FR>(r),
                                          static_cast<rng_itr<FR>>(i),
                                          n);
   }
   template <class FR, class T>
   constexpr auto operator ()(FR &&r, T d, rng_dft<FR> n) const
-    requires is_frng<FR> && is_integral_v<T> {
+    requires is_frng<FR> && is_integral<T> {
     return loop_range<rng_forward_t<FR>>(forward<FR>(r),
                                          static_cast<rng_dft<FR>>(d),
                                          n);
@@ -11246,6 +11568,467 @@ struct fo_loop_rng {
   }
 };
 inline constexpr fo_loop_rng loop_rng{};
+
+}
+
+// concat_range
+namespace re {
+
+template <class, class...>
+class concat_range;
+namespace inner {
+
+template <bool IS_CONST, class R, class...S>
+class concat_range_iterator {
+  using this_t = concat_range_iterator;
+
+  template <class, class...>
+  friend class re::concat_range;
+
+  template <bool, class, class...>
+  friend class concat_range_iterator;
+
+  using tuple_t = conditional<IS_CONST, const tuple<R, S...>, tuple<R, S...>>;
+
+  using index_seq_t = make_index_sequence<sizeof...(S) + 1u>;
+  template <size_t...SS>
+  static variant<rng_itr<nth_type<SS, R, S...>>...>
+  f(false_type, index_sequence<SS...>);
+  template <size_t...SS>
+  static variant<rng_itr<nth_type<SS, add_const<R>, add_const<S>...>>...>
+  f(true_type, index_sequence<SS...>);
+  using var_t = decltype(f(bool_constant<IS_CONST>{}, index_seq_t{}));
+
+  tuple_t *p = nullptr;
+  var_t i;
+
+  concat_range_iterator(tuple_t *pp, var_t ii) : p(pp), i(move(ii)) {}
+
+  using common_ctg = common_iterator_category<rng_ctg<R>, rng_ctg<S>...>;
+
+public:
+  using value_type = common_type<rng_vt<R>, rng_vt<S>...>;
+  using reference
+    = conditional<IS_CONST,
+                  common_reference<rng_ref<add_const<R>>,
+                                   rng_ref<add_const<S>>...>,
+                  common_reference<rng_ref<R>, rng_ref<S>...>
+                  >;
+  using pointer = void;
+  using difference_type = common_type<rng_dft<R>, rng_dft<S>...>;
+  using iterator_category
+    = conditional<is_citr_ctg<common_ctg>,
+                  conditional<sizeof...(S) == 0u,
+                              contiguous_iterator_tag,
+                              random_access_iterator_tag>,
+                  common_ctg>;
+
+  concat_range_iterator() = default;
+  ~concat_range_iterator() = default;
+  concat_range_iterator(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  concat_range_iterator(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  friend void swap(this_t &x1, this_t &x2) noexcept {
+    adl_swap(x1.p, x2.p);
+    adl_swap(x1.i, x2.i);
+  }
+
+  template <bool Y = IS_CONST>
+  concat_range_iterator(const concat_range_iterator<false, R, S...> &x)
+    requires (Y)
+    : p(x.p), i(in_place_type<void>) {
+    x.i.visit_with_index
+      ([&]<size_t ID, class T>(size_constant<ID>, T &u) {
+        i.template emplace<ID>(u);
+      });
+  }
+  template <bool Y = IS_CONST>
+  this_t &operator =(const concat_range_iterator<false, R, S...> &x)
+    requires Y {
+    p = x.p;
+    x.i.visit_with_index
+      ([&]<size_t ID, class T>(size_constant<ID>, T &u) {
+        i.template emplace<ID>(u);
+      });
+    return *this;
+  }
+
+  template <bool Y1, bool Y2, class RR, class...SS>
+  friend bool operator ==(const concat_range_iterator<Y1, RR, SS...> &,
+                          const concat_range_iterator<Y2, RR, SS...> &);
+  reference operator *() const {
+    return visit([](auto &j)->reference {return *j;},
+                 i);
+  }
+private:
+  void move_to_first_valid_pos() {
+    const auto f
+      = [this]<size_t ID, class T>(size_constant<ID>, T &j)->bool {
+      if (j == end(at<ID>(*p))) {
+        constexpr size_t id2 = (ID == sizeof...(S)) ? ID : (ID + 1u);
+        if constexpr (id2 != ID) {
+          auto &r2 = at<id2>(*p);
+          i.template emplace<id2>(begin(r2));
+          return false;
+        }
+      }
+      return true;
+    };
+    while (!i.visit_with_index(f))
+      ;
+  }
+public:
+  this_t &operator ++() {
+    i.visit([](auto &j) {++j;});
+    move_to_first_valid_pos();
+    return *this;
+  }
+  value_type *operator ++(int);
+  this_t operator ++(int) requires is_fitr_ctg<iterator_category> {
+    return iter_post_increment(*this);
+  }
+
+  this_t &operator --() requires is_bitr_ctg<iterator_category> {
+    const auto f = [this]<size_t ID, class T>(size_constant<ID>, T &j) {
+      if (j == begin(at<ID>(*p))) {
+        constexpr size_t id2 = ((ID == 0u) ? ID : (ID - 1u));
+        if constexpr (id2 != ID) {
+          i.template emplace<id2>(end(at<id2>(*p)));
+          return false;
+        }
+      }
+      else
+        --j;
+      return true;
+    };
+    while (!i.visit_with_index(f))
+      ;
+    return *this;
+  }
+  this_t operator --(int) requires is_bitr_ctg<iterator_category> {
+    return iter_post_decrement(*this);
+  }
+
+  reference operator [](difference_type n) const
+    requires is_ritr_ctg<iterator_category> {
+    return *(copy(*this) += n);
+  }
+  this_t &operator +=(difference_type n)
+    requires is_ritr_ctg<iterator_category> {
+    if (n > 0) {
+      const auto f
+        = [this, &n]<size_t ID, class T>(size_constant<ID>, T &j)->bool {
+        auto &r = at<ID>(*p);
+        const difference_type dif = end(r) - j;
+        if (n < dif || (ID == sizeof...(S) && n == dif))
+          j += n;
+        else {
+          constexpr size_t id2 = (ID == sizeof...(S)) ? ID : (ID + 1u);
+          if constexpr (id2 != ID) {
+            i.template emplace<id2>(begin(at<id2>(*p)));
+            n -= dif;
+            return false;
+          }
+        }
+        return true;
+      };
+      while (!i.visit_with_index(f))
+        ;
+    }
+    else if (n < 0) {
+      const auto f
+        = [this, &n]<size_t ID, class T>(size_constant<ID>, T &j)->bool {
+        if (j == begin(at<ID>(*p))) {
+          constexpr size_t id2 = ((ID == 0u) ? ID : (ID - 1u));
+          if constexpr (id2 != ID) {
+            i.template emplace<id2>(end(at<id2>(*p)));
+            return false;
+          }
+        }
+        else {
+          auto &r = at<ID>(*p);
+          const difference_type dif = begin(r) - j;
+          if (n >= dif)
+            j += n;
+          else {
+            constexpr size_t id2 = ((ID == 0u) ? ID : (ID - 1u));
+            if constexpr (id2 != ID) {
+              i.template emplace<id2>(end(at<id2>(*p)));
+              n -= dif;
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+      while (!i.visit_with_index(f))
+        ;
+    }
+    return *this;
+  }
+  this_t &operator -=(difference_type n)
+    requires is_ritr_ctg<iterator_category> {
+    return operator +=(-n);
+  }
+  this_t operator +(difference_type n) const
+    requires is_ritr_ctg<iterator_category> {
+    return copy(*this) += n;
+  }
+  this_t operator -(difference_type n) const
+    requires is_ritr_ctg<iterator_category> {
+    return copy(*this) -= n;
+  }
+
+  template <bool Y1, bool Y2, class R1, class...S1>
+  friend
+  common_comparison_category
+  <synth_3way_result<conditional<Y1,
+                                 rng_itr<add_const<R1>>,
+                                 rng_itr<R1>>,
+                     conditional<Y2,
+                                 rng_itr<add_const<R1>>,
+                                 rng_itr<R1>>>,
+   synth_3way_result<conditional<Y1,
+                                 rng_itr<add_const<S1>>,
+                                 rng_itr<S1>>,
+                     conditional<Y2,
+                                 rng_itr<add_const<S1>>,
+                                 rng_itr<S1>>>...>
+  operator <=>(const concat_range_iterator<Y1, R1, S1...> &,
+               const concat_range_iterator<Y2, R1, S1...> &);
+  template <bool Y1, bool Y2, class R1, class...S1>
+  friend itr_dft<concat_range_iterator<Y1, R1, S1...>>
+  operator -(const concat_range_iterator<Y1, R1, S1...> &x1,
+             const concat_range_iterator<Y2, R1, S1...> &x2)
+    requires is_ritr<concat_range_iterator<Y1, R1, S1...>>;
+};
+
+template <bool Y1, bool Y2, class RR, class...SS>
+bool operator ==(const concat_range_iterator<Y1, RR, SS...> &x1,
+                 const concat_range_iterator<Y2, RR, SS...> &x2) {
+  return x1.p == x2.p && x1.i == x2.i;
+}
+template <bool Y1, bool Y2, class R1, class...S1>
+common_comparison_category
+<synth_3way_result<conditional<Y1,
+                               rng_itr<add_const<R1>>,
+                               rng_itr<R1>>,
+                   conditional<Y2,
+                               rng_itr<add_const<R1>>,
+                               rng_itr<R1>>>,
+ synth_3way_result<conditional<Y1,
+                               rng_itr<add_const<S1>>,
+                               rng_itr<S1>>,
+                   conditional<Y2,
+                               rng_itr<add_const<S1>>,
+                               rng_itr<S1>>>...>
+operator <=>(const concat_range_iterator<Y1, R1, S1...> &x1,
+             const concat_range_iterator<Y2, R1, S1...> &x2) {
+  using ret_t = common_comparison_category
+    <synth_3way_result<conditional<Y1,
+                                   rng_itr<add_const<R1>>,
+                                   rng_itr<R1>>,
+                       conditional<Y2,
+                                   rng_itr<add_const<R1>>,
+                                   rng_itr<R1>>>,
+     synth_3way_result<conditional<Y1,
+                                   rng_itr<add_const<S1>>,
+                                   rng_itr<S1>>,
+                       conditional<Y2,
+                                   rng_itr<add_const<S1>>,
+                                   rng_itr<S1>>>...>;
+  if (x1.p == x2.p) {
+    const auto o = (x1.i.index() <=> x2.i.index());
+    if (o == 0)
+      return x1.i.visit_with_index
+        ([&x2]<size_t ID, class T>(size_constant<ID>, T &u)->ret_t {
+          return synth_3way(u, at<ID>(x2.i));
+        });
+    else
+      return o;
+  }
+  else
+    return x1.p <=> x2.p;
+}
+template <bool Y1, bool Y2, class R1, class...S1>
+itr_dft<concat_range_iterator<Y1, R1, S1...>>
+operator -(const concat_range_iterator<Y1, R1, S1...> &x1,
+           const concat_range_iterator<Y2, R1, S1...> &x2)
+  requires is_ritr<concat_range_iterator<Y1, R1, S1...>> {
+  const auto o = (x1 <=> x2);
+  if (o != 0) {
+    using dft = itr_dft<concat_range_iterator<Y1, R1, S1...>>;
+    dft ssz_vec[sizeof...(S1) + 1u] = {};
+    auto &pp = *x1.p;
+    type_pack_for_each<make_index_sequence<sizeof...(S1) + 1u>>
+      ([&](auto tag) {
+        constexpr size_t i = decltype(tag)::type::value;
+        ssz_vec[i] = ssize(at<i>(pp));
+      });
+
+    const auto f = [&](const auto &upper_x, const auto &lower_x)->dft {
+      const size_t lower_id = lower_x.i.index();
+      const size_t upper_id = upper_x.i.index();
+      if (lower_id == upper_id)
+        return lower_x.i.visit_with_index
+          ([&]<size_t ID, class T>(size_constant<ID>, T &x)->dft {
+            return at<ID>(upper_x.i) - x;
+          });
+      else {
+        dft ret = 0;
+        ret += lower_x.i.visit_with_index
+          ([&]<size_t ID, class T>(size_constant<ID>, T &x)->dft {
+            return end(at<ID>(pp)) - x;
+          });
+        for (auto &id : iters(lower_id + 1, upper_id))
+          ret += ssz_vec[id];
+        ret += upper_x.i.visit_with_index
+          ([&]<size_t ID, class T>(size_constant<ID>, T &x)->dft {
+            return x - begin(at<ID>(pp));
+          });
+        return ret;
+      }
+    };
+    return (o < 0) ? -f(x2, x1) : f(x1, x2);
+  }
+  else
+    return 0;
+}
+template <bool Y, class R1, class...S1>
+concat_range_iterator<Y, R1, S1...>
+operator +(itr_dft<concat_range_iterator<Y, R1, S1...>> n,
+           const concat_range_iterator<Y, R1, S1...> &x)
+  requires is_ritr<concat_range_iterator<Y, R1, S1...>> {
+  return copy(x) += n;
+}
+
+}
+
+template <class R, class...S>
+class concat_range : range_fns {
+  using this_t = concat_range;
+
+  using tuple_t = tuple<R, S...>;
+  tuple_t t;
+
+  using range_fns::begin;
+  using range_fns::end;
+  using range_fns::empty;
+  using range_fns::size;
+
+  using this_is_const_range
+    = bool_constant<(is_rng<add_const<R>>
+                     && (... && is_rng<add_const<S>>))>;
+  using this_is_sized
+    = bool_constant<rng_is_sized<R>
+                    && (... && rng_is_sized<S>)>;
+  using const_this_is_sized
+    = bool_constant<rng_is_sized<add_const<R>>
+                    && (... && rng_is_sized<add_const<S>>)>;
+
+public:
+  concat_range() = default;
+  ~concat_range() = default;
+  concat_range(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  concat_range(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  friend constexpr void swap(this_t &x1, this_t &x2)
+    noexcept(is_nothrow_swappable<tuple_t>)
+    requires (is_swappable<tuple_t> && default_swappable<tuple_t>) {
+    adl_swap(x1.t, x2.t);
+  }
+
+  explicit(sizeof...(S) == 0u) concat_range(R r, S...s)
+    : t(forward<R>(r), forward<S>(s)...) {}
+
+  auto begin() {
+    using itr_t = inner::concat_range_iterator<false, R, S...>;
+    using var_t = typename itr_t::var_t;
+    itr_t ret(addressof(t), var_t(in_place_index<0>, begin(at<0>(t))));
+    if (empty(at<0>(t)))
+      ret.move_to_first_valid_pos();
+    return ret;
+  }
+  auto begin() const requires this_is_const_range::value {
+    using itr_t = inner::concat_range_iterator<true, R, S...>;
+    using var_t = typename itr_t::var_t;
+    itr_t ret(addressof(t), var_t(in_place_index<0>, begin(at<0>(t))));
+    if (empty(at<0>(t)))
+      ret.move_to_first_valid_pos();
+    return ret;
+  }
+  auto end() {
+    using itr_t = inner::concat_range_iterator<false, R, S...>;
+    using var_t = typename itr_t::var_t;
+    return itr_t(addressof(t),
+                 var_t(in_place_index<sizeof...(S)>,
+                       end(at<sizeof...(S)>(t))));
+  }
+  auto end() const requires this_is_const_range::value {
+    using itr_t = inner::concat_range_iterator<true, R, S...>;
+    using var_t = typename itr_t::var_t;
+    return itr_t(addressof(t),
+                 var_t(in_place_index<sizeof...(S)>,
+                       end(at<sizeof...(S)>(t))));
+  }
+
+  bool empty() {
+    bool ret = true;
+    type_pack_for_each_until_false<make_index_sequence<sizeof...(S) + 1u>>
+      ([&](auto tag) {
+        if (!empty(at<decltype(tag)::type::value>(t))) {
+          ret = false;
+          return false;
+        }
+        else
+          return true;
+      });
+    return ret;
+  }
+  bool empty() const requires this_is_const_range::value {
+    bool ret = true;
+    type_pack_for_each_until_false<make_index_sequence<sizeof...(S) + 1u>>
+      ([&](auto tag) {
+        if (!empty(at<decltype(tag)::type::value>(t))) {
+          ret = false;
+          return false;
+        }
+        else
+          return true;
+      });
+    return ret;
+  }
+
+  auto size() requires this_is_sized::value {
+    using szt = make_unsigned<common_type<rng_szt<R>, rng_szt<S>...>>;
+    szt ret = 0u;
+    type_pack_for_each<make_index_sequence<sizeof...(S) + 1u>>
+      ([&](auto tag) {ret += size(at<decltype(tag)::type::value>(t));});
+    return ret;
+  }
+  auto size() const requires (this_is_const_range::value
+                              && const_this_is_sized::value) {
+    using szt = make_unsigned<common_type<rng_szt<R>, rng_szt<S>...>>;
+    szt ret = 0u;
+    type_pack_for_each<make_index_sequence<sizeof...(S) + 1u>>
+      ([&](auto tag) {ret += size(at<decltype(tag)::type::value>(t));});
+    return ret;
+  }
+};
+template <class R, class...S>
+struct template_is_range_reference<concat_range<R, S...>>
+  : bool_constant<template_is_range_reference<R>::value
+                  && (... && template_is_range_reference<S>::value)> {};
+struct fo_concat_rng {
+  template <class R, class...S>
+  constexpr auto operator ()(R &&r, S &&...s) const {
+    return concat_range<rng_forward_t<R>, rng_forward_t<S>...>
+      (forward<R>(r), forward<S>(s)...);
+  }
+};
+inline constexpr fo_concat_rng concat_rng{};
 
 }
 

@@ -122,7 +122,7 @@ struct fo_test_ownership<T> {
   template <class F1, class F2, class F3, class F4, class F5>
   void operator ()(F1 init_left, F2 equal_left,
                    F3 init_right, F4 equal_right,
-                   F5 is_empty) const
+                   F5 empt) const
     requires copyable<T> && movable<T> && swappable<T> {
     alignas(T) byte buf1[sizeof(T)];
     alignas(T) byte buf2[sizeof(T)];
@@ -161,12 +161,12 @@ struct fo_test_ownership<T> {
     T mov = move(l);
     if (!equal_left(addressof(mov)))
       print_then_terminate("re::test_ownership(...) failed at step 8\n");
-    if (!is_empty(addressof(l)))
+    if (!empt(addressof(l)))
       print_then_terminate("re::test_ownership(...) failed at step 9\n");
     T mov2 = move(r);
     if (!equal_right(addressof(mov2)))
       print_then_terminate("re::test_ownership(...) failed at step 10\n");
-    if (!is_empty(addressof(r)))
+    if (!empt(addressof(r)))
       print_then_terminate("re::test_ownership(...) failed at step 11\n");
     adl_swap(mov, mov2);
     if (!equal_right(addressof(mov)))
@@ -187,7 +187,7 @@ struct fo_test_ownership<T> {
           && equal_right(addressof(mov))))
       print_then_terminate
         ("re::test_ownership(...) failed at step 16\n");
-    if (!is_empty(addressof(mov2)))
+    if (!empt(addressof(mov2)))
       print_then_terminate
         ("re::test_ownership(...) failed at step 17\n");
     if (!(addressof(mov = move(mov)) == addressof(mov)
@@ -257,7 +257,7 @@ template <class T>
 struct fo_test_move {
   template <class F1, class F2, class F3, class F4, class F5>
   void operator ()(F1 init_left, F2 equal_left, F3 init_right, F4 equal_right,
-                   F5 is_empty) const
+                   F5 empt) const
     requires movable<T> {
     alignas(T) byte buf1[sizeof(T)];
     alignas(T) byte buf2[sizeof(T)];
@@ -274,13 +274,13 @@ struct fo_test_move {
     T &r = *p2;
 
     T mov = move(l);
-    if (!(equal_left(addressof(mov)) && is_empty(addressof(l))))
+    if (!(equal_left(addressof(mov)) && empt(addressof(l))))
       print_then_terminate("re::test_move() failed at step 1\n");
     T mov2 = move(r);
-    if (!(equal_right(addressof(mov2)) && is_empty(addressof(r))))
+    if (!(equal_right(addressof(mov2)) && empt(addressof(r))))
       print_then_terminate("re::test_move() failed at step 2\n");
     if (!(addressof(mov = move(mov2)) == addressof(mov)
-          && equal_right(addressof(mov)) && is_empty(addressof(mov2))))
+          && equal_right(addressof(mov)) && empt(addressof(mov2))))
       print_then_terminate("re::test_move() failed at step 3\n");
     if (!(addressof(mov = move(mov)) == addressof(mov)
           && equal_right(addressof(mov))))
@@ -328,7 +328,7 @@ template <class T>
 struct fo_test_copy_construct {
   template <class F1, class F2, class F3>
   void operator ()(F1 init_left, F2 equal_left, F3 empt) const
-    requires is_copy_constructible_v<T> && is_move_constructible_v<T> {
+    requires is_copy_constructible<T> && is_move_constructible<T> {
     alignas(T) byte buf1[sizeof(T)];
 
     T *p1 = reinterpret_cast<T *>(addressof(buf1));
@@ -389,7 +389,7 @@ struct fo_test_allocator_aware_container_ownership {
   template <class F1, class F2, class F3, class F4, class F5>
   void operator ()(F1 init_left, F2 equal_left,
                    F3 init_right, F4 equal_right,
-                   F5 is_empty) const {
+                   F5 empt) const {
     alignas(T) byte buf1[sizeof(T)];
     alignas(T) byte buf2[sizeof(T)];
     T *p1 = reinterpret_cast<T *>(addressof(buf1));
@@ -448,7 +448,7 @@ struct fo_test_allocator_aware_container_ownership {
       print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 8\n");
-    if (!is_empty(addressof(l)))
+    if (!empt(addressof(l)))
       print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 9\n");
@@ -457,7 +457,7 @@ struct fo_test_allocator_aware_container_ownership {
       print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 10\n");
-    if (!is_empty(addressof(r)))
+    if (!empt(addressof(r)))
       print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 11\n");
@@ -505,7 +505,7 @@ struct fo_test_allocator_aware_container_ownership {
       print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 19\n");
-    if (!is_empty(addressof(mov2)))
+    if (!empt(addressof(mov2)))
       print_then_terminate
         ("re::test_allocator_aware_container_ownership(...) "
          "failed at step 20\n");
@@ -528,12 +528,12 @@ namespace re {
 namespace inner::fns {
 
 template <class X, class Y>
-constexpr enable_if_t<!can_apply_less<X &, Y &>, bool>
+constexpr enable_if<!can_apply_less<X &, Y &>, bool>
 test_equal_impl1(X &&x, Y &&y) {
   return true;
 }
 template <class X, class Y>
-constexpr enable_if_t<can_apply_less<X &, Y &>, bool>
+constexpr enable_if<can_apply_less<X &, Y &>, bool>
 test_equal_impl1(X &&x, Y &&y) {
   if (!(!(x < y) && !(y < x)))
     return false;
@@ -547,12 +547,12 @@ test_equal_impl1(X &&x, Y &&y) {
 }
 
 template <class X, class Y>
-constexpr enable_if_t<!three_way_comparable_with<X &, Y &>, bool>
+constexpr enable_if<!three_way_comparable_with<X &, Y &>, bool>
 test_equal_impl2(X &&x, Y &&y) {
   return true;
 }
 template <class X, class Y>
-constexpr enable_if_t<three_way_comparable_with<X &, Y &>, bool>
+constexpr enable_if<three_way_comparable_with<X &, Y &>, bool>
 test_equal_impl2(X &&x, Y &&y) {
   if (!(x <=> y == 0 && y <=> x == 0))
     return false;
@@ -725,27 +725,27 @@ public:
     return *this;
   }
   instance_counter(instance_counter &&x)
-    noexcept(is_nothrow_move_constructible_v<T>)
+    noexcept(is_nothrow_move_constructible<T>)
     : data(move(x.data)) {
     plus();
   }
   instance_counter &operator =(instance_counter &&x)
-    noexcept(is_nothrow_move_assignable_v<T>) {
+    noexcept(is_nothrow_move_assignable<T>) {
     data = move(x.data);
     return *this;
   }
   friend void swap(instance_counter &x, instance_counter &y)
-    noexcept(is_nothrow_swappable_v<T>)
-    requires (is_swappable_v<T>) {
+    noexcept(is_nothrow_swappable<T>)
+    requires (is_swappable<T>) {
     adl_swap(x.data, y.data);
   }
 
   template <class F, class...S,
-            class = enable_if_t
-            <!(is_same_v<instance_counter, remove_cvref_t<F>>
+            class = enable_if
+            <!(is_same<instance_counter, remove_cvref<F>>
                && sizeof...(S) == 0)
-             && is_constructible_v<T, F &&, S &&...>>>
-  explicit(sizeof...(S) == 0 && !is_convertible_v<F &&, T>)
+             && is_constructible<T, F &&, S &&...>>>
+  explicit(sizeof...(S) == 0 && !is_convertible<F &&, T>)
   instance_counter(F &&t, S &&...s)
     : data(forward<F>(t), forward<S>(s)...) {
     plus();
@@ -852,10 +852,10 @@ public:
     return *this;
   }
 
-  template <class F, class...S, class = enable_if_t
-            <!(is_same_v<this_t, remove_cvref_t<F>> && sizeof...(S) == 0)
-             && is_constructible_v<T, F &&, S &&...>>>
-  explicit(sizeof...(S) == 0 && !is_convertible_v<F &&, T>)
+  template <class F, class...S, class = enable_if
+            <!(is_same<this_t, remove_cvref<F>> && sizeof...(S) == 0)
+             && is_constructible<T, F &&, S &&...>>>
+  explicit(sizeof...(S) == 0 && !is_convertible<F &&, T>)
   exception_countdown(F &&t, S &&...s)
     : base_t(forward<F>(t), forward<S>(s)...) {
     constructor_check();
@@ -961,10 +961,10 @@ public:
     if (p != nullptr) delete p;
   }
   ez_dynamic(const ez_dynamic &x)
-    requires is_copy_constructible_v<T> || inner::ezdy_has_clone_fn<T>
+    requires is_copy_constructible<T> || inner::ezdy_has_clone_fn<T>
     : ez_dynamic(x.clone()) {}
   ez_dynamic &operator =(const ez_dynamic &x)
-    requires is_copy_constructible_v<T> || inner::ezdy_has_clone_fn<T> {
+    requires is_copy_constructible<T> || inner::ezdy_has_clone_fn<T> {
     copy_and_swap(x, *this);
     return *this;
   }
@@ -981,9 +981,9 @@ public:
 
   template <class U, class...S>
   static ez_dynamic make(S &&...s)
-    requires same_as<T, U>
-    || (is_base_of_v<T, U> && has_virtual_destructor_v<T>
-        && inner::ezdy_has_clone_fn<T>) {
+    requires (same_as<T, U>
+              || (is_base_of<T, U> && has_virtual_destructor<T>
+                  && inner::ezdy_has_clone_fn<T>)) {
     return ez_dynamic(new U(forward<S>(s)...));
   }
   template <class...S>
@@ -1067,7 +1067,7 @@ public:
   ez_function &operator =(ez_function &&) = default;
 
   template <class F>
-  ez_function(F f) requires (!is_same_v<remove_cvref_t<F>, ez_function>)
+  ez_function(F f) requires (!is_same<remove_cvref<F>, ez_function>)
     : ez_function(inner::ezfn_tag{}, move(f)) {}
 
   R operator ()(S...s) const {
@@ -1099,7 +1099,7 @@ class ez_vector {
 
   template <class IT, class IT2>
   static IT2 uninitialized_copy(IT i, IT j, IT2 o) {
-    using vt = decay_t<decltype(*o)>;
+    using vt = decay<decltype(*o)>;
     IT2 o_bk = o;
 #ifndef RE_NO_EXCPTIONS
     try {
@@ -1172,7 +1172,7 @@ public:
     return now - op;
   }
   size_t max_size() const noexcept {
-    return integral_traits<make_signed_t<size_t>>::max() / sizeof(value_type);
+    return integral_traits<make_signed<size_t>>::max() / sizeof(value_type);
   }
   size_t capacity() const noexcept {
     return ed - op;
@@ -1320,12 +1320,12 @@ class ez_forward_list_iterator {
 
   using this_t = ez_forward_list_iterator;
 
-  using node_base_t = ez_forward_list_node_base<remove_const_t<T>>;
-  using node_t = ez_forward_list_node<remove_const_t<T>>;
+  using node_base_t = ez_forward_list_node_base<remove_const<T>>;
+  using node_t = ez_forward_list_node<remove_const<T>>;
   const node_base_t *p;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -1344,9 +1344,9 @@ private:
     return p;
   }
 public:
-  operator ez_forward_list_iterator<add_const_t<T>>() const
-    requires (!is_const_v<T>) {
-    return ez_forward_list_iterator<add_const_t<T>>(p);
+  operator ez_forward_list_iterator<add_const<T>>() const
+    requires (!is_const<T>) {
+    return ez_forward_list_iterator<add_const<T>>(p);
   }
 
   T *operator ->() const {
@@ -1358,7 +1358,7 @@ public:
   template <class X, class Y>
   friend bool operator ==(const ez_forward_list_iterator<X> &,
                           const ez_forward_list_iterator<Y> &)
-    requires is_same_v<remove_const_t<X>, remove_const_t<Y>>;
+    requires is_same<remove_const<X>, remove_const<Y>>;
 
   ez_forward_list_iterator &operator ++() {
     p = p->next;
@@ -1373,7 +1373,7 @@ public:
 template <class X, class Y>
 bool operator ==(const ez_forward_list_iterator<X> &x,
                  const ez_forward_list_iterator<Y> &y)
-  requires is_same_v<remove_const_t<X>, remove_const_t<Y>> {
+  requires is_same<remove_const<X>, remove_const<Y>> {
   return x.p == y.p;
 }
 
@@ -1451,7 +1451,7 @@ public:
     return begin() == end();
   }
   size_t max_size() const noexcept {
-    return integral_traits<make_signed_t<size_t>>::max() / sizeof(value_type);
+    return integral_traits<make_signed<size_t>>::max() / sizeof(value_type);
   }
 
   iterator new_node(const T &x) {
@@ -1586,12 +1586,12 @@ class ez_slist_iterator {
 
   using this_t = ez_slist_iterator;
 
-  using node_base_t = ez_slist_node_base<remove_const_t<T>>;
-  using node_t = ez_slist_node<remove_const_t<T>>;
+  using node_base_t = ez_slist_node_base<remove_const<T>>;
+  using node_t = ez_slist_node<remove_const<T>>;
   const node_base_t *p;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -1610,9 +1610,9 @@ private:
     return p;
   }
 public:
-  operator ez_slist_iterator<add_const_t<T>>() const
-    requires (!is_const_v<T>) {
-    return ez_slist_iterator<add_const_t<T>>(p);
+  operator ez_slist_iterator<add_const<T>>() const
+    requires (!is_const<T>) {
+    return ez_slist_iterator<add_const<T>>(p);
   }
 
   T *operator ->() const {
@@ -1624,7 +1624,7 @@ public:
   template <class X, class Y>
   friend bool operator ==(const ez_slist_iterator<X> &,
                           const ez_slist_iterator<Y> &)
-    requires is_same_v<remove_const_t<X>, remove_const_t<Y>>;
+    requires is_same<remove_const<X>, remove_const<Y>>;
 
   ez_slist_iterator &operator ++() {
     p = p->next;
@@ -1639,7 +1639,7 @@ public:
 template <class X, class Y>
 bool operator ==(const ez_slist_iterator<X> &x,
                  const ez_slist_iterator<Y> &y)
-  requires is_same_v<remove_const_t<X>, remove_const_t<Y>> {
+  requires is_same<remove_const<X>, remove_const<Y>> {
   return x.p == y.p;
 }
 
@@ -1724,7 +1724,7 @@ public:
     return sz;
   }
   size_t max_size() const noexcept {
-    return integral_traits<make_signed_t<size_t>>::max() / sizeof(value_type);
+    return integral_traits<make_signed<size_t>>::max() / sizeof(value_type);
   }
 
   iterator new_node(const T &x) {
@@ -1863,12 +1863,12 @@ class ez_bd_list_iterator {
   template <class>
   friend class re::ez_bidirectional_list;
 
-  using node_base_t = ez_bd_list_node_base<remove_const_t<T>>;
-  using node_t = ez_bd_list_node<remove_const_t<T>>;
+  using node_base_t = ez_bd_list_node_base<remove_const<T>>;
+  using node_t = ez_bd_list_node<remove_const<T>>;
   const node_base_t *p;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -1887,9 +1887,9 @@ private:
     return p;
   }
 public:
-  operator ez_bd_list_iterator<add_const_t<T>>() const
-    requires (!is_const_v<T>) {
-    return ez_bd_list_iterator<add_const_t<T>>(p);
+  operator ez_bd_list_iterator<add_const<T>>() const
+    requires (!is_const<T>) {
+    return ez_bd_list_iterator<add_const<T>>(p);
   }
 
   T *operator ->() const {
@@ -1901,7 +1901,7 @@ public:
   template <class X, class Y>
   friend bool operator ==(const ez_bd_list_iterator<X> &,
                           const ez_bd_list_iterator<Y> &)
-    requires is_same_v<remove_const_t<X>, remove_const_t<Y>>;
+    requires is_same<remove_const<X>, remove_const<Y>>;
 
   ez_bd_list_iterator &operator ++() {
     p = p->next;
@@ -1926,7 +1926,7 @@ public:
 template <class X, class Y>
 bool operator ==(const ez_bd_list_iterator<X> &x,
                  const ez_bd_list_iterator<Y> &y)
-  requires is_same_v<remove_const_t<X>, remove_const_t<Y>> {
+  requires is_same<remove_const<X>, remove_const<Y>> {
   return x.p == y.p;
 }
 
@@ -2048,7 +2048,7 @@ public:
     return begin() == end();
   }
   size_t max_size() const noexcept {
-    return integral_traits<make_signed_t<size_t>>::max() / sizeof(value_type);
+    return integral_traits<make_signed<size_t>>::max() / sizeof(value_type);
   }
 
   iterator new_node(const T &x) {
@@ -2185,12 +2185,12 @@ class ez_list_iterator {
   template <class>
   friend class re::ez_list;
 
-  using node_base_t = ez_list_node_base<remove_const_t<T>>;
-  using node_t = ez_list_node<remove_const_t<T>>;
+  using node_base_t = ez_list_node_base<remove_const<T>>;
+  using node_t = ez_list_node<remove_const<T>>;
   const node_base_t *p;
 
 public:
-  using value_type = remove_const_t<T>;
+  using value_type = remove_const<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -2209,9 +2209,9 @@ private:
     return p;
   }
 public:
-  operator ez_list_iterator<add_const_t<T>>() const
-    requires (!is_const_v<T>) {
-    return ez_list_iterator<add_const_t<T>>(p);
+  operator ez_list_iterator<add_const<T>>() const
+    requires (!is_const<T>) {
+    return ez_list_iterator<add_const<T>>(p);
   }
 
   T *operator ->() const {
@@ -2223,7 +2223,7 @@ public:
   template <class X, class Y>
   friend bool operator ==(const ez_list_iterator<X> &,
                           const ez_list_iterator<Y> &)
-    requires is_same_v<remove_const_t<X>, remove_const_t<Y>>;
+    requires is_same<remove_const<X>, remove_const<Y>>;
 
   ez_list_iterator &operator ++() {
     p = p->next;
@@ -2248,7 +2248,7 @@ public:
 template <class X, class Y>
 bool operator ==(const ez_list_iterator<X> &x,
                  const ez_list_iterator<Y> &y)
-  requires is_same_v<remove_const_t<X>, remove_const_t<Y>> {
+  requires is_same<remove_const<X>, remove_const<Y>> {
   return x.p == y.p;
 }
 
@@ -2372,7 +2372,7 @@ public:
     return sz;
   }
   size_t max_size() const noexcept {
-    return integral_traits<make_signed_t<size_t>>::max() / sizeof(value_type);
+    return integral_traits<make_signed<size_t>>::max() / sizeof(value_type);
   }
 
   iterator new_node(const T &x) {
@@ -3195,16 +3195,16 @@ public:
   }
 
   template <class X>
-  explicit(!is_same_v<decay_t<X>, test_object>
-           && is_constructible_v<T, X &&> && !is_convertible_v<X &&, T>)
+  explicit(!is_same<decay<X>, test_object>
+           && is_constructible<T, X &&> && !is_convertible<X &&, T>)
   test_object(X &&x)
-    requires (!is_same_v<decay_t<X>, test_object>
-              && is_constructible_v<T, X &&>)
+    requires (!is_same<decay<X>, test_object>
+              && is_constructible<T, X &&>)
     : p(make(forward<X>(x))) {}
   template <class X>
   test_object &operator =(X &&x)
-    requires ((!is_same_v<decay_t<X>, test_object>)
-              && is_assignable_v<T &, X &&>) {
+    requires ((!is_same<decay<X>, test_object>)
+              && is_assignable<T &, X &&>) {
     *p = forward<X>(x);
     return *this;
   }
@@ -3246,7 +3246,7 @@ template <class I, class J>
 constexpr void test_iitr_impl_impl(I i, J j, const char *errs) {}
 template <class I, class J>
 constexpr void test_iitr_impl_impl(I i, J j, const char *errs)
-  requires is_same_v<I, J> {
+  requires is_same<I, J> {
   I x = i;
   I y = j;
   adl_swap(x, y);
@@ -3256,6 +3256,9 @@ constexpr void test_iitr_impl_impl(I i, J j, const char *errs)
 template <class I, class J, class IT, class EQ>
 constexpr void test_iitr_impl(I i, J j, IT it1, IT it2, EQ eq,
                               const char *errs) {
+  if (i == j && it1 != it2)
+    print_then_terminate(errs, " failed at step 0-00\n");
+
   {
     I x = i;
     adl_swap(x, x);
@@ -3328,30 +3331,30 @@ constexpr void test_bitr_impl0(I i, J j, IT it1, IT it2, EQ eq,
   I y = i;
   adl_swap(x, x);
   if (!(x == i))
-    print_then_terminate("re::test_bitr(...) failed at step 00-0\n");
+    print_then_terminate(errs, "re::test_bitr(...) failed at step 00-0\n");
 
   if (i != j) {
     ++x;
     adl_swap(x, y);
     if (!(x == i))
-      print_then_terminate("re::test_bitr(...) failed at step 00-1\n");
+      print_then_terminate(errs, "re::test_bitr(...) failed at step 00-1\n");
     ++x;
     if (!(x == y))
-      print_then_terminate("re::test_bitr(...) failed at step 00-2\n");
+      print_then_terminate(errs, "re::test_bitr(...) failed at step 00-2\n");
 
     J z = j;
     adl_swap(z, z);
     if (!(z == j))
-      print_then_terminate("re::test_bitr(...) failed at step 00-3\n");
+      print_then_terminate(errs, "re::test_bitr(...) failed at step 00-3\n");
 
     J zz = j;
     --zz;
     adl_swap(z, zz);
     if (!(zz == j))
-      print_then_terminate("re::test_bitr(...) failed at step 00-4\n");
+      print_then_terminate(errs, "re::test_bitr(...) failed at step 00-4\n");
     ++z;
     if (!(z == zz))
-      print_then_terminate("re::test_bitr(...) failed at step 00-5\n");
+      print_then_terminate(errs, "re::test_bitr(...) failed at step 00-5\n");
   }
 }
 template <class I, class J, class IT, class EQ>
@@ -3409,7 +3412,7 @@ constexpr void test_ritr_impl0(I i, J j, IT it1, IT it2, EQ eq,
     return synth_3way(a, b) == 0 && a == b;
   };
   I ii = i;
-  using dft = decay_t<decltype(sz)>;
+  using dft = decay<decltype(sz)>;
   for (dft k = 0; k <= sz; ++k) {
     ii = i + k;
     if (!(test_equal(i + k, ii)
@@ -3541,12 +3544,13 @@ constexpr void test_rng_impl0(R &&r) {
   if constexpr (has_szmf<R>) {
     if (inner::fns::range_empty(r)) {
       if (!(inner::fns::range_begin(r) == inner::fns::range_end(r)
-            && inner::fns::range_size(r) == 0))
+            && inner::fns::range_size(r) == 0u))
         print_then_terminate("re::test_rng() failed at step 0\n");
     }
     else {
+      const auto sz = inner::fns::range_size(r);
       if (!(inner::fns::range_begin(r) != inner::fns::range_end(r)
-            && inner::fns::range_size(r) != 0))
+            && sz != 0u))
         print_then_terminate("re::test_rng() failed at step 1\n");
     }
   }
@@ -3572,6 +3576,32 @@ constexpr void test_rng_impl(I i, I ii, J j, J jj, EQ eq) {
     ++i;
     ++j;
   }
+}
+template <class I, class J, class EQ>
+constexpr void test_rng_impl(I i, I ii, J j, J jj, EQ eq,
+                             unsigned long long sz) {
+  for (;;) {
+    if (i == ii) {
+      if (!(test_equal(i, i) && test_equal(j, j)))
+        print_then_terminate("re::test_rng() failed at step 2\n");
+      if (!(j == jj))
+        print_then_terminate("re::test_rng() failed at step 3\n");
+      break;
+    }
+    else {
+      if (!(test_equal(i, i) && test_equal(j, j)))
+        print_then_terminate("re::test_rng() failed at step 4\n");
+      if (!(j != jj))
+        print_then_terminate("re::test_rng() failed at step 5\n");
+      if (!eq(*i, *j))
+        print_then_terminate("re::test_rng() failed at step 6\n");
+    }
+    ++i;
+    ++j;
+    --sz;
+  }
+  if (sz != 0)
+    print_then_terminate("re::test_rng() failed at step 7\n");
 }
 
 }
@@ -3655,7 +3685,19 @@ struct fo_test_rng {
     inner::fns::test_rng_impl(inner::fns::range_begin(r),
                               inner::fns::range_end(r),
                               inner::fns::range_begin(rr),
-                              inner::fns::range_end(rr), eq);
+                              inner::fns::range_end(rr),
+                              eq);
+  }
+  template <class R, class RR, class EQ>
+  constexpr void operator ()(R &&r, const RR &rr, EQ eq) const
+    requires inner::fns::has_szmf<R> {
+    inner::fns::test_rng_impl0(r);
+    inner::fns::test_rng_impl(inner::fns::range_begin(r),
+                              inner::fns::range_end(r),
+                              inner::fns::range_begin(rr),
+                              inner::fns::range_end(rr),
+                              eq,
+                              r.size());
   }
   template <class R, class RR>
   constexpr void operator ()(R &&r, const RR &rr) const {
@@ -3747,8 +3789,8 @@ struct fo_test_itr_minus {
     if (!(j - i == dif && i - j == -dif))
       print_then_terminate("re::test_itr_minus(...) failed at step 0\n");
 
-    using common_t = common_type_t<I, J>;
-    static_assert(is_same_v<I, common_t> || is_same_v<J, common_t>);
+    using common_t = common_type<I, J>;
+    static_assert(is_same<I, common_t> || is_same<J, common_t>);
 
     // I and I
     {
@@ -3786,11 +3828,11 @@ struct fo_test_itr_minus {
     inner::fns::test_itr_minus_impl2(i, j, n);
   }
   template <class I, class J>
-  constexpr void operator ()(I i, J j) const requires (!is_integral_v<J>) {
+  constexpr void operator ()(I i, J j) const requires (!is_integral<J>) {
     return operator ()(i, j, j - i);
   }
   template <class R, class T>
-  constexpr void operator ()(R &&r, T n) const requires is_integral_v<T> {
+  constexpr void operator ()(R &&r, T n) const requires is_integral<T> {
     operator ()(inner::fns::range_begin(r),
                 inner::fns::range_end(r), static_cast<size_t>(n));
   }

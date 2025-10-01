@@ -33,17 +33,18 @@ struct in_place_index_t {
 template <size_t I>
 inline constexpr in_place_index_t<I> in_place_index{};
 template <class T>
-struct is_in_place_index : false_type {};
+struct template_is_in_place_index : false_type {};
 template <size_t I>
-struct is_in_place_index<in_place_index_t<I>> : true_type {};
+struct template_is_in_place_index<in_place_index_t<I>> : true_type {};
 template <size_t I>
-struct is_in_place_index<const in_place_index_t<I>> : true_type {};
+struct template_is_in_place_index<const in_place_index_t<I>> : true_type {};
 template <size_t I>
-struct is_in_place_index<volatile in_place_index_t<I>> : true_type {};
+struct template_is_in_place_index<volatile in_place_index_t<I>> : true_type {};
 template <size_t I>
-struct is_in_place_index<const volatile in_place_index_t<I>> : true_type {};
+struct template_is_in_place_index<const volatile in_place_index_t<I>>
+  : true_type {};
 template <class T>
-inline constexpr bool is_in_place_index_v = is_in_place_index<T>::value;
+inline constexpr bool is_in_place_index = template_is_in_place_index<T>::value;
 
 }
 
@@ -89,7 +90,7 @@ public:
 };
 
 template <class BASE>
-struct dynamic_default_buffer_size
+struct template_dynamic_buffer_size
   : size_constant<(sizeof(BASE) <= 32u
                    ? 64u
                    : (sizeof(BASE) <= 64u
@@ -105,8 +106,15 @@ struct dynamic_default_buffer_size
                                   ? (sizeof(BASE) + sizeof(BASE))
                                   : numeric_limits<size_t>::max()))))))> {};
 template <class BASE>
-struct dynamic_default_buffer_alignment
+inline constexpr size_t dynamic_buffer_size
+  = template_dynamic_buffer_size<BASE>::value;
+
+template <class BASE>
+struct template_dynamic_buffer_alignment
   : size_constant<RE_DEFAULT_NEW_ALIGNMENT> {};
+template <class BASE>
+inline constexpr size_t dynamic_buffer_alignment
+  = template_dynamic_buffer_alignment<BASE>::value;
 
 struct bad_dynamic_access : public exception {
   virtual const char *what() const noexcept override {
@@ -133,13 +141,14 @@ public:
   dynamic_composite_data(S &&...s) : T(forward<S>(s)...) {}
 };
 template <class T>
-using dynamic_data = conditional_t<is_base_of_v<as_dynamic, T>,
-                                   T, dynamic_composite_data<T>>;
+using dynamic_data = conditional<is_base_of<as_dynamic, T>,
+                                 T,
+                                 dynamic_composite_data<T>>;
 
 template <class IMPL_T>
 concept local_dynamic_impl = (sizeof(IMPL_T) <= IMPL_T::bufsz
                               && alignof(IMPL_T) <= IMPL_T::bufalign)
-  && is_nothrow_move_constructible_v<typename IMPL_T::value_type>;
+  && is_nothrow_move_constructible<typename IMPL_T::value_type>;
 
 template <class BASE, class T>
 class dynamic_impl2;
@@ -190,7 +199,7 @@ public:
     clear_impl();
   }
   virtual void *re_dynamic_auto_copy_to(void *bufp) const override {
-    if constexpr (is_copy_constructible_v<value_type>) {
+    if constexpr (is_copy_constructible<value_type>) {
       if constexpr (local_dynamic_impl<this_t>) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, value());
@@ -208,7 +217,7 @@ public:
     }
   }
   virtual void *re_dynamic_auto_move_to(void *bufp) noexcept override {
-    if constexpr (is_move_constructible_v<value_type>) {
+    if constexpr (is_move_constructible<value_type>) {
       if constexpr (local_dynamic_impl<this_t>) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, move(value()));
@@ -228,7 +237,7 @@ public:
 private:
   static bool impl2_local_for(size_t sz, size_t algn) noexcept {
     return sizeof(impl2_t) <= sz && alignof(impl2_t) <= algn
-      && is_nothrow_move_constructible_v<value_type>;
+      && is_nothrow_move_constructible<value_type>;
   }
 public:
   virtual void *re_dynamic_auto_copy_to(void *bufp,
@@ -238,11 +247,11 @@ public:
   virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
     using uniform_t = dynamic_impl
       <BASE, T,
-       dynamic_default_buffer_size<BASE>::value,
-       dynamic_default_buffer_alignment<BASE>::value>;
+       dynamic_buffer_size<BASE>,
+       dynamic_buffer_alignment<BASE>>;
     using uniform_alloc_t = default_allocator<uniform_t>;
     using uniform_alw_t = allocator_wrapper<uniform_alloc_t>;
-    if constexpr (is_copy_constructible_v<value_type>) {
+    if constexpr (is_copy_constructible<value_type>) {
       if constexpr (local_dynamic_impl<uniform_t>) {
         uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
         uniform_alw_t{}.construct(p, value());
@@ -262,11 +271,11 @@ public:
   virtual void *re_dynamic_move_to_uniform(void *bufp) override {
     using uniform_t = dynamic_impl
       <BASE, T,
-       dynamic_default_buffer_size<BASE>::value,
-       dynamic_default_buffer_alignment<BASE>::value>;
+       dynamic_buffer_size<BASE>,
+       dynamic_buffer_alignment<BASE>>;
     using uniform_alloc_t = default_allocator<uniform_t>;
     using uniform_alw_t = allocator_wrapper<uniform_alloc_t>;
-    if constexpr (is_move_constructible_v<value_type>) {
+    if constexpr (is_move_constructible<value_type>) {
       if constexpr (local_dynamic_impl<uniform_t>) {
         uniform_t *const p = reinterpret_cast<uniform_t *>(bufp);
         uniform_alw_t{}.construct(p, move(value()));
@@ -349,7 +358,7 @@ public:
     clear_impl();
   }
   virtual void *re_dynamic_auto_copy_to(void *bufp) const override {
-    if constexpr (is_copy_constructible_v<value_type>) {
+    if constexpr (is_copy_constructible<value_type>) {
       if (local_y) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, value());
@@ -369,7 +378,7 @@ public:
     }
   }
   virtual void *re_dynamic_auto_move_to(void *bufp) noexcept override {
-    if constexpr (is_move_constructible_v<value_type>) {
+    if constexpr (is_move_constructible<value_type>) {
       if (local_y) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, move(value()));
@@ -390,12 +399,12 @@ public:
 private:
   static bool local_for(size_t sz, size_t algn) noexcept {
     return sizeof(this_t) <= sz && alignof(this_t) <= algn
-      && is_nothrow_move_constructible_v<value_type>;
+      && is_nothrow_move_constructible<value_type>;
   }
 public:
   virtual void *re_dynamic_auto_copy_to(void *bufp,
                                         size_t sz, size_t algn) const {
-    if constexpr (is_copy_constructible_v<value_type>) {
+    if constexpr (is_copy_constructible<value_type>) {
       if (local_for(sz, algn)) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, value());
@@ -417,7 +426,7 @@ public:
   }
   virtual void *re_dynamic_auto_move_to(void *bufp,
                                         size_t sz, size_t algn) {
-    if constexpr (is_move_constructible_v<value_type>) {
+    if constexpr (is_move_constructible<value_type>) {
       if (local_for(sz, algn)) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, move(value()));
@@ -444,9 +453,9 @@ public:
     }
   }
   virtual void *re_dynamic_copy_to_uniform(void *bufp) const override {
-    if constexpr (is_copy_constructible_v<value_type>) {
-      if (local_for(dynamic_default_buffer_size<BASE>::value,
-                    dynamic_default_buffer_alignment<BASE>::value)) {
+    if constexpr (is_copy_constructible<value_type>) {
+      if (local_for(dynamic_buffer_size<BASE>,
+                    dynamic_buffer_alignment<BASE>)) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, value());
         p->local(true);
@@ -465,9 +474,9 @@ public:
     }
   }
   virtual void *re_dynamic_move_to_uniform(void *bufp) override {
-    if constexpr (is_move_constructible_v<value_type>) {
-      if (local_for(dynamic_default_buffer_size<BASE>::value,
-                    dynamic_default_buffer_alignment<BASE>::value)) {
+    if constexpr (is_move_constructible<value_type>) {
+      if (local_for(dynamic_buffer_size<BASE>,
+                    dynamic_buffer_alignment<BASE>)) {
         this_t *const p = reinterpret_cast<this_t *>(bufp);
         alw_t{}.construct(p, move(value()));
         p->local(true);
@@ -508,7 +517,7 @@ template <class BASE, class T, size_t BUFSZ, size_t BUFALIGN>
 void *
 dynamic_impl<BASE, T, BUFSZ, BUFALIGN>
 ::re_dynamic_auto_copy_to(void *bufp, size_t sz, size_t algn) const {
-  if constexpr (is_copy_constructible_v<value_type>) {
+  if constexpr (is_copy_constructible<value_type>) {
     if (impl2_local_for(sz, algn)) {
       impl2_t *const p = reinterpret_cast<impl2_t *>(bufp);
       impl2_alw_t{}.construct(p, value());
@@ -532,7 +541,7 @@ template <class BASE, class T, size_t BUFSZ, size_t BUFALIGN>
 void *
 dynamic_impl<BASE, T, BUFSZ, BUFALIGN>
 ::re_dynamic_auto_move_to(void *bufp, size_t sz, size_t algn) {
-  if constexpr (is_move_constructible_v<value_type>) {
+  if constexpr (is_move_constructible<value_type>) {
     if (impl2_local_for(sz, algn)) {
       impl2_t *const p = reinterpret_cast<impl2_t *>(bufp);
       impl2_alw_t{}.construct(p, move(value()));
@@ -591,20 +600,20 @@ struct dynamic_optional_buf<0, ALIGN> {
 
 template <class U, class T>
 concept compatible_type_of_dynamic
-  = is_base_of_v<T, U> && is_convertible_v<U &, T &>;
+  = is_base_of<T, U> && is_convertible<U &, T &>;
 template <class U>
-concept compatible_type_of_any = is_move_constructible_v<U>;
+concept compatible_type_of_any = is_move_constructible<U>;
 // use a relaxed rule than the standard requirement:
-//   is_move_constructible_v<U> && is_copy_constructible_v<U>;
+//   is_move_constructible<U> && is_copy_constructible<U>;
 // suicide when move a unmovable object
 
 }
 template <class T = void,
-          size_t BUFSZ = dynamic_default_buffer_size<T>::value,
-          size_t BUFALIGN = dynamic_default_buffer_alignment<T>::value>
+          size_t BUFSZ = template_dynamic_buffer_size<T>::value,
+          size_t BUFALIGN = template_dynamic_buffer_alignment<T>::value>
 class dynamic : inner::dynamic_optional_buf<BUFSZ, BUFALIGN> {
-  static_assert(is_class_v<T>);
-  static_assert(is_same_v<remove_cvref_t<T>, T>);
+  static_assert(is_class<T>);
+  static_assert(is_same<remove_cvref<T>, T>);
 
   template <class, size_t, size_t>
   friend class dynamic;
@@ -626,7 +635,7 @@ class dynamic : inner::dynamic_optional_buf<BUFSZ, BUFALIGN> {
     return dynamic_cast<as_dynamic *>(pp);
   }
   static as_dynamic *base(T *pp) noexcept
-    requires is_base_of_v<as_dynamic, T> {
+    requires is_base_of<as_dynamic, T> {
     return (as_dynamic *)pp; // accept private base
   }
 
@@ -731,59 +740,59 @@ public:
 
   template <class U>
   dynamic(U &&x)
-    requires (!is_same_v<decay_t<U>, this_t>
-              && !is_in_place_type_v<decay_t<U>>
-              && inner::compatible_type_of_dynamic<decay_t<U>, T>
-              && is_constructible_v<decay_t<U>, U &&>) {
+    requires (!is_same<decay<U>, this_t>
+              && !is_in_place_type<decay<U>>
+              && inner::compatible_type_of_dynamic<decay<U>, T>
+              && is_constructible<decay<U>, U &&>) {
     p = reinterpret_cast<T *>
-      (inner::fns::make_dynamic_impl<impl_t<decay_t<U>>>
+      (inner::fns::make_dynamic_impl<impl_t<decay<U>>>
        (bufp(), forward<U>(x)));
   }
   template <class U>
   dynamic &operator =(U &&x)
-    requires (!is_same_v<decay_t<U>, this_t>
-              && inner::compatible_type_of_dynamic<decay_t<U>, T>
-              && is_assignable_v<decay_t<U> &, U &&>) {
+    requires (!is_same<decay<U>, this_t>
+              && inner::compatible_type_of_dynamic<decay<U>, T>
+              && is_assignable<decay<U> &, U &&>) {
     reset();
     p = reinterpret_cast<T *>
-      (inner::fns::make_dynamic_impl<impl_t<decay_t<U>>>
+      (inner::fns::make_dynamic_impl<impl_t<decay<U>>>
        (bufp(), forward<U>(x)));
     return *this;
   }
 
   template <class U, class...S>
   explicit dynamic(in_place_type_t<U>, S &&...s)
-    requires (inner::compatible_type_of_dynamic<decay_t<U>, T>
-              && is_constructible_v<decay_t<U>, S &&...>) {
-    p = reinterpret_cast<T *>(inner::fns::make_dynamic_impl<impl_t<decay_t<U>>>
+    requires (inner::compatible_type_of_dynamic<decay<U>, T>
+              && is_constructible<decay<U>, S &&...>) {
+    p = reinterpret_cast<T *>(inner::fns::make_dynamic_impl<impl_t<decay<U>>>
                               (bufp(), forward<S>(s)...));
   }
   template <class U, class...S>
   void emplace(S &&...s)
-    requires (inner::compatible_type_of_dynamic<decay_t<U>, T>
-              && is_constructible_v<decay_t<U>, S &&...>) {
+    requires (inner::compatible_type_of_dynamic<decay<U>, T>
+              && is_constructible<decay<U>, S &&...>) {
     reset();
-    p = reinterpret_cast<T *>(inner::fns::make_dynamic_impl<impl_t<decay_t<U>>>
+    p = reinterpret_cast<T *>(inner::fns::make_dynamic_impl<impl_t<decay<U>>>
                               (bufp(), forward<S>(s)...));
   }
 
   template <class U, class V, class...S>
   explicit dynamic(in_place_type_t<U>, initializer_list<V> l, S &&...s)
-    requires (inner::compatible_type_of_dynamic<decay_t<U>, T>
-              && is_constructible_v
-              <decay_t<U>, initializer_list<V> &, S &&...>) {
+    requires (inner::compatible_type_of_dynamic<decay<U>, T>
+              && is_constructible
+              <decay<U>, initializer_list<V> &, S &&...>) {
     p = reinterpret_cast<T *>
-      (inner::fns::make_dynamic_impl<impl_t<decay_t<U>>>
+      (inner::fns::make_dynamic_impl<impl_t<decay<U>>>
        (bufp(), l, forward<S>(s)...));
   }
   template <class U, class V, class...S>
   void emplace(initializer_list<V> l, S &&...s)
-    requires (inner::compatible_type_of_dynamic<decay_t<U>, T>
-              && is_constructible_v
-              <decay_t<U>, initializer_list<V> &, S &&...>) {
+    requires (inner::compatible_type_of_dynamic<decay<U>, T>
+              && is_constructible
+              <decay<U>, initializer_list<V> &, S &&...>) {
     reset();
     p = reinterpret_cast<T *>
-      (inner::fns::make_dynamic_impl<impl_t<decay_t<U>>>
+      (inner::fns::make_dynamic_impl<impl_t<decay<U>>>
        (bufp(), l, forward<S>(s)...));
   }
 
@@ -791,9 +800,8 @@ public:
   dynamic(const dynamic<T, SZ, ALGN> &x)
     requires (!(SZ == BUFSZ && ALGN == BUFALIGN))
     : p(nullptr) {
-    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
-                  && BUFALIGN
-                  == dynamic_default_buffer_alignment<T>::value) {
+    if constexpr (BUFSZ == dynamic_buffer_size<T>
+                  && BUFALIGN == dynamic_buffer_alignment<T>) {
       uniform_copy_from(x);
     }
     else {
@@ -803,9 +811,8 @@ public:
   template <size_t SZ, size_t ALGN>
   dynamic &operator =(const dynamic<T, SZ, ALGN> &x)
     requires (!(SZ == BUFSZ && ALGN == BUFALIGN)) {
-    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
-                  && BUFALIGN
-                  == dynamic_default_buffer_alignment<T>::value) {
+    if constexpr (BUFSZ == dynamic_buffer_size<T>
+                  && BUFALIGN == dynamic_buffer_alignment<T>) {
       reset();
       uniform_copy_from(x);
       return *this;
@@ -821,9 +828,8 @@ public:
   dynamic(dynamic<T, SZ, ALGN> &&x)
     requires (!(SZ == BUFSZ && ALGN == BUFALIGN))
     : p(nullptr) {
-    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
-                  && BUFALIGN
-                  == dynamic_default_buffer_alignment<T>::value) {
+    if constexpr (BUFSZ == dynamic_buffer_size<T>
+                  && BUFALIGN == dynamic_buffer_alignment<T>) {
       uniform_move_from(x);
     }
     else {
@@ -833,9 +839,8 @@ public:
   template <size_t SZ, size_t ALGN>
   dynamic &operator =(dynamic<T, SZ, ALGN> &&x)
     requires (!(SZ == BUFSZ && ALGN == BUFALIGN)) {
-    if constexpr (BUFSZ == dynamic_default_buffer_size<T>::value
-                  && BUFALIGN
-                  == dynamic_default_buffer_alignment<T>::value) {
+    if constexpr (BUFSZ == dynamic_buffer_size<T>
+                  && BUFALIGN == dynamic_buffer_alignment<T>) {
       reset();
       uniform_move_from(x);
       return *this;
@@ -887,7 +892,7 @@ public:
   const U &as() const & noexcept {
     if (type() != typeid(U))
       throw_or_terminate<bad_dynamic_access>();
-    return *static_cast<add_const_t<U> *>(p);
+    return *static_cast<add_const<U> *>(p);
   }
   template <class U>
   U &&as() && noexcept {
@@ -899,7 +904,7 @@ public:
   const U &&as() const && noexcept {
     if (type() != typeid(U))
       throw_or_terminate<bad_dynamic_access>();
-    return move(*static_cast<add_const_t<U> *>(p));
+    return move(*static_cast<add_const<U> *>(p));
   }
 
   bool empty() const noexcept {
@@ -930,7 +935,7 @@ public:
   }
   template <class U>
   static constexpr bool local() noexcept {
-    return inner::local_dynamic_impl<impl_t<decay_t<U>>>;
+    return inner::local_dynamic_impl<impl_t<decay<U>>>;
   }
   size_t size() const noexcept {
     return p == nullptr ? 0 : base(p)->re_dynamic_size();
@@ -999,11 +1004,11 @@ struct is_dynamic_void<dynamic<void, A, B>> : true_type {};
 
 }
 template <>
-struct dynamic_default_buffer_size<void>
-  : size_constant<dynamic_default_buffer_size<void *>::value> {};
+struct template_dynamic_buffer_size<void>
+  : size_constant<template_dynamic_buffer_size<void *>::value> {};
 template <>
-struct dynamic_default_buffer_alignment<inner::any_wrapper_base>
-  : size_constant<dynamic_default_buffer_alignment<void>::value> {};
+struct template_dynamic_buffer_alignment<inner::any_wrapper_base>
+  : size_constant<template_dynamic_buffer_alignment<void>::value> {};
 template <size_t BUFSZ, size_t ALIGN>
 class dynamic<void, BUFSZ, ALIGN> {
   using this_t = dynamic;
@@ -1035,48 +1040,48 @@ public:
 
   template <class T>
   dynamic(T &&x)
-    requires (!is_same_v<decay_t<T>, dynamic>
-              && !(BUFSZ == dynamic_default_buffer_size<void>::value
-                   && ALIGN == dynamic_default_buffer_alignment<void>::value
-                   && inner::is_dynamic_void<decay_t<T>>::value)
-              && !is_in_place_type_v<decay_t<T>>
-              && is_constructible_v<decay_t<T>, T &&>
-              && inner::compatible_type_of_any<decay_t<T>>)
-    : impl(in_place_type<inner::any_wrapper<decay_t<T>>>,
+    requires (!is_same<decay<T>, dynamic>
+              && !(BUFSZ == dynamic_buffer_size<void>
+                   && ALIGN == dynamic_buffer_alignment<void>
+                   && inner::is_dynamic_void<decay<T>>::value)
+              && !is_in_place_type<decay<T>>
+              && is_constructible<decay<T>, T &&>
+              && inner::compatible_type_of_any<decay<T>>)
+    : impl(in_place_type<inner::any_wrapper<decay<T>>>,
            forward<T>(x)) {}
   template <class T>
   dynamic &operator =(T &&x)
-    requires (!is_same_v<decay_t<T>, dynamic>
-              && !(BUFSZ == dynamic_default_buffer_size<void>::value
-                   && ALIGN == dynamic_default_buffer_alignment<void>::value
-                   && inner::is_dynamic_void<decay_t<T>>::value)
-              && is_constructible_v<decay_t<T>, T &&>
-              && inner::compatible_type_of_any<decay_t<T>>) {
-    impl.template emplace<inner::any_wrapper<decay_t<T>>>(forward<T>(x));
+    requires (!is_same<decay<T>, dynamic>
+              && !(BUFSZ == dynamic_buffer_size<void>
+                   && ALIGN == dynamic_buffer_alignment<void>
+                   && inner::is_dynamic_void<decay<T>>::value)
+              && is_constructible<decay<T>, T &&>
+              && inner::compatible_type_of_any<decay<T>>) {
+    impl.template emplace<inner::any_wrapper<decay<T>>>(forward<T>(x));
     return *this;
   }
 
   template <class T, class...S>
   dynamic(in_place_type_t<T>, S &&...s)
-    requires (is_constructible_v<decay_t<T>, S &&...>
-              && inner::compatible_type_of_any<decay_t<T>>)
+    requires (is_constructible<decay<T>, S &&...>
+              && inner::compatible_type_of_any<decay<T>>)
     : impl(in_place_type<inner::any_wrapper<T>>, forward<S>(s)...) {}
   template <class T, class...S>
   void emplace(S &&...s)
-    requires (is_constructible_v<decay_t<T>, S &&...>
-              && inner::compatible_type_of_any<decay_t<T>>) {
+    requires (is_constructible<decay<T>, S &&...>
+              && inner::compatible_type_of_any<decay<T>>) {
     impl.template emplace<inner::any_wrapper<T>>(forward<S>(s)...);
   }
 
   template <class T, class U, class...S>
   dynamic(in_place_type_t<T>, initializer_list<U> l, S &&...s)
-    requires (is_constructible_v<decay_t<T>, initializer_list<U> &, S &&...>
-              && inner::compatible_type_of_any<decay_t<T>>)
+    requires (is_constructible<decay<T>, initializer_list<U> &, S &&...>
+              && inner::compatible_type_of_any<decay<T>>)
     : impl(in_place_type<inner::any_wrapper<T>>, l, forward<S>(s)...) {}
   template <class T, class U, class...S>
   void emplace(initializer_list<U> l, S &&...s)
-    requires (is_constructible_v<decay_t<T>, initializer_list<U> &, S &&...>
-              && inner::compatible_type_of_any<decay_t<T>>) {
+    requires (is_constructible<decay<T>, initializer_list<U> &, S &&...>
+              && inner::compatible_type_of_any<decay<T>>) {
     impl.template emplace<inner::any_wrapper<T>>(l, forward<S>(s)...);
   }
 
@@ -1114,28 +1119,28 @@ public:
     if (type() != typeid(TT))
       throw_or_terminate<bad_dynamic_access>();
     return static_cast<TT &>
-      (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
+      (impl.template as<inner::any_wrapper<remove_cvref<TT>>>().data);
   }
   template <class TT>
   const TT &as() const & noexcept {
     if (type() != typeid(TT))
       throw_or_terminate<bad_dynamic_access>();
     return static_cast<const TT &>
-      (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
+      (impl.template as<inner::any_wrapper<remove_cvref<TT>>>().data);
   }
   template <class TT>
   TT &&as() && noexcept {
     if (type() != typeid(TT))
       throw_or_terminate<bad_dynamic_access>();
     return static_cast<TT &&>
-      (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
+      (impl.template as<inner::any_wrapper<remove_cvref<TT>>>().data);
   }
   template <class TT>
   const TT &&as() const && noexcept {
     if (type() != typeid(TT))
       throw_or_terminate<bad_dynamic_access>();
     return static_cast<const TT &&>
-      (impl.template as<inner::any_wrapper<remove_cvref_t<TT>>>().data);
+      (impl.template as<inner::any_wrapper<remove_cvref<TT>>>().data);
   }
 
   bool empty() const noexcept {
@@ -1197,10 +1202,10 @@ struct fo_any_cast {
     return as<T>(x);
   }
 
-  add_pointer_t<add_const_t<T>> operator ()(const any *x) const {
+  add_pointer<add_const<T>> operator ()(const any *x) const {
     return (x != nullptr && is<T>(*x)) ? addressof(as<T>(*x)) : nullptr;
   }
-  add_pointer_t<T> operator ()(any *x) const {
+  add_pointer<T> operator ()(any *x) const {
     return (x != nullptr && is<T>(*x)) ? addressof(as<T>(*x)) : nullptr;
   }
 };
@@ -1262,7 +1267,7 @@ public:
   fn_caller(const fn_caller &) = default;
   fn_caller &operator =(const fn_caller &) = delete;
   fn_caller(fn_caller &&)
-    noexcept(noexcept(is_nothrow_move_constructible_v<IMPL>)) = default;
+    noexcept(noexcept(is_nothrow_move_constructible<IMPL>)) = default;
   fn_caller &operator =(fn_caller &&) = delete;
 
   template <class T>
@@ -1289,10 +1294,8 @@ struct is_class_function_of<function<A, B, C>, A> : true_type {};
 
 }
 template <class F,
-          size_t BUFSZ = dynamic_default_buffer_size
-          <inner::fn_caller_base<F>>::value,
-          size_t ALIGN = dynamic_default_buffer_alignment
-          <inner::fn_caller_base<F>>::value>
+          size_t BUFSZ = dynamic_buffer_size<inner::fn_caller_base<F>>,
+          size_t ALIGN = dynamic_buffer_alignment<inner::fn_caller_base<F>>>
 class function;
 template <class R, class...S, size_t BUFSZ, size_t ALIGN>
 class function<R (S...), BUFSZ, ALIGN> {
@@ -1325,26 +1328,26 @@ public:
 
   template <class T>
   function(T &&x)
-    requires (!is_same_v<decay_t<T>, this_t>
-              && is_invocable_r_v<R, add_lvalue_reference_t<decay_t<T>>, S...>
-              && !inner::is_class_function_of<decay_t<T>, R (S...)>::value
-              && is_copy_constructible_v<decay_t<T>>)
-    : impl(in_place_type<inner::fn_caller<decay_t<T>, R (S...)>>,
+    requires (!is_same<decay<T>, this_t>
+              && is_invocable_r<R, add_lvalue_reference<decay<T>>, S...>
+              && !inner::is_class_function_of<decay<T>, R (S...)>::value
+              && is_copy_constructible<decay<T>>)
+    : impl(in_place_type<inner::fn_caller<decay<T>, R (S...)>>,
            forward<T>(x)) {}
   template <class T>
   function &operator =(T &&x)
-    requires (!is_same_v<decay_t<T>, this_t>
-              && is_invocable_r_v<R, add_lvalue_reference_t<decay_t<T>>, S...>
-              && !inner::is_class_function_of<decay_t<T>, R (S...)>::value
-              && is_copy_constructible_v<decay_t<T>>
+    requires (!is_same<decay<T>, this_t>
+              && is_invocable_r<R, add_lvalue_reference<decay<T>>, S...>
+              && !inner::is_class_function_of<decay<T>, R (S...)>::value
+              && is_copy_constructible<decay<T>>
               ) {
-    impl.template emplace<inner::fn_caller<decay_t<T>, R (S...)>
+    impl.template emplace<inner::fn_caller<decay<T>, R (S...)>
                           >(forward<T>(x));
     return *this;
   }
   template <class T>
   function &operator =(reference_wrapper<T> x) noexcept
-    requires is_invocable_r_v<R, reference_wrapper<T> &, S...> {
+    requires is_invocable_r<R, reference_wrapper<T> &, S...> {
     impl.template emplace<inner::fn_caller
                           <reference_wrapper<T>, R (S...)>>(x);
     return *this;
@@ -1392,29 +1395,25 @@ public:
 
   template <class TT>
   TT &as() & noexcept {
-    static_assert(is_invocable_r_v
-                  <R, add_lvalue_reference_t<decay_t<TT>>, S...>);
-    return impl.template as<inner::fn_caller<decay_t<TT>, R (S...)>>().f;
+    static_assert(is_invocable_r<R, add_lvalue_reference<decay<TT>>, S...>);
+    return impl.template as<inner::fn_caller<decay<TT>, R (S...)>>().f;
   }
   template <class TT>
   const TT &as() const & noexcept {
-    static_assert(is_invocable_r_v
-                  <R, add_lvalue_reference_t<decay_t<TT>>, S...>);
-    return impl.template as<inner::fn_caller<decay_t<TT>, R (S...)>>().f;
+    static_assert(is_invocable_r<R, add_lvalue_reference<decay<TT>>, S...>);
+    return impl.template as<inner::fn_caller<decay<TT>, R (S...)>>().f;
   }
   template <class TT>
   TT &&as() && noexcept {
-    static_assert(is_invocable_r_v
-                  <R, add_lvalue_reference_t<decay_t<TT>>, S...>);
+    static_assert(is_invocable_r<R, add_lvalue_reference<decay<TT>>, S...>);
     return (static_cast<this_t &&>(*this))
-      .impl.template as<inner::fn_caller<decay_t<TT>, R (S...)>>().f;
+      .impl.template as<inner::fn_caller<decay<TT>, R (S...)>>().f;
   }
   template <class TT>
   const TT &&as() const && noexcept {
-    static_assert(is_invocable_r_v
-                  <R, add_lvalue_reference_t<decay_t<TT>>, S...>);
+    static_assert(is_invocable_r<R, add_lvalue_reference<decay<TT>>, S...>);
     return (static_cast<const this_t &&>(*this))
-      .impl.template as<inner::fn_caller<decay_t<TT>, R (S...)>>().f;
+      .impl.template as<inner::fn_caller<decay<TT>, R (S...)>>().f;
   }
 
   bool local() const noexcept {
@@ -1512,14 +1511,14 @@ public:
                            x)))) {}
   any_fn_caller &operator =(const any_fn_caller &) = delete;
   any_fn_caller(any_fn_caller &&)
-    noexcept(noexcept(is_nothrow_move_constructible_v<IMPL>)) = default;
+    noexcept(noexcept(is_nothrow_move_constructible<IMPL>)) = default;
   any_fn_caller &operator =(any_fn_caller &&) = delete;
 
   template <class...SS>
   explicit any_fn_caller(in_place_t, SS &&...s) : f(forward<SS>(s)...) {}
 
   virtual R call(S...s) const override {
-    return invoke_r<R>(static_cast<copy_cvref_t<CVREF_T, IMPL>>(f),
+    return invoke_r<R>(static_cast<copy_cvref<CVREF_T, IMPL>>(f),
                        forward<S>(s)...);
   }
 };
@@ -1687,12 +1686,12 @@ template <class, class>
 struct f_t_is_nothrow_invocable;
 template <class R, class...S, class T>
 struct f_t_is_nothrow_invocable<R (S...), T>
-  : is_nothrow_invocable_r<R, T, S...> {};
+  : template_is_nothrow_invocable_r<R, T, S...> {};
 
 template <class, class>
 struct f_t_is_invocable;
 template <class R, class...S, class T>
-struct f_t_is_invocable<R (S...), T> : is_invocable_r<R, T, S...> {};
+struct f_t_is_invocable<R (S...), T> : template_is_invocable_r<R, T, S...> {};
 
 }
 template <class F>
@@ -1707,14 +1706,17 @@ class move_only_function<F> : public inner::any_fn_helper<F> {
   using f_t = typename base_t::f_t;
 
   template <class VT>
+  static constexpr bool is_callable_from0
+    = inner::f_t_is_invocable<f_t, copy_cvref<original_cvref_t, VT>>::value;
+  template <class VT>
   static constexpr bool is_callable_from
     = base_t::is_noexcept::value
     ? (inner::f_t_is_nothrow_invocable
-       <f_t, copy_cvref_t<original_cvref_t, VT>>::value
+       <f_t, copy_cvref<original_cvref_t, VT>>::value
        && inner::f_t_is_nothrow_invocable
-       <f_t, copy_cvref_t<cvref_t, VT>>::value)
-    : (inner::f_t_is_invocable<f_t, copy_cvref_t<original_cvref_t, VT>>::value
-       && inner::f_t_is_invocable<f_t, copy_cvref_t<cvref_t, VT>>::value);
+       <f_t, copy_cvref<cvref_t, VT>>::value)
+    : (inner::f_t_is_invocable<f_t, copy_cvref<original_cvref_t, VT>>::value
+       && inner::f_t_is_invocable<f_t, copy_cvref<cvref_t, VT>>::value);
 
   dynamic<inner::any_fn_caller_base<cvref_t, f_t>> impl;
 
@@ -1743,31 +1745,31 @@ public:
 
   template <class T, class...S>
   explicit move_only_function(in_place_type_t<T>, S &&...s)
-    requires (is_constructible_v<decay_t<T>, S...>
-              && is_callable_from<decay_t<T>>)
-    : impl(in_place_type<inner::any_fn_caller<decay_t<T>, cvref_t, f_t>>,
+    requires (is_constructible<decay<T>, S...>
+              && is_callable_from<decay<T>>)
+    : impl(in_place_type<inner::any_fn_caller<decay<T>, cvref_t, f_t>>,
            in_place, forward<S>(s)...) {}
   template <class T, class U, class...S>
   explicit move_only_function(in_place_type_t<T>,
                               initializer_list<U> l, S &&...s)
-    requires (is_constructible_v<decay_t<T>, initializer_list<U> &, S...>
-              && is_callable_from<decay_t<T>>)
-    : impl(in_place_type<inner::any_fn_caller<decay_t<T>, cvref_t, f_t>>,
+    requires (is_constructible<decay<T>, initializer_list<U> &, S...>
+              && is_callable_from<decay<T>>)
+    : impl(in_place_type<inner::any_fn_caller<decay<T>, cvref_t, f_t>>,
            in_place, l, forward<S>(s)...) {}
 
   template <class T>
   move_only_function(T &&x)
-    requires (!is_same_v<remove_cvref_t<T>, this_t>
-              && !is_in_place_type_v<remove_cvref_t<T>>
-              && is_callable_from<decay_t<T>>)
-    : impl(in_place_type<inner::any_fn_caller<decay_t<T>, cvref_t, f_t>>,
+    requires (!is_same<remove_cvref<T>, this_t>
+              && !is_in_place_type<remove_cvref<T>>
+              && is_callable_from<decay<T>>)
+    : impl(in_place_type<inner::any_fn_caller<decay<T>, cvref_t, f_t>>,
            in_place, forward<T>(x)) {}
   template <class T>
   move_only_function &operator =(T &&x)
-    requires (!is_same_v<remove_cvref_t<T>, this_t>
-              && !is_in_place_type_v<remove_cvref_t<T>>
-              && is_callable_from<decay_t<T>>) {
-    impl.template emplace<inner::any_fn_caller<decay_t<T>, cvref_t, f_t>
+    requires (!is_same<remove_cvref<T>, this_t>
+              && !is_in_place_type<remove_cvref<T>>
+              && is_callable_from<decay<T>>) {
+    impl.template emplace<inner::any_fn_caller<decay<T>, cvref_t, f_t>
                           >(in_place, forward<T>(x));
     return *this;
   }
@@ -1809,7 +1811,7 @@ public:
                            x)))) {}
   unique_fn_caller &operator =(const unique_fn_caller &) = delete;
   unique_fn_caller(unique_fn_caller &&)
-    noexcept(noexcept(is_nothrow_move_constructible_v<IMPL>)) = default;
+    noexcept(noexcept(is_nothrow_move_constructible<IMPL>)) = default;
   unique_fn_caller &operator =(unique_fn_caller &&) = delete;
 
   template <class...SS>
@@ -1827,10 +1829,9 @@ struct is_class_unique_function_of<unique_function<A, B, C>, A> : true_type {};
 
 }
 template <class F,
-          size_t BUFSZ = dynamic_default_buffer_size
-          <inner::unique_fn_caller_base<F>>::value,
-          size_t ALIGN = dynamic_default_buffer_alignment
-          <inner::unique_fn_caller_base<F>>::value>
+          size_t BUFSZ = dynamic_buffer_size<inner::unique_fn_caller_base<F>>,
+          size_t ALIGN = dynamic_buffer_alignment
+          <inner::unique_fn_caller_base<F>>>
 class unique_function;
 template <class R, class...S, size_t BUFSZ, size_t ALIGN>
 class unique_function<R (S...), BUFSZ, ALIGN> {
@@ -1842,10 +1843,10 @@ class unique_function<R (S...), BUFSZ, ALIGN> {
   dynamic<inner::unique_fn_caller_base<R (S...)>, BUFSZ, ALIGN> impl;
 
   using is_default
-    = bool_constant<BUFSZ == dynamic_default_buffer_size
-                    <inner::unique_fn_caller_base<R (S...)>>::value
-                    && ALIGN == dynamic_default_buffer_alignment
-                    <inner::unique_fn_caller_base<R (S...)>>::value>;
+    = bool_constant<BUFSZ == dynamic_buffer_size
+                    <inner::unique_fn_caller_base<R (S...)>>
+                    && ALIGN == dynamic_buffer_alignment
+                    <inner::unique_fn_caller_base<R (S...)>>>;
 
 public:
   unique_function() noexcept = default;
@@ -1881,23 +1882,23 @@ public:
 
   template <class T>
   unique_function(T &&x)
-    requires (!is_same_v<remove_cvref_t<T>, this_t>
-              && !is_in_place_type_v<remove_cvref_t<T>>
-              && is_invocable_r_v<R, decay_t<T> &, S...>
+    requires (!is_same<remove_cvref<T>, this_t>
+              && !is_in_place_type<remove_cvref<T>>
+              && is_invocable_r<R, decay<T> &, S...>
               && !(inner::is_class_unique_function_of
-                   <decay_t<T>, R (S...)>::value
+                   <decay<T>, R (S...)>::value
                    && is_default::value))
-    : impl(in_place_type<inner::unique_fn_caller<decay_t<T>, R (S...)>>,
+    : impl(in_place_type<inner::unique_fn_caller<decay<T>, R (S...)>>,
            in_place, forward<T>(x)) {}
   template <class T>
   unique_function &operator =(T &&x)
-    requires (!is_same_v<remove_cvref_t<T>, this_t>
-              && !is_in_place_type_v<remove_cvref_t<T>>
-              && is_invocable_r_v<R, decay_t<T> &, S...>
+    requires (!is_same<remove_cvref<T>, this_t>
+              && !is_in_place_type<remove_cvref<T>>
+              && is_invocable_r<R, decay<T> &, S...>
               && !(inner::is_class_unique_function_of
-                   <decay_t<T>, R (S...)>::value
+                   <decay<T>, R (S...)>::value
                    && is_default::value)) {
-    impl.template emplace<inner::unique_fn_caller<decay_t<T>, R (S...)>
+    impl.template emplace<inner::unique_fn_caller<decay<T>, R (S...)>
                           >(in_place, forward<T>(x));
     return *this;
   }
@@ -1923,7 +1924,7 @@ public:
   template <class TT>
   static constexpr bool local() noexcept {
     return decltype(impl)::template local<inner::unique_fn_caller
-                                          <decay_t<TT>, R (S...)>>();
+                                          <decay<TT>, R (S...)>>();
   }
 };
 
@@ -1950,28 +1951,32 @@ template <class F>
 struct all_type_packs_is_invocable {
   template <class...P>
   struct impl
-    : conjunction<type_pack_apply_t<is_invocable, type_pack_add<F, P>>...> {};
+    : conjunction<typename type_pack_apply<template_is_invocable,
+                                           type_pack_add<F, P>>
+                  ::type...> {};
 };
 
 }
 template <class F, class...TYPE_PACKS>
-struct is_invocable_for_all_combinations
-  : type_pack_apply_t
+struct template_is_invocable_for_all_combinations
+  : type_pack_apply
   <inner::all_type_packs_is_invocable<F>::template impl,
    compile_time_acc_t<type_pack_mul, TYPE_PACKS...>>::type {};
 template <class F>
-struct is_invocable_for_all_combinations<F> : is_invocable<F> {};
+struct template_is_invocable_for_all_combinations<F>
+  : template_is_invocable<F> {};
 template <class F, class...TYPE_PACKS>
-inline constexpr bool is_invocable_for_all_combinations_v
-  = is_invocable_for_all_combinations<F, TYPE_PACKS...>::value;
+inline constexpr bool is_invocable_for_all_combinations
+  = template_is_invocable_for_all_combinations<F, TYPE_PACKS...>::value;
 
 namespace inner {
 
 template <class F, bool>
 struct get_common_type_from_all_invocations {
   template <class...P>
-  struct impl : common_type<typename type_pack_apply_t
-                            <invoke_result, type_pack_add<F, P>>::type...> {};
+  struct impl : template_common_type<typename type_pack_apply
+                                     <template_invoke_result,
+                                      type_pack_add<F, P>>::type...> {};
 };
 template <class F>
 struct get_common_type_from_all_invocations<F, false> {
@@ -1981,14 +1986,15 @@ struct get_common_type_from_all_invocations<F, false> {
 
 }
 template <class F, class...TYPE_PACKS>
-struct invoke_result_for_all_combinations
-  : type_pack_apply_t
+struct template_invoke_result_for_all_combinations
+  : type_pack_apply
   <inner::get_common_type_from_all_invocations
-   <F, is_invocable_for_all_combinations_v<F, TYPE_PACKS...>>::template impl,
+   <F, is_invocable_for_all_combinations<F, TYPE_PACKS...>>::template impl,
    compile_time_acc_t<type_pack_mul, TYPE_PACKS...>> {};
 template <class F, class...TYPE_PACKS>
-using invoke_result_for_all_combinations_t
-  = typename invoke_result_for_all_combinations<F, TYPE_PACKS...>::type;
+using invoke_result_for_all_combinations
+  = typename
+  template_invoke_result_for_all_combinations<F, TYPE_PACKS...>::type;
 
 namespace inner {
 
@@ -1998,11 +2004,11 @@ struct gen_type_erased_invocation {
   static constexpr fp get() {
     return [](const void *x, type_t<BASE_PTR, S>...s)->R {
       return invoke(static_cast<F &&>
-                    (*const_cast<remove_reference_t<F> *>
-                     (static_cast<add_const_t<remove_reference_t<F>> *>(x))),
+                    (*const_cast<remove_reference<F> *>
+                     (static_cast<add_const<remove_reference<F>> *>(x))),
                     static_cast<S &&>
-                    (*const_cast<remove_reference_t<S> *>
-                     (static_cast<add_const_t<remove_reference_t<S>> *>(s)))
+                    (*const_cast<remove_reference<S> *>
+                     (static_cast<add_const<remove_reference<S>> *>(s)))
                     ...);
     };
   }
@@ -2011,11 +2017,11 @@ namespace fns {
 
 template <class BASE_PTR, class PACKS, class FP, class R, class F, size_t...I>
 const FP *gen_type_erased_invocation_array(index_sequence<I...>) {
-  static constexpr FP fns[type_pack_size_v<PACKS>]
-    = {type_pack_apply_t
+  static constexpr FP fns[type_pack_size<PACKS>]
+    = {type_pack_apply
        <gen_type_erased_invocation,
         type_pack_add<type_pack<BASE_PTR, R, F>,
-                      type_pack_element_t<I, PACKS>>>::get()...};
+                      type_pack_element<I, PACKS>>>::get()...};
   return fns;
 }
 
@@ -2030,7 +2036,7 @@ struct fo_type_erased_invocation_array {
     return inner::fns::gen_type_erased_invocation_array
       <BASE_PTR, PACKS,
        R (*)(const void *, type_t<BASE_PTR, TYPE_PACKS>...), R, FO>
-      (make_index_sequence<type_pack_size_v<PACKS>>());
+      (make_index_sequence<type_pack_size<PACKS>>());
   }
 };
 template <class BASE_PTR, class R, class F0, class...TYPE_PACKS>
@@ -2039,17 +2045,18 @@ fo_type_erased_invocation_array<BASE_PTR, R, F0, TYPE_PACKS...>
 type_erased_invocation_array{};
 
 template <size_t I, class...S>
-struct base_of_type_packs : size_constant<0> {};
+struct template_base_of_type_packs : size_constant<0> {};
 template <size_t I, class X, class...S>
-struct base_of_type_packs<I, X, S...>
-  : base_of_type_packs<I - 1, S...> {};
+struct template_base_of_type_packs<I, X, S...>
+  : template_base_of_type_packs<I - 1, S...> {};
 template <class X, class...S>
-struct base_of_type_packs<0, X, S...>
+struct template_base_of_type_packs<0, X, S...>
   : compile_time_acc<compile_time_mul, size_constant<1>,
-                     typename type_pack_size<S>::type...>::type::type {};
+                     typename template_type_pack_size<S>::type...>::type::type
+{};
 template <size_t I, class...S>
-inline constexpr size_t base_of_type_packs_v
-  = base_of_type_packs<I, S...>::value;
+inline constexpr size_t base_of_type_packs
+  = template_base_of_type_packs<I, S...>::value;
 
 namespace inner::fns {
 
@@ -2057,7 +2064,7 @@ template <class...TYPE_PACKS, size_t...I>
 size_t get_type_erased_invocation_array_index
 (type_t<size_t, TYPE_PACKS>...id, index_sequence<I...>) {
   return accumulate_args(plus<size_t>(),
-                         (base_of_type_packs_v<I, TYPE_PACKS...> * id)...);
+                         (base_of_type_packs<I, TYPE_PACKS...> * id)...);
 }
 
 }
@@ -2088,65 +2095,69 @@ template <class...>
 class variant;
 
 template <class T>
-struct variant_size;
+struct template_variant_size;
 template <class T>
-struct variant_size<const T> : variant_size<T> {};
+struct template_variant_size<const T> : template_variant_size<T> {};
 template <class T>
-struct variant_size<volatile T> : variant_size<T> {};
+struct template_variant_size<volatile T> : template_variant_size<T> {};
 template <class T>
-struct variant_size<const volatile T> : variant_size<T> {};
+struct template_variant_size<const volatile T> : template_variant_size<T> {};
 template <class...S>
-struct variant_size<variant<S...>> : size_constant<sizeof...(S)> {};
+struct template_variant_size<variant<S...>> : size_constant<sizeof...(S)> {};
 template <class T>
-inline constexpr size_t variant_size_v = variant_size<T>::value;
+inline constexpr size_t variant_size = template_variant_size<T>::value;
 
 template <size_t I, class T>
-struct variant_alternative;
+struct template_variant_alternative;
 template <size_t I, class T>
-using variant_alternative_t = typename variant_alternative<I, T>::type;
+using variant_alternative = typename template_variant_alternative<I, T>::type;
 template <size_t I, class T>
-struct variant_alternative<I, const T> : variant_alternative<I, T> {};
+struct template_variant_alternative<I, const T>
+  : template_add_const<variant_alternative<I, T>> {};
 template <size_t I, class T>
-struct variant_alternative<I, volatile T> : variant_alternative<I, T> {};
+struct template_variant_alternative<I, volatile T>
+  : template_add_volatile<variant_alternative<I, T>> {};
 template <size_t I, class T>
-struct variant_alternative<I, const volatile T> : variant_alternative<I, T> {};
+struct template_variant_alternative<I, const volatile T>
+  : template_add_cv<variant_alternative<I, T>> {};
 template <size_t I, class...S>
-struct variant_alternative<I, variant<S...>> : nth_type<I, S...> {};
+struct template_variant_alternative<I, variant<S...>>
+  : template_nth_type<I, S...> {};
 
 template <class T>
 struct fo_holds_alternative {
   template <class...S>
   constexpr bool operator ()(const variant<S...> &x) const noexcept {
-    static_assert(occurs_exactly_once_v<T, S...>);
-    return find_type_v<T, S...> == x.index();
+    static_assert(occurs_exactly_once<T, S...>);
+    return find_type<T, S...> == x.index();
   }
 };
 template <class T>
 inline constexpr fo_holds_alternative<T> holds_alternative{};
 
 template <size_t I, class...S>
-constexpr variant_alternative_t<I, variant<S...>> &
+constexpr variant_alternative<I, variant<S...>> &
 get(variant<S...> &x) requires (I < sizeof...(S)) {
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <size_t I, class...S>
-constexpr const variant_alternative_t<I, variant<S...>> &
+constexpr const variant_alternative<I, variant<S...>> &
 get(const variant<S...> &x) requires (I < sizeof...(S)) {
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <size_t I, class...S>
-constexpr variant_alternative_t<I, variant<S...>> &&
+constexpr variant_alternative<I, variant<S...>> &&
 get(variant<S...> &&x) requires (I < sizeof...(S)) {
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 template <size_t I, class...S>
-constexpr const variant_alternative_t<I, variant<S...>> &&
+constexpr const variant_alternative<I, variant<S...>> &&
 get(const variant<S...> &&x) requires (I < sizeof...(S)) {
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
@@ -2155,39 +2166,39 @@ get(const variant<S...> &&x) requires (I < sizeof...(S)) {
 
 template <class T, class...S>
 constexpr T &get(variant<S...> &x)
-  requires occurs_exactly_once_v<T, S...> {
-  constexpr size_t I = find_type_v<T, S...>;
+  requires occurs_exactly_once<T, S...> {
+  constexpr size_t I = find_type<T, S...>;
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <class T, class...S>
 constexpr const T &get(const variant<S...> &x)
-  requires occurs_exactly_once_v<T, S...> {
-  constexpr size_t I = find_type_v<T, S...>;
+  requires occurs_exactly_once<T, S...> {
+  constexpr size_t I = find_type<T, S...>;
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return x.template at<I>();
 }
 template <class T, class...S>
 constexpr T &&get(variant<S...> &&x)
-  requires occurs_exactly_once_v<T, S...> {
-  constexpr size_t I = find_type_v<T, S...>;
+  requires occurs_exactly_once<T, S...> {
+  constexpr size_t I = find_type<T, S...>;
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 template <class T, class...S>
 constexpr const T &&get(const variant<S...> &&x)
-  requires occurs_exactly_once_v<T, S...> {
-  constexpr size_t I = find_type_v<T, S...>;
+  requires occurs_exactly_once<T, S...> {
+  constexpr size_t I = find_type<T, S...>;
   if (x.index() != I)
     throw_or_terminate<bad_variant_access>();
   return move(x).template at<I>();
 }
 
 template <size_t I, class...S>
-constexpr add_pointer_t<variant_alternative_t<I, variant<S...>>>
+constexpr add_pointer<variant_alternative<I, variant<S...>>>
 get_if(variant<S...> *p) noexcept requires (I < sizeof...(S)) {
   static_assert(I < sizeof...(S));
   if (p != nullptr && p->index() == I)
@@ -2196,7 +2207,7 @@ get_if(variant<S...> *p) noexcept requires (I < sizeof...(S)) {
     return nullptr;
 }
 template <size_t I, class...S>
-constexpr add_pointer_t<const variant_alternative_t<I, variant<S...>>>
+constexpr add_pointer<const variant_alternative<I, variant<S...>>>
 get_if(const variant<S...> *p) noexcept requires (I < sizeof...(S)) {
   static_assert(I < sizeof...(S));
   if (p != nullptr && p->index() == I)
@@ -2206,18 +2217,18 @@ get_if(const variant<S...> *p) noexcept requires (I < sizeof...(S)) {
 }
 
 template <class T, class...S>
-constexpr add_pointer_t<T> get_if(variant<S...> *p) noexcept
-  requires occurs_exactly_once_v<T, S...> {
-  constexpr size_t I = find_type_v<T, S...>;
+constexpr add_pointer<T> get_if(variant<S...> *p) noexcept
+  requires occurs_exactly_once<T, S...> {
+  constexpr size_t I = find_type<T, S...>;
   if (p != nullptr && p->index() == I)
     return addressof(p->template at<I>());
   else
     return nullptr;
 }
 template <class T, class...S>
-constexpr add_pointer_t<const T> get_if(const variant<S...> *p) noexcept
-  requires occurs_exactly_once_v<T, S...> {
-  constexpr size_t I = find_type_v<T, S...>;
+constexpr add_pointer<const T> get_if(const variant<S...> *p) noexcept
+  requires occurs_exactly_once<T, S...> {
+  constexpr size_t I = find_type<T, S...>;
   if (p != nullptr && p->index() == I)
     return addressof(p->template at<I>());
   else
@@ -2258,17 +2269,9 @@ struct variant_to_type_pack<const variant<S...> &&> {
 template <class T>
 using variant_to_type_pack_t = typename variant_to_type_pack<T>::type;
 
-template <class F>
-struct variant_applying_wrapper {
-  template <class...S>
-  auto operator ()(S &&...s) const->decltype(F::apply(forward<S>(s)...));
-};
-
 template <class VISITOR, class...VARIANTS>
-struct variant_visit_result {
-  using type = invoke_result_t
-    <VISITOR, decltype(at<0>(declval<VARIANTS>()))...>;
-};
+struct variant_visit_result
+  : template_invoke_result<VISITOR, decltype(at<0>(declval<VARIANTS>()))...> {};
 
 }
 struct fo_visit {
@@ -2277,7 +2280,7 @@ struct fo_visit {
   operator ()(VISITOR &&f, VARIANTS &&...s) const {
     const auto get_id = [](auto &x) {
       if (x.index()
-          == type_pack_size_v<inner::variant_to_type_pack_t<decltype(x)>>)
+          == type_pack_size<inner::variant_to_type_pack_t<decltype(x)>>)
         throw_or_terminate<bad_variant_access>();
       return x.index();
     };
@@ -2298,11 +2301,11 @@ template <class R>
 struct fo_visit_r {
   template <class VISITOR, class...VARIANTS>
   R operator ()(VISITOR &&f, VARIANTS &&...s) const
-    requires is_invocable_for_all_combinations_v
+    requires is_invocable_for_all_combinations
     <VISITOR, inner::variant_to_type_pack_t<VARIANTS>...> {
     const auto get_id = [](auto &x) {
       if (x.index()
-          == type_pack_size_v<inner::variant_to_type_pack_t<decltype(x)>>)
+          == type_pack_size<inner::variant_to_type_pack_t<decltype(x)>>)
         throw_or_terminate<bad_variant_access>();
       return x.index();
     };
@@ -2319,6 +2322,46 @@ struct fo_visit_r {
 template <class R>
 inline constexpr fo_visit_r<R> visit_r{};
 
+// inner::fns::variant_visit_with_index
+namespace inner::fns {
+
+template <class RES_T, size_t ID, class VISITOR, class VAR_T>
+RES_T (*variant_visit_with_index_make_f())(VISITOR &&, VAR_T &&) {
+  return [](VISITOR &&f, VAR_T &&x)->RES_T {
+    return invoke(forward<VISITOR>(f),
+                  size_constant<ID>{},
+                  at<ID>(forward<VAR_T>(x)));
+  };
+}
+template <class VISITOR, class VAR_T, size_t...IDS>
+invoke_result<VISITOR,
+              size_constant<0>,
+              copy_cvref<VAR_T &&,
+                         variant_alternative<0, remove_reference<VAR_T>>>>
+variant_visit_with_index(VISITOR &&f, VAR_T &&x, index_sequence<IDS...>) {
+  using res_t = invoke_result<VISITOR,
+                              size_constant<0>,
+                              copy_cvref<VAR_T &&,
+                                         variant_alternative
+                                         <0, remove_reference<VAR_T>>>>;
+  using fp_t = res_t (*)(VISITOR &&, VAR_T &&);
+  static fp_t fv[variant_size<remove_reference<VAR_T>> + 1u]
+    = {
+    inner::fns::variant_visit_with_index_make_f
+    <res_t, IDS, VISITOR, VAR_T>()...,
+    [](VISITOR &&f, VAR_T &&x)->res_t {
+      throw_or_terminate<logic_error>
+        ("re::inner::fns::variant_visit_with_index(): valeless varaint\n");
+      return invoke(forward<VISITOR>(f),
+                    size_constant<0>{},
+                    at<0>(forward<VAR_T>(x)));
+    }
+  };
+  return fv[x.index()](forward<VISITOR>(f), forward<VAR_T>(x));
+}
+
+}
+
 namespace inner {
 
 template <class T, class...S>
@@ -2329,8 +2372,8 @@ union variant_storage {
   constexpr variant_storage() {}
   constexpr ~variant_storage() {}
   ~variant_storage()
-    requires (is_trivially_destructible_v<T>
-              && (is_trivially_destructible_v<S> && ...)) = default;
+    requires (is_trivially_destructible<T>
+              && (... && is_trivially_destructible<S>)) = default;
   variant_storage(const variant_storage &) = default;
   variant_storage &operator =(const variant_storage &) = default;
   variant_storage(variant_storage &&) = default;
@@ -2349,7 +2392,7 @@ union variant_storage<T> {
 
   constexpr variant_storage() noexcept {}
   constexpr ~variant_storage() {}
-  ~variant_storage() requires is_trivially_destructible_v<T> = default;
+  ~variant_storage() requires is_trivially_destructible<T> = default;
   variant_storage(const variant_storage &) = default;
   variant_storage &operator =(const variant_storage &) = default;
   variant_storage(variant_storage &&) = default;
@@ -2388,7 +2431,7 @@ template <class T>
 constexpr void
 (*make_variant_copy_ctor_fp() noexcept)(void *, const void *) {
   return [](void *l, const void *r) {
-    ::new(l) T(*static_cast<add_const_t<T> *>(r));
+    ::new(l) T(*static_cast<add_const<T> *>(r));
   };
 }
 template <class T>
@@ -2402,7 +2445,7 @@ template <class T>
 constexpr void
 (*make_variant_copy_assignment_fp() noexcept)(void *l, const void *r) {
   return [](void *l, const void *r) {
-    *static_cast<T *>(l) = *static_cast<add_const_t<T> *>(r);
+    *static_cast<T *>(l) = *static_cast<add_const<T> *>(r);
   };
 }
 template <class T>
@@ -2457,36 +2500,36 @@ class variant {
   }
 
   static void destroy(size_t id, void *l) noexcept {
-    static constexpr void (*const fps[sizeof...(S) + 1])(void *)
+    static constexpr void (*const fps[sizeof...(S) + 1u])(void *)
       = {inner::fns::make_variant_destroy_fp<S>()..., [](void *) {}};
     fps[id](l);
   }
   static void copy_construct(size_t id, void *l, const void *r) {
-    static constexpr void (*fps[sizeof...(S) + 1])(void *, const void *)
+    static constexpr void (*fps[sizeof...(S) + 1u])(void *, const void *)
       = {inner::fns::make_variant_copy_ctor_fp<S>()...,
          [](void *, const void *) {}};
     fps[id](l, r);
   }
   static void move_construct(size_t id, void *l, void *r) {
-    static constexpr void (*fps[sizeof...(S) + 1])(void *, void *)
+    static constexpr void (*fps[sizeof...(S) + 1u])(void *, void *)
       = {inner::fns::make_variant_move_ctor_fp<S>()...,
          [](void *, void *) {}};
     fps[id](l, r);
   }
   static void copy_assign(size_t id, void *l, const void *r) {
-    static constexpr void (*fps[sizeof...(S) + 1])(void *, const void *)
+    static constexpr void (*fps[sizeof...(S) + 1u])(void *, const void *)
       = {inner::fns::make_variant_copy_assignment_fp<S>()...,
          [](void *, const void *) {}};
     fps[id](l, r);
   }
   static void move_assign(size_t id, void *l, void *r) {
-    static constexpr void (*fps[sizeof...(S) + 1])(void *, void *)
+    static constexpr void (*fps[sizeof...(S) + 1u])(void *, void *)
       = {inner::fns::make_variant_move_assignment_fp<S>()...,
          [](void *, void *) {}};
     fps[id](l, r);
   }
   static void swap(size_t id, void *l, void *r) {
-    static constexpr void (*fps[sizeof...(S) + 1])(void *, void *)
+    static constexpr void (*fps[sizeof...(S) + 1u])(void *, void *)
       = {inner::fns::make_variant_swap_fp<S>()..., [](void *, void *) {}};
     fps[id](l, r);
   }
@@ -2498,32 +2541,32 @@ public:
   variant &operator =(const variant &) = delete;
   variant(variant &&) = delete;
   variant &operator =(variant &&) = delete;
-  constexpr variant() noexcept(is_nothrow_constructible_v<nth_type_t<0, S...>>)
-    requires is_constructible_v<nth_type_t<0, S...>>
+  constexpr variant() noexcept(is_nothrow_constructible<nth_type<0, S...>>)
+    requires is_constructible<nth_type<0, S...>>
     : buf(in_place_index<0>), i(0) {}
-  ~variant() requires ((is_destructible_v<S> && ...)
-                       && (is_trivially_destructible_v<S> && ...)) = default;
-  ~variant() requires ((is_destructible_v<S> && ...)
-                       && !(is_trivially_destructible_v<S> && ...)) {
+  ~variant() requires ((... && is_destructible<S>)
+                       && (... && is_trivially_destructible<S>)) = default;
+  ~variant() requires ((... && is_destructible<S>)
+                       && !(... && is_trivially_destructible<S>)) {
     destroy(i, void_ptr());
   }
   variant(const variant &)
-    requires ((is_copy_constructible_v<S> && ...)
-              && (is_trivially_copy_constructible_v<S> && ...)) = default;
+    requires ((... && is_copy_constructible<S>)
+              && (... && is_trivially_copy_constructible<S>)) = default;
   variant(const variant &x)
-    noexcept((is_nothrow_copy_constructible_v<S> && ...))
-    requires ((is_copy_constructible_v<S> && ...)
-              && !(is_trivially_copy_constructible_v<S> && ...)) : i(x.i) {
+    noexcept((... && is_nothrow_copy_constructible<S>))
+    requires ((... && is_copy_constructible<S>)
+              && !(... && is_trivially_copy_constructible<S>)) : i(x.i) {
     copy_construct(i, void_ptr(), x.void_ptr());
   }
   variant &operator =(const variant &)
-    requires (((is_copy_constructible_v<S> && is_copy_assignable_v<S>) && ...)
-              && (is_trivially_copy_constructible_v<S> && ...)) = default;
+    requires ((... && (is_copy_constructible<S> && is_copy_assignable<S>))
+              && (... && is_trivially_copy_constructible<S>)) = default;
   variant &operator =(const variant &x)
-    noexcept(((is_nothrow_copy_constructible_v<S>
-               && is_nothrow_copy_assignable_v<S>) && ...))
-    requires (((is_copy_constructible_v<S> && is_copy_assignable_v<S>) && ...)
-              && !(is_trivially_copy_constructible_v<S> && ...)) {
+    noexcept((... && (is_nothrow_copy_constructible<S>
+                      && is_nothrow_copy_assignable<S>)))
+    requires ((... && (is_copy_constructible<S> && is_copy_assignable<S>))
+              && !(... && is_trivially_copy_constructible<S>)) {
     if (i != x.i) {
       variant tmp(x);
       destroy(i, void_ptr());
@@ -2536,22 +2579,22 @@ public:
     return *this;
   }
   variant(variant &&)
-    requires ((is_move_constructible_v<S> && ...)
-              && (is_trivially_move_constructible_v<S> && ...)) = default;
+    requires ((... && is_move_constructible<S>)
+              && (... && is_trivially_move_constructible<S>)) = default;
   variant(variant &&x)
-    noexcept((is_nothrow_move_constructible_v<S> && ...))
-    requires ((is_move_constructible_v<S> && ...)
-              && !(is_trivially_move_constructible_v<S> && ...)) : i(x.i) {
+    noexcept((... && is_nothrow_move_constructible<S>))
+    requires ((... && is_move_constructible<S>)
+              && !(... && is_trivially_move_constructible<S>)) : i(x.i) {
     move_construct(i, void_ptr(), x.void_ptr());
   }
   variant &operator =(variant &&)
-    requires (((is_move_constructible_v<S> && is_move_assignable_v<S>) && ...)
-              && (is_trivially_move_constructible_v<S> && ...)) = default;
+    requires ((... && (is_move_constructible<S> && is_move_assignable<S>))
+              && (... && is_trivially_move_constructible<S>)) = default;
   variant &operator =(variant &&x)
-    noexcept(((is_nothrow_move_constructible_v<S>
-               && is_nothrow_move_assignable_v<S>) && ...))
-    requires (((is_move_constructible_v<S> && is_move_assignable_v<S>) && ...)
-              && !(is_trivially_move_constructible_v<S> && ...)) {
+    noexcept((... && (is_nothrow_move_constructible<S>
+                      && is_nothrow_move_assignable<S>)))
+    requires ((... && (is_move_constructible<S> && is_move_assignable<S>))
+              && !(... && is_trivially_move_constructible<S>)) {
     if (i != x.i) {
       destroy(i, void_ptr());
       i = sizeof...(S);
@@ -2563,12 +2606,12 @@ public:
     return *this;
   }
   friend void swap(this_t &x, this_t &y)
-    noexcept (((is_nothrow_move_constructible_v<S>
-                && is_nothrow_move_assignable_v<S>) && ...))
-    requires ((is_move_constructible_v<S> && ...)
-              && (is_swappable_v<S> && ...)) {
-    if constexpr (is_trivially_move_constructible_v<this_t>
-                  && is_trivially_move_assignable_v<this_t>) {
+    noexcept ((... && (is_nothrow_move_constructible<S>
+                       && is_nothrow_move_assignable<S>)))
+    requires ((... && is_move_constructible<S>)
+              && (... && is_swappable<S>)) {
+    if constexpr (is_trivially_move_constructible<this_t>
+                  && is_trivially_move_assignable<this_t>) {
       default_swap(x, y);
     }
     else {
@@ -2581,57 +2624,57 @@ public:
 
   template <class T>
   constexpr explicit variant(in_place_type_t<T>) noexcept
-    requires is_void_v<T>
+    requires is_void<T>
     : buf()
     , i(sizeof...(S)) {}
   template <class T, class...SS>
   constexpr explicit variant(in_place_type_t<T>, SS &&...s)
-    requires (!is_void_v<T>
-              && occurs_exactly_once_v<T, S...>
-              && is_constructible_v<T, SS &&...>)
-    : buf(in_place_index<find_type_v<T, S...>>, forward<SS>(s)...)
-    , i(find_type_v<T, S...>) {}
+    requires (!is_void<T>
+              && occurs_exactly_once<T, S...>
+              && is_constructible<T, SS &&...>)
+    : buf(in_place_index<find_type<T, S...>>, forward<SS>(s)...)
+    , i(find_type<T, S...>) {}
   template <class T, class U, class...SS>
   constexpr explicit variant(in_place_type_t<T>,
                              initializer_list<U> l, SS &&...s)
-    requires (!is_void_v<T>
-              && occurs_exactly_once_v<T, S...>
-              && is_constructible_v<T, initializer_list<U> &, SS &&...>)
-    : buf(in_place_index<find_type_v<T, S...>>, l, forward<SS>(s)...)
-    , i(find_type_v<T, S...>) {}
+    requires (!is_void<T>
+              && occurs_exactly_once<T, S...>
+              && is_constructible<T, initializer_list<U> &, SS &&...>)
+    : buf(in_place_index<find_type<T, S...>>, l, forward<SS>(s)...)
+    , i(find_type<T, S...>) {}
 
   template <size_t I, class...SS>
   constexpr explicit variant(in_place_index_t<I>, SS &&...s)
     requires ((I < sizeof...(S))
-              && is_constructible_v<nth_type_t<I, S...>, SS &&...>)
+              && is_constructible<nth_type<I, S...>, SS &&...>)
     : buf(in_place_index<I>, forward<SS>(s)...), i(I) {}
   template <size_t I, class U, class...SS>
   constexpr explicit variant(in_place_index_t<I>,
                              initializer_list<U> l, SS &&...s)
     requires ((I < sizeof...(S))
-              && is_constructible_v
-              <nth_type_t<I, S...>, initializer_list<U> &, SS &&...>)
+              && is_constructible
+              <nth_type<I, S...>, initializer_list<U> &, SS &&...>)
     : buf(in_place_index<I>, l, forward<SS>(s)...), i(I) {}
 
   template <class T,
             class U = decltype(inner::variant_imaginary_function<S...>::f
                                (declval<T>()))>
-  constexpr variant(T &&x) noexcept(is_nothrow_constructible_v<U, T>)
-    requires (!is_same_v<decay_t<T>, variant>
-              && !is_in_place_type_v<decay_t<U>>
-              && !is_in_place_index_v<decay_t<U>>
-              && is_constructible_v<U, T>)
-    : buf(in_place_index<find_type_v<U, S...>>, forward<T>(x))
-    , i(find_type_v<U, S...>) {}
+  constexpr variant(T &&x) noexcept(is_nothrow_constructible<U, T>)
+    requires (!is_same<decay<T>, variant>
+              && !is_in_place_type<decay<U>>
+              && !is_in_place_index<decay<U>>
+              && is_constructible<U, T>)
+    : buf(in_place_index<find_type<U, S...>>, forward<T>(x))
+    , i(find_type<U, S...>) {}
   template <class T,
             class U = decltype(inner::variant_imaginary_function<S...>::f
                                (declval<T>()))>
   variant &operator =(T &&x)
-    noexcept(is_nothrow_assignable_v<U &, T>
-             && is_nothrow_constructible_v<U, T>)
-    requires (!is_same_v<decay_t<T>, variant>
-              && is_assignable_v<U &, T> && is_constructible_v<U &, T>) {
-    constexpr size_t x_i = find_type_v<U, S...>;
+    noexcept(is_nothrow_assignable<U &, T>
+             && is_nothrow_constructible<U, T>)
+    requires (!is_same<decay<T>, variant>
+              && is_assignable<U &, T> && is_constructible<U &, T>) {
+    constexpr size_t x_i = find_type<U, S...>;
     if (i == x_i)
       *static_cast<U *>(void_ptr()) = forward<T>(x);
     else {
@@ -2645,7 +2688,7 @@ public:
   }
 
 private:
-  template <size_t I, class...SS, class T = nth_type_t<I, S...>>
+  template <size_t I, class...SS, class T = nth_type<I, S...>>
   T &emplace_impl(SS &&...s) {
     destroy(i, void_ptr());
     i = sizeof...(S);
@@ -2655,37 +2698,37 @@ private:
   }
 public:
   template <class T>
-  void emplace() noexcept requires is_void_v<T> {
+  void emplace() noexcept requires is_void<T> {
     destroy(i, void_ptr());
     i = sizeof...(S);
   }
   template <class T, class...SS>
   T &emplace(SS &&...s)
-    requires (!is_void_v<T>
-              && occurs_exactly_once_v<T, S...>
-              && is_constructible_v<T, SS &&...>) {
-    return emplace_impl<find_type_v<T, S...>>(forward<SS>(s)...);
+    requires (!is_void<T>
+              && occurs_exactly_once<T, S...>
+              && is_constructible<T, SS &&...>) {
+    return emplace_impl<find_type<T, S...>>(forward<SS>(s)...);
   }
   template <class T, class U, class...SS>
   T &emplace(initializer_list<U> l, SS &&...s)
-    requires (!is_void_v<T>
-              && occurs_exactly_once_v<T, S...>
-              && is_constructible_v<T, initializer_list<U> &, SS &&...>) {
-    return emplace_impl<find_type_v<T, S...>>(l, forward<SS>(s)...);
+    requires (!is_void<T>
+              && occurs_exactly_once<T, S...>
+              && is_constructible<T, initializer_list<U> &, SS &&...>) {
+    return emplace_impl<find_type<T, S...>>(l, forward<SS>(s)...);
   }
 
   template <size_t I, class...SS>
-  variant_alternative_t<I, variant<S...>> &emplace(SS &&...s)
+  variant_alternative<I, variant<S...>> &emplace(SS &&...s)
     requires ((I < sizeof...(S))
-              && is_constructible_v<nth_type_t<I, S...>, SS &&...>) {
+              && is_constructible<nth_type<I, S...>, SS &&...>) {
     return emplace_impl<I>(forward<SS>(s)...);
   }
   template <size_t I, class U, class...SS>
-  variant_alternative_t<I, variant<S...>> &emplace(initializer_list<U> l,
-                                                   SS &&...s)
+  variant_alternative<I, variant<S...>> &emplace(initializer_list<U> l,
+                                                 SS &&...s)
     requires ((I < sizeof...(S))
-              && is_constructible_v
-              <nth_type_t<I, S...>, initializer_list<U> &, SS &&...>) {
+              && is_constructible
+              <nth_type<I, S...>, initializer_list<U> &, SS &&...>) {
     return emplace_impl<I>(l, forward<SS>(s)...);
   }
 
@@ -2700,62 +2743,62 @@ public:
   }
 
   template <class T>
-  constexpr enable_if_t<!is_void_v<T>, bool> is() const noexcept
-    requires (occurs_exactly_once_v<T, S...>) {
-    return i == find_type_v<T, S...>;
+  constexpr enable_if<!is_void<T>, bool> is() const noexcept
+    requires (occurs_exactly_once<T, S...>) {
+    return i == find_type<T, S...>;
   }
   template <class T>
-  constexpr enable_if_t<is_void_v<T>, bool> is() const noexcept {
+  constexpr enable_if<is_void<T>, bool> is() const noexcept {
     return i == sizeof...(S);
   }
 
   template <class T>
-  constexpr T &as() & noexcept requires occurs_exactly_once_v<T, S...> {
-    if (i != find_type_v<T, S...>)
+  constexpr T &as() & noexcept requires occurs_exactly_once<T, S...> {
+    if (i != find_type<T, S...>)
       throw_or_terminate<bad_variant_access>();
     return *static_cast<T *>(void_ptr());
   }
   template <class T>
   constexpr const T &as() const & noexcept
-    requires occurs_exactly_once_v<T, S...> {
-    if (i != find_type_v<T, S...>)
+    requires occurs_exactly_once<T, S...> {
+    if (i != find_type<T, S...>)
       throw_or_terminate<bad_variant_access>();
     return *static_cast<const T *>(void_ptr());
   }
   template <class T>
   constexpr T &&as() && noexcept
-    requires occurs_exactly_once_v<T, S...> {
-    if (i != find_type_v<T, S...>)
+    requires occurs_exactly_once<T, S...> {
+    if (i != find_type<T, S...>)
       throw_or_terminate<bad_variant_access>();
     return static_cast<T &&>(*static_cast<T *>(void_ptr()));
   }
   template <class T>
   constexpr const T &&as() const && noexcept
-    requires occurs_exactly_once_v<T, S...> {
-    if (i != find_type_v<T, S...>)
+    requires occurs_exactly_once<T, S...> {
+    if (i != find_type<T, S...>)
       throw_or_terminate<bad_variant_access>();
     return static_cast<const T &&>(*static_cast<const T *>(void_ptr()));
   }
 
-  template <size_t I, class T = nth_type_t<I, S...>>
+  template <size_t I, class T = nth_type<I, S...>>
   constexpr T &at() & noexcept requires (I < sizeof...(S)) {
     if (I != i)
       throw_or_terminate<bad_variant_access>();
     return *static_cast<T *>(void_ptr());
   }
-  template <size_t I, class T = nth_type_t<I, S...>>
+  template <size_t I, class T = nth_type<I, S...>>
   constexpr const T &at() const & noexcept requires (I < sizeof...(S)) {
     if (I != i)
       throw_or_terminate<bad_variant_access>();
     return *static_cast<const T *>(void_ptr());
   }
-  template <size_t I, class T = nth_type_t<I, S...>>
+  template <size_t I, class T = nth_type<I, S...>>
   constexpr T &&at() && noexcept requires (I < sizeof...(S)) {
     if (I != i)
       throw_or_terminate<bad_variant_access>();
     return static_cast<T &&>(*static_cast<T *>(void_ptr()));
   }
-  template <size_t I, class T = nth_type_t<I, S...>>
+  template <size_t I, class T = nth_type<I, S...>>
   constexpr const T &&at() const && noexcept requires (I < sizeof...(S)) {
     if (I != i)
       throw_or_terminate<bad_variant_access>();
@@ -2766,24 +2809,79 @@ public:
   friend constexpr bool operator ==(const variant<SS...> &,
                                     const variant<SS...> &);
   template <class...SS>
-  friend constexpr common_comparison_category_t<synth_3way_result<SS>...>
+  friend constexpr common_comparison_category<synth_3way_result<SS>...>
   operator <=>(const variant<SS...> &, const variant<SS...> &);
+
+  template <class V>
+  constexpr decltype(auto) visit(V &&v) & {
+    return re::visit(forward<V>(v), *this);
+  }
+  template <class V>
+  constexpr decltype(auto) visit(V &&v) const & {
+    return re::visit(forward<V>(v), *this);
+  }
+  template <class V>
+  constexpr decltype(auto) visit(V &&v) && {
+    return re::visit(forward<V>(v), move(*this));
+  }
+  template <class V>
+  constexpr decltype(auto) visit(V &&v) const && {
+    return re::visit(forward<V>(v), move(*this));
+  }
+
+  template <class R, class V>
+  constexpr decltype(auto) visit(V &&v) & {
+    return re::visit_r<R>(forward<V>(v), *this);
+  }
+  template <class R, class V>
+  constexpr decltype(auto) visit(V &&v) const & {
+    return re::visit_r<R>(forward<V>(v), *this);
+  }
+  template <class R, class V>
+  constexpr decltype(auto) visit(V &&v) && {
+    return re::visit_r<R>(forward<V>(v), move(*this));
+  }
+  template <class R, class V>
+  constexpr decltype(auto) visit(V &&v) const && {
+    return re::visit_r<R>(forward<V>(v), move(*this));
+  }
+
+  template <class V>
+  constexpr decltype(auto) visit_with_index(V &&v) & {
+    return inner::fns::variant_visit_with_index
+      (forward<V>(v), *this, make_index_sequence<sizeof...(S)>{});
+  }
+  template <class V>
+  constexpr decltype(auto) visit_with_index(V &&v) const & {
+    return inner::fns::variant_visit_with_index
+      (forward<V>(v), *this, make_index_sequence<sizeof...(S)>{});
+  }
+  template <class V>
+  constexpr decltype(auto) visit_with_index(V &&v) && {
+    return inner::fns::variant_visit_with_index
+      (forward<V>(v), move(*this), make_index_sequence<sizeof...(S)>{});
+  }
+  template <class V>
+  constexpr decltype(auto) visit_with_index(V &&v) const && {
+    return inner::fns::variant_visit_with_index
+      (forward<V>(v), move(*this), make_index_sequence<sizeof...(S)>{});
+  }
 };
 template <class...S>
 constexpr bool operator ==(const variant<S...> &x, const variant<S...> &y) {
   using fp_t = bool (*)(const void *, const void *);
-  constexpr fp_t fps[sizeof...(S) + 1]
+  constexpr fp_t fps[sizeof...(S) + 1u]
     = {inner::fns::make_variant_equal_fp<S>()...,
        [](const void *, const void *) {return true;}};
   return x.index() == y.index()
     && fps[x.index()](x.void_ptr(), y.void_ptr());
 }
 template <class...S>
-constexpr common_comparison_category_t<synth_3way_result<S>...>
+constexpr common_comparison_category<synth_3way_result<S>...>
 operator <=>(const variant<S...> &x, const variant<S...> &y) {
-  using ordering_t = common_comparison_category_t<synth_3way_result<S>...>;
+  using ordering_t = common_comparison_category<synth_3way_result<S>...>;
   using fp_t = ordering_t (*)(const void *, const void *);
-  constexpr fp_t fps[sizeof...(S) + 1]
+  constexpr fp_t fps[sizeof...(S) + 1u]
     = {inner::fns::make_variant_3way_fp<S, ordering_t>()...,
        [](const void *, const void *)->ordering_t {return strong_eq;}};
   if (x.valueless_by_exception() && y.valueless_by_exception())
@@ -2812,7 +2910,7 @@ struct hash<variant<S...>> {
   using result_type = size_t;
 
   size_t operator ()(const variant<S...> &v) const
-    noexcept((is_nothrow_hashable_v<S> && ...)) {
+    noexcept((... && is_nothrow_hashable<S>)) {
     const size_t a = v.index();
     const size_t b = visit_r<size_t>
       ([]<class T>(const T &x) {return hash<T>{}(x);}, v);

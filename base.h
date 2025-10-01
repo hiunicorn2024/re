@@ -153,7 +153,8 @@ using int64_t = std::int64_t;
 using uint64_t = std::uint64_t;
 #endif
 
-using std::initializer_list;
+template <class E>
+using initializer_list = std::initializer_list<E>;
 
 using type_info = std::type_info;
 
@@ -161,33 +162,65 @@ using exception = std::exception;
 using bad_exception = std::bad_exception;
 
 using terminate_handler = std::terminate_handler;
-using std::get_terminate;
-using std::set_terminate;
-using std::terminate;
-using std::uncaught_exceptions;
+struct fo_get_terminate {
+  terminate_handler operator ()() const noexcept {
+    return std::get_terminate();
+  }
+};
+inline constexpr fo_get_terminate get_terminate{};
+struct fo_set_terminate {
+  terminate_handler operator ()(terminate_handler f) const noexcept {
+    return std::set_terminate(f);
+  }
+};
+inline constexpr fo_set_terminate set_terminate{};
+struct fo_terminate {
+  [[noreturn]] void operator ()() const noexcept {
+    std::terminate();
+  }
+};
+inline constexpr fo_terminate terminate{};
 
-using std::current_exception;
-using std::rethrow_exception;
+struct fo_uncaught_exceptions {
+  int operator ()() const noexcept {
+    return std::uncaught_exceptions();
+  }
+};
+inline constexpr fo_uncaught_exceptions uncaught_exceptions{};
+
 using exception_ptr = std::exception_ptr;
+
+struct fo_current_exception {
+  exception_ptr operator ()() const noexcept {
+    return std::current_exception();
+  }
+};
+inline constexpr fo_current_exception current_exception{};
+struct fo_rethrow_exception {
+  void operator ()(exception_ptr p) const {
+    std::rethrow_exception(p);
+  }
+};
+inline constexpr fo_rethrow_exception rethrow_exception{};
 struct fo_make_exception_ptr {
   template <class E>
-  exception_ptr operator ()(E e) const noexcept {
+  constexpr exception_ptr operator ()(E e) const noexcept {
     return std::make_exception_ptr(static_cast<E &&>(e));
   }
 };
 inline constexpr fo_make_exception_ptr make_exception_ptr{};
 
-using std::nested_exception;
+using nested_exception = std::nested_exception;
 struct fo_throw_with_nested {
   template <class T>
-  [[noreturn]] void operator ()(T &&t) const {
+  constexpr void operator ()(T &&t) const {
     std::throw_with_nested(static_cast<T &&>(t));
   }
 };
 inline constexpr fo_throw_with_nested throw_with_nested{};
 struct fo_rethrow_if_nested {
   template <class E>
-  void operator ()(const E &e) const {
+  constexpr void operator ()(const E &e) const {
     std::rethrow_if_nested(e);
   }
 };
@@ -209,63 +242,248 @@ using range_error = std::range_error;
 using overflow_error = std::overflow_error;
 using underflow_error = std::underflow_error;
 
-using std::malloc;
-using std::free;
-using std::system;
-using std::getenv;
-using std::abort;
-using std::exit;
+struct fo_malloc {
+  void *operator ()(size_t sz) const {
+    return std::malloc(sz);
+  }
+};
+inline constexpr fo_malloc malloc{};
+struct fo_free {
+  void operator ()(void *p) const {
+    std::free(p);
+  }
+};
+inline constexpr fo_free free{};
 
-using std::nothrow_t;
+struct fo_system {
+  int operator ()(const char *s) const {
+    return std::system(s);
+  }
+};
+inline constexpr fo_system system{};
+struct fo_getenv {
+  char *operator ()(const char *name) const {
+    return std::getenv(name);
+  }
+};
+inline constexpr fo_getenv getenv{};
+struct fo_abort {
+  [[noreturn]] void operator ()() const noexcept {
+    std::abort();
+  }
+};
+inline constexpr fo_abort abort{};
+struct fo_exit {
+  [[noreturn]] void operator ()(int status) const {
+    std::exit(status);
+  }
+};
+inline constexpr fo_exit exit{};
+
+using nothrow_t = std::nothrow_t;
 using std::nothrow;
-using std::align_val_t;
-using std::destroying_delete_t;
+
+using align_val_t = std::align_val_t;
+using destroying_delete_t = std::destroying_delete_t;
+
 // using std::hardware_destructive_interference_size;
 // using std::hardware_constructive_interference_size;
 
 using new_handler = void (*)();
-using std::get_new_handler;
-using std::set_new_handler;
+struct fo_get_new_handler {
+  new_handler operator ()() const noexcept {
+    return std::get_new_handler();
+  }
+};
+inline constexpr fo_get_new_handler get_new_handler{};
+struct fo_set_new_handler {
+  new_handler operator ()(new_handler new_p) const noexcept {
+    return std::set_new_handler(new_p);
+  }
+};
+inline constexpr fo_set_new_handler set_new_handler{};
 
 using FILE = std::FILE;
 using fpos_t = std::fpos_t;
-using std::fopen;
-using std::freopen;
-using std::fclose;
-using std::rename;
-using std::fflush;
-using std::setbuf;
-using std::setvbuf;
-using std::fread;
-using std::fwrite;
-using std::fgetc;
-using std::getc;
-using std::fputc;
-using std::putc;
-using std::fputs;
-using std::getchar;
-using std::putchar;
-using std::puts;
-using std::ungetc;
-using std::scanf;
-using std::fscanf;
-using std::sscanf;
-using std::printf;
-using std::fprintf;
-using std::sprintf;
-using std::snprintf;
-using std::ftell;
-using std::fgetpos;
-using std::fseek;
-using std::fsetpos;
-using std::rewind;
-using std::clearerr;
-using std::feof;
-using std::ferror;
-using std::perror;
-using std::rename;
-using std::tmpfile;
-using std::tmpnam;
+
+struct fo_fopen {
+  FILE *operator ()(const char *fname, const char *mode) const {
+    return std::fopen(fname, mode);
+  }
+};
+inline constexpr fo_fopen fopen{};
+struct fo_freopen {
+  FILE *operator ()(const char *fname, const char *mode,
+                    FILE *stream) const {
+    return std::freopen(fname, mode, stream);
+  }
+};
+inline constexpr fo_freopen freopen{};
+struct fo_fclose {
+  int operator ()(FILE *f) const {
+    return std::fclose(f);
+  }
+};
+inline constexpr fo_fclose fclose{};
+struct fo_rename {
+  int operator ()(const char *old_p, const char *new_p) const {
+    return std::rename(old_p, new_p);
+  }
+};
+inline constexpr fo_rename rename{};
+struct fo_tmpfile {
+  FILE *operator ()() const {
+    return std::tmpfile();
+  }
+};
+inline constexpr fo_tmpfile tmpfile{};
+struct fo_tmpnam {
+  char *operator ()(char *s) const {
+    return std::tmpnam(s);
+  }
+};
+inline constexpr fo_tmpnam tmpnam{};
+struct fo_setbuf {
+  void operator ()(FILE *f, char *buf) const {
+    std::setbuf(f, buf);
+  }
+};
+inline constexpr fo_setbuf setbuf{};
+struct fo_setvbuf {
+  void operator ()(FILE *f, char *buf, int mode, size_t sz) const {
+    std::setvbuf(f, buf, mode, sz);
+  }
+};
+inline constexpr fo_setvbuf setvbuf{};
+struct fo_fflush {
+  int operator ()(FILE *f) const {
+    return std::fflush(f);
+  }
+};
+inline constexpr fo_fflush fflush{};
+struct fo_fread {
+  size_t operator ()(void *p, size_t sz, size_t nmemb, FILE *f) const {
+    return std::fread(p, sz, nmemb, f);
+  }
+};
+inline constexpr fo_fread fread{};
+struct fo_fwrite {
+  size_t operator ()(const void *p, size_t sz,
+                     size_t nmemb, FILE *f) const {
+    return std::fwrite(p, sz, nmemb, f);
+  }
+};
+inline constexpr fo_fwrite fwrite{};
+
+struct fo_fgetc {
+  int operator ()(FILE *f) const {
+    return std::fgetc(f);
+  }
+};
+inline constexpr fo_fgetc fgetc{};
+struct fo_getc {
+  int operator ()(FILE *f) const {
+    return std::getc(f);
+  }
+};
+inline constexpr fo_getc getc{};
+struct fo_fputc {
+  int operator ()(int c, FILE *f) const {
+    return std::fputc(c, f);
+  }
+};
+inline constexpr fo_fputc fputc{};
+struct fo_putc {
+  int operator ()(int c, FILE *f) const {
+    return std::putc(c, f);
+  }
+};
+inline constexpr fo_putc putc{};
+struct fo_fputs {
+  int operator ()(const char *s, FILE *f) const {
+    return std::fputs(s, f);
+  }
+};
+inline constexpr fo_fputs fputs{};
+struct fo_getchar {
+  int operator ()() const {
+    return std::getchar();
+  }
+};
+inline constexpr fo_getchar getchar{};
+struct fo_putchar {
+  int operator ()(int c) const {
+    return std::putchar(c);
+  }
+};
+inline constexpr fo_putchar putchar{};
+struct fo_puts {
+  int operator ()(const char *s) const {
+    return std::puts(s);
+  }
+};
+inline constexpr fo_puts puts{};
+struct fo_ungetc {
+  int operator ()(int c, FILE *f) const {
+    return std::ungetc(c, f);
+  }
+};
+inline constexpr fo_ungetc ungetc{};
+
+struct fo_fgetpos {
+  int operator ()(FILE *f, fpos_t *pos) const {
+    return std::fgetpos(f, pos);
+  }
+};
+inline constexpr fo_fgetpos fgetpos{};
+struct fo_fseek {
+  int operator ()(FILE *f, long offset, int whence) const {
+    return std::fseek(f, offset, whence);
+  }
+};
+inline constexpr fo_fseek fseek{};
+struct fo_fsetpos {
+  int operator ()(FILE *f, fpos_t *pos) const {
+    return std::fsetpos(f, pos);
+  }
+};
+inline constexpr fo_fsetpos fsetpos{};
+struct fo_ftell {
+  long operator ()(FILE *f) const {
+    return std::ftell(f);
+  }
+};
+inline constexpr fo_ftell ftell{};
+struct fo_rewind {
+  void operator ()(FILE *f) const {
+    std::rewind(f);
+  }
+};
+inline constexpr fo_rewind rewind{};
+struct fo_clearerr {
+  void operator ()(FILE *f) const {
+    std::clearerr(f);
+  }
+};
+inline constexpr fo_clearerr clearerr{};
+struct fo_feof {
+  int operator ()(FILE *f) const {
+    return std::feof(f);
+  }
+};
+inline constexpr fo_feof feof{};
+struct fo_ferror {
+  int operator ()(FILE *f) const {
+    return std::ferror(f);
+  }
+};
+inline constexpr fo_ferror ferror{};
+struct fo_perror {
+  void operator ()(const char *s) const {
+    std::perror(s);
+  }
+};
+inline constexpr fo_perror perror{};
 
 struct fo_isalnum {
   bool operator ()(int c) const noexcept {
@@ -352,39 +570,190 @@ struct fo_tolower {
 };
 inline constexpr fo_tolower tolower{};
 
-using std::strcpy;
-using std::strncpy;
-using std::strcat;
-using std::strncat;
-using std::strxfrm;
-using std::strlen;
-using std::strcmp;
-using std::strncmp;
-using std::strcoll;
-using std::strrchr;
-using std::strspn;
-using std::strcspn;
-using std::strpbrk;
-using std::strstr;
-using std::strtok;
+struct fo_strcpy {
+  char *operator ()(char *s1, const char *s2) const {
+    return std::strcpy(s1, s2);
+  }
+};
+inline constexpr fo_strcpy strcpy{};
+struct fo_strncpy {
+  char *operator ()(char *s1, const char *s2, size_t n) const {
+    return std::strncpy(s1, s2, n);
+  }
+};
+inline constexpr fo_strncpy strncpy{};
 
-using std::memchr;
-using std::memcmp;
-using std::memset;
-using std::memcpy;
-using std::memmove;
+struct fo_strcat {
+  char *operator ()(char *s1, const char *s2) const {
+    return std::strcat(s1, s2);
+  }
+};
+inline constexpr fo_strcat strcat{};
+struct fo_strncat {
+  char *operator ()(char *s1, const char *s2, size_t n) const {
+    return std::strncat(s1, s2, n);
+  }
+};
+inline constexpr fo_strncat strncat{};
 
-using std::is_constant_evaluated;
+struct fo_strlen {
+  size_t operator ()(const char *s) const {
+    return std::strlen(s);
+  }
+};
+inline constexpr fo_strlen strlen{};
 
-using std::source_location;
+struct fo_strcmp {
+  int operator ()(const char *s1, const char *s2) const {
+    return std::strcmp(s1, s2);
+  }
+};
+inline constexpr fo_strcmp strcmp{};
+struct fo_strncmp {
+  int operator ()(const char *s1, const char *s2, size_t n) const {
+    return std::strncmp(s1, s2, n);
+  }
+};
+inline constexpr fo_strncmp strncmp{};
 
-using std::fgetwc;
-using std::fgetws;
-using std::fputwc;
-using std::fputws;
-using std::getwchar;
-using std::putwchar;
-using std::ungetwc;
+struct fo_strspn {
+  size_t operator ()(const char *s1, const char *s2) const {
+    return std::strspn(s1, s2);
+  }
+};
+inline constexpr fo_strspn strspn{};
+struct fo_strcspn {
+  size_t operator ()(const char *s1, const char *s2) const {
+    return std::strcspn(s1, s2);
+  }
+};
+inline constexpr fo_strcspn strcspn{};
+
+struct fo_strpbrk {
+  char *operator ()(char *s1, const char *s2) const {
+    return std::strpbrk(s1, s2);
+  }
+  const char *operator ()(const char *s1, const char *s2) const {
+    return std::strpbrk(s1, s2);
+  }
+};
+inline constexpr fo_strpbrk strpbrk{};
+
+struct fo_strchr {
+  const char *operator ()(const char *s, int c) const {
+    return std::strchr(s, c);
+  }
+  char *operator ()(char *s, int c) const {
+    return std::strchr(s, c);
+  }
+};
+inline constexpr fo_strchr strchr{};
+struct fo_strrchr {
+  const char *operator ()(const char *s, int c) const {
+    return std::strrchr(s, c);
+  }
+  char *operator ()(char *s, int c) const {
+    return std::strrchr(s, c);
+  }
+};
+inline constexpr fo_strrchr strrchr{};
+
+struct fo_strstr {
+  char *operator ()(char *s1, const char *s2) const {
+    return std::strstr(s1, s2);
+  }
+  const char *operator ()(const char *s1, const char *s2) const {
+    return std::strstr(s1, s2);
+  }
+};
+inline constexpr fo_strstr strstr{};
+
+struct fo_memchr {
+  const void *operator ()(const void *s, int c, size_t n) const {
+    return std::memchr(s, c, n);
+  }
+  void *operator ()(void *s, int c, size_t n) const {
+    return std::memchr(s, c, n);
+  }
+};
+inline constexpr fo_memchr memchr{};
+struct fo_memcmp {
+  int operator ()(const void *s1, const void *s2, size_t n) const {
+    return std::memcmp(s1, s2, n);
+  }
+};
+inline constexpr fo_memcmp memcmp{};
+struct fo_memset {
+  void *operator ()(void *s, int c, size_t n) const {
+    return std::memset(s, c, n);
+  }
+};
+inline constexpr fo_memset memset{};
+struct fo_memcpy {
+  void *operator ()(void *s1, const void *s2, size_t n) const {
+    return std::memcpy(s1, s2, n);
+  }
+};
+inline constexpr fo_memcpy memcpy{};
+struct fo_memmove {
+  void *operator ()(void *s1, const void *s2, size_t n) const {
+    return std::memmove(s1, s2, n);
+  }
+};
+inline constexpr fo_memmove memmove{};
+
+struct fo_is_constant_evaluated {
+  constexpr bool operator ()() const noexcept {
+    return std::is_constant_evaluated();
+  }
+};
+inline constexpr fo_is_constant_evaluated is_constant_evaluated{};
+
+using source_location = std::source_location;
+
+struct fo_fgetwc {
+  wint_t operator ()(FILE *f) const {
+    return std::fgetwc(f);
+  }
+};
+inline constexpr fo_fgetwc fgetwc{};
+struct fo_fgetws {
+  wchar_t *operator ()(wchar_t *s, int n, FILE *f) const {
+    return std::fgetws(s, n, f);
+  }
+};
+inline constexpr fo_fgetws fgetws{};
+struct fo_fputwc {
+  int operator ()(wchar_t c, FILE *f) const {
+    return std::fputwc(c, f);
+  }
+};
+inline constexpr fo_fputwc fputwc{};
+struct fo_fputws {
+  int operator ()(const wchar_t *s, FILE *f) const {
+    return std::fputws(s, f);
+  }
+};
+inline constexpr fo_fputws fputws{};
+struct fo_getwchar {
+  wint_t operator ()() const {
+    return std::getwchar();
+  }
+};
+inline constexpr fo_getwchar getwchar{};
+struct fo_putwchar {
+  wint_t operator ()(wchar_t c) const {
+    return std::putwchar(c);
+  }
+};
+inline constexpr fo_putwchar putwchar{};
+struct fo_ungetwc {
+  wint_t operator ()(wint_t c, FILE *f) const {
+    return std::ungetwc(c, f);
+  }
+};
+inline constexpr fo_ungetwc ungetwc{};
+
 using wctrans_t = std::wctrans_t;
 using wctype_t = std::wctype_t;
 using wint_t = std::wint_t;
@@ -446,46 +815,55 @@ inline constexpr fo_good good{};
 namespace re {
 
 template <class, class>
-struct is_same;
+struct template_is_same;
 template <class>
-struct decay;
+struct template_decay;
 template <class>
-struct is_integral;
+struct template_is_integral;
 struct fo_puti {
   template <class T>
   void operator ()(T x) const
-    requires is_same<typename decay<T>::type, bool>::value {
+    requires template_is_same<typename template_decay<T>::type,
+                              bool>::value {
     puts(x ? "1" : "0");
     fflush(stdout);
   }
   template <class T>
   void operator ()(T x) const
-    requires (!is_same<typename decay<T>::type, bool>::value
-              && is_integral<T>::value && !(T(0) < T(-1))) {
+    requires (!template_is_same<typename template_decay<T>::type, bool>::value
+              && template_is_integral<T>::value && !(T(0) < T(-1))) {
     char s[40]{};
     char *p = s;
     if (x < 0) {
       *p = '-';
       ++p;
       x = -x;
-    }
-    for (;;) {
-      *p = '0' + x % 10;
-      ++p;
-      x /= 10;
-      if (x == 0)
-        break;
-    }
-    {
-      auto it = ((s[0] == '-') ? s + 1 : s + 0);
-      auto it2 = p;
-      while (it < it2) {
-        --it2;
-        const auto tmp = *it;
-        *it = *it2;
-        *it2 = tmp;
-        ++it;
+
+      for (;;) {
+        *p = (int)'0' - (int)(x % 10);
+        ++p;
+        x /= 10;
+        if (x == 0)
+          break;
       }
+    }
+    else {
+      for (;;) {
+        *p = (int)'0' + (int)(x % 10);
+        ++p;
+        x /= 10;
+        if (x == 0)
+          break;
+      }
+    }
+
+    for (auto it = ((s[0] == '-') ? s + 1 : s + 0), it2 = p;
+         it < it2;) {
+      --it2;
+      const auto tmp = *it;
+      *it = *it2;
+      *it2 = tmp;
+      ++it;
     }
     *p = '\0';
     puts(static_cast<const char *>(s));
@@ -493,12 +871,12 @@ struct fo_puti {
   }
   template <class T>
   void operator ()(T x) const
-    requires (!is_same<typename decay<T>::type, bool>::value
-              && is_integral<T>::value && (T(0) < T(-1))) {
+    requires (!template_is_same<typename template_decay<T>::type, bool>::value
+              && template_is_integral<T>::value && (T(0) < T(-1))) {
     char s[40]{};
     char *p = s;
     for (;;) {
-      *p = '0' + static_cast<int>(x % 10u);
+      *p = (int)'0' + (int)(x % 10u);
       ++p;
       x /= 10u;
       if (x == 0u)
@@ -606,14 +984,14 @@ inline constexpr fo_throw_or_terminate<E> throw_or_terminate{};
 namespace re {
 
 template <bool Y, class T = void>
-struct enable_if;
+struct template_enable_if;
 template <bool Y, class T = void>
-using enable_if_t = typename enable_if<Y, T>::type;
+using enable_if = typename template_enable_if<Y, T>::type;
 
 template <class>
-struct add_lvalue_reference;
+struct template_add_lvalue_reference;
 template <class>
-struct add_rvalue_reference;
+struct template_add_rvalue_reference;
 
 template <class>
 struct type_tag;
@@ -621,64 +999,64 @@ template <class...>
 struct type_pack;
 
 template <class>
-struct is_move_constructible;
+struct template_is_move_constructible;
 template <class>
-struct is_move_assignable;
+struct template_is_move_assignable;
 template <class>
-struct is_nothrow_move_constructible;
+struct template_is_nothrow_move_constructible;
 template <class>
-struct is_nothrow_move_assignable;
+struct template_is_nothrow_move_assignable;
 
 template <bool, class, class>
-struct conditional;
+struct template_conditional;
 template <class>
-struct remove_cv;
+struct template_remove_cv;
 template <class>
-struct decay;
+struct template_decay;
 template <class, class>
-struct is_same;
+struct template_is_same;
 template <class T>
-struct is_referenceable;
+struct template_is_referenceable;
 
 template <class>
 struct integral_traits;
 
 template <class...S>
-struct common_type;
+struct template_common_type;
 template <class...S>
-using common_type_t = typename common_type<S...>::type;
+using common_type = typename template_common_type<S...>::type;
 
 template <class T>
 struct negation;
 
 template <class, class...>
-struct invoke_result;
+struct template_invoke_result;
 template <class, class...>
-struct is_nothrow_invocable;
+struct template_is_nothrow_invocable;
 struct fo_invoke;
 
 template <class BASE, class DERIVED>
-struct is_base_of;
+struct template_is_base_of;
 template <class BASE, class DERIVED>
-inline constexpr bool is_base_of_v = is_base_of<BASE, DERIVED>::value;
+inline constexpr bool is_base_of = template_is_base_of<BASE, DERIVED>::value;
 
 template <bool Y, class T, class U>
-struct conditional;
+struct template_conditional;
 template <bool Y, class T, class U>
-using conditional_t = typename conditional<Y, T, U>::type;
+using conditional = typename template_conditional<Y, T, U>::type;
 
 template <class T>
-struct add_const;
+struct template_add_const;
 template <class T>
-struct add_volatile;
+struct template_add_volatile;
 template <class T>
-struct add_cv;
+struct template_add_cv;
 
 template <class>
-struct remove_all_extents;
+struct template_remove_all_extents;
 
 template <class T>
-struct remove_reference;
+struct template_remove_reference;
 
 }
 
@@ -687,7 +1065,7 @@ namespace re {
 
 template <class T>
 struct fo_declval {
-  typename add_rvalue_reference<T>::type operator ()() const noexcept;
+  typename template_add_rvalue_reference<T>::type operator ()() const noexcept;
 };
 template <class T>
 inline constexpr fo_declval<T> declval{};
@@ -783,7 +1161,7 @@ struct integral_constant {
   constexpr operator value_type() const noexcept {
     return value;
   }
-  constexpr value_type operator()() const noexcept {
+  constexpr value_type operator ()() const noexcept {
     return value;
   }
 };
@@ -807,7 +1185,7 @@ struct f_is_well_formed_impl {
   static decltype(FF::f(declval<type_pack<SS...>>())) f(type_pack<FF, SS...>);
   static disable f(...);
 
-  static constexpr bool value = !is_same
+  static constexpr bool value = !template_is_same
     <decltype(f(declval<type_pack<F, S...>>())), disable>::value;
 };
 
@@ -823,17 +1201,19 @@ struct return_type_of_f_or_impl {
 
 }
 template <class F, class...S>
-struct f_is_well_formed
+struct template_f_is_well_formed
   : bool_constant<inner::f_is_well_formed_impl<F, S...>::value> {};
 template <class F, class...S>
-inline constexpr bool f_is_well_formed_v = f_is_well_formed<F, S...>::value;
+inline constexpr bool f_is_well_formed
+  = template_f_is_well_formed<F, S...>::value;
 
 template <class F, class T, class...S>
-struct return_type_of_f_or {
+struct template_return_type_of_f_or {
   using type = typename inner::return_type_of_f_or_impl<F, T, S...>::type;
 };
 template <class F, class T, class...S>
-using return_type_of_f_or_t = typename return_type_of_f_or<F, T, S...>::type;
+using return_type_of_f_or
+  = typename template_return_type_of_f_or<F, T, S...>::type;
 
 
 namespace inner {
@@ -845,10 +1225,11 @@ struct check_has_member_type_type {
 
 }
 template <class T>
-struct has_member_type_type
-  : f_is_well_formed<inner::check_has_member_type_type, T> {};
+struct template_has_member_type_type
+  : template_f_is_well_formed<inner::check_has_member_type_type, T> {};
 template <class T>
-inline constexpr bool has_member_type_type_v = has_member_type_type<T>::value;
+inline constexpr bool has_member_type_type
+  = template_has_member_type_type<T>::value;
 
 
 namespace inner {
@@ -860,39 +1241,52 @@ struct check_has_member_static_value {
 
 }
 template <class T>
-struct has_member_static_value
-  : f_is_well_formed<inner::check_has_member_static_value, T> {};
+struct template_has_member_static_value
+  : template_f_is_well_formed<inner::check_has_member_static_value, T> {};
 template <class T>
-inline constexpr bool has_member_static_value_v
-  = has_member_static_value<T>::value;
+inline constexpr bool has_member_static_value
+  = template_has_member_static_value<T>::value;
+
+template <class T>
+struct template_member_static_value_type
+  : template_return_type_of_f_or<inner::check_has_member_static_value,
+                                 void, T> {};
+template <class T>
+using member_static_value_type
+  = typename template_member_static_value_type<T>::type;
 
 
 template <size_t N, class...S>
-struct nth_type {
+struct template_nth_type {
   using type = void;
 };
 template <class T, class...S>
-struct nth_type<0, T, S...> {
+struct template_nth_type<0, T, S...> {
   using type = T;
 };
 template <size_t N, class T, class...S>
-struct nth_type<N, T, S...> {
-  using type = typename nth_type<N - 1, S...>::type;
+struct template_nth_type<N, T, S...> {
+  using type = typename template_nth_type<N - 1, S...>::type;
 };
 template <size_t N, class...S>
-using nth_type_t = typename nth_type<N, S...>::type;
+using nth_type = typename template_nth_type<N, S...>::type;
 
 
 template <class T, class...S>
-struct is_one_of_types : false_type {};
+struct template_is_one_of_types
+  : false_type {};
 template <class T, class U, class...S>
-struct is_one_of_types<T, U, S...> : is_one_of_types<T, S...> {};
+struct template_is_one_of_types<T, U, S...>
+  : template_is_one_of_types<T, S...> {};
 template <class T, class...S>
-struct is_one_of_types<T, T, S...> : true_type {};
+struct template_is_one_of_types<T, T, S...>
+  : true_type {};
 template <class T>
-struct is_one_of_types<T> : false_type {};
+struct template_is_one_of_types<T>
+  : false_type {};
 template <class T, class...S>
-inline constexpr bool is_one_of_types_v = is_one_of_types<T, S...>::value;
+inline constexpr bool is_one_of_types
+  = template_is_one_of_types<T, S...>::value;
 
 
 namespace inner {
@@ -908,41 +1302,42 @@ struct find_type_impl<I, T> : size_constant<I> {};
 
 }
 template <class T, class...S>
-struct find_type : inner::find_type_impl<0, T, S...>::type {};
+struct template_find_type : inner::find_type_impl<0, T, S...>::type {};
 template <class T, class...S>
-inline constexpr size_t find_type_v = find_type<T, S...>::value;
+inline constexpr size_t find_type = template_find_type<T, S...>::value;
 
 
 namespace inner {
 
 template <class T, class...>
 struct occurs_exactly_once_impl;
+template <class T>
+struct occurs_exactly_once_impl<T> : false_type {};
 template <class T, class U, class...S>
 struct occurs_exactly_once_impl<T, U, S...>
   : occurs_exactly_once_impl<T, S...> {};
 template <class T, class...S>
 struct occurs_exactly_once_impl<T, T, S...>
-  : negation<is_one_of_types<T, S...>> {};
-template <class T>
-struct occurs_exactly_once_impl<T> : false_type {};
+  : negation<template_is_one_of_types<T, S...>> {};
 
 }
 template <class T, class...S>
-struct occurs_exactly_once : inner::occurs_exactly_once_impl<T, S...>::type {};
+struct template_occurs_exactly_once
+  : inner::occurs_exactly_once_impl<T, S...>::type {};
 template <class T, class...S>
-inline constexpr bool occurs_exactly_once_v
-  = occurs_exactly_once<T, S...>::value;
+inline constexpr bool occurs_exactly_once
+  = template_occurs_exactly_once<T, S...>::value;
 
 
 template <class X, class Y>
 struct compile_time_add
-  : integral_constant<common_type_t<typename X::value_type,
-                                    typename Y::value_type>,
-                      static_cast<common_type_t<typename X::value_type,
-                                                typename Y::value_type>>
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>,
+                      static_cast<common_type<typename X::value_type,
+                                              typename Y::value_type>>
                       (X::value + Y::value)> {};
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_add_v = compile_time_add<X, Y>::value;
 template <class X, class Y>
 using compile_time_add_t = typename compile_time_add<X, Y>::type;
@@ -950,13 +1345,13 @@ using compile_time_add_t = typename compile_time_add<X, Y>::type;
 
 template <class X, class Y>
 struct compile_time_sub
-  : integral_constant<common_type_t<typename X::value_type,
-                                    typename Y::value_type>,
-                      static_cast<common_type_t<typename X::value_type,
-                                                typename Y::value_type>>
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>,
+                      static_cast<common_type<typename X::value_type,
+                                              typename Y::value_type>>
                       (X::value - Y::value)> {};
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_sub_v = compile_time_sub<X, Y>::value;
 template <class X, class Y>
 using compile_time_sub_t = typename compile_time_sub<X, Y>::type;
@@ -964,13 +1359,13 @@ using compile_time_sub_t = typename compile_time_sub<X, Y>::type;
 
 template <class X, class Y>
 struct compile_time_mul
-  : integral_constant<common_type_t<typename X::value_type,
-                                    typename Y::value_type>,
-                      static_cast<common_type_t<typename X::value_type,
-                                                typename Y::value_type>>
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>,
+                      static_cast<common_type<typename X::value_type,
+                                              typename Y::value_type>>
                       (X::value * Y::value)> {};
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_mul_v = compile_time_mul<X, Y>::value;
 template <class X, class Y>
 using compile_time_mul_t = typename compile_time_mul<X, Y>::type;
@@ -978,31 +1373,39 @@ using compile_time_mul_t = typename compile_time_mul<X, Y>::type;
 
 template <class X, class Y>
 struct compile_time_div
-  : integral_constant<common_type_t<typename X::value_type,
-                                    typename Y::value_type>,
-                      static_cast<common_type_t<typename X::value_type,
-                                                typename Y::value_type>>
-                      (Y::value == 0 ? 0 : X::value / Y::value)> {};
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>,
+                      static_cast<common_type<typename X::value_type,
+                                              typename Y::value_type>>
+                      (X::value / Y::value)> {};
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+requires (Y::value == 0)
+struct compile_time_div<X, Y>
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>,
+                      static_cast<common_type<typename X::value_type,
+                                              typename Y::value_type>>(0)> {};
+
+template <class X, class Y>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_div_v = compile_time_div<X, Y>::value;
 template <class X, class Y>
 using compile_time_div_t = typename compile_time_div<X, Y>::type;
 
 
-template <class X, class Y, bool = Y::value != 0>
+template <class X, class Y, bool = (Y::value != 0)>
 struct compile_time_mod
-  : integral_constant<common_type_t<typename X::value_type,
-                                    typename Y::value_type>,
-                      static_cast<common_type_t<typename X::value_type,
-                                                typename Y::value_type>>
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>,
+                      static_cast<common_type<typename X::value_type,
+                                              typename Y::value_type>>
                       (X::value % Y::value)> {};
 template <class X, class Y>
 struct compile_time_mod<X, Y, false>
-  : integral_constant<common_type_t<typename X::value_type,
-                                    typename Y::value_type>, 0> {};
+  : integral_constant<common_type<typename X::value_type,
+                                  typename Y::value_type>, 0> {};
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_mod_v = compile_time_mod<X, Y>::value;
 template <class X, class Y>
 using compile_time_mod_t = typename compile_time_mod<X, Y>::type;
@@ -1022,7 +1425,7 @@ inline constexpr typename X::value_type compile_time_neg_v
 template <class X>
 struct compile_time_abs
   : integral_constant<typename X::value_type,
-                      conditional_t<(X::value < 0), compile_time_neg<X>, X>
+                      conditional<(X::value < 0), compile_time_neg<X>, X>
                       ::value> {};
 template <class X>
 using compile_time_abs_t = typename compile_time_abs<X>::type;
@@ -1035,20 +1438,23 @@ namespace inner {
 
 template <class R, class X, class Y>
 struct compile_time_gcd_impl
-  : conditional_t<X::value == 0, integral_constant<R, Y::value>,
-                  conditional_t<Y::value == 0, integral_constant<R, X::value>,
-                                conditional_t<compile_time_mod_v<X, Y> == 0,
-                                              integral_constant<R, Y::value>,
-                                              compile_time_gcd_impl
-                                              <R, Y, compile_time_mod_t<X, Y>>>
-                                >
-                  > {};
+  : conditional<X::value == 0,
+                integral_constant<R, Y::value>,
+                conditional<Y::value == 0,
+                            integral_constant<R, X::value>,
+                            conditional<compile_time_mod_v<X, Y> == 0,
+                                        integral_constant<R, Y::value>,
+                                        compile_time_gcd_impl
+                                        <R, Y, compile_time_mod_t<X, Y>>
+                                        >
+                            >
+                > {};
 
 }
 template <class X, class Y, bool = (X::value > Y::value)>
 struct compile_time_gcd
-  : inner::compile_time_gcd_impl<common_type_t<typename X::value_type,
-                                               typename Y::value_type>,
+  : inner::compile_time_gcd_impl<common_type<typename X::value_type,
+                                             typename Y::value_type>,
                                  compile_time_abs_t<X>,
                                  compile_time_abs_t<Y>>::type {};
 template <class X, class Y>
@@ -1060,63 +1466,63 @@ struct compile_time_gcd<X, X, false> : compile_time_abs_t<X> {};
 template <class X, class Y>
 using compile_time_gcd_t = typename compile_time_gcd<X, Y>::type;
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_gcd_v = compile_time_gcd<X, Y>::value;
 
 
 template <class X, class Y>
 struct compile_time_lcm
-  : conditional_t<X::value == 0 || Y::value == 0,
-                  integral_constant<common_type_t<typename X::value_type,
-                                                  typename Y::value_type>, 0>,
-                  compile_time_mul_t<compile_time_div_t
-                                     <compile_time_abs_t<X>,
-                                      compile_time_gcd_t<X, Y>>,
-                                     compile_time_abs_t<Y>>> {};
+  : conditional<X::value == 0 || Y::value == 0,
+                integral_constant<common_type<typename X::value_type,
+                                              typename Y::value_type>, 0>,
+                compile_time_mul_t<compile_time_div_t
+                                   <compile_time_abs_t<X>,
+                                    compile_time_gcd_t<X, Y>>,
+                                   compile_time_abs_t<Y>>> {};
 template <class X, class Y>
 using compile_time_lcm_t = typename compile_time_lcm<X, Y>::type;
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_lcm_v = compile_time_lcm<X, Y>::value;
 
 
 template <class X, class Y>
 struct compile_time_max
-  : conditional_t
+  : conditional
   <(X::value < Y::value),
    integral_constant
-   <common_type_t<typename X::value_type, typename Y::value_type>,
-    static_cast<common_type_t<typename X::value_type, typename Y::value_type>>
+   <common_type<typename X::value_type, typename Y::value_type>,
+    static_cast<common_type<typename X::value_type, typename Y::value_type>>
     (Y::value)>,
    integral_constant
-   <common_type_t<typename X::value_type, typename Y::value_type>,
-    static_cast<common_type_t<typename X::value_type, typename Y::value_type>>
+   <common_type<typename X::value_type, typename Y::value_type>,
+    static_cast<common_type<typename X::value_type, typename Y::value_type>>
     (X::value)>
    > {};
 template <class X, class Y>
 using compile_time_max_t = typename compile_time_max<X, Y>::type;
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_max_v = compile_time_max<X, Y>::value;
 
 
 template <class X, class Y>
 struct compile_time_min
-  : conditional_t
+  : conditional
   <(Y::value < X::value),
    integral_constant
-   <common_type_t<typename X::value_type, typename Y::value_type>,
-    static_cast<common_type_t<typename X::value_type, typename Y::value_type>>
+   <common_type<typename X::value_type, typename Y::value_type>,
+    static_cast<common_type<typename X::value_type, typename Y::value_type>>
     (Y::value)>,
    integral_constant
-   <common_type_t<typename X::value_type, typename Y::value_type>,
-    static_cast<common_type_t<typename X::value_type, typename Y::value_type>>
+   <common_type<typename X::value_type, typename Y::value_type>,
+    static_cast<common_type<typename X::value_type, typename Y::value_type>>
     (X::value)>
    > {};
 template <class X, class Y>
 using compile_time_min_t = typename compile_time_min<X, Y>::type;
 template <class X, class Y>
-inline constexpr common_type_t<typename X::value_type, typename Y::value_type>
+inline constexpr common_type<typename X::value_type, typename Y::value_type>
 compile_time_min_v = compile_time_min<X, Y>::value;
 
 
@@ -1137,7 +1543,7 @@ struct compile_time_acc<BOP, INIT, T, S...>
 template <template <class, class> class BOP, class...S>
 using compile_time_acc_t = typename compile_time_acc<BOP, S...>::type;
 template <template <class, class> class BOP, class...S>
-inline constexpr common_type_t<typename S::value_type...>
+inline constexpr common_type<typename S::value_type...>
 compile_time_acc_v = compile_time_acc_t<BOP, S...>::value;
 
 
@@ -1149,60 +1555,65 @@ struct type_tag {
 
 struct type_pack_tag {};
 template <class T>
-struct type_pack_size : size_constant<1> {};
+struct template_type_pack_size : size_constant<1> {};
 template <class T>
-inline constexpr size_t type_pack_size_v = type_pack_size<T>::value;
+inline constexpr size_t type_pack_size = template_type_pack_size<T>::value;
+
 template <size_t N, class T>
-struct type_pack_element : nth_type<N, T> {};
+struct template_type_pack_element : template_nth_type<N, T> {};
 template <size_t N, class T>
-using type_pack_element_t = typename type_pack_element<N, T>::type;
+using type_pack_element = typename template_type_pack_element<N, T>::type;
 
 template <class A, class B>
-struct type_pack_eql {
+struct template_type_pack_eql {
 private:
   template <size_t...I>
-  static type_pack<enable_if_t<is_same<type_pack_element_t<I, A>,
-                                       type_pack_element_t<I, B>>::value>...>
+  static type_pack<enable_if
+                   <template_is_same<type_pack_element<I, A>,
+                                     type_pack_element<I, B>>::value>...>
   helper_f(index_sequence<I...>);
   static inner::disable helper_f(...);
 
 public:
-  static constexpr bool value = (type_pack_size_v<A> == type_pack_size_v<B>)
-    && !is_same<decltype(helper_f
-                         (make_index_sequence<type_pack_size_v<A>>{})),
-                inner::disable>::value;
+  static constexpr bool value = (type_pack_size<A> == type_pack_size<B>)
+    && !template_is_same<decltype(helper_f
+                                  (make_index_sequence<type_pack_size<A>>{})),
+                         inner::disable>::value;
 };
 template <class A, class B>
-inline constexpr bool type_pack_eql_v = type_pack_eql<A, B>::value;
+inline constexpr bool type_pack_eql = template_type_pack_eql<A, B>::value;
 
 template <class...S>
 struct type_pack : type_pack_tag {
   using type = type_pack;
 };
 template <class...S>
-struct type_pack_size<type_pack<S...>> : size_constant<sizeof...(S)> {};
+struct template_type_pack_size<type_pack<S...>>
+  : size_constant<sizeof...(S)> {};
 template <size_t N, class...S>
-struct type_pack_element<N, type_pack<S...>> : nth_type<N, S...> {};
+struct template_type_pack_element<N, type_pack<S...>>
+  : template_nth_type<N, S...> {};
 
 template <class INT, INT...I>
-struct type_pack_size<integer_sequence<INT, I...>>
+struct template_type_pack_size<integer_sequence<INT, I...>>
   : size_constant<sizeof...(I)> {};
 template <size_t N, class INT, INT...I>
-struct type_pack_element<N, integer_sequence<INT, I...>>
-  : nth_type<N, integral_constant<INT, I>...> {};
+struct template_type_pack_element<N, integer_sequence<INT, I...>>
+  : template_nth_type<N, integral_constant<INT, I>...> {};
 
 namespace inner::fns {
 
 template <class T, class F, size_t...I>
 constexpr void type_pack_for_each_impl0(F, index_sequence<I...>);
+  // delay to the time point invoke is already defined
 
 template <class T, size_t I, size_t J, class F>
-enable_if_t<I == J> type_pack_for_each_impl(F) {}
+enable_if<I == J> type_pack_for_each_impl(F) {}
 template <class T, size_t I, size_t J, class F>
-enable_if_t<I != J> type_pack_for_each_impl(F f) {
-  type_pack_for_each_impl0<type_pack_element_t<I, T>>
+enable_if<I != J> type_pack_for_each_impl(F f) {
+  inner::fns::type_pack_for_each_impl0<type_pack_element<I, T>>
     (f, make_index_sequence
-     <type_pack_size_v<type_pack_element_t<I, T>>>());
+     <type_pack_size<type_pack_element<I, T>>>());
   inner::fns::type_pack_for_each_impl<T, I + 1, J>(f);
 };
 
@@ -1211,7 +1622,7 @@ template <class T>
 struct fo_type_pack_for_each {
   template <class F>
   void operator ()(F f) const {
-    inner::fns::type_pack_for_each_impl<T, 0, type_pack_size_v<T>>(f);
+    inner::fns::type_pack_for_each_impl<T, 0, type_pack_size<T>>(f);
   }
 };
 template <class T>
@@ -1223,12 +1634,13 @@ template <class T, class F, size_t...I>
 constexpr bool type_pack_for_each_until_false_impl0(F, index_sequence<I...>);
 
 template <class T, size_t I, size_t J, class F>
-enable_if_t<I == J> type_pack_for_each_until_false_impl(F) {}
+enable_if<I == J> type_pack_for_each_until_false_impl(F) {}
 template <class T, size_t I, size_t J, class F>
-enable_if_t<I != J> type_pack_for_each_until_false_impl(F f) {
-  if (type_pack_for_each_until_false_impl0<type_pack_element_t<I, T>>
+enable_if<I != J> type_pack_for_each_until_false_impl(F f) {
+  if (inner::fns::type_pack_for_each_until_false_impl0
+      <type_pack_element<I, T>>
       (f, make_index_sequence
-       <type_pack_size_v<type_pack_element_t<I, T>>>()) == false)
+       <type_pack_size<type_pack_element<I, T>>>()) == false)
     return;
   inner::fns::type_pack_for_each_until_false_impl<T, I + 1, J>(f);
 };
@@ -1239,7 +1651,7 @@ struct fo_type_pack_for_each_until_false {
   template <class F>
   constexpr void operator ()(F f) const {
     inner::fns::type_pack_for_each_until_false_impl
-      <T, 0, type_pack_size_v<T>>(f);
+      <T, 0, type_pack_size<T>>(f);
   }
 };
 template <class T>
@@ -1247,125 +1659,137 @@ inline constexpr fo_type_pack_for_each_until_false<T>
 type_pack_for_each_until_false{};
 
 template <template <class...> class APPLY, class P>
-struct type_pack_apply {
+struct template_type_pack_apply {
 private:
   template <size_t...I>
-  static APPLY<type_pack_element_t<I, P>...> helper_f(index_sequence<I...>);
+  static APPLY<type_pack_element<I, P>...> helper_f(index_sequence<I...>);
 public:
-  using type = decltype(helper_f(make_index_sequence<type_pack_size_v<P>>()));
+  using type = decltype(helper_f(make_index_sequence<type_pack_size<P>>()));
 };
 template <template <class...> class APPLY, class P>
-using type_pack_apply_t = typename type_pack_apply<APPLY, P>::type;
+using type_pack_apply = typename template_type_pack_apply<APPLY, P>::type;
 
 template <class P>
-struct type_pack_decay {
+struct template_type_pack_decay {
 private:
   template <size_t...I>
-  static type_pack<type_pack_element_t<I, P>...> helper_f(index_sequence<I...>);
+  static type_pack<type_pack_element<I, P>...> helper_f(index_sequence<I...>);
 public:
-  using type = decltype(helper_f(make_index_sequence<type_pack_size_v<P>>()));
+  using type = decltype(helper_f(make_index_sequence<type_pack_size<P>>()));
 };
 template <class P>
-using type_pack_decay_t = typename type_pack_decay<P>::type;
+using type_pack_decay = typename template_type_pack_decay<P>::type;
 
-template <class P, bool = is_base_of_v<type_pack_tag, P>>
-struct type_pack_recursive_decay {
+template <class P, bool = is_base_of<type_pack_tag, P>>
+struct template_type_pack_recursive_decay {
 private:
   template <size_t...I>
   static type_pack
-  <typename type_pack_recursive_decay<type_pack_element_t<I, P>>::type...>
+  <typename template_type_pack_recursive_decay<type_pack_element<I, P>>
+   ::type...>
   helper_f(index_sequence<I...>);
 public:
-  using type = decltype(helper_f(make_index_sequence<type_pack_size_v<P>>()));
+  using type = decltype(helper_f(make_index_sequence<type_pack_size<P>>()));
 };
 template <class P>
-struct type_pack_recursive_decay<P, false> {
+struct template_type_pack_recursive_decay<P, false> {
   using type = P;
 };
 template <class P>
-using type_pack_recursive_decay_t = typename type_pack_recursive_decay<P>::type;
+using type_pack_recursive_decay
+  = typename template_type_pack_recursive_decay<P>::type;
 
 template <class A, class B,
-          bool = is_base_of_v<type_pack_tag, A>
-          || is_base_of_v<type_pack_tag, B>>
-struct type_pack_recursive_eql {
+          bool = (is_base_of<type_pack_tag, A>
+                  || is_base_of<type_pack_tag, B>)>
+struct template_type_pack_recursive_eql {
 private:
   template <size_t...I,
-            bool Y = (... && type_pack_recursive_eql
-                      <type_pack_element_t<I, A>, type_pack_element_t<I, B>>
+            bool Y = (... && template_type_pack_recursive_eql
+                      <type_pack_element<I, A>, type_pack_element<I, B>>
                       ::value)>
   static bool_constant<Y> helper_f(index_sequence<I...>);
 public:
   static constexpr bool value
-    = (type_pack_size_v<A> == type_pack_size_v<B>)
-    && decltype(helper_f(make_index_sequence<type_pack_size_v<A>>()))::value;
+    = (type_pack_size<A> == type_pack_size<B>)
+    && decltype(helper_f(make_index_sequence<type_pack_size<A>>()))::value;
 };
 template <class A, class B>
-struct type_pack_recursive_eql<A, B, false> : is_same<A, B> {};
+struct template_type_pack_recursive_eql<A, B, false>
+  : template_is_same<A, B> {};
 template <class A, class B>
-inline constexpr bool type_pack_recursive_eql_v
-  = type_pack_recursive_eql<A, B>::value;
+inline constexpr bool type_pack_recursive_eql
+  = template_type_pack_recursive_eql<A, B>::value;
 
 template <class A, class B>
 struct type_pack_add : type_pack_tag {
   using type = type_pack_add;
+    // for compile_time_acc<type_pack_add, A, B, C, ...>
 };
 template <class A, class B>
-struct type_pack_size<type_pack_add<A, B>>
-  : compile_time_add<type_pack_size<A>, type_pack_size<B>>::type {};
+struct template_type_pack_size<type_pack_add<A, B>>
+  : compile_time_add<template_type_pack_size<A>,
+                     template_type_pack_size<B>>::type {};
 namespace inner {
 
-template <class A, class B, size_t N, bool = (N < type_pack_size_v<A>)>
-struct type_pack_add_element_impl : type_pack_element<N, A> {};
+template <class A, class B, size_t N, bool = (N < type_pack_size<A>)>
+struct type_pack_add_element_impl : template_type_pack_element<N, A> {};
 template <class A, class B, size_t N>
 struct type_pack_add_element_impl<A, B, N, false>
-  : type_pack_element<compile_time_sub_v
-                      <size_constant<N>, type_pack_size<A>>, B> {};
+  : template_type_pack_element<compile_time_sub_v
+                               <size_constant<N>,
+                                template_type_pack_size<A>>,
+                               B> {};
 
 }
 template <size_t N, class A, class B>
-struct type_pack_element<N, type_pack_add<A, B>>
+struct template_type_pack_element<N, type_pack_add<A, B>>
   : inner::type_pack_add_element_impl<A, B, N> {};
 
 template <class A, class B>
 struct type_pack_mul : type_pack_tag {
   using type = type_pack_mul;
+    // for compile_time_acc<type_pack_mul, A, B, C, ...>
   template <class F>
   void operator ()(F &&f) const {
     type_pack_for_each<type_pack_mul<A, B>>(static_cast<F &&>(f));
   }
 };
 template <class A, class B>
-struct type_pack_size<type_pack_mul<A, B>>
-  : compile_time_mul<type_pack_size<A>, type_pack_size<B>>::type {};
+struct template_type_pack_size<type_pack_mul<A, B>>
+  : compile_time_mul<template_type_pack_size<A>,
+                     template_type_pack_size<B>>::type {};
 template <size_t N, class A, class B>
-struct type_pack_element<N, type_pack_mul<A, B>> {
+struct template_type_pack_element<N, type_pack_mul<A, B>> {
   using type
     = type_pack_add
-    <type_pack_element_t<compile_time_div_v
-                         <size_constant<N>, typename type_pack_size<B>::type>,
-                         A>,
-     type_pack_element_t<compile_time_mod_v
-                         <size_constant<N>, typename type_pack_size<B>::type>,
-                         B>>;
+    <type_pack_element<compile_time_div_v
+                       <size_constant<N>,
+                        typename template_type_pack_size<B>::type>,
+                       A>,
+     type_pack_element<compile_time_mod_v
+                       <size_constant<N>,
+                        typename template_type_pack_size<B>::type>,
+                       B>>;
 };
 
 template <size_t N, class P>
 struct type_pack_first_part : type_pack_tag {};
 template <size_t N, class P>
-struct type_pack_size<type_pack_first_part<N, P>> : size_constant<N> {};
+struct template_type_pack_size<type_pack_first_part<N, P>>
+  : size_constant<N> {};
 template <size_t I, size_t N, class P>
-struct type_pack_element<I, type_pack_first_part<N, P>>
-  : type_pack_element<I, P> {};
+struct template_type_pack_element<I, type_pack_first_part<N, P>>
+  : template_type_pack_element<I, P> {};
 
 template <size_t N, class P>
 struct type_pack_second_part : type_pack_tag {};
 template <size_t N, class P>
-struct type_pack_size<type_pack_second_part<N, P>>
-  : compile_time_sub<type_pack_size<P>, size_constant<N>> {};
+struct template_type_pack_size<type_pack_second_part<N, P>>
+  : compile_time_sub<template_type_pack_size<P>, size_constant<N>> {};
 template <size_t I, size_t N, class P>
-struct type_pack_element<I, type_pack_second_part<N, P>>
-  : type_pack_element<I + N, P> {};
+struct template_type_pack_element<I, type_pack_second_part<N, P>>
+  : template_type_pack_element<I + N, P> {};
 
 namespace inner {
 
@@ -1381,31 +1805,37 @@ struct n_type_pack_impl<0, T> {
 
 }
 template <size_t N, class T>
-struct n_type_pack
-  : type_pack_decay<typename inner::n_type_pack_impl<N, T>::type> {};
+struct template_n_type_pack
+  : template_type_pack_decay<typename inner::n_type_pack_impl<N, T>::type> {};
 template <size_t N, class T>
-using n_type_pack_t = typename n_type_pack<N, T>::type;
+using n_type_pack = typename template_n_type_pack<N, T>::type;
 
 template <class...>
 struct conjunction : true_type {};
 template <class T, class...S>
 struct conjunction<T, S...>
-  : conditional<!T::value, T, conjunction<S...>>::type {};
+  : conditional<!T::value, T, conjunction<S...>> {};
 template <class...S>
 inline constexpr bool conjunction_v = conjunction<S...>::value;
+template <class...S>
+using conjunction_t = typename conjunction<S...>::type;
 
 template <class...>
 struct disjunction : false_type {};
 template <class T, class...S>
 struct disjunction<T, S...>
-  : conditional<T::value, T, disjunction<S...>>::type {};
+  : conditional<T::value, T, disjunction<S...>> {};
 template <class...S>
 inline constexpr bool disjunction_v = disjunction<S...>::value;
+template <class...S>
+using disjunction_t = typename disjunction<S...>::type;
 
 template <class T>
-struct negation : conditional<T::value, false_type, true_type>::type {};
+struct negation : conditional<T::value, false_type, true_type> {};
 template <class T>
 inline constexpr bool negation_v = negation<T>::value;
+template <class T>
+using negation_t = typename negation<T>::type;
 
 
 namespace inner {
@@ -1435,10 +1865,10 @@ public:
 
 }
 template <class X, class...S>
-struct select_type
+struct template_select_type
   : size_constant<inner::select_type_impl<X, S...>::value> {};
 template <class X, class...S>
-inline constexpr size_t select_type_v = select_type<X, S...>::value;
+inline constexpr size_t select_type = template_select_type<X, S...>::value;
 
 struct fo_accumulate_args {
   template <class F, class X>
@@ -1457,7 +1887,7 @@ inline constexpr fo_accumulate_args accumulate_args{};
 namespace inner::fns {
 
 template <size_t I, class T, class...S>
-constexpr nth_type_t<I, T &&, S &&...>
+constexpr nth_type<I, T &&, S &&...>
 nth_arg_impl(T &&x, S &&...s) noexcept {
   if constexpr (I == 0) {
     return static_cast<T &&>(x);
@@ -1471,7 +1901,7 @@ nth_arg_impl(T &&x, S &&...s) noexcept {
 template <size_t I>
 struct fo_nth_arg {
   template <class T, class...S>
-  constexpr nth_type_t<I, T &&, S &&...>
+  constexpr nth_type<I, T &&, S &&...>
   operator ()(T &&x, S &&...s) const noexcept {
     return inner::fns::nth_arg_impl<I, T &&, S &&...>(static_cast<T &&>(x),
                                                       static_cast<S &&>(s)...);
@@ -1496,7 +1926,7 @@ struct swap_is_well_formed {
             class = decltype(swap(get_ref<TT1>(), get_ref<TT2>()))>
   static long long f(int);
 
-  static constexpr bool value = sizeof(decltype(f<T1, T2>(0))) != 1;
+  static constexpr bool value = (sizeof(decltype(f<T1, T2>(0))) != 1u);
 };
 
 template <class T1, class T2, bool = swap_is_well_formed<T1, T2>::value>
@@ -1522,10 +1952,10 @@ namespace re {
 struct fo_default_swap {
   template <class T>
   constexpr void operator ()(T &x, T &y)
-    const noexcept(is_nothrow_move_constructible<T>::value
-                   && is_nothrow_move_assignable<T>::value)
-    requires (is_move_constructible<T>::value
-              && is_move_assignable<T>::value) {
+    const noexcept(template_is_nothrow_move_constructible<T>::value
+                   && template_is_nothrow_move_assignable<T>::value)
+    requires (template_is_move_constructible<T>::value
+              && template_is_move_assignable<T>::value) {
     T z = static_cast<T &&>(x);
     x = static_cast<T &&>(y);
     y = static_cast<T &&>(z);
@@ -1533,35 +1963,36 @@ struct fo_default_swap {
 };
 inline constexpr fo_default_swap default_swap{};
 template <class R>
-concept default_swappable = is_move_constructible<R>::value
-  && is_move_assignable<R>::value;
+concept default_swappable = template_is_move_constructible<R>::value
+  && template_is_move_assignable<R>::value;
 template <class R>
-concept nothrow_default_swappable = is_nothrow_move_constructible<R>::value
-  && is_nothrow_move_assignable<R>::value;
+concept nothrow_default_swappable
+  = template_is_nothrow_move_constructible<R>::value
+  && template_is_nothrow_move_assignable<R>::value;
 
 template <class, class>
-struct is_swappable_with;
+struct template_is_swappable_with;
 template <class, class>
-struct is_nothrow_swappable_with;
+struct template_is_nothrow_swappable_with;
 
 template <class>
-struct is_rvalue_reference;
+struct template_is_rvalue_reference;
 struct fo_adl_swap {
 private:
   template <class T>
   static constexpr void f(T &x, T &y)
-    noexcept(is_nothrow_move_constructible<T>::value
-             && is_nothrow_move_assignable<T>::value)
-    requires is_move_constructible<T>::value
-    && is_move_assignable<T>::value {
+    noexcept(template_is_nothrow_move_constructible<T>::value
+             && template_is_nothrow_move_assignable<T>::value)
+    requires template_is_move_constructible<T>::value
+    && template_is_move_assignable<T>::value {
     T z = static_cast<T &&>(x);
     x = static_cast<T &&>(y);
     y = static_cast<T &&>(z);
   }
   template <class T, size_t N>
   static constexpr void f(T (&x)[N], T (&y)[N])
-    noexcept(is_nothrow_swappable_with<T &, T &>::value)
-    requires is_swappable_with<T &, T &>::value {
+    noexcept(template_is_nothrow_swappable_with<T &, T &>::value)
+    requires template_is_swappable_with<T &, T &>::value {
     const auto x_end = x + N;
     for (T *p = x, *pp = y; p != x_end;) {
       fo_adl_swap{}(*p, *pp);
@@ -1597,18 +2028,19 @@ struct check_is_swappable_with {
 
 }
 template <class T, class U>
-struct is_swappable_with
-  : f_is_well_formed<inner::check_is_swappable_with, T, U> {};
+struct template_is_swappable_with
+  : template_f_is_well_formed<inner::check_is_swappable_with, T, U> {};
 template <class T, class U>
-inline constexpr bool is_swappable_with_v = is_swappable_with<T, U>::value;
+inline constexpr bool is_swappable_with
+  = template_is_swappable_with<T, U>::value;
 template <class T>
-struct is_swappable : is_swappable_with<T &, T &> {};
+struct template_is_swappable : template_is_swappable_with<T &, T &> {};
 template <class T>
-inline constexpr bool is_swappable_v = is_swappable<T>::value;
+inline constexpr bool is_swappable = template_is_swappable<T>::value;
 
 namespace inner {
 
-template <class T, class U, bool Y = is_swappable_with<T, U>::value>
+template <class T, class U, bool Y = template_is_swappable_with<T, U>::value>
 struct is_nothrow_swappable_with_impl {
   static constexpr bool value = false;
 };
@@ -1619,15 +2051,17 @@ struct is_nothrow_swappable_with_impl<T, U, true> {
 
 }
 template <class T, class U>
-struct is_nothrow_swappable_with
+struct template_is_nothrow_swappable_with
   : bool_constant<inner::is_nothrow_swappable_with_impl<T, U>::value> {};
 template <class T, class U>
-inline constexpr bool is_nothrow_swappable_with_v
-  = is_nothrow_swappable_with<T, U>::value;
+inline constexpr bool is_nothrow_swappable_with
+  = template_is_nothrow_swappable_with<T, U>::value;
 template <class T>
-using is_nothrow_swappable = is_nothrow_swappable_with<T &, T &>;
+using template_is_nothrow_swappable
+  = template_is_nothrow_swappable_with<T &, T &>;
 template <class T>
-inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<T>::value;
+inline constexpr bool is_nothrow_swappable
+  = template_is_nothrow_swappable<T>::value;
 
 }
 
@@ -1637,431 +2071,449 @@ namespace re {
 // primary type categories
 
 template <class T>
-struct is_void : is_same<typename remove_cv<T>::type, void> {};
+struct template_is_void
+  : template_is_same<typename template_remove_cv<T>::type, void> {};
 template <class T>
-inline constexpr bool is_void_v = is_void<T>::value;
+inline constexpr bool is_void = template_is_void<T>::value;
 
 template <class T>
-struct is_null_pointer : is_same<typename remove_cv<T>::type, nullptr_t> {};
+struct template_is_null_pointer
+  : template_is_same<typename template_remove_cv<T>::type, nullptr_t> {};
 template <class T>
-inline constexpr bool is_null_pointer_v = is_null_pointer<T>::value;
+inline constexpr bool is_null_pointer = template_is_null_pointer<T>::value;
 
 template <class T>
-struct is_integral
+struct template_is_integral
   : bool_constant<integral_traits
-                  <typename remove_cv<T>::type>::is_specialized> {};
+                  <typename template_remove_cv<T>::type>::is_specialized> {};
 template <class T>
-inline constexpr bool is_integral_v = is_integral<T>::value;
+inline constexpr bool is_integral = template_is_integral<T>::value;
 
 template <class T>
-struct is_floating_point
-  : is_one_of_types<typename remove_cv<T>::type, float, double, long double> {};
+struct template_is_floating_point
+  : template_is_one_of_types<typename template_remove_cv<T>::type,
+                             float, double, long double> {};
 template <class T>
-inline constexpr bool is_floating_point_v = is_floating_point<T>::value;
+inline constexpr bool is_floating_point = template_is_floating_point<T>::value;
 
 template <class T>
-struct is_array : false_type {};
+struct template_is_array : false_type {};
 template <class T>
-struct is_array<T []> : true_type {};
+struct template_is_array<T []> : true_type {};
 template <class T, size_t N>
-struct is_array<T [N]> : true_type {};
+struct template_is_array<T [N]> : true_type {};
 template <class T>
-inline constexpr bool is_array_v = is_array<T>::value;
+inline constexpr bool is_array = template_is_array<T>::value;
 
 template <class T>
-struct is_pointer : false_type {};
+struct template_is_pointer : false_type {};
 template <class T>
-struct is_pointer<T *> : true_type {};
+struct template_is_pointer<T *> : true_type {};
 template <class T>
-struct is_pointer<T *const> : true_type {};
+struct template_is_pointer<T *const> : true_type {};
 template <class T>
-struct is_pointer<T *volatile> : true_type {};
+struct template_is_pointer<T *volatile> : true_type {};
 template <class T>
-struct is_pointer<T *const volatile> : true_type {};
+struct template_is_pointer<T *const volatile> : true_type {};
 template <class T>
-inline constexpr bool is_pointer_v = is_pointer<T>::value;
+inline constexpr bool is_pointer = template_is_pointer<T>::value;
 
 template <class T>
-struct is_lvalue_reference : false_type {};
+struct template_is_lvalue_reference : false_type {};
 template <class T>
-struct is_lvalue_reference<T &> : true_type {};
+struct template_is_lvalue_reference<T &> : true_type {};
 template <class T>
-inline constexpr bool is_lvalue_reference_v = is_lvalue_reference<T>::value;
+inline constexpr bool is_lvalue_reference
+  = template_is_lvalue_reference<T>::value;
 
 template <class T>
-struct is_rvalue_reference : false_type {};
+struct template_is_rvalue_reference : false_type {};
 template <class T>
-struct is_rvalue_reference<T &&> : true_type {};
+struct template_is_rvalue_reference<T &&> : true_type {};
 template <class T>
-inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<T>::value;
+inline constexpr bool is_rvalue_reference
+  = template_is_rvalue_reference<T>::value;
 
 template <class T>
-struct is_function;
+struct template_is_function;
 template <class T>
-struct is_member_object_pointer : false_type {};
+struct template_is_member_object_pointer : false_type {};
 template <class T, class U>
-struct is_member_object_pointer<T U::*>
-  : bool_constant<!is_function<T>::value> {};
+struct template_is_member_object_pointer<T U::*>
+  : bool_constant<!template_is_function<T>::value> {};
 template <class T, class U>
-struct is_member_object_pointer<T U::*const>
-  : bool_constant<!is_function<T>::value> {};
+struct template_is_member_object_pointer<T U::*const>
+  : bool_constant<!template_is_function<T>::value> {};
 template <class T, class U>
-struct is_member_object_pointer<T U::*volatile>
-  : bool_constant<!is_function<T>::value> {};
+struct template_is_member_object_pointer<T U::*volatile>
+  : bool_constant<!template_is_function<T>::value> {};
 template <class T, class U>
-struct is_member_object_pointer<T U::*const volatile>
-  : bool_constant<!is_function<T>::value> {};
+struct template_is_member_object_pointer<T U::*const volatile>
+  : bool_constant<!template_is_function<T>::value> {};
 template <class T>
-inline constexpr bool is_member_object_pointer_v
-  = is_member_object_pointer<T>::value;
+inline constexpr bool is_member_object_pointer
+  = template_is_member_object_pointer<T>::value;
 
 template <class T>
-struct is_member_function_pointer : false_type {};
+struct template_is_member_function_pointer : false_type {};
 template <class T, class U>
-struct is_member_function_pointer<T U::*>
-  : bool_constant<is_function<T>::value> {};
+struct template_is_member_function_pointer<T U::*>
+  : bool_constant<template_is_function<T>::value> {};
 template <class T, class U>
-struct is_member_function_pointer<T U::*const>
-  : bool_constant<is_function<T>::value> {};
+struct template_is_member_function_pointer<T U::*const>
+  : bool_constant<template_is_function<T>::value> {};
 template <class T, class U>
-struct is_member_function_pointer<T U::*volatile>
-  : bool_constant<is_function<T>::value> {};
+struct template_is_member_function_pointer<T U::*volatile>
+  : bool_constant<template_is_function<T>::value> {};
 template <class T, class U>
-struct is_member_function_pointer<T U::*const volatile>
-  : bool_constant<is_function<T>::value> {};
+struct template_is_member_function_pointer<T U::*const volatile>
+  : bool_constant<template_is_function<T>::value> {};
 template <class T>
-inline constexpr bool is_member_function_pointer_v
-  = is_member_function_pointer<T>::value;
+inline constexpr bool is_member_function_pointer
+  = template_is_member_function_pointer<T>::value;
 
 template <class T>
-struct is_enum : bool_constant<std::is_enum<T>::value> {};
+struct template_is_enum : bool_constant<std::is_enum<T>::value> {};
 template <class T>
-inline constexpr bool is_enum_v = is_enum<T>::value;
+inline constexpr bool is_enum = template_is_enum<T>::value;
 
 template <class T>
-struct is_union : bool_constant<std::is_union<T>::value> {};
+struct template_is_union : bool_constant<std::is_union<T>::value> {};
 template <class T>
-inline constexpr bool is_union_v = is_union<T>::value;
+inline constexpr bool is_union = template_is_union<T>::value;
 
 template <class T>
-struct is_class : bool_constant<std::is_class<T>::value> {};
+struct template_is_class : bool_constant<std::is_class<T>::value> {};
 template <class T>
-inline constexpr bool is_class_v = is_class<T>::value;
+inline constexpr bool is_class = template_is_class<T>::value;
 
 template <class T>
-struct is_function : false_type {};
+struct template_is_function : false_type {};
 template <class T, class...S>
-struct is_function<T (S...)> : true_type {};
+struct template_is_function<T (S...)> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const> : true_type {};
+struct template_is_function<T (S...) const> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) volatile> : true_type {};
+struct template_is_function<T (S...) volatile> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const volatile> : true_type {};
+struct template_is_function<T (S...) const volatile> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) &> : true_type {};
+struct template_is_function<T (S...) &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const &> : true_type {};
+struct template_is_function<T (S...) const &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) volatile &> : true_type {};
+struct template_is_function<T (S...) volatile &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const volatile &> : true_type {};
+struct template_is_function<T (S...) const volatile &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) &&> : true_type {};
+struct template_is_function<T (S...) &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const &&> : true_type {};
+struct template_is_function<T (S...) const &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) volatile &&> : true_type {};
+struct template_is_function<T (S...) volatile &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const volatile &&> : true_type {};
+struct template_is_function<T (S...) const volatile &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...)> : true_type {};
+struct template_is_function<T (S..., ...)> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const> : true_type {};
+struct template_is_function<T (S..., ...) const> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) volatile> : true_type {};
+struct template_is_function<T (S..., ...) volatile> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const volatile> : true_type {};
+struct template_is_function<T (S..., ...) const volatile> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) &> : true_type {};
+struct template_is_function<T (S..., ...) &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const &> : true_type {};
+struct template_is_function<T (S..., ...) const &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) volatile &> : true_type {};
+struct template_is_function<T (S..., ...) volatile &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const volatile &> : true_type {};
+struct template_is_function<T (S..., ...) const volatile &> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) &&> : true_type {};
+struct template_is_function<T (S..., ...) &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const &&> : true_type {};
+struct template_is_function<T (S..., ...) const &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) volatile &&> : true_type {};
+struct template_is_function<T (S..., ...) volatile &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const volatile &&> : true_type {};
+struct template_is_function<T (S..., ...) const volatile &&> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) noexcept> : true_type {};
+struct template_is_function<T (S...) noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const noexcept> : true_type {};
+struct template_is_function<T (S...) const noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) volatile noexcept> : true_type {};
+struct template_is_function<T (S...) volatile noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const volatile noexcept> : true_type {};
+struct template_is_function<T (S...) const volatile noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) & noexcept> : true_type {};
+struct template_is_function<T (S...) & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const & noexcept> : true_type {};
+struct template_is_function<T (S...) const & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) volatile & noexcept> : true_type {};
+struct template_is_function<T (S...) volatile & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const volatile & noexcept> : true_type {};
+struct template_is_function<T (S...) const volatile & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) && noexcept> : true_type {};
+struct template_is_function<T (S...) && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const && noexcept> : true_type {};
+struct template_is_function<T (S...) const && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) volatile && noexcept> : true_type {};
+struct template_is_function<T (S...) volatile && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S...) const volatile && noexcept> : true_type {};
+struct template_is_function<T (S...) const volatile && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) noexcept> : true_type {};
+struct template_is_function<T (S..., ...) noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const noexcept> : true_type {};
+struct template_is_function<T (S..., ...) const noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) volatile noexcept> : true_type {};
+struct template_is_function<T (S..., ...) volatile noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const volatile noexcept> : true_type {};
+struct template_is_function<T (S..., ...) const volatile noexcept>
+  : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) & noexcept> : true_type {};
+struct template_is_function<T (S..., ...) & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const & noexcept> : true_type {};
+struct template_is_function<T (S..., ...) const & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) volatile & noexcept> : true_type {};
+struct template_is_function<T (S..., ...) volatile & noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const volatile & noexcept> : true_type {};
+struct template_is_function<T (S..., ...) const volatile & noexcept>
+  : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) && noexcept> : true_type {};
+struct template_is_function<T (S..., ...) && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const && noexcept> : true_type {};
+struct template_is_function<T (S..., ...) const && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) volatile && noexcept> : true_type {};
+struct template_is_function<T (S..., ...) volatile && noexcept> : true_type {};
 template <class T, class...S>
-struct is_function<T (S..., ...) const volatile && noexcept> : true_type {};
+struct template_is_function<T (S..., ...) const volatile && noexcept>
+  : true_type {};
 template <class T>
-inline constexpr bool is_function_v = is_function<T>::value;
+inline constexpr bool is_function = template_is_function<T>::value;
 
 // composite type categories
 
 template <class T>
-struct is_reference : false_type {};
+struct template_is_reference : false_type {};
 template <class T>
-struct is_reference<T &> : true_type {};
+struct template_is_reference<T &> : true_type {};
 template <class T>
-struct is_reference<T &&> : true_type {};
+struct template_is_reference<T &&> : true_type {};
 template <class T>
-inline constexpr bool is_reference_v = is_reference<T>::value;
+inline constexpr bool is_reference = template_is_reference<T>::value;
 
 template <class T>
-struct is_arithmetic : bool_constant<is_integral<T>::value
-                                     || is_floating_point<T>::value> {};
+struct template_is_arithmetic
+  : bool_constant<(template_is_integral<T>::value
+                   || template_is_floating_point<T>::value)> {};
 template <class T>
-inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+inline constexpr bool is_arithmetic = template_is_arithmetic<T>::value;
 
 template <class T>
-struct is_fundamental : bool_constant<is_arithmetic<T>::value
-                                      || is_void<T>::value
-                                      || is_null_pointer<T>::value> {};
+struct template_is_fundamental
+  : bool_constant<(template_is_arithmetic<T>::value
+                   || template_is_void<T>::value
+                   || template_is_null_pointer<T>::value)> {};
 template <class T>
-inline constexpr bool is_fundamental_v = is_fundamental<T>::value;
+inline constexpr bool is_fundamental = template_is_fundamental<T>::value;
 
 template <class T>
-struct is_object : bool_constant<!is_reference<T>::value
-                                 && !is_function<T>::value
-                                 && !is_void<T>::value> {};
+struct template_is_object
+  : bool_constant<(!template_is_reference<T>::value
+                   && !template_is_function<T>::value
+                   && !template_is_void<T>::value)> {};
 template <class T>
-inline constexpr bool is_object_v = is_object<T>::value;
+inline constexpr bool is_object = template_is_object<T>::value;
 
 template <class T>
-struct is_member_pointer;
+struct template_is_member_pointer;
 template <class T>
-struct is_scalar : bool_constant<is_arithmetic<T>::value
-                                 || is_enum<T>::value
-                                 || is_pointer<T>::value
-                                 || is_member_pointer<T>::value
-                                 || is_null_pointer<T>::value> {};
+struct template_is_scalar
+  : bool_constant<(template_is_arithmetic<T>::value
+                   || template_is_enum<T>::value
+                   || template_is_pointer<T>::value
+                   || template_is_member_pointer<T>::value
+                   || template_is_null_pointer<T>::value)> {};
 template <class T>
-inline constexpr bool is_scalar_v = is_scalar<T>::value;
+inline constexpr bool is_scalar = template_is_scalar<T>::value;
 
 template <class T>
-struct is_compound : bool_constant<is_array<T>::value
-                                   || is_function<T>::value
-                                   || is_pointer<T>::value
-                                   || is_reference<T>::value
-                                   || is_class<T>::value
-                                   || is_union<T>::value
-                                   || is_enum<T>::value
-                                   || is_member_pointer<T>::value> {};
+struct template_is_compound
+  : bool_constant<(template_is_array<T>::value
+                   || template_is_function<T>::value
+                   || template_is_pointer<T>::value
+                   || template_is_reference<T>::value
+                   || template_is_class<T>::value
+                   || template_is_union<T>::value
+                   || template_is_enum<T>::value
+                   || template_is_member_pointer<T>::value)> {};
 template <class T>
-inline constexpr bool is_compound_v = is_compound<T>::value;
+inline constexpr bool is_compound = template_is_compound<T>::value;
 
 template <class T>
-struct is_member_pointer : false_type {};
+struct template_is_member_pointer : false_type {};
 template <class T, class U>
-struct is_member_pointer<T U::*> : true_type {};
+struct template_is_member_pointer<T U::*> : true_type {};
 template <class T, class U>
-struct is_member_pointer<T U::*const> : true_type {};
+struct template_is_member_pointer<T U::*const> : true_type {};
 template <class T, class U>
-struct is_member_pointer<T U::*volatile> : true_type {};
+struct template_is_member_pointer<T U::*volatile> : true_type {};
 template <class T, class U>
-struct is_member_pointer<T U::*const volatile> : true_type {};
+struct template_is_member_pointer<T U::*const volatile> : true_type {};
 template <class T>
-inline constexpr bool is_member_pointer_v = is_member_pointer<T>::value;
+inline constexpr bool is_member_pointer = template_is_member_pointer<T>::value;
 
 template <class T>
-struct is_referenceable
-  : bool_constant<is_object<T>::value || is_reference<T>::value> {};
+struct template_is_referenceable
+  : bool_constant<(template_is_object<T>::value
+                   || template_is_reference<T>::value)> {};
 template <class T, class...S>
-struct is_referenceable<T (S...)> : true_type {};
+struct template_is_referenceable<T (S...)> : true_type {};
 template <class T, class...S>
-struct is_referenceable<T (S..., ...)> : true_type {};
+struct template_is_referenceable<T (S..., ...)> : true_type {};
 template <class T, class...S>
-struct is_referenceable<T (S...) noexcept> : true_type {};
+struct template_is_referenceable<T (S...) noexcept> : true_type {};
 template <class T, class...S>
-struct is_referenceable<T (S..., ...) noexcept> : true_type {};
+struct template_is_referenceable<T (S..., ...) noexcept> : true_type {};
 template <class T>
-inline constexpr bool is_referenceable_v = is_referenceable<T>::value;
+inline constexpr bool is_referenceable = template_is_referenceable<T>::value;
 
 // type properties
 
 template <class T>
-struct is_const : false_type {};
+struct template_is_const : false_type {};
 template <class T>
-struct is_const<const T> : true_type {};
+struct template_is_const<const T> : true_type {};
 template <class T>
-inline constexpr bool is_const_v = is_const<T>::value;
+inline constexpr bool is_const = template_is_const<T>::value;
 
 template <class T>
-struct is_volatile : false_type {};
+struct template_is_volatile : false_type {};
 template <class T>
-struct is_volatile<volatile T> : true_type {};
+struct template_is_volatile<volatile T> : true_type {};
 template <class T>
-inline constexpr bool is_volatile_v = is_volatile<T>::value;
+inline constexpr bool is_volatile = template_is_volatile<T>::value;
 
 template <class T>
-struct is_trivial : bool_constant<std::is_trivial<T>::value> {};
+struct template_is_trivially_copyable
+  : bool_constant<(std::is_trivially_copy_constructible<T>::value
+                   && std::is_trivially_copy_assignable<T>::value
+                   && std::is_trivially_move_constructible<T>::value
+                   && std::is_trivially_move_assignable<T>::value
+                   && std::is_trivially_copyable<T>::value)> {};
 template <class T>
-inline constexpr bool is_trivial_v = is_trivial<T>::value;
+inline constexpr bool is_trivially_copyable
+  = template_is_trivially_copyable<T>::value;
 
 template <class T>
-struct is_trivially_copyable
-  : bool_constant<std::is_trivially_copy_constructible<T>::value
-                  && std::is_trivially_copy_assignable<T>::value
-                  && std::is_trivially_move_constructible<T>::value
-                  && std::is_trivially_move_assignable<T>::value
-                  && std::is_trivially_copyable<T>::value> {};
+using template_is_standard_layout
+  = bool_constant<std::is_standard_layout<T>::value>;
 template <class T>
-inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<T>::value;
+inline constexpr bool is_standard_layout
+  = template_is_standard_layout<T>::value;
 
 template <class T>
-using is_standard_layout = bool_constant<std::is_standard_layout<T>::value>;
+struct template_is_empty : bool_constant<std::is_empty<T>::value> {};
 template <class T>
-inline constexpr bool is_standard_layout_v = is_standard_layout<T>::value;
+inline constexpr bool is_empty = template_is_empty<T>::value;
 
 template <class T>
-struct is_empty : bool_constant<std::is_empty<T>::value> {};
+struct template_is_polymorphic
+  : bool_constant<std::is_polymorphic<T>::value> {};
 template <class T>
-inline constexpr bool is_empty_v = is_empty<T>::value;
+inline constexpr bool is_polymorphic = template_is_polymorphic<T>::value;
 
 template <class T>
-struct is_polymorphic : bool_constant<std::is_polymorphic<T>::value> {};
+struct template_is_abstract : bool_constant<std::is_abstract<T>::value> {};
 template <class T>
-inline constexpr bool is_polymorphic_v = is_polymorphic<T>::value;
+inline constexpr bool is_abstract = template_is_abstract<T>::value;
 
 template <class T>
-struct is_abstract : bool_constant<std::is_abstract<T>::value> {};
+struct template_is_final : bool_constant<std::is_final<T>::value> {};
 template <class T>
-inline constexpr bool is_abstract_v = is_abstract<T>::value;
+inline constexpr bool is_final = template_is_final<T>::value;
 
 template <class T>
-struct is_final : bool_constant<std::is_final<T>::value> {};
+struct template_is_aggregate : bool_constant<std::is_aggregate<T>::value> {};
 template <class T>
-inline constexpr bool is_final_v = is_final<T>::value;
+inline constexpr bool is_aggregate = template_is_aggregate<T>::value;
+
+template <class T, bool Y = template_is_arithmetic<T>::value>
+struct template_is_signed : false_type {};
+template <class T>
+struct template_is_signed<T, true> : bool_constant<(T(-1) < T(0))> {};
+template <class T>
+struct template_is_signed<const T, true> : template_is_signed<T> {};
+template <class T>
+struct template_is_signed<volatile T, true> : template_is_signed<T> {};
+template <class T>
+struct template_is_signed<const volatile T, true> : template_is_signed<T> {};
+template <class T>
+inline constexpr bool is_signed = template_is_signed<T>::value;
+
+template <class T, bool Y = template_is_arithmetic<T>::value>
+struct template_is_unsigned : false_type {};
+template <class T>
+struct template_is_unsigned<T, true> : bool_constant<(T(0) < T(-1))> {};
+template <class T>
+struct template_is_unsigned<const T, true> : template_is_unsigned<T> {};
+template <class T>
+struct template_is_unsigned<volatile T, true> : template_is_unsigned<T> {};
+template <class T>
+struct template_is_unsigned<const volatile T, true>
+  : template_is_unsigned<T> {};
+template <class T>
+inline constexpr bool is_unsigned = template_is_unsigned<T>::value;
 
 template <class T>
-struct is_aggregate : bool_constant<std::is_aggregate<T>::value> {};
-template <class T>
-inline constexpr bool is_aggregate_v = is_aggregate<T>::value;
-
-template <class T, bool Y = is_arithmetic<T>::value>
-struct is_signed : false_type {};
-template <class T>
-struct is_signed<T, true> : bool_constant<(T(-1) < T(0))> {};
-template <class T>
-struct is_signed<const T, true> : is_signed<T> {};
-template <class T>
-struct is_signed<volatile T, true> : is_signed<T> {};
-template <class T>
-struct is_signed<const volatile T, true> : is_signed<T> {};
-template <class T>
-inline constexpr bool is_signed_v = is_signed<T>::value;
-
-template <class T, bool Y = is_arithmetic<T>::value>
-struct is_unsigned : false_type {};
-template <class T>
-struct is_unsigned<T, true> : bool_constant<(T(0) < T(-1))> {};
-template <class T>
-struct is_unsigned<const T, true> : is_unsigned<T> {};
-template <class T>
-struct is_unsigned<volatile T, true> : is_unsigned<T> {};
-template <class T>
-struct is_unsigned<const volatile T, true> : is_unsigned<T> {};
-template <class T>
-inline constexpr bool is_unsigned_v = is_unsigned<T>::value;
-
-template <class T>
-struct is_bounded_array : false_type {};
+struct template_is_bounded_array : false_type {};
 template <class T, size_t N>
-struct is_bounded_array<T [N]> : true_type {};
+struct template_is_bounded_array<T [N]> : true_type {};
 template <class T>
-inline constexpr bool is_bounded_array_v = is_bounded_array<T>::value;
+inline constexpr bool is_bounded_array = template_is_bounded_array<T>::value;
 
 template <class T>
-struct is_unbounded_array : false_type {};
+struct template_is_unbounded_array : false_type {};
 template <class T>
-struct is_unbounded_array<T []> : true_type {};
+struct template_is_unbounded_array<T []> : true_type {};
 template <class T>
-inline constexpr bool is_unbounded_array_v = is_unbounded_array<T>::value;
-
-// todo: is_scoped_enum
+inline constexpr bool is_unbounded_array
+  = template_is_unbounded_array<T>::value;
 
 template <class T, class...S>
-struct is_constructible
+struct template_is_constructible
   : bool_constant<std::is_constructible<T, S...>::value> {};
 template <class T, class...S>
-inline constexpr bool is_constructible_v = is_constructible<T, S...>::value;
+inline constexpr bool is_constructible
+  = template_is_constructible<T, S...>::value;
 
 template <class T>
-struct is_default_constructible : is_constructible<T> {};
+struct template_is_default_constructible : template_is_constructible<T> {};
 template <class T>
-inline constexpr bool is_default_constructible_v
-  = is_default_constructible<T>::value;
+inline constexpr bool is_default_constructible
+  = template_is_default_constructible<T>::value;
 
 template <class T>
-struct is_copy_constructible
-  : bool_constant<is_referenceable<T>::value
-                  && is_constructible
-                  <T, typename add_lvalue_reference
-                   <typename add_const<T>::type>::type>::value> {};
+struct template_is_copy_constructible
+  : bool_constant<(template_is_referenceable<T>::value
+                   && template_is_constructible
+                   <T,
+                    typename template_add_lvalue_reference
+                    <typename template_add_const<T>::type>::type>
+                   ::value)> {};
 template <class T>
-inline constexpr bool is_copy_constructible_v
-  = is_copy_constructible<T>::value;
+inline constexpr bool is_copy_constructible
+  = template_is_copy_constructible<T>::value;
 
 template <class T>
-struct is_move_constructible
-  : bool_constant<is_referenceable<T>::value
-                  && is_constructible
-                  <T, typename add_rvalue_reference<T>::type>::value> {};
+struct template_is_move_constructible
+  : bool_constant<(template_is_referenceable<T>::value
+                   && template_is_constructible
+                   <T, typename template_add_rvalue_reference<T>::type>
+                   ::value)> {};
 template <class T>
-inline constexpr bool is_move_constructible_v = is_move_constructible<T>::value;
+inline constexpr bool is_move_constructible
+  = template_is_move_constructible<T>::value;
 
 namespace inner {
 
@@ -2073,24 +2525,27 @@ struct check_is_assignable {
 
 }
 template <class T, class U>
-struct is_assignable : f_is_well_formed<inner::check_is_assignable, T, U> {};
+struct template_is_assignable
+  : template_f_is_well_formed<inner::check_is_assignable, T, U> {};
 template <class T, class U>
-inline constexpr bool is_assignable_v = is_assignable<T, U>::value;
+inline constexpr bool is_assignable = template_is_assignable<T, U>::value;
 
 template <class T>
-struct is_copy_assignable
-  : is_assignable<typename add_lvalue_reference<T>::type,
-                  typename add_lvalue_reference
-                  <typename add_const<T>::type>::type> {};
+struct template_is_copy_assignable
+  : template_is_assignable<typename template_add_lvalue_reference<T>::type,
+                           typename template_add_lvalue_reference
+                           <typename template_add_const<T>::type>::type> {};
 template <class T>
-inline constexpr bool is_copy_assignable_v = is_copy_assignable<T>::value;
+inline constexpr bool is_copy_assignable
+  = template_is_copy_assignable<T>::value;
 
 template <class T>
-struct is_move_assignable
-  : is_assignable<typename add_lvalue_reference<T>::type,
-                  typename add_rvalue_reference<T>::type> {};
+struct template_is_move_assignable
+  : template_is_assignable<typename template_add_lvalue_reference<T>::type,
+                           typename template_add_rvalue_reference<T>::type> {};
 template <class T>
-inline constexpr bool is_move_assignable_v = is_move_assignable<T>::value;
+inline constexpr bool is_move_assignable
+  = template_is_move_assignable<T>::value;
 
 namespace inner {
 
@@ -2104,117 +2559,125 @@ struct check_is_destructible {
   static disable f(type_pack<T []>);
 
   template <class T,
-            class U = typename remove_all_extents<T>::type,
-            class = typename enable_if<!is_reference<U>::value, void>::type>
+            class U = typename template_remove_all_extents<T>::type,
+            class = enable_if<!template_is_reference<U>::value>>
   static decltype(declval<U &>().~U()) f(type_pack<T>);
 };
 
 }
 template <class T>
-struct is_destructible : f_is_well_formed<inner::check_is_destructible, T> {};
+struct template_is_destructible
+  : template_f_is_well_formed<inner::check_is_destructible, T> {};
 template <class T>
-inline constexpr bool is_destructible_v = is_destructible<T>::value;
+inline constexpr bool is_destructible = template_is_destructible<T>::value;
 
 template <class T, class...S>
-struct is_trivially_constructible
+struct template_is_trivially_constructible
   : bool_constant<std::is_trivially_constructible<T, S...>::value> {};
 template <class T, class...S>
-inline constexpr bool is_trivially_constructible_v
-  = is_trivially_constructible<T, S...>::value;
+inline constexpr bool is_trivially_constructible
+  = template_is_trivially_constructible<T, S...>::value;
 
 template <class T>
-struct is_trivially_default_constructible
+struct template_is_trivially_default_constructible
   : bool_constant<std::is_trivially_default_constructible<T>::value> {};
 template <class T>
-inline constexpr bool is_trivially_default_constructible_v
-  = is_trivially_default_constructible<T>::value;
+inline constexpr bool is_trivially_default_constructible
+  = template_is_trivially_default_constructible<T>::value;
 
 template <class T>
-struct is_trivially_copy_constructible
+struct template_is_trivially_copy_constructible
   : bool_constant<std::is_trivially_copy_constructible<T>::value> {};
 template <class T>
-inline constexpr bool is_trivially_copy_constructible_v
-  = is_trivially_copy_constructible<T>::value;
+inline constexpr bool is_trivially_copy_constructible
+  = template_is_trivially_copy_constructible<T>::value;
 
 template <class T>
-struct is_trivially_move_constructible
+struct template_is_trivially_move_constructible
   : bool_constant<std::is_trivially_move_constructible<T>::value> {};
 template <class T>
-inline constexpr bool is_trivially_move_constructible_v
-  = is_trivially_move_constructible<T>::value;
+inline constexpr bool is_trivially_move_constructible
+  = template_is_trivially_move_constructible<T>::value;
 
 template <class T, class U>
-struct is_trivially_assignable
+struct template_is_trivially_assignable
   : bool_constant<std::is_trivially_assignable<T, U>::value> {};
 template <class T, class U>
-inline constexpr bool is_trivially_assignable_v
-  = is_trivially_assignable<T, U>::value;
+inline constexpr bool is_trivially_assignable
+  = template_is_trivially_assignable<T, U>::value;
 
 template <class T>
-struct is_trivially_copy_assignable
+struct template_is_trivially_copy_assignable
   : bool_constant<std::is_trivially_copy_assignable<T>::value> {};
 template <class T>
-inline constexpr bool is_trivially_copy_assignable_v
-  = is_trivially_copy_assignable<T>::value;
+inline constexpr bool is_trivially_copy_assignable
+  = template_is_trivially_copy_assignable<T>::value;
 
 template <class T>
-struct is_trivially_move_assignable
+struct template_is_trivially_move_assignable
   : bool_constant<std::is_trivially_move_assignable<T>::value> {};
 template <class T>
-inline constexpr bool is_trivially_move_assignable_v
-  = is_trivially_move_assignable<T>::value;
+inline constexpr bool is_trivially_move_assignable
+  = template_is_trivially_move_assignable<T>::value;
 
 template <class T>
-struct is_trivially_destructible
+struct template_is_trivially_destructible
   : bool_constant<std::is_trivially_destructible<T>::value> {};
 template <class T>
-inline constexpr bool is_trivially_destructible_v
-  = is_trivially_destructible<T>::value;
+inline constexpr bool is_trivially_destructible
+  = template_is_trivially_destructible<T>::value;
 
 namespace inner {
 
 struct check_is_nothrow_constructible {
   template <class T, class...S,
-            class = enable_if_t<is_constructible<T, S...>::value>,
-            class = enable_if_t<noexcept(typename remove_all_extents<T>::type
-                                         (declval<S>()...))>>
+            class = enable_if<template_is_constructible<T, S...>::value>,
+            class = enable_if<noexcept(typename
+                                       template_remove_all_extents<T>
+                                       ::type
+                                       (declval<S>()...))>>
   static void f(type_pack<T, S...>);
 };
 
 }
 template <class T, class...S>
-struct is_nothrow_constructible
-  : f_is_well_formed<inner::check_is_nothrow_constructible, T, S...> {};
+struct template_is_nothrow_constructible
+  : template_f_is_well_formed<inner::check_is_nothrow_constructible,
+                              T, S...> {};
 template <class T>
-struct is_nothrow_constructible<T []> : false_type {};
+struct template_is_nothrow_constructible<T []> : false_type {};
 template <class T, class...S>
-inline constexpr bool is_nothrow_constructible_v
-  = is_nothrow_constructible<T, S...>::value;
+inline constexpr bool is_nothrow_constructible
+  = template_is_nothrow_constructible<T, S...>::value;
 
 template <class T>
-struct is_nothrow_default_constructible : is_nothrow_constructible<T> {};
+struct template_is_nothrow_default_constructible
+  : template_is_nothrow_constructible<T> {};
 template <class T>
-inline constexpr bool is_nothrow_default_constructible_v
-  = is_nothrow_default_constructible<T>::value;
+inline constexpr bool is_nothrow_default_constructible
+  = template_is_nothrow_default_constructible<T>::value;
 
 template <class T>
-struct is_nothrow_copy_constructible
-  : bool_constant<is_referenceable<T>::value
-                  && is_nothrow_constructible
-                  <T, typename add_lvalue_reference
-                   <typename add_const<T>::type>::type>::value> {};
+struct template_is_nothrow_copy_constructible
+  : bool_constant<(template_is_referenceable<T>::value
+                   && template_is_nothrow_constructible
+                   <T,
+                    typename template_add_lvalue_reference
+                    <typename template_add_const<T>::type>::type
+                    >::value)> {};
 template <class T>
-inline constexpr bool is_nothrow_copy_constructible_v
-  = is_nothrow_copy_constructible<T>::value;
+inline constexpr bool is_nothrow_copy_constructible
+  = template_is_nothrow_copy_constructible<T>::value;
 
 template <class T>
-struct is_nothrow_move_constructible
-  : bool_constant<is_referenceable<T>::value
-                  && is_nothrow_constructible
-                  <T, typename add_rvalue_reference<T>::type>::value> {};
+struct template_is_nothrow_move_constructible
+  : bool_constant<(template_is_referenceable<T>::value
+                   && template_is_nothrow_constructible
+                   <T, typename template_add_rvalue_reference<T>::type>
+                   ::value)> {};
 template <class T>
-inline constexpr bool is_nothrow_move_constructible_v
-  = is_nothrow_move_constructible<T>::value;
+inline constexpr bool is_nothrow_move_constructible
+  = template_is_nothrow_move_constructible<T>::value;
 
 namespace inner {
 
@@ -2229,47 +2692,49 @@ struct is_nothrow_assignable_impl<false, T, U> {
 
 }
 template <class T, class U>
-struct is_nothrow_assignable
+struct template_is_nothrow_assignable
   : bool_constant<inner::is_nothrow_assignable_impl
-                  <is_assignable<T, U>::value, T, U>::value> {};
+                  <template_is_assignable<T, U>::value, T, U>::value> {};
 template <class T, class U>
-inline constexpr bool is_nothrow_assignable_v
-  = is_nothrow_assignable<T, U>::value;
+inline constexpr bool is_nothrow_assignable
+  = template_is_nothrow_assignable<T, U>::value;
 
 template <class T>
-struct is_nothrow_copy_assignable
-  : bool_constant<is_referenceable<T>::value
-                  && is_nothrow_assignable
-                  <typename add_lvalue_reference<T>::type,
-                   typename add_lvalue_reference
-                   <typename add_const<T>::type>::type>::value> {};
+struct template_is_nothrow_copy_assignable
+  : bool_constant<(template_is_referenceable<T>::value
+                   && template_is_nothrow_assignable
+                   <typename template_add_lvalue_reference<T>::type,
+                    typename template_add_lvalue_reference
+                    <typename template_add_const<T>::type>::type>
+                   ::value)> {};
 template <class T>
-inline constexpr bool is_nothrow_copy_assignable_v
-  = is_nothrow_copy_assignable<T>::value;
+inline constexpr bool is_nothrow_copy_assignable
+  = template_is_nothrow_copy_assignable<T>::value;
 
 template <class T>
-struct is_nothrow_move_assignable
-  : bool_constant<is_referenceable<T>::value
-                  && is_nothrow_assignable
-                  <typename add_lvalue_reference<T>::type,
-                   typename add_rvalue_reference<T>::type>::value> {};
+struct template_is_nothrow_move_assignable
+  : bool_constant<(template_is_referenceable<T>::value
+                   && template_is_nothrow_assignable
+                   <typename template_add_lvalue_reference<T>::type,
+                    typename template_add_rvalue_reference<T>::type>
+                   ::value)> {};
 template <class T>
-inline constexpr bool is_nothrow_move_assignable_v
-  = is_nothrow_move_assignable<T>::value;
+inline constexpr bool is_nothrow_move_assignable
+  = template_is_nothrow_move_assignable<T>::value;
 
 namespace inner {
 
-template <class T, bool = is_reference<T>::value>
+template <class T, bool = template_is_reference<T>::value>
 struct is_nothrow_destructible_impl0 {
   static constexpr bool value = true;
 };
 template <class T>
 struct is_nothrow_destructible_impl0<T, false> {
-  using t = typename remove_all_extents<T>::type;
+  using t = typename template_remove_all_extents<T>::type;
   static constexpr bool value = noexcept(declval<t &>().~t());
 };
 
-template <class T, bool = is_destructible<T>::value>
+template <class T, bool = template_is_destructible<T>::value>
 struct is_nothrow_destructible_impl : is_nothrow_destructible_impl0<T> {};
 template <class T>
 struct is_nothrow_destructible_impl<T, false> {
@@ -2278,119 +2743,116 @@ struct is_nothrow_destructible_impl<T, false> {
 
 }
 template <class T>
-struct is_nothrow_destructible
+struct template_is_nothrow_destructible
   : bool_constant<inner::is_nothrow_destructible_impl<T>::value> {};
 template <class T>
-inline constexpr bool is_nothrow_destructible_v
-  = is_nothrow_destructible<T>::value;
+inline constexpr bool is_nothrow_destructible
+  = template_is_nothrow_destructible<T>::value;
 
 template <class T>
-struct has_virtual_destructor
+struct template_has_virtual_destructor
   : bool_constant<std::has_virtual_destructor<T>::value> {};
 template <class T>
-inline constexpr bool has_virtual_destructor_v
-  = has_virtual_destructor<T>::value;
+inline constexpr bool has_virtual_destructor
+  = template_has_virtual_destructor<T>::value;
 template <class T>
-struct has_unique_object_representations
+struct template_has_unique_object_representations
   : bool_constant<std::has_unique_object_representations<T>::value> {};
 template <class T>
-inline constexpr bool has_unique_object_representations_v
-  = has_unique_object_representations<T>::value;
-
-// todo:
-//   reference_constructs_from_temporary<T, U>
-//   reference_converts_from_temporary<T, U>
+inline constexpr bool has_unique_object_representations
+  = template_has_unique_object_representations<T>::value;
 
 // type property queries
 
 template <class T>
-struct alignment_of : integral_constant<size_t, alignof(T)> {};
+struct template_alignment_of : integral_constant<size_t, alignof(T)> {};
 template <class T>
-inline constexpr size_t alignment_of_v = alignment_of<T>::value;
+inline constexpr size_t alignment_of = template_alignment_of<T>::value;
 
 template <class T>
-struct rank : integral_constant<size_t, 0> {};
+struct template_rank : integral_constant<size_t, 0> {};
 template <class T, size_t N>
-struct rank<T [N]> : integral_constant<size_t, rank<T>::value + 1> {};
+struct template_rank<T [N]>
+  : integral_constant<size_t, template_rank<T>::value + 1> {};
 template <class T>
-struct rank<T []> : integral_constant<size_t, rank<T>::value + 1> {};
+struct template_rank<T []>
+  : integral_constant<size_t, template_rank<T>::value + 1> {};
 template <class T>
-inline constexpr size_t rank_v = rank<T>::value;
+inline constexpr size_t rank = template_rank<T>::value;
 
 template <class T, unsigned I = 0>
-struct extent : integral_constant<size_t, 0> {};
+struct template_extent : integral_constant<size_t, 0> {};
 template <class T>
-struct extent<T, 0> : integral_constant<size_t, 0> {};
+struct template_extent<T, 0> : integral_constant<size_t, 0> {};
 template <class T, size_t N>
-struct extent<T [N], 0> : integral_constant<size_t, N> {};
+struct template_extent<T [N], 0> : integral_constant<size_t, N> {};
 template <class T, size_t N, unsigned I>
-struct extent<T [N], I> : extent<T, I - 1> {};
+struct template_extent<T [N], I> : template_extent<T, I - 1> {};
 template <class T, unsigned I = 0>
-inline constexpr size_t extent_v = extent<T, I>::value;
+inline constexpr size_t extent = template_extent<T, I>::value;
 
 // type relations
 
 template <class T, class U>
-struct is_same : false_type {};
+struct template_is_same : false_type {};
 template <class T>
-struct is_same<T, T> : true_type {};
+struct template_is_same<T, T> : true_type {};
 template <class T, class U>
-inline constexpr bool is_same_v = is_same<T, U>::value;
+inline constexpr bool is_same = template_is_same<T, U>::value;
 
 template <class BASE, class DERIVED>
-struct is_base_of : bool_constant<std::is_base_of<BASE, DERIVED>::value> {};
+struct template_is_base_of
+  : bool_constant<std::is_base_of<BASE, DERIVED>::value> {};
 
 template <class FROM, class TO>
-struct is_convertible : bool_constant<std::is_convertible<FROM, TO>::value> {};
+struct template_is_convertible
+  : bool_constant<std::is_convertible<FROM, TO>::value> {};
 template <class FROM, class TO>
-inline constexpr bool is_convertible_v = is_convertible<FROM, TO>::value;
+inline constexpr bool is_convertible = template_is_convertible<FROM, TO>::value;
 
 template <class FROM, class TO>
-struct is_nothrow_convertible
+struct template_is_nothrow_convertible
   : bool_constant<std::is_nothrow_convertible<FROM, TO>::value> {};
 template <class FROM, class TO>
-inline constexpr bool is_nothrow_convertible_v
-  = is_nothrow_convertible<FROM, TO>::value;
-
-// todo:
-//   is_layout_compatible
-//   is_pointer_interconvertible_base_of
+inline constexpr bool is_nothrow_convertible
+  = template_is_nothrow_convertible<FROM, TO>::value;
 
 // const-volatile modifications
 
 template <class T>
-struct remove_const {
+struct template_remove_const {
   using type = T;
 };
 template <class T>
-struct remove_const<const T> {
+struct template_remove_const<const T> {
   using type = T;
 };
 template <class T>
-using remove_const_t = typename remove_const<T>::type;
+using remove_const = typename template_remove_const<T>::type;
 
 template <class T>
-struct remove_volatile {
+struct template_remove_volatile {
   using type = T;
 };
 template <class T>
-struct remove_volatile<volatile T> {
+struct template_remove_volatile<volatile T> {
   using type = T;
 };
 template <class T>
-using remove_volatile_t = typename remove_volatile<T>::type;
+using remove_volatile = typename template_remove_volatile<T>::type;
 
 template <class T>
-struct remove_cv {
+struct template_remove_cv {
   using type
-    = typename remove_const<typename remove_volatile<T>::type>::type;
+    = typename template_remove_const
+    <typename template_remove_volatile<T>::type>::type;
 };
 template <class T>
-using remove_cv_t = typename remove_cv<T>::type;
+using remove_cv = typename template_remove_cv<T>::type;
 
 namespace inner {
 
-template <class T, bool = !is_function<T>::value>
+template <class T, bool = !template_is_function<T>::value>
 struct add_const_impl {
   using type = T;
 };
@@ -2405,15 +2867,15 @@ struct add_const_impl<const T, true> {
 
 }
 template <class T>
-struct add_const {
+struct template_add_const {
   using type = typename inner::add_const_impl<T>::type;
 };
 template <class T>
-using add_const_t = typename add_const<T>::type;
+using add_const = typename template_add_const<T>::type;
 
 namespace inner {
 
-template <class T, bool = !is_function<T>::value>
+template <class T, bool = !template_is_function<T>::value>
 struct add_volatile_impl {
   using type = T;
 };
@@ -2428,39 +2890,41 @@ struct add_volatile_impl<volatile T, true> {
 
 }
 template <class T>
-struct add_volatile {
+struct template_add_volatile {
   using type = typename inner::add_volatile_impl<T>::type;
 };
 template <class T>
-using add_volatile_t = typename add_volatile<T>::type;
+using add_volatile = typename template_add_volatile<T>::type;
 
 template <class T>
-struct add_cv {
-  using type = typename add_const<typename add_volatile<T>::type>::type;
+struct template_add_cv {
+  using type
+    = typename template_add_const<typename template_add_volatile<T>::type>
+    ::type;
 };
 template <class T>
-using add_cv_t = typename add_cv<T>::type;
+using add_cv = typename template_add_cv<T>::type;
 
 // reference modifications
 
 template <class T>
-struct remove_reference {
+struct template_remove_reference {
   using type = T;
 };
 template <class T>
-struct remove_reference<T &> {
+struct template_remove_reference<T &> {
   using type = T;
 };
 template <class T>
-struct remove_reference<T &&> {
+struct template_remove_reference<T &&> {
   using type = T;
 };
 template <class T>
-using remove_reference_t = typename remove_reference<T>::type;
+using remove_reference = typename template_remove_reference<T>::type;
 
 namespace inner {
 
-template <class T, bool = is_referenceable<T>::value>
+template <class T, bool = template_is_referenceable<T>::value>
 struct add_lvalue_reference_impl {
   using type = T;
 };
@@ -2471,15 +2935,15 @@ struct add_lvalue_reference_impl<T, true> {
 
 }
 template <class T>
-struct add_lvalue_reference {
+struct template_add_lvalue_reference {
   using type = typename inner::add_lvalue_reference_impl<T>::type;
 };
 template <class T>
-using add_lvalue_reference_t = typename add_lvalue_reference<T>::type;
+using add_lvalue_reference = typename template_add_lvalue_reference<T>::type;
 
 namespace inner {
 
-template <class T, bool = is_referenceable<T>::value>
+template <class T, bool = template_is_referenceable<T>::value>
 struct add_rvalue_reference_impl {
   using type = T;
 };
@@ -2490,197 +2954,200 @@ struct add_rvalue_reference_impl<T, true> {
 
 }
 template <class T>
-struct add_rvalue_reference {
+struct template_add_rvalue_reference {
   using type = typename inner::add_rvalue_reference_impl<T>::type;
 };
 template <class T>
-using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;
+using add_rvalue_reference = typename template_add_rvalue_reference<T>::type;
 
 // sign modifications
 
 template <class T>
-struct make_signed {
-  using type = typename conditional
-    <is_unsigned<T>::value,
-     typename integral_traits<T>::change_signedness, T>::type;
+struct template_make_signed {
+  using type = conditional
+    <template_is_unsigned<T>::value,
+     typename integral_traits<T>::change_signedness, T>;
 };
 template <>
-struct make_signed<char> {
+struct template_make_signed<char> {
   using type = signed char;
 };
 template <class T>
-struct make_signed<const T> {
-  using type = const typename make_signed<T>::type;
+struct template_make_signed<const T> {
+  using type = const typename template_make_signed<T>::type;
 };
 template <class T>
-struct make_signed<volatile T> {
-  using type = volatile typename make_signed<T>::type;
+struct template_make_signed<volatile T> {
+  using type = volatile typename template_make_signed<T>::type;
 };
 template <class T>
-struct make_signed<const volatile T> {
-  using type = const volatile typename make_signed<T>::type;
+struct template_make_signed<const volatile T> {
+  using type = const volatile typename template_make_signed<T>::type;
 };
 template <class T>
-using make_signed_t = typename make_signed<T>::type;
+using make_signed = typename template_make_signed<T>::type;
 
 template <class T>
-struct make_unsigned {
-  using type = typename conditional
-    <is_signed<T>::value,
-     typename integral_traits<T>::change_signedness, T>::type;
+struct template_make_unsigned {
+  using type = conditional
+    <template_is_signed<T>::value,
+     typename integral_traits<T>::change_signedness,
+     T>;
 };
 template <>
-struct make_unsigned<char> {
+struct template_make_unsigned<char> {
   using type = unsigned char;
 };
 template <>
-struct make_unsigned<char8_t> {
+struct template_make_unsigned<char8_t> {
   using type = unsigned char;
 };
 template <>
-struct make_unsigned<char16_t> {
+struct template_make_unsigned<char16_t> {
   using type = uint_least16_t;
 };
 template <>
-struct make_unsigned<char32_t> {
+struct template_make_unsigned<char32_t> {
   using type = uint_least32_t;
 };
 template <class T>
-struct make_unsigned<const T> {
-  using type = const typename make_unsigned<T>::type;
+struct template_make_unsigned<const T> {
+  using type = const typename template_make_unsigned<T>::type;
 };
 template <class T>
-struct make_unsigned<volatile T> {
-  using type = volatile typename make_unsigned<T>::type;
+struct template_make_unsigned<volatile T> {
+  using type = volatile typename template_make_unsigned<T>::type;
 };
 template <class T>
-struct make_unsigned<const volatile T> {
-  using type = const volatile typename make_unsigned<T>::type;
+struct template_make_unsigned<const volatile T> {
+  using type = const volatile typename template_make_unsigned<T>::type;
 };
 template <class T>
-using make_unsigned_t = typename make_unsigned<T>::type;
+using make_unsigned = typename template_make_unsigned<T>::type;
 
 // array modifications
 
 template <class T>
-struct remove_extent {
+struct template_remove_extent {
   using type = T;
 };
 template <class T>
-struct remove_extent<T []> {
+struct template_remove_extent<T []> {
   using type = T;
 };
 template <class T, size_t N>
-struct remove_extent<T [N]> {
+struct template_remove_extent<T [N]> {
   using type = T;
 };
 template <class T>
-using remove_extent_t = typename remove_extent<T>::type;
+using remove_extent = typename template_remove_extent<T>::type;
 
 template <class T>
-struct remove_all_extents {
+struct template_remove_all_extents {
   using type = T;
 };
 template <class T>
-struct remove_all_extents<T []> : remove_all_extents<T> {};
+struct template_remove_all_extents<T []> : template_remove_all_extents<T> {};
 template <class T, size_t N>
-struct remove_all_extents<T [N]> : remove_all_extents<T> {};
+struct template_remove_all_extents<T [N]> : template_remove_all_extents<T> {};
 template <class T>
-using remove_all_extents_t = typename remove_all_extents<T>::type;
+using remove_all_extents = typename template_remove_all_extents<T>::type;
 
 // pointer modifications
 
 template <class T>
-struct remove_pointer {
+struct template_remove_pointer {
   using type = T;
 };
 template <class T>
-struct remove_pointer<T *> {
+struct template_remove_pointer<T *> {
   using type = T;
 };
 template <class T>
-struct remove_pointer<T *const> {
+struct template_remove_pointer<T *const> {
   using type = T;
 };
 template <class T>
-struct remove_pointer<T *volatile> {
+struct template_remove_pointer<T *volatile> {
   using type = T;
 };
 template <class T>
-struct remove_pointer<T *const volatile> {
+struct template_remove_pointer<T *const volatile> {
   using type = T;
 };
 template <class T>
-using remove_pointer_t = typename remove_pointer<T>::type;
+using remove_pointer = typename template_remove_pointer<T>::type;
 
 namespace inner {
 
-template <class T, bool = is_referenceable<T>::value || is_void<T>::value>
+template <class T,
+          bool = (template_is_referenceable<T>::value
+                  || template_is_void<T>::value)>
 struct add_pointer_impl {
   using type = T;
 };
 template <class T>
 struct add_pointer_impl<T, true> {
-  using type = typename remove_reference<T>::type *;
+  using type = typename template_remove_reference<T>::type *;
 };
 
 }
 template <class T>
-struct add_pointer {
+struct template_add_pointer {
   using type = typename inner::add_pointer_impl<T>::type;
 };
 template <class T>
-using add_pointer_t = typename add_pointer<T>::type;
+using add_pointer = typename template_add_pointer<T>::type;
 
 // other transformations
 
 template <class T>
-struct type_identity {
+struct template_type_identity {
   using type = T;
 };
 template< class T >
-using type_identity_t = typename type_identity<T>::type;
+using type_identity = typename template_type_identity<T>::type;
 
 template <class T>
-struct remove_cvref {
-  using type = remove_cv_t<remove_reference_t<T>>;
+struct template_remove_cvref {
+  using type = remove_cv<remove_reference<T>>;
 };
 template <class T>
-using remove_cvref_t = typename remove_cvref<T>::type;
+using remove_cvref = typename template_remove_cvref<T>::type;
 
 template <class T>
-struct decay {
-  using type = conditional_t
-    <is_array_v<remove_reference_t<T>>,
-     add_pointer_t<remove_extent_t<remove_reference_t<T>>>,
-     conditional_t
-     <is_function_v<remove_reference_t<T>>,
-      add_pointer_t<remove_reference_t<T>>,
-      remove_cv_t<remove_reference_t<T>>>>;
+struct template_decay {
+  using type = conditional
+    <is_array<remove_reference<T>>,
+     add_pointer<remove_extent<remove_reference<T>>>,
+     conditional
+     <is_function<remove_reference<T>>,
+      add_pointer<remove_reference<T>>,
+      remove_cv<remove_reference<T>>>>;
 };
 template <class T>
-using decay_t = typename decay<T>::type;
+using decay = typename template_decay<T>::type;
 
 template <bool Y, class T>
-struct enable_if {};
+struct template_enable_if {};
 template <class T>
-struct enable_if<true, T> {
+struct template_enable_if<true, T> {
   using type = T;
 };
 
 template <bool Y, class T, class U>
-struct conditional {
+struct template_conditional {
   using type = T;
 };
 template <class T, class U>
-struct conditional<false, T, U> {
+struct template_conditional<false, T, U> {
   using type = U;
 };
 
 namespace inner {
 
 template <class X>
-using const_reference = add_lvalue_reference_t<const remove_reference_t<X>>;
+using const_reference = add_lvalue_reference<const remove_reference<X>>;
 template <class X, class Y>
 using conditional_operator_result_type
   = decltype(false ? declval<X (&)()>()() : declval<Y (&)()>()());
@@ -2693,48 +3160,50 @@ requires requires {
     <const_reference<D1>, const_reference<D2>>;
 }
 struct common_type_impl2<D1, D2> {
-  using type = decay_t<conditional_operator_result_type
-                       <const_reference<D1>, const_reference<D2>>>;
+  using type = decay<conditional_operator_result_type
+                     <const_reference<D1>, const_reference<D2>>>;
 };
 
 template <class D1, class D2>
 struct common_type_impl : common_type_impl2<D1, D2> {};
 template <class D1, class D2>
 requires requires {
-  typename decay_t<decltype(false ? declval<D1>() : declval<D2>())>;
+  typename decay<decltype(false ? declval<D1>() : declval<D2>())>;
 }
 struct common_type_impl<D1, D2> {
-  using type = decay_t<decltype(false ? declval<D1>() : declval<D2>())>;
+  using type = decay<decltype(false ? declval<D1>() : declval<D2>())>;
 };
 
 }
 template <class...S>
-struct common_type {};
+struct template_common_type {};
 template <>
-struct common_type<> {};
+struct template_common_type<> {};
 template <class T>
-struct common_type<T> : common_type<T, T> {};
+struct template_common_type<T> : template_common_type<T, T> {};
 template <class T1, class T2>
-requires is_same_v<T1, decay_t<T1>> && is_same_v<T2, decay_t<T2>>
-struct common_type<T1, T2> : inner::common_type_impl2<T1, T2> {};
+requires is_same<T1, decay<T1>> && is_same<T2, decay<T2>>
+struct template_common_type<T1, T2>
+  : inner::common_type_impl2<T1, T2> {};
 template <class T1, class T2>
-struct common_type<T1, T2> : common_type<decay_t<T1>, decay_t<T2>> {};
+struct template_common_type<T1, T2>
+  : template_common_type<decay<T1>, decay<T2>> {};
 template <class T1, class T2, class...S>
-struct common_type<T1, T2, S...>
-  : compile_time_acc<common_type, T1, T2, S...> {};
+struct template_common_type<T1, T2, S...>
+  : compile_time_acc<template_common_type, T1, T2, S...> {};
 template <class...S>
-using common_type_t = typename common_type<S...>::type;
+using common_type = typename template_common_type<S...>::type;
 
 template <class T, class U,
           template <class> class TQUAL,
           template <class> class UQUAL>
-struct basic_common_reference {};
+struct template_basic_common_reference {};
 template <class...S>
-struct common_reference {};
+struct template_common_reference {};
 namespace inner {
 
 template <class X>
-using cref_t = add_lvalue_reference_t<add_const_t<remove_reference_t<X>>>;
+using cref_t = add_lvalue_reference<add_const<remove_reference<X>>>;
 
 template <class FROM, class TO>
 struct copycv {
@@ -2742,15 +3211,15 @@ struct copycv {
 };
 template <class FROM, class TO>
 struct copycv<const FROM, TO> {
-  using type = add_const_t<TO>;
+  using type = add_const<TO>;
 };
 template <class FROM, class TO>
 struct copycv<volatile FROM, TO> {
-  using type = add_volatile_t<TO>;
+  using type = add_volatile<TO>;
 };
 template <class FROM, class TO>
 struct copycv<const volatile FROM, TO> {
-  using type = add_cv_t<TO>;
+  using type = add_cv<TO>;
 };
 template <class FROM, class TO>
 using copycv_t = typename copycv<FROM, TO>::type;
@@ -2761,47 +3230,47 @@ struct copycvref {
 };
 template <class FROM, class TO>
 struct copycvref<const FROM, TO> {
-  using type = add_const_t<TO>;
+  using type = add_const<TO>;
 };
 template <class FROM, class TO>
 struct copycvref<volatile FROM, TO> {
-  using type = add_volatile_t<TO>;
+  using type = add_volatile<TO>;
 };
 template <class FROM, class TO>
 struct copycvref<const volatile FROM, TO> {
-  using type = add_cv_t<TO>;
+  using type = add_cv<TO>;
 };
 template <class FROM, class TO>
 struct copycvref<FROM &, TO> {
-  using type = add_lvalue_reference_t<TO>;
+  using type = add_lvalue_reference<TO>;
 };
 template <class FROM, class TO>
 struct copycvref<const FROM &, TO> {
-  using type = add_lvalue_reference_t<add_const_t<TO>>;
+  using type = add_lvalue_reference<add_const<TO>>;
 };
 template <class FROM, class TO>
 struct copycvref<volatile FROM &, TO> {
-  using type = add_lvalue_reference_t<add_volatile_t<TO>>;
+  using type = add_lvalue_reference<add_volatile<TO>>;
 };
 template <class FROM, class TO>
 struct copycvref<const volatile FROM &, TO> {
-  using type = add_lvalue_reference_t<add_cv_t<TO>>;
+  using type = add_lvalue_reference<add_cv<TO>>;
 };
 template <class FROM, class TO>
 struct copycvref<FROM &&, TO> {
-  using type = add_rvalue_reference_t<TO>;
+  using type = add_rvalue_reference<TO>;
 };
 template <class FROM, class TO>
 struct copycvref<const FROM &&, TO> {
-  using type = add_rvalue_reference_t<add_const_t<TO>>;
+  using type = add_rvalue_reference<add_const<TO>>;
 };
 template <class FROM, class TO>
 struct copycvref<volatile FROM &&, TO> {
-  using type = add_rvalue_reference_t<add_volatile_t<TO>>;
+  using type = add_rvalue_reference<add_volatile<TO>>;
 };
 template <class FROM, class TO>
 struct copycvref<const volatile FROM &&, TO> {
-  using type = add_rvalue_reference_t<add_cv_t<TO>>;
+  using type = add_rvalue_reference<add_cv<TO>>;
 };
 template <class FROM, class TO>
 using copycvref_t = typename copycvref<FROM, TO>::type;
@@ -2832,28 +3301,31 @@ struct common_ref {
 template <class X, class Y>
 struct common_ref<X &, Y &> {
   using cond_res_type = cond_res_t<copycv_t<X, Y> &, copycv_t<Y, X> &>;
-  using type = conditional_t<!is_same_v<cond_res_type, disable>
-                             && is_reference_v<cond_res_type>,
-                             cond_res_type, disable>;
+  using type = conditional<(!is_same<cond_res_type, disable>
+                            && is_reference<cond_res_type>),
+                           cond_res_type,
+                           disable>;
 };
 template <class X, class Y>
 struct common_ref<X &&, Y &&> {
   using A = X &&;
   using B = Y &&;
   using t = typename common_ref<X &, Y &>::type;
-  using C = remove_reference_t<t> &&;
-  using type = conditional_t<!is_same_v<t, disable>
-                             && is_convertible_v<A, C>
-                             && is_convertible_v<B, C>,
-                             C, disable>;
+  using C = remove_reference<t> &&;
+  using type = conditional<(!is_same<t, disable>
+                            && is_convertible<A, C>
+                            && is_convertible<B, C>),
+                           C,
+                           disable>;
 };
 template <class X, class Y>
 struct common_ref<X &&, Y &> {
   using A = X &&;
   using B = Y &;
   using D = typename common_ref<const X &, Y &>::type;
-  using type = conditional_t<!is_same_v<D, disable> && is_convertible_v<A, D>,
-                             D, disable>;
+  using type = conditional<(!is_same<D, disable> && is_convertible<A, D>),
+                           D,
+                           disable>;
 };
 template <class X, class Y>
 struct common_ref<X &, Y &&> : common_ref<Y &&, X &> {};
@@ -2863,16 +3335,16 @@ using common_ref_t = typename common_ref<A, B>::type;
 template <class T1, class T2>
 struct common_reference_impl4 {};
 template <class T1, class T2>
-requires requires {typename common_type_t<T1, T2>;}
+requires requires {typename common_type<T1, T2>;}
 struct common_reference_impl4<T1, T2> {
-  using type = common_type_t<T1, T2>;
+  using type = common_type<T1, T2>;
 };
 
 template <class T1, class T2>
 struct common_reference_impl3 : common_reference_impl4<T1, T2> {};
 template <class T1, class T2>
 requires requires {
-  requires (!is_same_v<cond_res_t<T1, T2>, disable>);
+  requires (!is_same<cond_res_t<T1, T2>, disable>);
 }
 struct common_reference_impl3<T1, T2> {
   using type = cond_res_t<T1, T2>;
@@ -2882,98 +3354,100 @@ template <class T1, class T2>
 struct common_reference_impl2 : common_reference_impl3<T1, T2> {};
 template <class T1, class T2>
 requires requires {
-  typename basic_common_reference
-    <remove_cvref_t<T1>, remove_cvref_t<T2>,
+  typename template_basic_common_reference
+    <remove_cvref<T1>, remove_cvref<T2>,
      xref<T1>::template tmpl, xref<T2>::template tmpl>::type;
 }
 struct common_reference_impl2<T1, T2> {
-  using type = typename basic_common_reference
-    <remove_cvref_t<T1>, remove_cvref_t<T2>,
+  using type = typename template_basic_common_reference
+    <remove_cvref<T1>, remove_cvref<T2>,
      xref<T1>::template tmpl, xref<T2>::template tmpl>::type;
 };
 
-template <class T1, class T2, bool = is_reference_v<T1> && is_reference_v<T2>
-          && !is_same_v<common_ref_t<T1, T2>, disable>>
+template <class T1, class T2, class U = common_ref_t<T1, T2>,
+          bool = (is_reference<T1> && is_reference<T2>
+                  && !is_same<U, disable>
+                  && is_convertible<add_pointer<T1>, add_pointer<U>>
+                  && is_convertible<add_pointer<T2>, add_pointer<U>>)>
 struct common_reference_impl {
   using type = common_ref_t<T1, T2>;
 };
-template <class T1, class T2>
-struct common_reference_impl<T1, T2, false> : common_reference_impl2<T1, T2> {};
+template <class T1, class T2, class U>
+struct common_reference_impl<T1, T2, U, false>
+  : common_reference_impl2<T1, T2> {};
 
 }
 template <>
-struct common_reference<> {};
+struct template_common_reference<> {};
 template <class T>
-struct common_reference<T> {
+struct template_common_reference<T> {
   using type = T;
 };
 template <class T1, class T2>
-struct common_reference<T1, T2> : inner::common_reference_impl<T1, T2> {};
+struct template_common_reference<T1, T2>
+  : inner::common_reference_impl<T1, T2> {};
 template <class T1, class T2, class...S>
-struct common_reference<T1, T2, S...>
-  : compile_time_acc<common_reference, T1, T2, S...> {};
+struct template_common_reference<T1, T2, S...>
+  : compile_time_acc<template_common_reference, T1, T2, S...> {};
 template <class...S>
-using common_reference_t = typename common_reference<S...>::type;
+using common_reference = typename template_common_reference<S...>::type;
 
-template <class T, bool = has_member_type_type_v<std::underlying_type<T>>>
-struct underlying_type {
+template <class T, bool = has_member_type_type<std::underlying_type<T>>>
+struct template_underlying_type {
   using type = typename std::underlying_type<T>::type;
 };
 template <class T>
-struct underlying_type<T, false> {};
+struct template_underlying_type<T, false> {};
 template <class T>
-using underlying_type_t = typename underlying_type<T>::type;
+using underlying_type = typename template_underlying_type<T>::type;
 
 template <class...>
 using void_t = void;
-
-// todo:
-//   // member relationships
-//   is_pointer_interconvertible_with_class(M S::*) noexcept
-//   is_corresponding_member(M S::*, M2, S2::*) noexcept
 
 namespace inner {
 
 struct check_uses_allocator {
   template <class T, class ALLOC>
-  static enable_if_t<is_convertible_v<ALLOC, typename T::allocator_type>>
+  static enable_if<is_convertible<ALLOC, typename T::allocator_type>>
   f(type_pack<T, ALLOC>);
 };
 
 }
 template <class T, class ALLOC>
-struct uses_allocator
-  : f_is_well_formed<inner::check_uses_allocator, T, ALLOC> {};
+struct template_uses_allocator
+  : template_f_is_well_formed<inner::check_uses_allocator, T, ALLOC> {};
 template <class T, class ALLOC>
-inline constexpr bool uses_allocator_v = uses_allocator<T, ALLOC>::value;
+inline constexpr bool uses_allocator = template_uses_allocator<T, ALLOC>::value;
 
 // non-std
 
 template <class...S>
-struct max_align_of_types {
+struct template_max_align_of_types {
   static constexpr size_t value = 1;
 };
 template <class X, class...S>
-struct max_align_of_types<X, S...> {
+struct template_max_align_of_types<X, S...> {
   static constexpr size_t value
-    = max_align_of_types<S...>::value > alignof(X)
-    ? max_align_of_types<S...>::value : alignof(X);
+    = template_max_align_of_types<S...>::value > alignof(X)
+    ? template_max_align_of_types<S...>::value : alignof(X);
 };
 template <class...S>
-inline constexpr size_t max_align_of_types_v = max_align_of_types<S...>::value;
+inline constexpr size_t max_align_of_types
+  = template_max_align_of_types<S...>::value;
 
 template <class...S>
-struct max_size_of_types {
+struct template_max_size_of_types {
   static constexpr size_t value = 0;
 };
 template <class X, class...S>
-struct max_size_of_types<X, S...> {
+struct template_max_size_of_types<X, S...> {
   static constexpr size_t value
-    = max_size_of_types<S...>::value > sizeof(X)
-    ? max_size_of_types<S...>::value : sizeof(X);
+    = template_max_size_of_types<S...>::value > sizeof(X)
+    ? template_max_size_of_types<S...>::value : sizeof(X);
 };
 template <class...S>
-inline constexpr size_t max_size_of_types_v = max_size_of_types<S...>::value;
+inline constexpr size_t max_size_of_types
+  = template_max_size_of_types<S...>::value;
 
 template <class T, class...>
 using type_t = T;
@@ -2985,133 +3459,132 @@ struct check_is_implicitly_constructible {
   static void helper_f(const T &);
 
   template <class T, class...S,
-            class = enable_if_t<is_constructible_v<T, S...>>>
+            class = enable_if<is_constructible<T, S...>>>
   static decltype(helper_f<T>({declval<S>()...})) f(type_pack<T, S...>);
 };
 
 }
 template <class T, class...S>
-struct is_implicitly_constructible
-  : f_is_well_formed<inner::check_is_implicitly_constructible, T, S...> {};
+struct template_is_implicitly_constructible
+  : template_f_is_well_formed<inner::check_is_implicitly_constructible,
+                              T, S...> {};
 template <class T, class...S>
-inline constexpr bool is_implicitly_constructible_v
-  = is_implicitly_constructible<T, S...>::value;
+inline constexpr bool is_implicitly_constructible
+  = template_is_implicitly_constructible<T, S...>::value;
 template <class T>
-struct is_implicitly_default_constructible
-  : is_implicitly_constructible<T> {};
+struct template_is_implicitly_default_constructible
+  : template_is_implicitly_constructible<T> {};
 template <class T, class...S>
-inline constexpr bool is_implicitly_default_constructible_v
-  = is_implicitly_default_constructible<T, S...>::value;
-
-template <class T>
-struct is_trivial_empty
-  : bool_constant<is_trivial_v<T> && is_empty_v<T>> {};
-template <class T>
-inline constexpr bool is_trivial_empty_v = is_trivial_empty<T>::value;
+inline constexpr bool is_implicitly_default_constructible
+  = template_is_implicitly_default_constructible<T, S...>::value;
 
 template <class FROM, class TO>
-struct copy_const {
+struct template_copy_const {
   using type = TO;
 };
 template <class FROM, class TO>
-struct copy_const<const FROM, TO> {
-  using type = add_const_t<TO>;
+struct template_copy_const<const FROM, TO> {
+  using type = add_const<TO>;
 };
 template <class FROM, class TO>
-using copy_const_t = typename copy_const<FROM, TO>::type;
+using copy_const = typename template_copy_const<FROM, TO>::type;
 
 template <class FROM, class TO>
-struct copy_volatile {
+struct template_copy_volatile {
   using type = TO;
 };
 template <class FROM, class TO>
-struct copy_volatile<volatile FROM, TO> {
-  using type = add_volatile_t<TO>;
+struct template_copy_volatile<volatile FROM, TO> {
+  using type = add_volatile<TO>;
 };
 template <class FROM, class TO>
-using copy_volatile_t = typename copy_volatile<FROM, TO>::type;
+using copy_volatile = typename template_copy_volatile<FROM, TO>::type;
 
 template <class FROM, class TO>
-struct copy_lvalue_reference {
+struct template_copy_lvalue_reference {
   using type = TO;
 };
 template <class FROM, class TO>
-struct copy_lvalue_reference<FROM &, TO> {
-  using type = add_lvalue_reference_t<TO>;
+struct template_copy_lvalue_reference<FROM &, TO> {
+  using type = add_lvalue_reference<TO>;
 };
 template <class FROM, class TO>
-using copy_lvalue_reference_t = typename copy_lvalue_reference<FROM, TO>::type;
+using copy_lvalue_reference
+  = typename template_copy_lvalue_reference<FROM, TO>::type;
 
 template <class FROM, class TO>
-struct copy_rvalue_reference {
+struct template_copy_rvalue_reference {
   using type = TO;
 };
 template <class FROM, class TO>
-struct copy_rvalue_reference<FROM &&, TO> {
-  using type = add_rvalue_reference_t<TO>;
+struct template_copy_rvalue_reference<FROM &&, TO> {
+  using type = add_rvalue_reference<TO>;
 };
 template <class FROM, class TO>
-using copy_rvalue_reference_t = typename copy_rvalue_reference<FROM, TO>::type;
+using copy_rvalue_reference
+  = typename template_copy_rvalue_reference<FROM, TO>::type;
 
 template <class FROM, class TO>
-struct copy_reference {
+struct template_copy_reference {
   using type = TO;
 };
 template <class FROM, class TO>
-struct copy_reference<FROM &, TO> {
-  using type = add_lvalue_reference_t<TO>;
+struct template_copy_reference<FROM &, TO> {
+  using type = add_lvalue_reference<TO>;
 };
 template <class FROM, class TO>
-struct copy_reference<FROM &&, TO> {
-  using type = add_rvalue_reference_t<TO>;
+struct template_copy_reference<FROM &&, TO> {
+  using type = add_rvalue_reference<TO>;
 };
 template <class FROM, class TO>
-using copy_reference_t = typename copy_reference<FROM, TO>::type;
+using copy_reference = typename template_copy_reference<FROM, TO>::type;
 
 template <class FROM, class TO>
-struct copy_cv {
-  using type = copy_volatile_t<FROM, copy_const_t<FROM, TO>>;
+struct template_copy_cv {
+  using type = copy_volatile<FROM, copy_const<FROM, TO>>;
 };
 template <class FROM, class TO>
-using copy_cv_t = typename copy_cv<FROM, TO>::type;
+using copy_cv = typename template_copy_cv<FROM, TO>::type;
 
 template <class FROM, class TO>
-struct copy_cvref {
-  using type = copy_reference_t<FROM, copy_cv_t<remove_reference_t<FROM>, TO>>;
+struct template_copy_cvref {
+  using type = copy_reference<FROM, copy_cv<remove_reference<FROM>, TO>>;
 };
 template <class FROM, class TO>
-using copy_cvref_t = typename copy_cvref<FROM, TO>::type;
+using copy_cvref = typename template_copy_cvref<FROM, TO>::type;
 
 template <class T>
-struct is_nothrow_movable
-  : bool_constant<is_nothrow_move_constructible_v<T>
-                  && is_nothrow_move_assignable_v<T>> {};
+struct template_is_nothrow_movable
+  : bool_constant<(is_nothrow_move_constructible<T>
+                   && is_nothrow_move_assignable<T>)> {};
 template <class T>
-inline constexpr bool is_nothrow_movable_v = is_nothrow_movable<T>::value;
+inline constexpr bool is_nothrow_movable
+  = template_is_nothrow_movable<T>::value;
 
 template <class T>
-struct is_nothrow_copyable
-  : bool_constant<is_nothrow_move_constructible_v<T>
-                  && is_nothrow_move_assignable_v<T>
-                  && is_nothrow_copy_constructible_v<T>
-                  && is_nothrow_copy_assignable_v<T>> {};
+struct template_is_nothrow_copyable
+  : bool_constant<(is_nothrow_move_constructible<T>
+                   && is_nothrow_move_assignable<T>
+                   && is_nothrow_copy_constructible<T>
+                   && is_nothrow_copy_assignable<T>)> {};
 template <class T>
-inline constexpr bool is_nothrow_copyable_v = is_nothrow_copyable<T>::value;
+inline constexpr bool is_nothrow_copyable
+  = template_is_nothrow_copyable<T>::value;
 
 template <class Y, class T>
-struct is_compatible_pointer_with;
+struct template_is_compatible_pointer_with;
 template <class Y, class T>
-struct is_compatible_pointer_with<Y *, T *>
-  : is_convertible<Y *, T *> {};
+struct template_is_compatible_pointer_with<Y *, T *>
+  : template_is_convertible<Y *, T *> {};
 template <class Y, class T>
-struct is_compatible_pointer_with<Y *, T []>
-  : is_convertible<Y (*)[], T (*)[]> {};
+struct template_is_compatible_pointer_with<Y *, T []>
+  : template_is_convertible<Y (*)[], T (*)[]> {};
 template <class Y, class T, size_t N>
-struct is_compatible_pointer_with<Y *, T [N]>
-  : is_convertible<Y (*)[N], T (*)[N]> {};
+struct template_is_compatible_pointer_with<Y *, T [N]>
+  : template_is_convertible<Y (*)[N], T (*)[N]> {};
 template <class Y, class T>
-inline constexpr bool is_compatible_pointer_with_v
-  = is_compatible_pointer_with<Y, T>::value;
+inline constexpr bool is_compatible_pointer_with
+  = template_is_compatible_pointer_with<Y, T>::value;
 
 }
 
@@ -3120,11 +3593,11 @@ namespace re {
 
 template <class T>
 struct fo_forward {
-  constexpr T &&operator ()(remove_reference_t<T> &x) const noexcept {
+  constexpr T &&operator ()(remove_reference<T> &x) const noexcept {
     return static_cast<T &&>(x);
   }
-  constexpr T &&operator ()(remove_reference_t<T> &&x) const noexcept
-    requires (!is_lvalue_reference_v<T>) {
+  constexpr T &&operator ()(remove_reference<T> &&x) const noexcept
+    requires (!is_lvalue_reference<T>) {
     return static_cast<T &&>(x);
   }
 };
@@ -3133,8 +3606,8 @@ inline constexpr fo_forward<T> forward{};
 
 struct fo_move {
   template <class T>
-  constexpr remove_reference_t<T> &&operator ()(T &&x) const noexcept {
-    return static_cast<remove_reference_t<T> &&>(x);
+  constexpr remove_reference<T> &&operator ()(T &&x) const noexcept {
+    return static_cast<remove_reference<T> &&>(x);
   }
   template <class A, class B>
   auto operator ()(A &&, B) const;
@@ -3143,9 +3616,10 @@ inline constexpr fo_move move{};
 
 struct fo_move_if_noexcept {
   template <class T>
-  constexpr conditional_t<!is_nothrow_move_constructible_v<T>
-                          && is_copy_constructible_v<T>,
-                          const T &, T &&>
+  constexpr conditional<(!is_nothrow_move_constructible<T>
+                         && is_copy_constructible<T>),
+                        const T &,
+                        T &&>
   operator ()(T &x) const noexcept {
     return move(x);
   }
@@ -3155,8 +3629,8 @@ inline constexpr fo_move_if_noexcept move_if_noexcept{};
 struct fo_exchange {
   template <class T, class U>
   constexpr T operator ()(T &obj, U &&new_val) const
-    noexcept(is_nothrow_move_constructible_v<T>
-             && is_nothrow_assignable_v<T &, U>) {
+    noexcept(is_nothrow_move_constructible<T>
+             && is_nothrow_assignable<T &, U>) {
     T old_val = move(obj);
     obj = forward<U>(new_val);
     return old_val;
@@ -3166,7 +3640,7 @@ inline constexpr fo_exchange exchange{};
 
 struct fo_as_const {
   template <class T>
-  constexpr add_const_t<T> &operator ()(T &x) const noexcept {
+  constexpr add_const<T> &operator ()(T &x) const noexcept {
     return x;
   }
 };
@@ -3175,16 +3649,16 @@ inline constexpr fo_as_const as_const{};
 struct fo_cmp_equal {
   template <class T, class U>
   constexpr bool operator ()(T t, U u) const noexcept
-    requires is_integral_v<T> && is_integral_v<U> {
-    if constexpr (is_signed_v<T> == is_signed_v<U>) {
+    requires is_integral<T> && is_integral<U> {
+    if constexpr (is_signed<T> == is_signed<U>) {
       return t == u;
     }
-    else if constexpr (is_signed_v<T>) {
-      using UT = make_unsigned_t<T>;
+    else if constexpr (is_signed<T>) {
+      using UT = make_unsigned<T>;
       return t < 0 ? false : UT(t) == u;
     }
     else {
-      using UU = make_unsigned_t<U>;
+      using UU = make_unsigned<U>;
       return u < 0 ? false : t == UU(u);
     }
   }
@@ -3193,7 +3667,7 @@ inline constexpr fo_cmp_equal cmp_equal{};
 struct fo_cmp_not_equal {
   template <class T, class U>
   constexpr bool operator ()(T t, U u) const noexcept
-    requires is_integral_v<T> && is_integral_v<U> {
+    requires is_integral<T> && is_integral<U> {
     return !cmp_equal(t, u);
   }
 };
@@ -3201,16 +3675,16 @@ inline constexpr fo_cmp_not_equal cmp_not_equal{};
 struct fo_cmp_less {
   template <class T, class U>
   constexpr bool operator ()(T t, U u) const noexcept
-    requires is_integral_v<T> && is_integral_v<U> {
-    if constexpr (is_signed_v<T> == is_signed_v<U>) {
+    requires is_integral<T> && is_integral<U> {
+    if constexpr (is_signed<T> == is_signed<U>) {
       return t < u;
     }
-    else if constexpr (is_signed_v<T>) {
-      using UT = make_unsigned_t<T>;
+    else if constexpr (is_signed<T>) {
+      using UT = make_unsigned<T>;
       return t < 0 ? true : UT(t) < u;
     }
     else {
-      using UU = make_unsigned_t<U>;
+      using UU = make_unsigned<U>;
       return u < 0 ? false : t < UU(u);
     }
   }
@@ -3219,7 +3693,7 @@ inline constexpr fo_cmp_less cmp_less{};
 struct fo_cmp_greater {
   template <class T, class U>
   constexpr bool operator ()(T t, U u) const noexcept
-    requires is_integral_v<T> && is_integral_v<U> {
+    requires is_integral<T> && is_integral<U> {
     return cmp_less(u, t);
   }
 };
@@ -3227,7 +3701,7 @@ inline constexpr fo_cmp_greater cmp_greater{};
 struct fo_cmp_less_equal {
   template <class T, class U>
   constexpr bool operator ()(T t, U u) const noexcept
-    requires is_integral_v<T> && is_integral_v<U> {
+    requires is_integral<T> && is_integral<U> {
     return !cmp_greater(t, u);
   }
 };
@@ -3235,7 +3709,7 @@ inline constexpr fo_cmp_less_equal cmp_less_equal{};
 struct fo_cmp_greater_equal {
   template <class T, class U>
   constexpr bool operator ()(T t, U u) const noexcept
-    requires is_integral_v<T> && is_integral_v<U> {
+    requires is_integral<T> && is_integral<U> {
     return !cmp_less(t, u);
   }
 };
@@ -3247,7 +3721,7 @@ template <class R>
 struct fo_in_range {
   template <class T>
   constexpr bool operator ()(T t) const noexcept
-    requires is_integral_v<R> && is_integral_v<T> {
+    requires is_integral<R> && is_integral<T> {
     return cmp_greater_equal(t, numeric_limits<R>::min())
       && cmp_less_equal(t, numeric_limits<R>::max());
   }
@@ -3257,13 +3731,11 @@ inline constexpr fo_in_range<R> in_range{};
 
 struct fo_to_underlying {
   template <class T>
-  constexpr underlying_type_t<T> operator ()(T e) const noexcept {
-    return static_cast<underlying_type_t<T>>(e);
+  constexpr underlying_type<T> operator ()(T e) const noexcept {
+    return static_cast<underlying_type<T>>(e);
   }
 };
 inline constexpr fo_to_underlying to_underlying{};
-
-// todo: unreachable
 
 namespace inner {
 
@@ -3314,11 +3786,10 @@ struct fo_align {
   void *operator ()
     (size_t a, size_t sz, void *&p, size_t &n) const noexcept {
     using bp_t = byte *;
-    const size_t pos = static_cast<size_t>(static_cast<bp_t>(p)
-                                           - bp_t(nullptr));
+    const size_t pos = static_cast<size_t>(static_cast<bp_t>(p) - bp_t{});
     void *ret = nullptr;
     if (n >= sz) {
-      if (const size_t rem = pos % a; rem != 0) {
+      if (const size_t rem = pos % a; rem != 0u) {
         const size_t offset = a - rem;
         if (n - sz >= offset) {
           p = static_cast<bp_t>(p) + offset;
@@ -3345,11 +3816,8 @@ struct get_pointer_element_type_0 {
   template <class T>
   static type_tag<typename T::element_type> f(type_pack<T>);
 };
-template <class T,
-          bool = f_is_well_formed_v<get_pointer_element_type_0, T>>
-struct get_pointer_element_type {
-  // using type = void;
-};
+template <class T, bool = f_is_well_formed<get_pointer_element_type_0, T>>
+struct get_pointer_element_type {};
 template <class T>
 struct get_pointer_element_type<T, true> {
   using type = typename T::element_type;
@@ -3369,7 +3837,7 @@ struct get_pointer_rebind_type_0 {
   static type_tag<typename P::template rebind<T>> f(type_pack<P, T>);
 };
 template <class P, class T,
-          bool = f_is_well_formed_v<get_pointer_rebind_type_0, P, T>>
+          bool = f_is_well_formed<get_pointer_rebind_type_0, P, T>>
 struct get_pointer_rebind_type {};
 template <class P, class T>
 struct get_pointer_rebind_type<P, T, true> {
@@ -3393,17 +3861,19 @@ requires inner::well_formed_pointer_traits<P>
 struct pointer_traits<P> {
   using pointer = P;
   using element_type = typename inner::get_pointer_element_type<P>::type;
-  using difference_type = typename return_type_of_f_or
-    <inner::get_pointer_difference_type, ptrdiff_t, P>::type;
+  using difference_type
+    = return_type_of_f_or<inner::get_pointer_difference_type, ptrdiff_t, P>;
   template <class U>
   using rebind = typename inner::get_pointer_rebind_type<P, U>::type;
 
   template <class T>
-  static pointer pointer_to(T &&x) requires is_void_v<element_type> {
+  static constexpr pointer pointer_to(T &&x)
+    requires is_void<element_type> {
     return P::pointer_to(forward<T>(x));
   }
   template <class E = element_type>
-  static constexpr pointer pointer_to(E &x) requires (!is_void_v<E>) {
+  static constexpr pointer pointer_to(E &x)
+    requires (!is_void<E>) {
     return P::pointer_to(x);
   }
 };
@@ -3417,30 +3887,30 @@ struct pointer_traits<T *> {
 
   template <class U>
   static pointer pointer_to(U &&x) noexcept
-    requires is_void_v<element_type> {
+    requires is_void<element_type> {
     return addressof(forward<U>(x));
   }
   template <class E = element_type>
   static constexpr pointer pointer_to(E &x)
-    noexcept requires (!is_void_v<E>) {
+    noexcept requires (!is_void<E>) {
     return addressof(x);
   }
 };
 
 template <class P>
-using pointer_element_t = typename pointer_traits<P>::element_type;
+using ptr_element = typename pointer_traits<P>::element_type;
 template <class P>
-using pointer_difference_t = typename pointer_traits<P>::difference_type;
+using ptr_dft = typename pointer_traits<P>::difference_type;
 template <class P, class X>
-using pointer_rebind_t = typename pointer_traits<P>::template rebind<X>;
+using ptr_rebind = typename pointer_traits<P>::template rebind<X>;
 
 template <class PTR>
 struct fo_pointer_to {
   template <class T>
-  typename pointer_traits<PTR>::template rebind<remove_reference_t<T>>
+  typename pointer_traits<PTR>::template rebind<remove_reference<T>>
   operator ()(T &&x) const {
     return pointer_traits<typename pointer_traits<PTR>
-                          ::template rebind<remove_reference_t<T>>>
+                          ::template rebind<remove_reference<T>>>
       ::pointer_to(x);
   }
 };
@@ -3470,7 +3940,7 @@ inline constexpr fo_to_address to_address{};
 
 template <class T>
 concept can_apply_to_address = requires(T &&x) {
-  requires is_referenceable_v<T>;
+  requires is_referenceable<T>;
   to_address(forward<T>(x));
 };
 
@@ -3482,96 +3952,98 @@ namespace re {
 template <class>
 class reference_wrapper;
 template <class>
-struct is_reference_wrapper : false_type {};
+struct template_is_reference_wrapper : false_type {};
 template <class T>
-struct is_reference_wrapper<reference_wrapper<T>> : true_type {};
+struct template_is_reference_wrapper<reference_wrapper<T>> : true_type {};
 template <class T>
-struct is_reference_wrapper<const reference_wrapper<T>> : true_type {};
+struct template_is_reference_wrapper<const reference_wrapper<T>> : true_type {};
 template <class T>
-struct is_reference_wrapper<volatile reference_wrapper<T>> : true_type {};
+struct template_is_reference_wrapper<volatile reference_wrapper<T>>
+  : true_type {};
 template <class T>
-struct is_reference_wrapper<const volatile reference_wrapper<T>> : true_type {};
+struct template_is_reference_wrapper<const volatile reference_wrapper<T>>
+  : true_type {};
 template <class T>
-constexpr bool is_reference_wrapper_v = is_reference_wrapper<T>::value;
+constexpr bool is_reference_wrapper = template_is_reference_wrapper<T>::value;
 
 template <class T>
-struct unwrap_reference {
+struct template_unwrap_reference {
   using type = T;
 };
 template <class T>
-struct unwrap_reference<reference_wrapper<T>> {
+struct template_unwrap_reference<reference_wrapper<T>> {
   using type = T &;
 };
 template <class T>
-using unwrap_reference_t = typename unwrap_reference<T>::type;
+using unwrap_reference = typename template_unwrap_reference<T>::type;
 
 template <class T>
-struct unwrap_ref_decay : unwrap_reference<decay_t<T>> {};
+struct template_unwrap_ref_decay : template_unwrap_reference<decay<T>> {};
 template <class T>
-using unwrap_ref_decay_t = typename unwrap_ref_decay<T>::type;
+using unwrap_ref_decay = typename template_unwrap_ref_decay<T>::type;
 
 namespace inner::fns {
 
 template <class F, class T, class X, class...S>
 constexpr
-enable_if_t<is_function_v<F> && is_base_of_v<T, remove_reference_t<X>>,
-            decltype((declval<X>().*declval<F T::*>())(declval<S>()...))>
+enable_if<is_function<F> && is_base_of<T, remove_reference<X>>,
+          decltype((declval<X>().*declval<F T::*>())(declval<S>()...))>
 invoke_impl(F T::*f, X &&x, S &&...s)
   noexcept(noexcept((forward<X>(x).*f)(forward<S>(s)...))) {
   return (forward<X>(x).*f)(forward<S>(s)...);
 }
 template <class F, class T, class X, class...S>
 constexpr
-enable_if_t<is_function_v<F> && !is_base_of_v<T, decay_t<X>>
-            && is_reference_wrapper_v<decay_t<X>>,
-            decltype(((declval<X>().get()).*declval<F T::*>())
-                     (declval<S>()...))>
+enable_if<(is_function<F> && !is_base_of<T, decay<X>>
+           && is_reference_wrapper<decay<X>>),
+          decltype(((declval<X>().get()).*declval<F T::*>())
+                   (declval<S>()...))>
 invoke_impl(F T::*f, X &&x, S &&...s)
   noexcept(noexcept(((x.get()).*f)(forward<S>(s)...))) {
   return ((x.get()).*f)(forward<S>(s)...);
 }
 template <class F, class T, class X, class...S>
 constexpr
-enable_if_t<is_function_v<F> && !is_base_of_v<T, decay_t<X>>
-            && !is_reference_wrapper_v<decay_t<X>>,
-            decltype(((*declval<X>()).*declval<F T::*>())(declval<S>()...))>
+enable_if<(is_function<F> && !is_base_of<T, decay<X>>
+           && !is_reference_wrapper<decay<X>>),
+          decltype(((*declval<X>()).*declval<F T::*>())(declval<S>()...))>
 invoke_impl(F T::*f, X &&x, S &&...s)
   noexcept(noexcept(((*forward<X>(x)).*f)(forward<S>(s)...))) {
   return ((*forward<X>(x)).*f)(forward<S>(s)...);
 }
 template <class F, class T, class X, class...S>
 constexpr
-enable_if_t<!is_function_v<F> && is_base_of_v<T, decay_t<X>>,
-            decltype(declval<X>().*declval<F T::*>())>
+enable_if<!is_function<F> && is_base_of<T, decay<X>>,
+          decltype(declval<X>().*declval<F T::*>())>
 invoke_impl(F T::*f, X &&x) noexcept(noexcept((forward<X>(x)).*f)) {
   return forward<X>(x).*f;
 }
 template <class F, class T, class X, class...S>
 constexpr
-enable_if_t<!is_function_v<F> && !is_base_of_v<T, decay_t<X>>
-            && is_reference_wrapper_v<decay_t<X>>,
-            decltype(declval<X>().get().*declval<F T::*>())>
+enable_if<(!is_function<F> && !is_base_of<T, decay<X>>
+           && is_reference_wrapper<decay<X>>),
+          decltype(declval<X>().get().*declval<F T::*>())>
 invoke_impl(F T::*f, X &&x) noexcept(noexcept(x.get().*f)) {
   return x.get().*f;
 }
 template <class F, class T, class X, class...S>
 constexpr
-enable_if_t<!is_function_v<F> && !is_base_of_v<T, decay_t<X>>
-            && !is_reference_wrapper_v<decay_t<X>>,
-            decltype((*declval<X>()).*declval<F T::*>())>
+enable_if<(!is_function<F> && !is_base_of<T, decay<X>>
+           && !is_reference_wrapper<decay<X>>),
+          decltype((*declval<X>()).*declval<F T::*>())>
 invoke_impl(F T::*f, X &&x) noexcept(noexcept((*forward<X>(x)).*f)) {
   return (*forward<X>(x)).*f;
 }
 template <class F, class...S>
 constexpr
-enable_if_t<!is_member_pointer_v<decay_t<F>>,
-            decltype(declval<F>()(declval<S>()...))>
+enable_if<!is_member_pointer<decay<F>>,
+          decltype(declval<F>()(declval<S>()...))>
 invoke_impl(F &&f, S &&...s)
   noexcept(noexcept(forward<F>(f)(forward<S>(s)...))) {
   return forward<F>(f)(forward<S>(s)...);
 }
 
-template <class R, class F, class...S, class = enable_if_t<is_void_v<R>>>
+template <class R, class F, class...S, class = enable_if<is_void<R>>>
 constexpr auto invoke_r_impl(F &&f, S &&...s)
   noexcept(noexcept(inner::fns::invoke_impl(forward<F>(f), forward<S>(s)...)))
   ->decltype(static_cast<void>
@@ -3581,9 +4053,11 @@ constexpr auto invoke_r_impl(F &&f, S &&...s)
 }
 template <class R, class F, class...S>
 constexpr
-enable_if_t
-<!is_void_v<R> && is_convertible_v
- <decltype(inner::fns::invoke_impl(declval<F>(), declval<S>()...)), R>, R>
+enable_if<(!is_void<R>
+           && is_convertible
+           <decltype(inner::fns::invoke_impl(declval<F>(), declval<S>()...)),
+            R>),
+          R>
 invoke_r_impl(F &&f, S &&...s)
   noexcept(noexcept(static_cast<R>(inner::fns::invoke_impl
                                    (forward<F>(f), forward<S>(s)...)))) {
@@ -3602,10 +4076,10 @@ struct check_is_invocable {
 
 }
 template <class F, class...S>
-struct is_invocable
-  : f_is_well_formed<inner::check_is_invocable, F, S...> {};
+struct template_is_invocable
+  : template_f_is_well_formed<inner::check_is_invocable, F, S...> {};
 template <class F, class...S>
-constexpr bool is_invocable_v = is_invocable<F, S...>::value;
+constexpr bool is_invocable = template_is_invocable<F, S...>::value;
 
 namespace inner {
 
@@ -3617,10 +4091,10 @@ struct check_is_invocable_r {
 
 }
 template <class R, class F, class...S>
-struct is_invocable_r
-  : f_is_well_formed<inner::check_is_invocable_r, R, F, S...> {};
+struct template_is_invocable_r
+  : template_f_is_well_formed<inner::check_is_invocable_r, R, F, S...> {};
 template <class F, class...S>
-constexpr bool is_invocable_r_v = is_invocable_r<F, S...>::value;
+constexpr bool is_invocable_r = template_is_invocable_r<F, S...>::value;
 
 namespace inner {
 
@@ -3633,10 +4107,10 @@ struct invoke_result_impl<true, F, S...> {
 
 }
 template <class F, class...S>
-struct invoke_result
-  : inner::invoke_result_impl<is_invocable_v<F, S...>, F, S...> {};
+struct template_invoke_result
+  : inner::invoke_result_impl<is_invocable<F, S...>, F, S...> {};
 template <class F, class...S>
-using invoke_result_t = typename invoke_result<F, S...>::type;
+using invoke_result = typename template_invoke_result<F, S...>::type;
 
 namespace inner {
 
@@ -3648,17 +4122,18 @@ template <class F, class...S>
 struct is_nothrow_invocable_impl<true, F, S...> {
   static constexpr bool value
     = noexcept(inner::fns::invoke_impl(declval<F>(), declval<S>()...))
-    && (is_nothrow_move_constructible_v<invoke_result_t<F, S...>>
-        || is_void_v<invoke_result_t<F, S...>>);
+    && (is_nothrow_move_constructible<invoke_result<F, S...>>
+        || is_void<invoke_result<F, S...>>);
 };
 
 }
 template <class F, class...S>
-struct is_nothrow_invocable
+struct template_is_nothrow_invocable
   : bool_constant<inner::is_nothrow_invocable_impl
-                  <is_invocable<F, S...>::value, F, S...>::value> {};
+                  <template_is_invocable<F, S...>::value, F, S...>::value> {};
 template <class F, class...S>
-constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<F, S...>::value;
+constexpr bool is_nothrow_invocable
+  = template_is_nothrow_invocable<F, S...>::value;
 
 namespace inner {
 
@@ -3674,17 +4149,19 @@ struct is_nothrow_invocable_r_impl<true, R, F, S...> {
 
 }
 template <class R, class F, class...S>
-struct is_nothrow_invocable_r
+struct template_is_nothrow_invocable_r
   : bool_constant<inner::is_nothrow_invocable_r_impl
-                  <is_invocable_r<R, F, S...>::value, R, F, S...>::value> {};
+                  <template_is_invocable_r<R, F, S...>::value,
+                   R, F, S...>::value> {};
 template <class R, class F, class...S>
-inline constexpr bool is_nothrow_invocable_r_v
-  = is_nothrow_invocable_r<R, F, S...>::value;
+inline constexpr bool is_nothrow_invocable_r
+  = template_is_nothrow_invocable_r<R, F, S...>::value;
 
 struct fo_invoke {
   template <class F, class...S>
-  constexpr typename invoke_result<F, S...>::type operator ()(F &&f, S &&...s)
-    const noexcept(is_nothrow_invocable<F, S...>::value) {
+  constexpr typename template_invoke_result<F, S...>::type
+  operator ()(F &&f, S &&...s)
+    const noexcept(template_is_nothrow_invocable<F, S...>::value) {
     return inner::fns::invoke_impl(forward<F>(f), forward<S>(s)...);
   }
 };
@@ -3694,12 +4171,12 @@ namespace inner::fns {
 template <class T, class F, size_t...I>
 constexpr void type_pack_for_each_impl0(F f, index_sequence<I...>)
 {
-  invoke(f, type_tag<type_pack_element_t<I, T>>()...);
+  invoke(f, type_tag<type_pack_element<I, T>>()...);
 }
 template <class T, class F, size_t...I>
 constexpr bool type_pack_for_each_until_false_impl0(F f, index_sequence<I...>)
 {
-  return invoke(f, type_tag<type_pack_element_t<I, T>>()...);
+  return invoke(f, type_tag<type_pack_element<I, T>>()...);
 }
 
 }
@@ -3708,7 +4185,7 @@ template <class R>
 struct fo_invoke_r {
   template <class F, class...S>
   constexpr decltype(auto) operator ()(F &&f, S &&...s)
-    const noexcept(is_nothrow_invocable_r_v<R, F, S...>) {
+    const noexcept(is_nothrow_invocable_r<R, F, S...>) {
     return inner::fns::invoke_r_impl<R>(forward<F>(f), forward<S>(s)...);
   }
 };
@@ -3746,8 +4223,8 @@ public:
 
   template <class U>
   constexpr reference_wrapper(U &&x) noexcept(noexcept(f(declval<U>())))
-    requires (!is_same_v<remove_cvref_t<U>, reference_wrapper>)
-    && f_is_well_formed_v<inner::refw_check_u<T>, U> {
+    requires (!is_same<remove_cvref<U>, reference_wrapper>)
+    && f_is_well_formed<inner::refw_check_u<T>, U> {
     T &r = forward<U>(x);
     p = addressof(r);
   }
@@ -3761,7 +4238,7 @@ public:
   }
 
   template <class...S>
-  constexpr invoke_result_t<T &, S...> operator()(S &&...s) const {
+  constexpr invoke_result<T &, S...> operator ()(S &&...s) const {
     return invoke(*p, forward<S>(s)...);
   }
 };
@@ -3811,62 +4288,63 @@ inline constexpr fo_cref cref{};
 
 }
 
+//todo review
 // language-related concepts
 namespace re {
 
 template <class A, class B>
-concept same_as = is_same_v<A, B> && is_same_v<B, A>;
+concept same_as = is_same<A, B> && is_same<B, A>;
 
 template <class DERIVED, class BASE>
-concept derived_from = is_base_of_v<BASE, DERIVED>
-  && is_convertible_v<const volatile DERIVED *, const volatile BASE *>;
+concept derived_from = is_base_of<BASE, DERIVED>
+  && is_convertible<const volatile DERIVED *, const volatile BASE *>;
 
 template <class FROM, class TO>
 concept convertible_to
-  = is_convertible_v<FROM, TO> && requires {static_cast<TO>(declval<FROM>());};
+  = is_convertible<FROM, TO> && requires {static_cast<TO>(declval<FROM>());};
 
 template <class T, class U>
 concept common_reference_with
-  = same_as<common_reference_t<T, U>, common_reference_t<U, T>>
-  && convertible_to<T, common_reference_t<T, U>>
-  && convertible_to<U, common_reference_t<T, U>>;
+  = same_as<common_reference<T, U>, common_reference<U, T>>
+  && convertible_to<T, common_reference<T, U>>
+  && convertible_to<U, common_reference<T, U>>;
 
 template <class T, class U>
 concept common_with
-  = same_as<common_type_t<T, U>, common_type_t<U, T>>
+  = same_as<common_type<T, U>, common_type<U, T>>
   && requires {
-    static_cast<common_type_t<T, U>>(declval<T>());
-    static_cast<common_type_t<T, U>>(declval<U>());
+    static_cast<common_type<T, U>>(declval<T>());
+    static_cast<common_type<T, U>>(declval<U>());
   }
-  && common_reference_with<add_lvalue_reference_t<const T>,
-                           add_lvalue_reference_t<const U>>
-  && common_reference_with<add_lvalue_reference_t<common_type_t<T, U>>,
-                           common_reference_t<add_lvalue_reference_t<const T>,
-                                              add_lvalue_reference_t<const U>>>;
+  && common_reference_with<add_lvalue_reference<const T>,
+                           add_lvalue_reference<const U>>
+  && common_reference_with<add_lvalue_reference<common_type<T, U>>,
+                           common_reference<add_lvalue_reference<const T>,
+                                            add_lvalue_reference<const U>>>;
 
 template<class T>
-concept integral = is_integral_v<T>;
+concept integral = is_integral<T>;
 template<class T>
-concept signed_integral = integral<T> && is_signed_v<T>;
+concept signed_integral = integral<T> && is_signed<T>;
 template<class T>
 concept unsigned_integral = integral<T> && !signed_integral<T>;
 template<class T>
-concept floating_point = is_floating_point_v<T>;
+concept floating_point = is_floating_point<T>;
 
 template <class LHS, class RHS>
 concept assignable_from
-  = is_lvalue_reference_v<LHS>
-  && common_reference_with<const remove_reference_t<LHS> &,
-                           const remove_reference_t<RHS> &>
+  = is_lvalue_reference<LHS>
+  && common_reference_with<const remove_reference<LHS> &,
+                           const remove_reference<RHS> &>
   && requires(LHS lhs, RHS &&rhs) {
     {lhs = static_cast<RHS &&>(rhs)}->same_as<LHS>;
   };
 
 template <class T>
-concept destructible = is_nothrow_destructible_v<T>;
+concept destructible = is_nothrow_destructible<T>;
 
 template <class T, class...S>
-concept constructible_from = destructible<T> && is_constructible_v<T, S...>;
+concept constructible_from = destructible<T> && is_constructible<T, S...>;
 
 template<class T>
 concept default_initializable
@@ -3890,10 +4368,10 @@ template <class T>
 void swap(T &, T &) = delete;
 template <class X, class Y>
 concept ranges_swap_adl_version_capable =
-  (re::is_class_v<re::remove_reference_t<X>>
-   || re::is_enum_v<re::remove_reference_t<X>>
-   || re::is_class_v<re::remove_reference_t<Y>>
-   || re::is_enum_v<re::remove_reference_t<Y>>)
+  (re::is_class<re::remove_reference<X>>
+   || re::is_enum<re::remove_reference<X>>
+   || re::is_class<re::remove_reference<Y>>
+   || re::is_enum<re::remove_reference<Y>>)
   && requires {swap(re::declval<X>(), re::declval<Y>());};
 template <class X, class Y>
 void do_ranges_swap_adl_version(X &&x, Y &&y)
@@ -3907,7 +4385,7 @@ namespace re::inner {
 template <class T, class U>
 struct are_lvalues_of_equal_extent_array : false_type {};
 template <class T, class U>
-requires is_array_v<T> && (extent_v<T> == extent_v<U>)
+requires is_array<T> && (extent<T> == extent<U>)
 struct are_lvalues_of_equal_extent_array<T &, U &> : true_type {};
 
 template <class T, class U>
@@ -3932,7 +4410,7 @@ struct fo_swap {
     requires (!re_adl::inner::ranges_swap_adl_version_capable<X &&, Y &&>)
     && inner::are_lvalues_of_equal_extent_array<X &&, Y &&>::value
     && requires {declval<fo_swap &>()(*x, *y);} {
-    const auto x_end = addressof(*x) + extent_v<remove_reference_t<X>>;
+    const auto x_end = addressof(*x) + extent<remove_reference<X>>;
     for (auto p = addressof(*x), pp = addressof(*y);
          p != x_end;) {
       fo_swap{}(*p, *pp);
@@ -3941,14 +4419,14 @@ struct fo_swap {
     }
   }
   template <class X, class Y>
-  constexpr enable_if_t<inner::are_lvalues_of_same_type<X &&, Y &&>::value
-                        && move_constructible<remove_reference_t<X>>
-                        && assignable_from<remove_reference_t<X> &,
-                                           remove_reference_t<X>>>
+  constexpr enable_if<inner::are_lvalues_of_same_type<X &&, Y &&>::value
+                      && move_constructible<remove_reference<X>>
+                      && assignable_from<remove_reference<X> &,
+                                         remove_reference<X>>>
   operator ()(X &&x, Y &&y) const
-    noexcept(is_nothrow_move_constructible_v<remove_reference_t<X>>
-             && is_nothrow_move_assignable_v<remove_reference_t<X>>) {
-    remove_reference_t<X> tmp(move(x));
+    noexcept(is_nothrow_move_constructible<remove_reference<X>>
+             && is_nothrow_move_assignable<remove_reference<X>>) {
+    remove_reference<X> tmp(move(x));
     x = move(y);
     y = move(tmp);
   }
@@ -3977,8 +4455,8 @@ concept boolean_testable = convertible_to<T, bool>
 
 template <class T, class U>
 concept weakly_equality_comparable_with
-  = requires(const remove_reference_t<T> &t,
-             const remove_reference_t<U> &u) {
+  = requires(const remove_reference<T> &t,
+             const remove_reference<U> &u) {
     {t == u}->inner::boolean_testable;
     {t != u}->inner::boolean_testable;
     {u == t}->inner::boolean_testable;
@@ -3991,18 +4469,18 @@ concept equality_comparable = inner::weakly_equality_comparable_with<T, T>;
 template <class T, class U>
 concept equality_comparable_with
   = equality_comparable<T> && equality_comparable<U>
-  && common_reference_with<const remove_reference_t<T> &,
-                           const remove_reference_t<U> &>
-  && equality_comparable<common_reference_t<const remove_reference_t<T> &,
-                                            const remove_reference_t<U> &>>
+  && common_reference_with<const remove_reference<T> &,
+                           const remove_reference<U> &>
+  && equality_comparable<common_reference<const remove_reference<T> &,
+                                          const remove_reference<U> &>>
   && inner::weakly_equality_comparable_with<T, U>;
 
 namespace inner {
 
 template <class T, class U>
 concept partially_ordered_with
-  = requires(const remove_reference_t<T> &t,
-             const remove_reference_t<U> &u) {
+  = requires(const remove_reference<T> &t,
+             const remove_reference<U> &u) {
     {t < u}->inner::boolean_testable;
     {t > u}->inner::boolean_testable;
     {t <= u}->inner::boolean_testable;
@@ -4024,12 +4502,12 @@ template <class T, class U>
 concept totally_ordered_with
   = totally_ordered<T> && totally_ordered<U>
   && equality_comparable_with<T, U>
-  && totally_ordered<common_reference_t<const remove_reference_t<T> &,
-                                        const remove_reference_t<U> &>>
+  && totally_ordered<common_reference<const remove_reference<T> &,
+                                      const remove_reference<U> &>>
   && inner::partially_ordered_with<T, U>;
 
 template <class T>
-concept movable = is_object_v<T> && move_constructible<T>
+concept movable = is_object<T> && move_constructible<T>
   && assignable_from<T &, T> && swappable<T>;
 template <class T>
 concept copyable = copy_constructible<T> && movable<T>
@@ -4049,7 +4527,7 @@ template <class F, class...S>
 concept regular_invocable = invocable<F, S...>;
 template <class F, class...S>
 concept predicate = regular_invocable<F, S...>
-  && inner::boolean_testable<invoke_result_t<F, S...>>;
+  && inner::boolean_testable<invoke_result<F, S...>>;
 template <class R, class T, class U>
 concept relation = predicate<R, T, T> && predicate<R, U, U>
   && predicate<R, T, U> && predicate<R, U, T>;
@@ -4136,17 +4614,21 @@ struct integral_traits_base {
 
   static constexpr bool is_specialized = false;
   static constexpr bool is_signed = false;
-  static constexpr typename conditional
-  <is_array<T>::value || is_function<T>::value, int, T>::type min()
-    noexcept {
+  static constexpr typename template_conditional
+  <(template_is_array<T>::value || template_is_function<T>::value),
+   int, T>::type
+  min() noexcept {
     return typename conditional
-      <is_array<T>::value || is_function<T>::value, int, T>::type();
+      <(template_is_array<T>::value || template_is_function<T>::value),
+       int, T>::type();
   }
-  static constexpr typename conditional
-  <is_array<T>::value || is_function<T>::value, int, T>::type max()
-    noexcept {
+  static constexpr typename template_conditional
+  <(template_is_array<T>::value || template_is_function<T>::value),
+   int, T>::type
+  max() noexcept {
     return typename conditional
-      <is_array<T>::value || is_function<T>::value, int, T>::type();
+      <(template_is_array<T>::value || template_is_function<T>::value),
+       int, T>::type();
   }
 };
 template <>
@@ -4165,7 +4647,7 @@ struct integral_traits_base<bool> {
 template <>
 struct integral_traits_base<char> {
   using change_signedness
-    = typename conditional
+    = typename template_conditional
     <(CHAR_MIN < 0), unsigned char, signed char>::type;
 
   static constexpr bool is_specialized = true;
@@ -4246,23 +4728,23 @@ RE_TO_DEFINE_UNSIGNED_INTEGRAL_TRAITS(unsigned long, ULONG, long);
 RE_TO_DEFINE_UNSIGNED_INTEGRAL_TRAITS(unsigned long long, ULLONG, long long);
 
 using get_unsigned_underlying_type_of_wchar_t
-  = conditional_t<sizeof(wchar_t) == sizeof(unsigned short),
-                  unsigned short,
-                  conditional_t<sizeof(wchar_t) == sizeof(unsigned int),
-                                unsigned int,
-                                conditional_t<sizeof(wchar_t)
-                                              == sizeof(unsigned long),
-                                              unsigned long,
-                                              unsigned long long>>>;
+  = conditional<sizeof(wchar_t) == sizeof(unsigned short),
+                unsigned short,
+                conditional<sizeof(wchar_t) == sizeof(unsigned int),
+                            unsigned int,
+                            conditional<(sizeof(wchar_t)
+                                         == sizeof(unsigned long)),
+                                        unsigned long,
+                                        unsigned long long>>>;
 
 template <>
 struct integral_traits_base<wchar_t> {
   using change_signedness
-    = typename conditional
+    = conditional
     <(WCHAR_MIN < 0),
      get_unsigned_underlying_type_of_wchar_t,
      typename integral_traits_base<get_unsigned_underlying_type_of_wchar_t>
-     ::change_signedness>::type;
+     ::change_signedness>;
 
   static constexpr bool is_specialized = true;
   static constexpr bool is_signed = WCHAR_MIN < 0;
@@ -4288,10 +4770,11 @@ template <class T>
 struct integral_traits<const volatile T> : integral_traits<T> {};
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_least8_t,
-                                 char, signed char, short, int, long,
-                                 long long>,
-               inner::intt_useless_tag<0>, int_least8_t>> {
+<conditional<is_one_of_types<int_least8_t,
+                             char, signed char, short, int, long,
+                             long long>,
+             inner::intt_useless_tag<0>,
+             int_least8_t>> {
   using change_signedness = uint_least8_t;
 
   static constexpr bool is_specialized = true;
@@ -4305,10 +4788,11 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_least16_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t>,
-               inner::intt_useless_tag<1>, int_least16_t>> {
+<conditional<is_one_of_types<int_least16_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t>,
+             inner::intt_useless_tag<1>,
+             int_least16_t>> {
   using change_signedness = uint_least16_t;
 
   static constexpr bool is_specialized = true;
@@ -4322,10 +4806,11 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_least32_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t>,
-               inner::intt_useless_tag<2>, int_least32_t>> {
+<conditional<is_one_of_types<int_least32_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t>,
+             inner::intt_useless_tag<2>,
+             int_least32_t>> {
   using change_signedness = uint_least32_t;
 
   static constexpr bool is_specialized = true;
@@ -4339,10 +4824,11 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_least64_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t, int_least32_t>,
-               inner::intt_useless_tag<3>, int_least64_t>> {
+<conditional<is_one_of_types<int_least64_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t, int_least32_t>,
+             inner::intt_useless_tag<3>,
+             int_least64_t>> {
   using change_signedness = uint_least64_t;
 
   static constexpr bool is_specialized = true;
@@ -4357,11 +4843,12 @@ struct integral_traits
 
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_least8_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long>,
-               inner::intt_useless_tag<4>, uint_least8_t>> {
+<conditional<is_one_of_types<uint_least8_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long>,
+             inner::intt_useless_tag<4>,
+             uint_least8_t>> {
   using change_signedness = int_least8_t;
 
   static constexpr bool is_specialized = true;
@@ -4375,11 +4862,12 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_least16_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long, uint_least8_t>,
-               inner::intt_useless_tag<5>, uint_least16_t>> {
+<conditional<is_one_of_types<uint_least16_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long, uint_least8_t>,
+             inner::intt_useless_tag<5>,
+             uint_least16_t>> {
   using change_signedness = int_least16_t;
 
   static constexpr bool is_specialized = true;
@@ -4393,12 +4881,13 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_least32_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t>,
-               inner::intt_useless_tag<6>, uint_least32_t>> {
+<conditional<is_one_of_types<uint_least32_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t>,
+             inner::intt_useless_tag<6>,
+             uint_least32_t>> {
   using change_signedness = int_least32_t;
 
   static constexpr bool is_specialized = true;
@@ -4412,13 +4901,14 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_least64_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t>,
-               inner::intt_useless_tag<7>, uint_least64_t>> {
+<conditional<is_one_of_types<uint_least64_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t>,
+             inner::intt_useless_tag<7>,
+             uint_least64_t>> {
   using change_signedness = int_least64_t;
 
   static constexpr bool is_specialized = true;
@@ -4433,11 +4923,12 @@ struct integral_traits
 
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_fast8_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t>,
-               inner::intt_useless_tag<8>, int_fast8_t>> {
+<conditional<is_one_of_types<int_fast8_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t>,
+             inner::intt_useless_tag<8>,
+             int_fast8_t>> {
   using change_signedness = uint_fast8_t;
 
   static constexpr bool is_specialized = true;
@@ -4451,12 +4942,13 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_fast16_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t>,
-               inner::intt_useless_tag<9>, int_fast16_t>> {
+<conditional<is_one_of_types<int_fast16_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t>,
+             inner::intt_useless_tag<9>,
+             int_fast16_t>> {
   using change_signedness = uint_fast16_t;
 
   static constexpr bool is_specialized = true;
@@ -4470,12 +4962,13 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_fast32_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t>,
-               inner::intt_useless_tag<10>, int_fast32_t>> {
+<conditional<is_one_of_types<int_fast32_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t>,
+             inner::intt_useless_tag<10>,
+             int_fast32_t>> {
   using change_signedness = uint_fast32_t;
 
   static constexpr bool is_specialized = true;
@@ -4489,12 +4982,13 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int_fast64_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t, int_fast32_t>,
-               inner::intt_useless_tag<11>, int_fast64_t>> {
+<conditional<is_one_of_types<int_fast64_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t, int_fast32_t>,
+             inner::intt_useless_tag<11>,
+             int_fast64_t>> {
   using change_signedness = uint_fast64_t;
 
   static constexpr bool is_specialized = true;
@@ -4509,13 +5003,14 @@ struct integral_traits
 
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_fast8_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t>,
-               inner::intt_useless_tag<12>, uint_fast8_t>> {
+<conditional<is_one_of_types<uint_fast8_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t>,
+             inner::intt_useless_tag<12>,
+             uint_fast8_t>> {
   using change_signedness = int_fast8_t;
 
   static constexpr bool is_specialized = true;
@@ -4529,13 +5024,14 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_fast16_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t, uint_fast8_t>,
-             inner::intt_useless_tag<13>, uint_fast16_t>> {
+<conditional<is_one_of_types<uint_fast16_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t, uint_fast8_t>,
+             inner::intt_useless_tag<13>,
+             uint_fast16_t>> {
   using change_signedness = int_fast16_t;
 
   static constexpr bool is_specialized = true;
@@ -4549,14 +5045,15 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_fast32_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t>,
-               inner::intt_useless_tag<14>, uint_fast32_t>> {
+<conditional<is_one_of_types<uint_fast32_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t>,
+             inner::intt_useless_tag<14>,
+             uint_fast32_t>> {
   using change_signedness = int_fast32_t;
 
   static constexpr bool is_specialized = true;
@@ -4570,15 +5067,16 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint_fast64_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t>,
-               inner::intt_useless_tag<15>, uint_fast64_t>> {
+<conditional<is_one_of_types<uint_fast64_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t>,
+             inner::intt_useless_tag<15>,
+             uint_fast64_t>> {
   using change_signedness = int_fast64_t;
 
   static constexpr bool is_specialized = true;
@@ -4593,15 +5091,16 @@ struct integral_traits
 
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uintmax_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t, uint_fast64_t>,
-               inner::intt_useless_tag<16>, uintmax_t>> {
+<conditional<is_one_of_types<uintmax_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t, uint_fast64_t>,
+             inner::intt_useless_tag<16>,
+             uintmax_t>> {
   using change_signedness = intmax_t;
 
   static constexpr bool is_specialized = true;
@@ -4615,13 +5114,14 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<intmax_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t,
-                                 int_fast32_t, int_fast64_t>,
-               inner::intt_useless_tag<17>, intmax_t>> {
+<conditional<is_one_of_types<intmax_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t,
+                             int_fast32_t, int_fast64_t>,
+             inner::intt_useless_tag<17>,
+             intmax_t>> {
   using change_signedness = uintmax_t;
 
   static constexpr bool is_specialized = true;
@@ -4637,16 +5137,17 @@ struct integral_traits
 #ifdef UINTPTR_MAX
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uintptr_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t, uint_fast64_t,
-                                 uintmax_t>,
-               inner::intt_useless_tag<18>, uintptr_t>> {
+<conditional<is_one_of_types<uintptr_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t, uint_fast64_t,
+                             uintmax_t>,
+             inner::intt_useless_tag<18>,
+             uintptr_t>> {
   using change_signedness = intptr_t;
 
   static constexpr bool is_specialized = true;
@@ -4663,13 +5164,14 @@ struct integral_traits
 #ifdef INTPTR_MAX
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<intptr_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t,
-                                 int_fast32_t, int_fast64_t, intmax_t>,
-               inner::intt_useless_tag<19>, intptr_t>> {
+<conditional<is_one_of_types<intptr_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t,
+                             int_fast32_t, int_fast64_t, intmax_t>,
+             inner::intt_useless_tag<19>,
+             intptr_t>> {
   using change_signedness = uintptr_t;
 
   static constexpr bool is_specialized = true;
@@ -4686,17 +5188,18 @@ struct integral_traits
 #ifdef INT8_MAX
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int8_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t,
-                                 int_fast32_t, int_fast64_t, intmax_t
+<conditional<is_one_of_types<int8_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t,
+                             int_fast32_t, int_fast64_t, intmax_t
 #ifdef INTPTR_MAX
-                                 , intptr_t
+                             , intptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<20>, int8_t>> {
+                             >,
+             inner::intt_useless_tag<20>,
+             int8_t>> {
   using change_signedness = uint8_t;
 
   static constexpr bool is_specialized = true;
@@ -4710,19 +5213,20 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint8_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t, uint_fast64_t, uintmax_t
+<conditional<is_one_of_types<uint8_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t, uint_fast64_t, uintmax_t
 #ifdef UINTPTR_MAX
-                                 , uintptr_t
+                             , uintptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<21>, uint8_t>> {
+                             >,
+             inner::intt_useless_tag<21>,
+             uint8_t>> {
   using change_signedness = int8_t;
 
   static constexpr bool is_specialized = true;
@@ -4739,17 +5243,18 @@ struct integral_traits
 #ifdef INT16_MAX
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int16_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t,
-                                 int_fast32_t, int_fast64_t, intmax_t
+<conditional<is_one_of_types<int16_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t,
+                             int_fast32_t, int_fast64_t, intmax_t
 #ifdef INTPTR_MAX
-                                 , intptr_t
+                             , intptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<22>, int16_t>> {
+                             >,
+             inner::intt_useless_tag<22>,
+             int16_t>> {
   using change_signedness = uint16_t;
 
   static constexpr bool is_specialized = true;
@@ -4763,19 +5268,20 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint16_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t, uint_fast64_t, uintmax_t
+<conditional<is_one_of_types<uint16_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t, uint_fast64_t, uintmax_t
 #ifdef UINTPTR_MAX
-                                 , uintptr_t
+                             , uintptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<23>, uint16_t>> {
+                             >,
+             inner::intt_useless_tag<23>,
+             uint16_t>> {
   using change_signedness = int16_t;
 
   static constexpr bool is_specialized = true;
@@ -4792,17 +5298,18 @@ struct integral_traits
 #ifdef INT32_MAX
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int32_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t,
-                                 int_fast32_t, int_fast64_t, intmax_t
+<conditional<is_one_of_types<int32_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t,
+                             int_fast32_t, int_fast64_t, intmax_t
 #ifdef INTPTR_MAX
-                                 , intptr_t
+                             , intptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<24>, int32_t>> {
+                             >,
+             inner::intt_useless_tag<24>,
+             int32_t>> {
   using change_signedness = uint32_t;
 
   static constexpr bool is_specialized = true;
@@ -4816,19 +5323,20 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint32_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t, uint_fast64_t, uintmax_t
+<conditional<is_one_of_types<uint32_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t, uint_fast64_t, uintmax_t
 #ifdef UINTPTR_MAX
-                                 , uintptr_t
+                             , uintptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<25>, uint32_t>> {
+                             >,
+             inner::intt_useless_tag<25>,
+             uint32_t>> {
   using change_signedness = int32_t;
 
   static constexpr bool is_specialized = true;
@@ -4845,17 +5353,18 @@ struct integral_traits
 #ifdef INT64_MAX
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<int64_t,
-                                 char, signed char, short, int, long, long long,
-                                 int_least8_t, int_least16_t,
-                                 int_least32_t, int_least64_t,
-                                 int_fast8_t, int_fast16_t,
-                                 int_fast32_t, int_fast64_t, intmax_t
+<conditional<is_one_of_types<int64_t,
+                             char, signed char, short, int, long, long long,
+                             int_least8_t, int_least16_t,
+                             int_least32_t, int_least64_t,
+                             int_fast8_t, int_fast16_t,
+                             int_fast32_t, int_fast64_t, intmax_t
 #ifdef INTPTR_MAX
-                                 , intptr_t
+                             , intptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<26>, int64_t>> {
+                             >,
+             inner::intt_useless_tag<26>,
+             int64_t>> {
   using change_signedness = uint64_t;
 
   static constexpr bool is_specialized = true;
@@ -4869,19 +5378,20 @@ struct integral_traits
 };
 template <>
 struct integral_traits
-<conditional_t<is_one_of_types_v<uint64_t,
-                                 char, unsigned char, unsigned short,
-                                 unsigned int, unsigned long,
-                                 unsigned long long,
-                                 uint_least8_t, uint_least16_t,
-                                 uint_least32_t, uint_least64_t,
-                                 uint_fast8_t, uint_fast16_t,
-                                 uint_fast32_t, uint_fast64_t, uintmax_t
+<conditional<is_one_of_types<uint64_t,
+                             char, unsigned char, unsigned short,
+                             unsigned int, unsigned long,
+                             unsigned long long,
+                             uint_least8_t, uint_least16_t,
+                             uint_least32_t, uint_least64_t,
+                             uint_fast8_t, uint_fast16_t,
+                             uint_fast32_t, uint_fast64_t, uintmax_t
 #ifdef UINTPTR_MAX
-                                 , uintptr_t
+                             , uintptr_t
 #endif
-                                 >,
-               inner::intt_useless_tag<27>, uint64_t>> {
+                             >,
+             inner::intt_useless_tag<27>,
+             uint64_t>> {
   using change_signedness = int64_t;
 
   static constexpr bool is_specialized = true;
@@ -5081,25 +5591,25 @@ struct common_comparison_category_impl<> : int_constant<3> {};
 
 }
 template <class...S>
-struct common_comparison_category
+struct template_common_comparison_category
   : inner::comparison_category_of_int
   <inner::common_comparison_category_impl<S...>::value> {};
 template <class...S>
-using common_comparison_category_t
-  = typename common_comparison_category<S...>::type;
+using common_comparison_category
+  = typename template_common_comparison_category<S...>::type;
 
 namespace inner {
 
 template <class T, class CAT = partial_ordering>
-concept compares_as = same_as<common_comparison_category_t<T, CAT>, CAT>;
+concept compares_as = same_as<common_comparison_category<T, CAT>, CAT>;
 
 }
 template <class T, class CAT = partial_ordering>
 concept three_way_comparable
   = inner::weakly_equality_comparable_with<T, T>
   && inner::partially_ordered_with<T, T>
-  && requires(const remove_reference_t<T> &a,
-              const remove_reference_t<T> &b) {
+  && requires(const remove_reference<T> &a,
+              const remove_reference<T> &b) {
     {a <=> b}->inner::compares_as<CAT>;
   };
 template <class T, class U, class CAT = partial_ordering>
@@ -5107,14 +5617,14 @@ concept three_way_comparable_with
   = three_way_comparable<T, CAT>
   && three_way_comparable<U, CAT>
   && common_reference_with
-  <const remove_reference_t<T> &, const remove_reference_t<U> &>
-  && three_way_comparable<common_reference_t<const remove_reference_t<T> &,
-                                             const remove_reference_t<U> &>,
+  <const remove_reference<T> &, const remove_reference<U> &>
+  && three_way_comparable<common_reference<const remove_reference<T> &,
+                                           const remove_reference<U> &>,
                           CAT>
   && inner::weakly_equality_comparable_with<T, U>
   && inner::partially_ordered_with<T, U>
-  && requires(const remove_reference_t<T> &t,
-              const remove_reference_t<U> &u) {
+  && requires(const remove_reference<T> &t,
+              const remove_reference<U> &u) {
     {t <=> u}->inner::compares_as<CAT>;
     {u <=> t}->inner::compares_as<CAT>;
   };
@@ -5123,38 +5633,39 @@ namespace inner {
 
 struct check_three_way_callable {
   template <class A, class B>
-  static decltype(declval<const remove_reference_t<A> &>()
-                  <=> declval<const remove_reference_t<B> &>())
+  static decltype(declval<const remove_reference<A> &>()
+                  <=> declval<const remove_reference<B> &>())
   f(type_pack<A, B>);
 };
 template <class A, class B,
-          bool = f_is_well_formed_v<check_three_way_callable, A, B>>
+          bool = f_is_well_formed<check_three_way_callable, A, B>>
 struct compare_three_way_result_impl {};
 template <class A, class B>
 struct compare_three_way_result_impl<A, B, true> {
-  using type = decltype(declval<const remove_reference_t<A> &>()
-                        <=> declval<const remove_reference_t<B> &>());
+  using type = decltype(declval<const remove_reference<A> &>()
+                        <=> declval<const remove_reference<B> &>());
 };
 
 }
 template <class A, class B>
-struct compare_three_way_result : inner::compare_three_way_result_impl<A, B> {};
+struct template_compare_three_way_result
+  : inner::compare_three_way_result_impl<A, B> {};
 template <class A, class B>
-using compare_three_way_result_t
-  = typename compare_three_way_result<A, B>::type;
+using compare_three_way_result
+  = typename template_compare_three_way_result<A, B>::type;
 struct compare_three_way {
   using is_transparent = inner::transparent_tag;
 
   template <class A, class B>
-  constexpr auto operator()(A &&a, B &&b) const
+  constexpr auto operator ()(A &&a, B &&b) const
     ->decltype(declval<A>() <=> declval<B>()) {
     return forward<A>(a) <=> forward<B>(b);
   }
 };
 template <class A, class B>
 concept can_apply_compare_three_way = requires(A &&x, B &&y) {
-  requires is_referenceable_v<A>;
-  requires is_referenceable_v<B>;
+  requires is_referenceable<A>;
+  requires is_referenceable<B>;
   forward<A>(x) <=> forward<B>(y);
 };
 
@@ -5241,17 +5752,52 @@ struct check_is_transparent_function {
 
 }
 template <class T>
-struct is_transparent_function
-  : f_is_well_formed<inner::check_is_transparent_function, T> {};
+struct template_is_transparent_function
+  : template_f_is_well_formed<inner::check_is_transparent_function, T> {};
 template <class T>
-inline constexpr bool is_transparent_function_v
-  = is_transparent_function<T>::value;
+inline constexpr bool is_transparent_function
+  = template_is_transparent_function<T>::value;
+
+// increment and decrement
+
+struct pre_increment {
+  using is_transparent = inner::transparent_tag;
+
+  template <class T>
+  constexpr auto operator ()(T &&x) const->decltype(++forward<T>(x)) {
+    return ++forward<T>(x);
+  }
+};
+struct pre_decrement {
+  using is_transparent = inner::transparent_tag;
+
+  template <class T>
+  constexpr auto operator ()(T &&x) const->decltype(--forward<T>(x)) {
+    return --forward<T>(x);
+  }
+};
+struct post_increment {
+  using is_transparent = inner::transparent_tag;
+
+  template <class T>
+  constexpr auto operator ()(T &&x) const->decltype(forward<T>(x)++) {
+    return forward<T>(x)++;
+  }
+};
+struct post_decrement {
+  using is_transparent = inner::transparent_tag;
+
+  template <class T>
+  constexpr auto operator ()(T &&x) const->decltype(forward<T>(x)--) {
+    return forward<T>(x)--;
+  }
+};
 
 // arithmetic operations
 
 template <class T = void>
 struct plus {
-  constexpr T operator()(const T &x, const T &y) const {
+  constexpr T operator ()(const T &x, const T &y) const {
     return x + y;
   }
 };
@@ -5260,21 +5806,21 @@ struct plus<void> {
   using is_transparent = inner::transparent_tag;
 
   template <class X, class Y>
-  constexpr auto operator()(X &&x, Y &&y) const
+  constexpr auto operator ()(X &&x, Y &&y) const
     ->decltype(forward<X>(x) + forward<Y>(y)) {
     return forward<X>(x) + forward<Y>(y);
   };
 };
 template <class X, class Y>
 concept can_apply_plus = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) + forward<Y>(y);
 };
 
 template <class T = void>
 struct minus {
-  constexpr T operator()(const T &x, const T &y) const {
+  constexpr T operator ()(const T &x, const T &y) const {
     return x - y;
   }
 };
@@ -5283,21 +5829,21 @@ struct minus<void> {
   using is_transparent = inner::transparent_tag;
 
   template <class X, class Y>
-  constexpr auto operator()(X &&x, Y &&y) const
+  constexpr auto operator ()(X &&x, Y &&y) const
     ->decltype(forward<X>(x) - forward<Y>(y)) {
     return forward<X>(x) - forward<Y>(y);
   };
 };
 template <class X, class Y>
 concept can_apply_minus = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) - forward<Y>(y);
 };
 
 template <class T = void>
 struct multiplies {
-  constexpr T operator()(const T &x, const T &y) const {
+  constexpr T operator ()(const T &x, const T &y) const {
     return x * y;
   }
 };
@@ -5306,21 +5852,21 @@ struct multiplies<void> {
   using is_transparent = inner::transparent_tag;
 
   template <class X, class Y>
-  constexpr auto operator()(X &&x, Y &&y) const
+  constexpr auto operator ()(X &&x, Y &&y) const
     ->decltype(forward<X>(x) * forward<Y>(y)) {
     return forward<X>(x) * forward<Y>(y);
   };
 };
 template <class X, class Y>
 concept can_apply_multiplies = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) * forward<Y>(y);
 };
 
 template <class T = void>
 struct divides {
-  constexpr T operator()(const T &x, const T &y) const {
+  constexpr T operator ()(const T &x, const T &y) const {
     return x / y;
   }
 };
@@ -5329,21 +5875,21 @@ struct divides<void> {
   using is_transparent = inner::transparent_tag;
 
   template <class X, class Y>
-  constexpr auto operator()(X &&x, Y &&y) const
+  constexpr auto operator ()(X &&x, Y &&y) const
     ->decltype(forward<X>(x) / forward<Y>(y)) {
     return forward<X>(x) / forward<Y>(y);
   };
 };
 template <class X, class Y>
 concept can_apply_divides = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) / forward<Y>(y);
 };
 
 template <class T = void>
 struct modulus {
-  constexpr T operator()(const T &x, const T &y) const {
+  constexpr T operator ()(const T &x, const T &y) const {
     return x % y;
   }
 };
@@ -5352,21 +5898,21 @@ struct modulus<void> {
   using is_transparent = inner::transparent_tag;
 
   template <class X, class Y>
-  constexpr auto operator()(X &&x, Y &&y) const
+  constexpr auto operator ()(X &&x, Y &&y) const
     ->decltype(forward<X>(x) % forward<Y>(y)) {
     return forward<X>(x) % forward<Y>(y);
   };
 };
 template <class X, class Y>
 concept can_apply_modulus = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) % forward<Y>(y);
 };
 
 template <class T = void>
 struct negate {
-  constexpr T operator()(const T &x) const {
+  constexpr T operator ()(const T &x) const {
     return -x;
   }
 };
@@ -5375,13 +5921,13 @@ struct negate<void> {
   using is_transparent = inner::transparent_tag;
 
   template <class X>
-  constexpr auto operator()(X &&x) const->decltype(-forward<X>(x)) {
+  constexpr auto operator ()(X &&x) const->decltype(-forward<X>(x)) {
     return -forward<X>(x);
   };
 };
 template <class X>
 concept can_apply_negate = requires(X &&x) {
-  requires is_referenceable_v<X>;
+  requires is_referenceable<X>;
   -forward<X>(x);
 };
 
@@ -5405,8 +5951,8 @@ struct equal_to<void> {
 };
 template <class X, class Y>
 concept can_apply_equal_to = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) == forward<Y>(y);
 };
 
@@ -5428,8 +5974,8 @@ struct not_equal_to<void> {
 };
 template <class X, class Y>
 concept can_apply_not_equal_to = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) != forward<Y>(y);
 };
 
@@ -5451,8 +5997,8 @@ struct greater<void> {
 };
 template <class X, class Y>
 concept can_apply_greater = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) > forward<Y>(y);
 };
 
@@ -5474,8 +6020,8 @@ struct less<void> {
 };
 template <class X, class Y>
 concept can_apply_less = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) < forward<Y>(y);
 };
 
@@ -5497,8 +6043,8 @@ struct greater_equal<void> {
 };
 template <class X, class Y>
 concept can_apply_greater_equal = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) >= forward<Y>(y);
 };
 
@@ -5520,8 +6066,8 @@ struct less_equal<void> {
 };
 template <class X, class Y>
 concept can_apply_less_equal = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) <= forward<Y>(y);
 };
 
@@ -5545,8 +6091,8 @@ struct logical_and<void> {
 };
 template <class X, class Y>
 concept can_apply_logical_and = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) && forward<Y>(y);
 };
 
@@ -5568,8 +6114,8 @@ struct logical_or<void> {
 };
 template <class X, class Y>
 concept can_apply_logical_or = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) || forward<Y>(y);
 };
 
@@ -5590,7 +6136,7 @@ struct logical_not<void> {
 };
 template <class X>
 concept can_apply_logical_not = requires(X &&x) {
-  requires is_referenceable_v<X>;
+  requires is_referenceable<X>;
   !forward<X>(x);
 };
 
@@ -5614,8 +6160,8 @@ struct bit_and<void> {
 };
 template <class X, class Y>
 concept can_apply_bit_and = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) & forward<Y>(y);
 };
 
@@ -5637,8 +6183,8 @@ struct bit_or<void> {
 };
 template <class X, class Y>
 concept can_apply_bit_or = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) | forward<Y>(y);
 };
 
@@ -5660,8 +6206,8 @@ struct bit_xor<void> {
 };
 template <class X, class Y>
 concept can_apply_bit_xor = requires(X &&x, Y &&y) {
-  requires is_referenceable_v<X>;
-  requires is_referenceable_v<Y>;
+  requires is_referenceable<X>;
+  requires is_referenceable<Y>;
   forward<X>(x) ^ forward<Y>(y);
 };
 
@@ -5682,7 +6228,7 @@ struct bit_not<void> {
 };
 template <class X>
 concept can_apply_bit_not = requires(X &&x) {
-  requires is_referenceable_v<X>;
+  requires is_referenceable<X>;
   ~forward<X>(x);
 };
 
@@ -5710,34 +6256,34 @@ public:
   not_fn_t(not_fn_t &&) = default;
   not_fn_t &operator =(not_fn_t &&) = default;
   constexpr void swap(not_fn_t &x, not_fn_t &y)
-    noexcept(is_nothrow_swappable_v<F>)
-    requires is_swappable_v<F> {
+    noexcept(is_nothrow_swappable<F>)
+    requires is_swappable<F> {
     adl_swap(x.f, y.f);
   }
 
   constexpr not_fn_t(const F &ff)
-    noexcept(is_nothrow_copy_constructible_v<F>) : f(ff) {}
+    noexcept(is_nothrow_copy_constructible<F>) : f(ff) {}
   constexpr not_fn_t(F &&ff)
-    noexcept(is_nothrow_move_constructible_v<F>)
-    requires (!is_same_v<F &&, const F &>) : f(forward<F>(ff)) {}
+    noexcept(is_nothrow_move_constructible<F>)
+    requires (!is_same<F &&, const F &>) : f(forward<F>(ff)) {}
 
   template <class...S>
-  constexpr auto operator()(S &&...s) &
+  constexpr auto operator ()(S &&...s) &
     ->decltype(!invoke(f, forward<S>(s)...)) {
     return !invoke(f, forward<S>(s)...);
   }
   template <class...S>
-  constexpr auto operator()(S &&...s) const &
+  constexpr auto operator ()(S &&...s) const &
     ->decltype(!invoke(f, forward<S>(s)...)) {
     return !invoke(f, forward<S>(s)...);
   }
   template <class...S>
-  constexpr auto operator()(S &&...s) &&
+  constexpr auto operator ()(S &&...s) &&
     ->decltype(!invoke(static_cast<F &&>(f), forward<S>(s)...)) {
     return !invoke(static_cast<F &&>(f), forward<S>(s)...);
   }
   template <class...S>
-  constexpr auto operator()(S &&...s) const &&
+  constexpr auto operator ()(S &&...s) const &&
     ->decltype(!invoke(static_cast<const F &&>(f), forward<S>(s)...)) {
     return !invoke(static_cast<const F &&>(f), forward<S>(s)...);
   }
@@ -5747,9 +6293,9 @@ public:
 struct fo_not_fn {
   template <class F>
   constexpr auto operator ()(F &&f)
-    const noexcept(noexcept(inner::not_fn_t<decay_t<F>>(forward<F>(f))))
-    ->decltype(inner::not_fn_t<decay_t<F>>(forward<F>(f))) {
-    return inner::not_fn_t<decay_t<F>>(forward<F>(f));
+    const noexcept(noexcept(inner::not_fn_t<decay<F>>(forward<F>(f))))
+    ->decltype(inner::not_fn_t<decay<F>>(forward<F>(f))) {
+    return inner::not_fn_t<decay<F>>(forward<F>(f));
   }
 };
 inline constexpr fo_not_fn not_fn{};
@@ -5806,7 +6352,7 @@ struct tuple_size<re::tuple<S...>> {
 };
 template <size_t I, class...S>
 struct tuple_element<I, re::tuple<S...>> {
-  using type = re::nth_type_t<I, S...>;
+  using type = re::nth_type<I, S...>;
 };
 
 template <class T, size_t N>
@@ -5868,60 +6414,61 @@ using pair = tuple<S...>;
 template <class...S, class...SS,
           template <class> class F, template <class> class FF>
 requires requires {
-  typename type_pack<common_reference_t<F<S>, FF<SS>>...>;
+  typename type_pack<common_reference<F<S>, FF<SS>>...>;
   requires sizeof...(S) == sizeof...(SS);
 }
-struct basic_common_reference<tuple<S...>, tuple<SS...>, F, FF> {
-  using type = tuple<common_reference_t<F<S>, FF<SS>>...>;
+struct template_basic_common_reference<tuple<S...>, tuple<SS...>, F, FF> {
+  using type = tuple<common_reference<F<S>, FF<SS>>...>;
 };
 
 template <class...S, class...SS>
 requires requires {
-  typename tuple<common_type_t<S, SS>...>;
+  typename tuple<common_type<S, SS>...>;
   requires sizeof...(S) == sizeof...(SS);
 }
-struct common_type<tuple<S...>, tuple<SS...>> {
-  using type = tuple<common_type_t<S, SS>...>;
+struct template_common_type<tuple<S...>, tuple<SS...>> {
+  using type = tuple<common_type<S, SS>...>;
 };
 
 template <class T>
-struct tuple_size {};
+struct template_tuple_size {};
 template <class T>
-struct tuple_size<const T> : tuple_size<T> {};
+struct template_tuple_size<const T> : template_tuple_size<T> {};
 template <class T>
-struct tuple_size<volatile T> : tuple_size<T> {};
+struct template_tuple_size<volatile T> : template_tuple_size<T> {};
 template <class T>
-struct tuple_size<const volatile T> : tuple_size<T> {};
+struct template_tuple_size<const volatile T> : template_tuple_size<T> {};
 template <class...S>
-struct tuple_size<tuple<S...>> : integral_constant<size_t, sizeof...(S)> {};
+struct template_tuple_size<tuple<S...>>
+  : integral_constant<size_t, sizeof...(S)> {};
 template <class T>
-inline constexpr size_t tuple_size_v = tuple_size<T>::value;
+inline constexpr size_t tuple_size = template_tuple_size<T>::value;
 
 template <size_t I, class T>
-struct tuple_element {};
+struct template_tuple_element {};
 template <size_t I, class T>
-struct tuple_element<I, const T> {
-  using type = add_const_t<typename tuple_element<I, T>::type>;
+struct template_tuple_element<I, const T> {
+  using type = add_const<typename template_tuple_element<I, T>::type>;
 };
 template <size_t I, class T>
-struct tuple_element<I, volatile T> {
-  using type = add_volatile_t<typename tuple_element<I, T>::type>;
+struct template_tuple_element<I, volatile T> {
+  using type = add_volatile<typename template_tuple_element<I, T>::type>;
 };
 template <size_t I, class T>
-struct tuple_element<I, const volatile T> {
-  using type = add_cv_t<typename tuple_element<I, T>::type>;
+struct template_tuple_element<I, const volatile T> {
+  using type = add_cv<typename template_tuple_element<I, T>::type>;
 };
 template <size_t I, class...S>
-struct tuple_element<I, tuple<S...>> {
-  using type = nth_type_t<I, S...>;
+struct template_tuple_element<I, tuple<S...>> {
+  using type = nth_type<I, S...>;
 };
 template <size_t I, class T>
-using tuple_element_t = typename tuple_element<I, T>::type;
+using tuple_element = typename template_tuple_element<I, T>::type;
 
 template <class T, size_t N>
-struct tuple_size<array<T, N>> : integral_constant<size_t, N> {};
+struct template_tuple_size<array<T, N>> : integral_constant<size_t, N> {};
 template <size_t I, class T, size_t N>
-struct tuple_element<I, array<T, N>> {
+struct template_tuple_element<I, array<T, N>> {
   using type = T;
 };
 
@@ -5943,22 +6490,22 @@ constexpr const T &&get(const tuple<S...> &&t) noexcept {
 }
 
 template <size_t I, class...S>
-constexpr tuple_element_t<I, tuple<S...>> &
+constexpr tuple_element<I, tuple<S...>> &
 get(tuple<S...> &t) noexcept {
   return t.template at<I>();
 }
 template <size_t I, class...S>
-constexpr const tuple_element_t<I, tuple<S...>> &
+constexpr const tuple_element<I, tuple<S...>> &
 get(const tuple<S...> &t) noexcept {
   return t.template at<I>();
 }
 template <size_t I, class...S>
-constexpr tuple_element_t<I, tuple<S...>> &&
+constexpr tuple_element<I, tuple<S...>> &&
 get(tuple<S...> &&t) noexcept {
   return forward<tuple<S...>>(t).template at<I>();
 }
 template <size_t I, class...S>
-constexpr const tuple_element_t<I, tuple<S...>> &&
+constexpr const tuple_element<I, tuple<S...>> &&
 get(const tuple<S...> &&t) noexcept {
   return forward<const tuple<S...>>(t).template at<I>();
 }
@@ -5995,28 +6542,28 @@ struct fo_forward_as_tuple {
 inline constexpr fo_forward_as_tuple forward_as_tuple{};
 
 template <class...S, class AL>
-struct uses_allocator<tuple<S...>, AL> : true_type {};
+struct template_uses_allocator<tuple<S...>, AL> : true_type {};
 template <class T>
 struct fo_uses_allocator_construction_args {
   template <class AL, class...S>
-  constexpr enable_if_t<!uses_allocator_v<T, AL>, tuple<S &&...>>
+  constexpr enable_if<!uses_allocator<T, AL>, tuple<S &&...>>
   operator ()(const AL &, S &&...s) const noexcept {
     return tuple<S &&...>(forward<S>(s)...);
   }
   template <class AL, class...S>
   constexpr
-  enable_if_t<uses_allocator_v<T, AL>
-              && is_constructible_v<T, allocator_arg_t, const AL &, S &&...>,
-              tuple<allocator_arg_t, const AL &, S &&...>>
+  enable_if<uses_allocator<T, AL>
+            && is_constructible<T, allocator_arg_t, const AL &, S &&...>,
+            tuple<allocator_arg_t, const AL &, S &&...>>
   operator ()(const AL &al, S &&...s) const noexcept {
     return tuple<allocator_arg_t, const AL &, S &&...>
       (allocator_arg, al, forward<S>(s)...);
   }
   template <class AL, class...S>
   constexpr
-  enable_if_t<uses_allocator_v<T, AL>
-              && !is_constructible_v<T, allocator_arg_t, const AL &, S &&...>,
-              tuple<S &&..., const AL &>>
+  enable_if<uses_allocator<T, AL>
+            && !is_constructible<T, allocator_arg_t, const AL &, S &&...>,
+            tuple<S &&..., const AL &>>
   operator ()(const AL &al, S &&...s) const noexcept {
     return tuple<S &&..., const AL &>(forward<S>(s)..., al);
   }
@@ -6081,7 +6628,7 @@ struct tuple_data<T, S...> {
   template <class TUPLE, class...SS>
   constexpr tuple_data(constructor_tag_t, TUPLE &&x, SS &&...s)
     : tuple_data(constructor_tag0_t{},
-                 make_index_sequence<tuple_size_v<decay_t<TUPLE>>>(),
+                 make_index_sequence<tuple_size<decay<TUPLE>>>(),
                  forward<TUPLE>(x), forward<SS>(s)...) {}
 
   template <class AL>
@@ -6125,39 +6672,39 @@ struct tuple_data<T, S...> {
                  piecewise_t{}, forward<SS>(s)...) {}
 
   template <size_t I>
-  constexpr enable_if_t<I == 0, T &> at() noexcept {
+  constexpr enable_if<I == 0, T &> at() noexcept {
     return value;
   }
   template <size_t I>
-  constexpr enable_if_t<I != 0, nth_type_t<I - 1, S...> &> at() noexcept {
+  constexpr enable_if<I != 0, nth_type<I - 1, S...> &> at() noexcept {
     return following.template at<I - 1>();
   }
 
   template <size_t I>
-  constexpr enable_if_t<I == 0, const T &> at() const noexcept {
+  constexpr enable_if<I == 0, const T &> at() const noexcept {
     return value;
   }
   template <size_t I>
-  constexpr enable_if_t<I != 0, const nth_type_t<I - 1, S...> &>
+  constexpr enable_if<I != 0, const nth_type<I - 1, S...> &>
   at() const noexcept {
     return following.template at<I - 1>();
   }
 
   template <class TT>
-  constexpr enable_if_t<is_same_v<TT, T>, TT &> as() noexcept {
+  constexpr enable_if<is_same<TT, T>, TT &> as() noexcept {
     return value;
   }
   template <class TT>
-  constexpr enable_if_t<!is_same_v<TT, T>, TT &> as() noexcept {
+  constexpr enable_if<!is_same<TT, T>, TT &> as() noexcept {
     return following.template as<TT>();
   }
 
   template <class TT>
-  constexpr enable_if_t<is_same_v<TT, T>, const TT &> as() const noexcept {
+  constexpr enable_if<is_same<TT, T>, const TT &> as() const noexcept {
     return value;
   }
   template <class TT>
-  constexpr enable_if_t<!is_same_v<TT, T>, const TT &>
+  constexpr enable_if<!is_same<TT, T>, const TT &>
   as() const noexcept {
     return following.template as<TT>();
   }
@@ -6179,7 +6726,7 @@ struct tuple_data<T, S...> {
     return following.equal_to(x.following);
   }
   template <class TT, class...SS>
-  constexpr common_comparison_category_t
+  constexpr common_comparison_category
   <synth_3way_result<T, TT>,
    synth_3way_result<S, SS>...>
   three_way(const tuple_data<TT, SS...> &x) const {
@@ -6229,7 +6776,7 @@ struct tuple_data<T> {
   template <class TUPLE>
   constexpr tuple_data(constructor_tag_t, TUPLE &&x)
     : tuple_data(constructor_tag0_t(),
-                 make_index_sequence<tuple_size_v<decay_t<TUPLE>>>(),
+                 make_index_sequence<tuple_size<decay<TUPLE>>>(),
                  forward<TUPLE>(x)) {}
 
   template <class AL>
@@ -6258,20 +6805,20 @@ struct tuple_data<T> {
     : tuple_data(constructor_tag_t(), forward<X>(x)) {}
 
   template <size_t I>
-  constexpr enable_if_t<I == 0, T &> at() noexcept {
+  constexpr enable_if<I == 0, T &> at() noexcept {
     return value;
   }
   template <size_t I>
-  constexpr enable_if_t<I == 0, const T &> at() const noexcept {
+  constexpr enable_if<I == 0, const T &> at() const noexcept {
     return value;
   }
 
   template <class TT>
-  constexpr enable_if_t<is_same_v<TT, T>, TT &> as() noexcept {
+  constexpr enable_if<is_same<TT, T>, TT &> as() noexcept {
     return value;
   }
   template <class TT>
-  constexpr enable_if_t<is_same_v<TT, T>, const TT &> as() const noexcept {
+  constexpr enable_if<is_same<TT, T>, const TT &> as() const noexcept {
     return value;
   }
 
@@ -6288,7 +6835,7 @@ struct tuple_data<T> {
     return value == x.value;
   }
   template <class TT>
-  constexpr common_comparison_category_t<synth_3way_result<T, TT>>
+  constexpr common_comparison_category<synth_3way_result<T, TT>>
   three_way(const tuple_data<TT> &x) const {
     return synth_3way(value, x.value);
   }
@@ -6313,45 +6860,45 @@ public:
   constexpr
   explicit(disjunction_v
            <typename negation
-            <typename is_implicitly_constructible<S>::type>::type...>)
-  tuple() noexcept((is_nothrow_constructible_v<S> && ...))
-    requires (is_default_constructible_v<S> && ...)
+            <typename template_is_implicitly_constructible<S>::type>::type...>)
+  tuple() noexcept((... && is_nothrow_constructible<S>))
+    requires (... && is_default_constructible<S>)
     = default;
   ~tuple() = default;
   constexpr tuple(const tuple &)
-    requires (is_copy_constructible_v<S> && ...)
+    requires (... && is_copy_constructible<S>)
     = default;
   constexpr tuple &operator =(const tuple &)
-    requires ((is_copy_assignable_v<S> && ...)
-              && is_copy_assignable_v<data_t>)
+    requires ((... && is_copy_assignable<S>)
+              && is_copy_assignable<data_t>)
     = default;
   constexpr tuple &operator =(const tuple &x)
-    noexcept((is_nothrow_copy_assignable_v<S> && ...))
-    requires ((is_copy_assignable_v<S> && ...)
-              && !is_copy_assignable_v<data_t>) {
+    noexcept((... && is_nothrow_copy_assignable<S>))
+    requires ((... && is_copy_assignable<S>)
+              && !is_copy_assignable<data_t>) {
     data.assign(x.data);
     return *this;
   }
-  constexpr tuple(tuple &&) requires (is_move_constructible_v<S> && ...)
+  constexpr tuple(tuple &&) requires (... && is_move_constructible<S>)
     = default;
   constexpr tuple &operator =(tuple &&)
-    requires ((is_move_assignable_v<S> && ...)
-              && is_move_assignable_v<data_t>)
+    requires ((... && is_move_assignable<S>)
+              && is_move_assignable<data_t>)
     = default;
   constexpr tuple &operator =(tuple &&x)
-    noexcept((is_nothrow_move_assignable_v<S> && ...))
-    requires ((is_move_assignable_v<S> && ...)
-              && !is_move_assignable_v<data_t>) {
+    noexcept((... && is_nothrow_move_assignable<S>))
+    requires ((... && is_move_assignable<S>)
+              && !is_move_assignable<data_t>) {
     data.assign(move(x.data));
     return *this;
   }
-  constexpr void swap(tuple &x) noexcept((is_nothrow_swappable_v<S> && ...))
-    requires (is_swappable_v<S> && ...) {
+  constexpr void swap(tuple &x) noexcept((... && is_nothrow_swappable<S>))
+    requires (... && is_swappable<S>) {
     data.swap(x.data);
   }
   constexpr void swap(const tuple &x) const
-    noexcept((is_nothrow_swappable_v<const S> && ...))
-    requires (is_swappable_v<const S> && ...) {
+    noexcept((... && is_nothrow_swappable<const S>))
+    requires (... && is_swappable<const S>) {
     data.swap(x.data);
   }
 
@@ -6359,80 +6906,85 @@ public:
   constexpr
   explicit(disjunction_v
            <typename negation
-            <typename is_implicitly_constructible<S>::type>::type...>)
+            <typename template_is_implicitly_constructible<S>::type>::type...>)
   tuple(allocator_arg_t, const AL &al)
-    requires (is_default_constructible_v<S> && ...)
+    requires (... && is_default_constructible<S>)
     : data(inner::alloc_arg_t{}, al) {}
 
   template <class AL>
   constexpr tuple(allocator_arg_t, const AL &al, const tuple &x)
-    requires (is_copy_constructible_v<S> && ...)
+    requires (... && is_copy_constructible<S>)
     : data(inner::alloc_arg_t{}, al, x.data) {}
   template <class AL>
   constexpr tuple(allocator_arg_t, const AL &al, tuple &&x)
-    requires (is_move_constructible_v<S> && ...)
+    requires (... && is_move_constructible<S>)
     : data(inner::alloc_arg_t{}, al, move(x.data)) {}
 
   constexpr explicit(negation_v
                      <conjunction
-                      <typename is_convertible<const S &, S>::type...>>)
-  tuple(const S &...s) requires (is_copy_constructible_v<S> && ...)
+                      <typename template_is_convertible<const S &, S>::type...>
+                      >)
+  tuple(const S &...s) requires (... && is_copy_constructible<S>)
     : data(s...) {}
   template <class AL>
   constexpr
   explicit(disjunction_v
            <typename negation
-            <typename is_convertible<const S &, S>::type>::type...>)
+            <typename template_is_convertible<const S &, S>::type>::type...>)
   tuple(allocator_arg_t, const AL &al, const S &...s)
-    requires (is_copy_constructible_v<S> && ...)
+    requires (... && is_copy_constructible<S>)
     : data(inner::alloc_arg_t{}, al, s...) {}
 
   template <class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                      <typename is_convertible<SS &&, S>::type>::type...>)
+                      <typename template_is_convertible<SS &&, S>::type>
+                      ::type...>)
   tuple(SS &&...s)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, SS &&> && ...))
+              && (... && is_constructible<S, SS &&>))
     : data(forward<SS>(s)...) {}
   template <class AL, class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                     <typename is_convertible<SS &&, S>::type>::type...>)
+                      <typename template_is_convertible<SS &&, S>::type>
+                      ::type...>)
   tuple(allocator_arg_t, const AL &al, SS &&...s)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, SS &&> && ...))
+              && (... && is_constructible<S, SS &&>))
     : data(inner::alloc_arg_t{}, al, forward<SS>(s)...) {}
 
   template <class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                      <typename is_convertible<SS &, S>::type>::type...>)
+                      <typename template_is_convertible<SS &, S>::type
+                       >::type...>)
   tuple(tuple<SS...> &x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, SS &> && ...)
+              && (... && is_constructible<S, SS &>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<tuple<SS> &, S> && ...)
-                      && !(is_constructible_v<S, tuple<SS> &> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<tuple<SS> &, S>)
+                      && !(... && is_constructible<S, tuple<SS> &>)
+                      && !(... && is_same<S, SS>))))
     : data(static_cast<typename tuple<SS...>::data_t &>(x.data)) {}
   template <class AL, class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                     <typename is_convertible<SS &, S>::type>::type...>)
+                      <typename template_is_convertible<SS &, S>::type>
+                      ::type...>)
   tuple(allocator_arg_t, const AL &al, tuple<SS...> &x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, SS &> && ...)
+              && (... && is_constructible<S, SS &>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<tuple<SS> &, S> && ...)
-                      && !(is_constructible_v<S, tuple<SS> &> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<tuple<SS> &, S>)
+                      && !(... && is_constructible<S, tuple<SS> &>)
+                      && !(... && is_same<S, SS>))))
     : data(inner::alloc_arg_t{}, al,
            static_cast<typename tuple<SS...>::data_t &>(x.data)) {}
   template <class...SS>
   constexpr tuple &operator =(tuple<SS...> &x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_assignable_v<S &, SS &> && ...)) {
+              && (... && is_assignable<S &, SS &>)) {
     data.assign(x.data);
     return *this;
   }
@@ -6440,32 +6992,34 @@ public:
   template <class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                      <typename is_convertible<const SS &, S>::type>::type...>)
+                      <typename template_is_convertible<const SS &, S>::type>
+                      ::type...>)
   tuple(const tuple<SS...> &x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, const SS &> && ...)
+              && (... && is_constructible<S, const SS &>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<const tuple<SS> &, S> && ...)
-                      && !(is_constructible_v<S, const tuple<SS> &> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<const tuple<SS> &, S>)
+                      && !(... && is_constructible<S, const tuple<SS> &>)
+                      && !(... && is_same<S, SS>))))
     : data(static_cast<const typename tuple<SS...>::data_t &>(x.data)) {}
   template <class AL, class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                     <typename is_convertible<const SS &, S>::type>::type...>)
+                      <typename template_is_convertible<const SS &, S>::type>
+                      ::type...>)
   tuple(allocator_arg_t, const AL &al, const tuple<SS...> &x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, const SS &> && ...)
+              && (... && is_constructible<S, const SS &>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<const tuple<SS> &, S> && ...)
-                      && !(is_constructible_v<S, const tuple<SS> &> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<const tuple<SS> &, S>)
+                      && !(... && is_constructible<S, const tuple<SS> &>)
+                      && !(... && is_same<S, SS>))))
     : data(inner::alloc_arg_t{}, al,
            static_cast<const typename tuple<SS...>::data_t &>(x.data)) {}
   template <class...SS>
   constexpr tuple &operator =(const tuple<SS...> &x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_assignable_v<S &, const SS &> && ...)) {
+              && (... && is_assignable<S &, const SS &>)) {
     data.assign(x.data);
     return *this;
   }
@@ -6473,31 +7027,33 @@ public:
   template <class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                      <typename is_convertible<SS &&, S>::type>::type...>)
+                      <typename template_is_convertible<SS &&, S>::type>
+                      ::type...>)
   tuple(tuple<SS...> &&x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, SS &&> && ...)
+              && (... && is_constructible<S, SS &&>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<tuple<SS> &&, S> && ...)
-                      && !(is_constructible_v<S, tuple<SS> &&> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<tuple<SS> &&, S>)
+                      && !(... && is_constructible<S, tuple<SS> &&>)
+                      && !(... && is_same<S, SS>))))
     : data(move(x.data)) {}
   template <class AL, class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                     <typename is_convertible<SS &&, S>::type>::type...>)
+                      <typename template_is_convertible<SS &&, S>::type>
+                      ::type...>)
   tuple(allocator_arg_t, const AL &al, tuple<SS...> &&x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, SS &&> && ...)
+              && (... && is_constructible<S, SS &&>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<tuple<SS> &&, S> && ...)
-                      && !(is_constructible_v<S, tuple<SS> &&> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<tuple<SS> &&, S>)
+                      && !(... && is_constructible<S, tuple<SS> &&>)
+                      && !(... && is_same<S, SS>))))
     : data(inner::alloc_arg_t{}, al, move(x.data)) {}
   template <class...SS>
   constexpr tuple &operator =(tuple<SS...> &&x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_assignable_v<S &, SS &&> && ...)) {
+              && (... && is_assignable<S &, SS &&>)) {
     data.assign(move(x.data));
     return *this;
   }
@@ -6505,31 +7061,33 @@ public:
   template <class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                     <typename is_convertible<const SS &&, S>::type>::type...>)
+                      <typename template_is_convertible<const SS &&, S>::type>
+                      ::type...>)
   tuple(const tuple<SS...> &&x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, const SS &&> && ...)
+              && (... && is_constructible<S, const SS &&>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<const tuple<SS> &&, S> && ...)
-                      && !(is_constructible_v<S, const tuple<SS> &&> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<const tuple<SS> &&, S>)
+                      && !(... && is_constructible<S, const tuple<SS> &&>)
+                      && !(... && is_same<S, SS>))))
     : data(move(x.data)) {}
   template <class AL, class...SS>
   constexpr explicit(disjunction_v
                      <typename negation
-                     <typename is_convertible<const SS &&, S>::type>::type...>)
+                      <typename template_is_convertible<const SS &&, S>::type>
+                      ::type...>)
   tuple(allocator_arg_t, const AL &al, const tuple<SS...> &&x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_constructible_v<S, const SS &&> && ...)
+              && (... && is_constructible<S, const SS &&>)
               && (sizeof...(S) != 1
-                  || (!(is_convertible_v<const tuple<SS> &&, S> && ...)
-                      && !(is_constructible_v<S, const tuple<SS> &&> && ...)
-                      && !(is_same_v<S, SS> && ...))))
+                  || (!(... && is_convertible<const tuple<SS> &&, S>)
+                      && !(... && is_constructible<S, const tuple<SS> &&>)
+                      && !(... && is_same<S, SS>))))
     : data(inner::alloc_arg_t{}, al, move(x.data)) {}
   template <class...SS>
   constexpr tuple &operator =(const tuple<SS...> &&x)
     requires (sizeof...(S) == sizeof...(SS)
-              && (is_assignable_v<S &, const SS &&> && ...)) {
+              && (... && is_assignable<S &, const SS &&>)) {
     data.assign(move(x.data));
     return *this;
   }
@@ -6539,44 +7097,44 @@ public:
     : data(inner::piecewise_t{}, move(s)...) {}
 
   template <size_t I>
-  constexpr tuple_element_t<I, tuple> &at() & noexcept
+  constexpr tuple_element<I, tuple> &at() & noexcept
     requires (I < sizeof...(S)) {
     return data.template at<I>();
   }
   template <size_t I>
-  constexpr const tuple_element_t<I, tuple> &at() const & noexcept
+  constexpr const tuple_element<I, tuple> &at() const & noexcept
     requires (I < sizeof...(S)) {
     return data.template at<I>();
   }
   template <size_t I>
-  constexpr tuple_element_t<I, tuple> &&at() && noexcept
+  constexpr tuple_element<I, tuple> &&at() && noexcept
     requires (I < sizeof...(S)) {
-    return (tuple_element_t<I, tuple> &&)data.template at<I>();
+    return (tuple_element<I, tuple> &&)data.template at<I>();
   }
   template <size_t I>
-  constexpr const tuple_element_t<I, tuple> &&at() const && noexcept
+  constexpr const tuple_element<I, tuple> &&at() const && noexcept
     requires (I < sizeof...(S)) {
-    return (const tuple_element_t<I, tuple> &&)data.template at<I>();
+    return (const tuple_element<I, tuple> &&)data.template at<I>();
   }
 
   template <class T>
   constexpr T &as() & noexcept
-    requires occurs_exactly_once_v<T, S...> {
+    requires occurs_exactly_once<T, S...> {
     return data.template as<T>();
   }
   template <class T>
   constexpr const T &as() const & noexcept
-    requires occurs_exactly_once_v<T, S...> {
+    requires occurs_exactly_once<T, S...> {
     return data.template as<T>();
   }
   template <class T>
   constexpr T &&as() && noexcept
-    requires occurs_exactly_once_v<T, S...> {
+    requires occurs_exactly_once<T, S...> {
     return static_cast<T &&>(data.template as<T>());
   }
   template <class T>
   constexpr const T &&as() const && noexcept
-    requires occurs_exactly_once_v<T, S...> {
+    requires occurs_exactly_once<T, S...> {
     return static_cast<const T &&>(data.template as<T>());
   }
 
@@ -6584,10 +7142,10 @@ public:
   friend constexpr bool operator ==(const tuple<SS...> &,
                                     const tuple<SSS...> &)
     requires (sizeof...(SS) == sizeof...(SSS)
-              && (inner::eqable<SS, SSS> && ...));
+              && (... && inner::eqable<SS, SSS>));
   template <class...SS, class...SSS>
   friend constexpr
-  common_comparison_category_t<synth_3way_result<SS, SSS>...>
+  common_comparison_category<synth_3way_result<SS, SSS>...>
   operator <=>(const tuple<SS...> &, const tuple<SSS...> &);
 };
 template <class...S>
@@ -6603,11 +7161,11 @@ constexpr auto swap(const tuple<S...> &x, const tuple<S...> &y)
 template <class...S, class...SS>
 constexpr bool operator ==(const tuple<S...> &x, const tuple<SS...> &y)
   requires (sizeof...(S) == sizeof...(SS)
-            && (inner::eqable<S, SS> && ...)) {
+            && (... && inner::eqable<S, SS>)) {
   return x.data.equal_to(y.data);
 }
 template <class...SS, class...SSS>
-constexpr common_comparison_category_t
+constexpr common_comparison_category
 <synth_3way_result<SS, SSS>...>
 operator <=>(const tuple<SS...> &x, const tuple<SSS...> &y) {
   return x.data.three_way(y.data);
@@ -6659,7 +7217,7 @@ struct make_tuple_type<reference_wrapper<T>> {
 struct fo_make_tuple {
   template <class...S>
   constexpr auto operator ()(S &&...s) const {
-    return tuple<typename inner::make_tuple_type<decay_t<S>>::type...>
+    return tuple<typename inner::make_tuple_type<decay<S>>::type...>
       (forward<S>(s)...);
   }
 };
@@ -6667,8 +7225,8 @@ inline constexpr fo_make_tuple make_tuple{};
 struct fo_make_pair {
   template <class T1, class T2>
   constexpr auto operator ()(T1 &&x, T2 &&y) const {
-    return tuple<typename inner::make_tuple_type<decay_t<T1>>::type,
-                 typename inner::make_tuple_type<decay_t<T2>>::type
+    return tuple<typename inner::make_tuple_type<decay<T1>>::type,
+                 typename inner::make_tuple_type<decay<T2>>::type
                  >(forward<T1>(x), forward<T2>(y));
   }
 };
@@ -6700,7 +7258,7 @@ struct tuple_cat_result_impl<tuple<S...>, tuple<SS...>, SSS...>
 
 template <class...S>
 struct tuple_cat_result {
-  using type = typename tuple_cat_result_impl<remove_cvref_t<S>...>::type;
+  using type = typename tuple_cat_result_impl<remove_cvref<S>...>::type;
 };
 template <class...S>
 using tuple_cat_result_t = typename tuple_cat_result<S...>::type;
@@ -6730,7 +7288,7 @@ constexpr R tuple_cat_impl(tuple<S...> acc, X &&x, SS &&...s) {
   return inner::fns::tuple_cat_impl<R>
     (inner::fns::tuple_cat_impl0(make_index_sequence<sizeof...(S)>(),
                                  make_index_sequence
-                                 <tuple_size_v<remove_reference_t<X>>>(),
+                                 <tuple_size<remove_reference<X>>>(),
                                  move(acc), forward<X>(x)),
      forward<SS>(s)...);
 }
@@ -6759,7 +7317,7 @@ struct fo_apply {
   constexpr decltype(auto) operator ()(F &&f, TUPLE &&t) const {
     return inner::fns::apply_impl(forward<F>(f), forward<TUPLE>(t),
                                   make_index_sequence
-                                  <tuple_size_v<decay_t<TUPLE>>>());
+                                  <tuple_size<decay<TUPLE>>>());
   }
 };
 inline constexpr fo_apply apply{};
@@ -6801,51 +7359,55 @@ public:
   T1 first;
   T2 second;
 
-  constexpr explicit(!(is_implicitly_constructible_v<T1>
-                       && is_implicitly_constructible_v<T2>))
-  tuple() noexcept(is_nothrow_default_constructible_v<T1>
-                   && is_nothrow_default_constructible_v<T2>)
-    requires (is_default_constructible_v<T1> && is_default_constructible_v<T2>)
+  constexpr explicit(!(is_implicitly_constructible<T1>
+                       && is_implicitly_constructible<T2>))
+  tuple() noexcept(is_nothrow_default_constructible<T1>
+                   && is_nothrow_default_constructible<T2>)
+    requires (is_default_constructible<T1> && is_default_constructible<T2>)
     : first(), second() {}
   ~tuple() = default;
   constexpr tuple(const tuple &) = default;
   constexpr tuple &operator =(const tuple &)
-    requires (is_copy_assignable_v<T1> && is_copy_assignable_v<T2>
-              && is_copy_assignable_v<min_pair<T1, T2>>)
+    requires (is_copy_assignable<T1>
+              && is_copy_assignable<T2>
+              && is_copy_assignable<min_pair<T1, T2>>)
     = default;
   constexpr tuple &operator =(const tuple &x)
-    noexcept (is_nothrow_copy_assignable_v<T1>
-              && is_nothrow_copy_assignable_v<T2>)
-    requires (is_copy_assignable_v<T1> && is_copy_assignable_v<T2>
-              && !is_copy_assignable_v<min_pair<T1, T2>>) {
+    noexcept (is_nothrow_copy_assignable<T1>
+              && is_nothrow_copy_assignable<T2>)
+    requires (is_copy_assignable<T1>
+              && is_copy_assignable<T2>
+              && !is_copy_assignable<min_pair<T1, T2>>) {
     first = x.first;
     second = x.second;
     return *this;
   }
   constexpr tuple(tuple &&) = default;
   constexpr tuple &operator =(tuple &&)
-    requires (is_move_assignable_v<T1> && is_move_assignable_v<T2>
-              && is_move_assignable_v<min_pair<T1, T2>>)
+    requires (is_move_assignable<T1>
+              && is_move_assignable<T2>
+              && is_move_assignable<min_pair<T1, T2>>)
     = default;
   constexpr tuple &operator =(tuple &&x)
-    noexcept (is_nothrow_move_assignable_v<T1>
-              && is_nothrow_move_assignable_v<T2>)
-    requires (is_move_assignable_v<T1> && is_move_assignable_v<T2>
-              && !is_move_assignable_v<min_pair<T1, T2>>) {
+    noexcept (is_nothrow_move_assignable<T1>
+              && is_nothrow_move_assignable<T2>)
+    requires (is_move_assignable<T1>
+              && is_move_assignable<T2>
+              && !is_move_assignable<min_pair<T1, T2>>) {
     first = forward<T1>(x.first);
     second = forward<T2>(x.second);
     return *this;
   }
   constexpr void swap(tuple &x)
-    noexcept(is_nothrow_swappable_v<T1> && is_nothrow_swappable_v<T2>)
-    requires (is_swappable_v<T1> && is_swappable_v<T2>) {
+    noexcept(is_nothrow_swappable<T1> && is_nothrow_swappable<T2>)
+    requires (is_swappable<T1> && is_swappable<T2>) {
     adl_swap(first, x.first);
     adl_swap(second, x.second);
   }
   constexpr void swap(const tuple &x) const
-    noexcept(is_nothrow_swappable_v<const T1>
-             && is_nothrow_swappable_v<const T2>)
-    requires (is_swappable_v<const T1> && is_swappable_v<const T2>) {
+    noexcept(is_nothrow_swappable<const T1>
+             && is_nothrow_swappable<const T2>)
+    requires (is_swappable<const T1> && is_swappable<const T2>) {
     adl_swap(first, x.first);
     adl_swap(second, x.second);
   }
@@ -6866,11 +7428,11 @@ public:
 
   template <class AL>
   constexpr
-  explicit(!is_implicitly_constructible_v<T1>
-           || !is_implicitly_constructible_v<T2>)
+  explicit(!is_implicitly_constructible<T1>
+           || !is_implicitly_constructible<T2>)
   tuple(allocator_arg_t, const AL &al)
-    requires (is_default_constructible_v<T1>
-              && is_default_constructible_v<T2>)
+    requires (is_default_constructible<T1>
+              && is_default_constructible<T2>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>(al),
             uses_allocator_construction_args<T2>(al))
@@ -6887,121 +7449,121 @@ public:
             uses_allocator_construction_args<T1>(al, forward<T1>(x.first)),
             uses_allocator_construction_args<T2>(al, forward<T2>(x.second))) {}
 
-  constexpr explicit(!is_convertible_v<const T1 &, T1>
-                     || !is_convertible_v<const T2 &, T2>)
+  constexpr explicit(!is_convertible<const T1 &, T1>
+                     || !is_convertible<const T2 &, T2>)
   tuple(const T1 &x, const T2 &y)
-    requires (is_copy_constructible_v<T1> && is_copy_constructible_v<T2>)
+    requires (is_copy_constructible<T1> && is_copy_constructible<T2>)
     : first(x), second(y) {}
   template <class AL>
-  constexpr explicit(!is_convertible_v<const T1 &, T1>
-                     || !is_convertible_v<const T2 &, T2>)
+  constexpr explicit(!is_convertible<const T1 &, T1>
+                     || !is_convertible<const T2 &, T2>)
   tuple(allocator_arg_t, const AL &al, const T1 &x, const T2 &y)
-    requires (is_copy_constructible_v<T1> && is_copy_constructible_v<T2>)
+    requires (is_copy_constructible<T1> && is_copy_constructible<T2>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>(al, x),
             uses_allocator_construction_args<T2>(al, y)) {}
 
   template <class U1, class U2>
-  constexpr explicit((!is_convertible_v<U1 &&, T1>
-                      || !is_convertible_v<U2 &&, T2>))
+  constexpr explicit((!is_convertible<U1 &&, T1>
+                      || !is_convertible<U2 &&, T2>))
   tuple(U1 &&x, U2 &&y)
-    requires (is_constructible_v<T1, U1 &&> && is_constructible_v<T2, U2 &&>)
+    requires (is_constructible<T1, U1 &&> && is_constructible<T2, U2 &&>)
     : first(forward<U1>(x)), second(forward<U2>(y)) {}
   template <class AL, class U1, class U2>
-  constexpr explicit((!is_convertible_v<U1 &&, T1>
-                      || !is_convertible_v<U2 &&, T2>))
+  constexpr explicit((!is_convertible<U1 &&, T1>
+                      || !is_convertible<U2 &&, T2>))
   tuple(allocator_arg_t, const AL &al, U1 &&x, U2 &&y)
-    requires (is_constructible_v<T1, U1 &&> && is_constructible_v<T2, U2 &&>)
+    requires (is_constructible<T1, U1 &&> && is_constructible<T2, U2 &&>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>(al, forward<U1>(x)),
             uses_allocator_construction_args<T2>(al, forward<U2>(y))) {}
 
   template <class U1, class U2>
-  constexpr explicit(!is_convertible_v<U1 &, T1>
-                     || !is_convertible_v<U2 &, T2>)
+  constexpr explicit(!is_convertible<U1 &, T1>
+                     || !is_convertible<U2 &, T2>)
   tuple(tuple<U1, U2> &x)
-    requires (is_constructible_v<T1, U1 &>
-              && is_constructible_v<T2, U2 &>)
+    requires (is_constructible<T1, U1 &>
+              && is_constructible<T2, U2 &>)
     : first(x.first), second(x.second) {}
   template <class AL, class U1, class U2>
-  constexpr explicit(!is_convertible_v<U1 &, T1>
-                     || !is_convertible_v<U2 &, T2>)
+  constexpr explicit(!is_convertible<U1 &, T1>
+                     || !is_convertible<U2 &, T2>)
   tuple(allocator_arg_t, const AL &al, tuple<U1, U2> &x)
-    requires (is_constructible_v<T1, U1 &>
-              && is_constructible_v<T2, U2 &>)
+    requires (is_constructible<T1, U1 &>
+              && is_constructible<T2, U2 &>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>(al, x.first),
             uses_allocator_construction_args<T2>(al, x.second)) {}
   template <class U1, class U2>
   constexpr tuple &operator =(tuple<U1, U2> &x)
-    requires (is_assignable_v<T1 &, U1 &>
-              && is_assignable_v<T2 &, U2 &>) {
+    requires (is_assignable<T1 &, U1 &>
+              && is_assignable<T2 &, U2 &>) {
     first = x.first;
     second = x.second;
     return *this;
   }
 
   template <class U1, class U2>
-  constexpr explicit(!is_convertible_v<const U1 &, T1>
-                     || !is_convertible_v<const U2 &, T2>)
+  constexpr explicit(!is_convertible<const U1 &, T1>
+                     || !is_convertible<const U2 &, T2>)
   tuple(const tuple<U1, U2> &x)
-    requires (is_constructible_v<T1, const U1 &>
-              && is_constructible_v<T2, const U2 &>)
+    requires (is_constructible<T1, const U1 &>
+              && is_constructible<T2, const U2 &>)
     : first(x.first), second(x.second) {}
   template <class AL, class U1, class U2>
-  constexpr explicit(!is_convertible_v<const U1 &, T1>
-                     || !is_convertible_v<const U2 &, T2>)
+  constexpr explicit(!is_convertible<const U1 &, T1>
+                     || !is_convertible<const U2 &, T2>)
   tuple(allocator_arg_t, const AL &al, const tuple<U1, U2> &x)
-    requires (is_constructible_v<T1, const U1 &>
-              && is_constructible_v<T2, const U2 &>)
+    requires (is_constructible<T1, const U1 &>
+              && is_constructible<T2, const U2 &>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>(al, x.first),
             uses_allocator_construction_args<T2>(al, x.second)) {}
   template <class U1, class U2>
   constexpr tuple &operator =(const tuple<U1, U2> &x)
-    requires (is_assignable_v<T1 &, const U1 &>
-              && is_assignable_v<T2 &, const U2 &>) {
+    requires (is_assignable<T1 &, const U1 &>
+              && is_assignable<T2 &, const U2 &>) {
     first = x.first;
     second = x.second;
     return *this;
   }
 
   template <class U1, class U2>
-  constexpr explicit(!is_convertible_v<U1 &&, T1>
-                     || !is_convertible_v<U2 &&, T2>)
+  constexpr explicit(!is_convertible<U1 &&, T1>
+                     || !is_convertible<U2 &&, T2>)
   tuple(tuple<U1, U2> &&x)
-    requires (is_constructible_v<T1, U1 &&> && is_constructible_v<T2, U2 &&>)
+    requires (is_constructible<T1, U1 &&> && is_constructible<T2, U2 &&>)
     : first(forward<U1>(x.first)), second(forward<U2>(x.second)) {}
   template <class AL, class U1, class U2>
-  constexpr explicit(!is_convertible_v<U1 &&, T1>
-                     || !is_convertible_v<U2 &&, T2>)
+  constexpr explicit(!is_convertible<U1 &&, T1>
+                     || !is_convertible<U2 &&, T2>)
   tuple(allocator_arg_t, const AL &al, tuple<U1, U2> &&x)
-    requires (is_constructible_v<T1, U1 &&> && is_constructible_v<T2, U2 &&>)
+    requires (is_constructible<T1, U1 &&> && is_constructible<T2, U2 &&>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>(al, forward<U1>(x.first)),
             uses_allocator_construction_args<T2>(al, forward<U2>(x.second))) {}
   template <class U1, class U2>
   constexpr tuple &operator =(tuple<U1, U2> &&x)
-    requires (is_assignable_v<T1 &, U1 &&>
-              && is_assignable_v<T2 &, U2 &&>) {
+    requires (is_assignable<T1 &, U1 &&>
+              && is_assignable<T2 &, U2 &&>) {
     first = forward<U1>(x.first);
     second = forward<U2>(x.second);
     return *this;
   }
 
   template <class U1, class U2>
-  constexpr explicit(!is_convertible_v<U1 &&, T1>
-                     || !is_convertible_v<U2 &&, T2>)
+  constexpr explicit(!is_convertible<U1 &&, T1>
+                     || !is_convertible<U2 &&, T2>)
   tuple(const tuple<U1, U2> &&x)
-    requires (is_constructible_v<T1, const U1 &&>
-              && is_constructible_v<T2, const U2 &&>)
+    requires (is_constructible<T1, const U1 &&>
+              && is_constructible<T2, const U2 &&>)
     : first(forward<const U1>(x.first)), second(forward<const U2>(x.second)) {}
   template <class AL, class U1, class U2>
-  constexpr explicit(!is_convertible_v<const U1 &&, T1>
-                     || !is_convertible_v<const U2 &&, T2>)
+  constexpr explicit(!is_convertible<const U1 &&, T1>
+                     || !is_convertible<const U2 &&, T2>)
   tuple(allocator_arg_t, const AL &al, const tuple<U1, U2> &&x)
-    requires (is_constructible_v<T1, const U1 &&>
-              && is_constructible_v<T2, const U2 &&>)
+    requires (is_constructible<T1, const U1 &&>
+              && is_constructible<T2, const U2 &&>)
     : tuple(piecewise_construct,
             uses_allocator_construction_args<T1>
             (al, forward<const U1>(x.first)),
@@ -7009,8 +7571,8 @@ public:
             (al, forward<const U2>(x.second))) {}
   template <class U1, class U2>
   constexpr tuple &operator =(const tuple<U1, U2> &&x)
-    requires (is_assignable_v<T1 &, const U1 &&>
-              && is_assignable_v<T2 &, const U2 &&>) {
+    requires (is_assignable<T1 &, const U1 &&>
+              && is_assignable<T2 &, const U2 &&>) {
     first = forward<const U1>(x.first);
     second = forward<const U2>(x.second);
     return *this;
@@ -7060,8 +7622,8 @@ public:
 
   template <class T>
   constexpr T &as() & noexcept
-    requires occurs_exactly_once_v<T, T1, T2> {
-    if constexpr (is_same_v<T, T1>) {
+    requires occurs_exactly_once<T, T1, T2> {
+    if constexpr (is_same<T, T1>) {
       return first;
     }
     else {
@@ -7070,8 +7632,8 @@ public:
   }
   template <class T>
   constexpr const T &as() const & noexcept
-    requires occurs_exactly_once_v<T, T1, T2> {
-    if constexpr (is_same_v<T, T1>) {
+    requires occurs_exactly_once<T, T1, T2> {
+    if constexpr (is_same<T, T1>) {
       return first;
     }
     else {
@@ -7080,8 +7642,8 @@ public:
   }
   template <class T>
   constexpr T &&as() && noexcept
-    requires occurs_exactly_once_v<T, T1, T2> {
-    if constexpr (is_same_v<T, T1>) {
+    requires occurs_exactly_once<T, T1, T2> {
+    if constexpr (is_same<T, T1>) {
       return forward<T>(first);
     }
     else {
@@ -7090,8 +7652,8 @@ public:
   }
   template <class T>
   constexpr const T &&as() const && noexcept
-    requires occurs_exactly_once_v<T, T1, T2> {
-    if constexpr (is_same_v<T, T1>) {
+    requires occurs_exactly_once<T, T1, T2> {
+    if constexpr (is_same<T, T1>) {
       return forward<const T>(first);
     }
     else {
@@ -7116,8 +7678,8 @@ constexpr bool operator ==(const tuple<T1, T2> &x,
   return x.first == y.first && x.second == y.second;
 }
 template <class T1, class T2, class TT1, class TT2>
-constexpr common_comparison_category_t<synth_3way_result<T1, TT1>,
-                                       synth_3way_result<T2, TT2>>
+constexpr common_comparison_category<synth_3way_result<T1, TT1>,
+                                     synth_3way_result<T2, TT2>>
 operator <=>(const tuple<T1, T2> &x, const tuple<TT1, TT2> &y) {
   const auto o = synth_3way(x.first, y.first);
   if (o != 0)
@@ -7148,7 +7710,7 @@ struct fo_bind_tuple {
   constexpr auto operator ()(T &&t, F f) const {
     return inner::fns::bind_tuple_impl(forward<T>(t), f,
                                        make_index_sequence
-                                       <tuple_size_v<remove_cvref_t<T>>>{});
+                                       <tuple_size<remove_cvref<T>>>{});
   }
 };
 inline constexpr fo_bind_tuple bind_tuple{};
@@ -7170,17 +7732,20 @@ struct bpos {
 
 }
 template <class T>
-struct is_bind_expression : false_type {};
+struct template_is_bind_expression : false_type {};
 template <class T>
-struct is_bind_expression<const T> : is_bind_expression<T> {};
+struct template_is_bind_expression<const T> : template_is_bind_expression<T> {};
 template <class T>
-struct is_bind_expression<volatile T> : is_bind_expression<T> {};
+struct template_is_bind_expression<volatile T>
+  : template_is_bind_expression<T> {};
 template <class T>
-struct is_bind_expression<const volatile T> : is_bind_expression<T> {};
+struct template_is_bind_expression<const volatile T>
+  : template_is_bind_expression<T> {};
 template <class X, class Y, class Z>
-struct is_bind_expression<inner::be<X, Y, Z>> : true_type {};
+struct template_is_bind_expression<inner::be<X, Y, Z>> : true_type {};
 template <class T>
-inline constexpr bool is_bind_expression_v = is_bind_expression<T>::value;
+inline constexpr bool is_bind_expression
+  = template_is_bind_expression<T>::value;
 
 inline namespace placeholders {
 
@@ -7252,17 +7817,18 @@ inline constexpr inner::bpos<63> _64{};
 }
 
 template <class T>
-struct is_placeholder : false_type {};
+struct template_is_placeholder : false_type {};
 template <class T>
-struct is_placeholder<const T> : is_placeholder<T> {};
+struct template_is_placeholder<const T> : template_is_placeholder<T> {};
 template <class T>
-struct is_placeholder<volatile T> : is_placeholder<T> {};
+struct template_is_placeholder<volatile T> : template_is_placeholder<T> {};
 template <class T>
-struct is_placeholder<const volatile T> : is_placeholder<T> {};
+struct template_is_placeholder<const volatile T>
+  : template_is_placeholder<T> {};
 template <size_t I>
-struct is_placeholder<inner::bpos<I>> : true_type {};
+struct template_is_placeholder<inner::bpos<I>> : true_type {};
 template <class T>
-inline constexpr bool is_placeholder_v = is_placeholder<T>::value;
+inline constexpr bool is_placeholder = template_is_placeholder<T>::value;
 
 namespace inner {
 
@@ -7275,17 +7841,17 @@ struct bindimpl {
   }
   template <size_t I, class TUPLE, class...S>
   static constexpr auto &&get(TUPLE &&, tuple<S...> &&args)
-    requires is_placeholder_v<tuple_element_t<I, decay_t<TUPLE>>> {
-    return at<tuple_element_t<I, decay_t<TUPLE>>::nth>(move(args));
+    requires is_placeholder<tuple_element<I, decay<TUPLE>>> {
+    return at<tuple_element<I, decay<TUPLE>>::nth>(move(args));
   }
   template <size_t I, class TUPLE, class...S>
   static constexpr auto &&get(TUPLE &&x, tuple<S...> &&)
-    requires is_reference_wrapper_v<tuple_element_t<I, decay_t<TUPLE>>> {
+    requires is_reference_wrapper<tuple_element<I, decay<TUPLE>>> {
     return at<I>(forward<TUPLE>(x)).get();
   }
   template <size_t I, class TUPLE, class...S>
   static constexpr decltype(auto) get(TUPLE &&x, tuple<S...> &&args)
-    requires is_bind_expression_v<tuple_element_t<I, decay_t<TUPLE>>> {
+    requires is_bind_expression<tuple_element<I, decay<TUPLE>>> {
     return call(at<I>(forward<TUPLE>(x)), move(args));
   }
 
@@ -7298,9 +7864,9 @@ struct bindimpl {
   static constexpr decltype(auto) call_impl(BINDEXPR &&x, tuple<S...> &&args,
                                             index_sequence<I...>)
     requires (!same_as
-              <typename decay_t<BINDEXPR>::return_type,
+              <typename decay<BINDEXPR>::return_type,
                inner::be_auto_tag>) {
-    return invoke_r<typename decay_t<BINDEXPR>::return_type>
+    return invoke_r<typename decay<BINDEXPR>::return_type>
       (x.f, get<I>(x.base(), move(args))...);
   }
 
@@ -7326,15 +7892,15 @@ class be : TUPLE {
 
 public:
   static constexpr size_t size() noexcept {
-    return tuple_size_v<TUPLE>;
+    return tuple_size<TUPLE>;
   }
   using return_type = RETURN_TYPE;
 
   be() = delete;
-  constexpr be() noexcept(is_nothrow_default_constructible_v<F>
-                          && is_nothrow_default_constructible_v<TUPLE>)
-    requires (is_default_constructible_v<TUPLE>
-              && is_default_constructible_v<F>)
+  constexpr be() noexcept(is_nothrow_default_constructible<F>
+                          && is_nothrow_default_constructible<TUPLE>)
+    requires (is_default_constructible<TUPLE>
+              && is_default_constructible<F>)
     : TUPLE(), f() {}
   ~be() = default;
   be(const be &) = default;
@@ -7342,15 +7908,15 @@ public:
   be(be &&) = default;
   be &operator =(be &&) = default;
   friend constexpr void swap(be &x, be &y)
-    noexcept(is_nothrow_swappable_v<F> && is_nothrow_swappable_v<TUPLE>)
-    requires is_swappable_v<TUPLE> && is_swappable_v<F> {
+    noexcept(is_nothrow_swappable<F> && is_nothrow_swappable<TUPLE>)
+    requires is_swappable<TUPLE> && is_swappable<F> {
     adl_swap(x.f, y.f);
     adl_swap(x.base(), y.base());
   }
 
   template <class X, class...S>
   constexpr explicit be(X &&x, S &&...s)
-    requires (sizeof...(S) == size()) && is_constructible_v<F, X &&>
+    requires (sizeof...(S) == size()) && is_constructible<F, X &&>
     : TUPLE(forward<S>(s)...), f(forward<X>(x)) {}
 
   template <class...S>
@@ -7366,9 +7932,9 @@ public:
 }
 struct fo_bind {
   template <class F, class...S>
-  constexpr inner::be<decay_t<F>, tuple<decay_t<S>...>>
+  constexpr inner::be<decay<F>, tuple<decay<S>...>>
   operator ()(F &&f, S &&...s) const {
-    return inner::be<decay_t<F>, tuple<decay_t<S>...>>
+    return inner::be<decay<F>, tuple<decay<S>...>>
       (forward<F>(f), forward<S>(s)...);
   }
 };
@@ -7376,9 +7942,9 @@ inline constexpr fo_bind bind{};
 template <class R>
 struct fo_bind_r {
   template <class F, class...S>
-  constexpr inner::be<decay_t<F>, tuple<decay_t<S>...>, R>
+  constexpr inner::be<decay<F>, tuple<decay<S>...>, R>
   operator ()(F &&f, S &&...s) const {
-    return inner::be<decay_t<F>, tuple<decay_t<S>...>, R>
+    return inner::be<decay<F>, tuple<decay<S>...>, R>
       (forward<F>(f), forward<S>(s)...);
   }
 };
@@ -7400,9 +7966,9 @@ public:
   bind_front_expr(bind_front_expr &&) = default;
   bind_front_expr &operator =(bind_front_expr &&) = default;
   friend constexpr void swap(bind_front_expr &x, bind_front_expr &y)
-    noexcept(is_nothrow_swappable_v<F>
-             && is_nothrow_swappable_v<tuple<S...>>)
-      requires is_swappable_v<F> && (is_swappable_v<S> && ...) {
+    noexcept(is_nothrow_swappable<F>
+             && is_nothrow_swappable<tuple<S...>>)
+      requires is_swappable<F> && (... && is_swappable<S>) {
     adl_swap(x.f, y.f);
     adl_swap(x.bound_args, y.bound_args);
   }
@@ -7444,9 +8010,9 @@ public:
 }
 struct fo_bind_front {
   template <class F, class...S>
-  constexpr inner::bind_front_expr<decay_t<F>, decay_t<S>...>
+  constexpr inner::bind_front_expr<decay<F>, decay<S>...>
   operator ()(F &&f, S &&...s) const {
-    return inner::bind_front_expr<decay_t<F>, decay_t<S>...>
+    return inner::bind_front_expr<decay<F>, decay<S>...>
       (forward<F>(f), forward<S>(s)...);
   }
 };
@@ -7467,9 +8033,9 @@ public:
   bind_back_expr(bind_back_expr &&) = default;
   bind_back_expr &operator =(bind_back_expr &&) = default;
   friend constexpr void swap(bind_back_expr &x, bind_back_expr &y)
-    noexcept(is_nothrow_swappable_v<F>
-             && is_nothrow_swappable_v<tuple<S...>>)
-      requires is_swappable_v<F> && (is_swappable_v<S> && ...) {
+    noexcept(is_nothrow_swappable<F>
+             && is_nothrow_swappable<tuple<S...>>)
+      requires is_swappable<F> && (... && is_swappable<S>) {
     adl_swap(x.f, y.f);
     adl_swap(x.bound_args, y.bound_args);
   }
@@ -7511,9 +8077,9 @@ public:
 }
 struct fo_bind_back {
   template <class F, class...S>
-  constexpr inner::bind_back_expr<decay_t<F>, decay_t<S>...>
+  constexpr inner::bind_back_expr<decay<F>, decay<S>...>
   operator ()(F &&f, S &&...s) const {
-    return inner::bind_back_expr<decay_t<F>, decay_t<S>...>
+    return inner::bind_back_expr<decay<F>, decay<S>...>
       (forward<F>(f), forward<S>(s)...);
   }
 };
@@ -7816,8 +8382,6 @@ inline constexpr ratio exa(1'000'000'000'000'000'000, 1);
 //inline constexpr ratio zetta(1'000'000'000'000'000'000'000, 1);
 //inline constexpr ratio yotta(1'000'000'000'000'000'000'000'000, 1);
 
-//refresh();
-
 }
 
 // iterator tags
@@ -7847,17 +8411,18 @@ struct in_place_type_t {
 template <class T>
 inline constexpr in_place_type_t<T> in_place_type{};
 template <class T>
-struct is_in_place_type : false_type {};
+struct template_is_in_place_type : false_type {};
 template <class T>
-struct is_in_place_type<in_place_type_t<T>> : true_type {};
+struct template_is_in_place_type<in_place_type_t<T>> : true_type {};
 template <class T>
-struct is_in_place_type<const in_place_type_t<T>> : true_type {};
+struct template_is_in_place_type<const in_place_type_t<T>> : true_type {};
 template <class T>
-struct is_in_place_type<volatile in_place_type_t<T>> : true_type {};
+struct template_is_in_place_type<volatile in_place_type_t<T>> : true_type {};
 template <class T>
-struct is_in_place_type<const volatile in_place_type_t<T>> : true_type {};
+struct template_is_in_place_type<const volatile in_place_type_t<T>>
+  : true_type {};
 template <class T>
-inline constexpr bool is_in_place_type_v = is_in_place_type<T>::value;
+inline constexpr bool is_in_place_type = template_is_in_place_type<T>::value;
 
 struct nullopt_t {};
 inline constexpr nullopt_t nullopt{};
@@ -7882,7 +8447,7 @@ union optional_storage {
 
   constexpr optional_storage() noexcept : placeholder() {}
   constexpr ~optional_storage() {}
-  ~optional_storage() requires is_trivially_destructible_v<T> = default;
+  ~optional_storage() requires is_trivially_destructible<T> = default;
   optional_storage(const optional_storage &) = default;
   optional_storage &operator =(const optional_storage &) = default;
   optional_storage(optional_storage &&) = default;
@@ -7948,54 +8513,54 @@ public:
 
   constexpr optional() noexcept : buf(), y(false) {};
   ~optional() = default;
-  ~optional() requires (!is_trivially_destructible_v<T>) {
+  ~optional() requires (!is_trivially_destructible<T>) {
     if (y)
       buf.disable();
   }
   optional(const optional &x)
-    requires is_trivially_copy_constructible_v<T> = default;
+    requires is_trivially_copy_constructible<T> = default;
   optional(const optional &x)
-    requires (!is_trivially_copy_constructible_v<T>
-              && is_copy_constructible_v<T>) {
+    requires (!is_trivially_copy_constructible<T>
+              && is_copy_constructible<T>) {
     construct_from_optional(x);
   }
   optional &operator =(const optional &)
-    requires (is_trivially_copy_constructible_v<T>
-              && is_trivially_copy_assignable_v<T>
-              && is_trivially_destructible_v<T>) = default;
+    requires (is_trivially_copy_constructible<T>
+              && is_trivially_copy_assignable<T>
+              && is_trivially_destructible<T>) = default;
   optional &operator =(const optional &x)
-    requires (!(is_trivially_copy_constructible_v<T>
-                && is_trivially_copy_assignable_v<T>
-                && is_trivially_destructible_v<T>)
-              && (is_copy_constructible_v<T> && is_copy_assignable_v<T>)) {
+    requires (!(is_trivially_copy_constructible<T>
+                && is_trivially_copy_assignable<T>
+                && is_trivially_destructible<T>)
+              && (is_copy_constructible<T> && is_copy_assignable<T>)) {
     return assign_optional(x);
   }
   optional(optional &&x)
-    requires is_trivially_move_constructible_v<T> = default;
-  optional(optional &&x) noexcept(is_nothrow_move_constructible_v<T>)
-    requires (!is_trivially_move_constructible_v<T>
-              && is_move_constructible_v<T>) {
+    requires is_trivially_move_constructible<T> = default;
+  optional(optional &&x) noexcept(is_nothrow_move_constructible<T>)
+    requires (!is_trivially_move_constructible<T>
+              && is_move_constructible<T>) {
     construct_from_optional(move(x));
   }
   optional &operator =(optional &&)
-    requires (is_trivially_move_constructible_v<T>
-              && is_trivially_move_assignable_v<T>
-              && is_trivially_destructible_v<T>) = default;
+    requires (is_trivially_move_constructible<T>
+              && is_trivially_move_assignable<T>
+              && is_trivially_destructible<T>) = default;
   optional &operator =(optional &&x)
-    noexcept(is_nothrow_move_constructible_v<T>
-             && is_nothrow_move_assignable_v<T>)
-    requires (!((is_trivially_move_constructible_v<T>
-                 && is_trivially_move_assignable_v<T>
-                 && is_trivially_destructible_v<T>))
-              && (is_move_constructible_v<T> && is_move_assignable_v<T>)) {
+    noexcept(is_nothrow_move_constructible<T>
+             && is_nothrow_move_assignable<T>)
+    requires (!((is_trivially_move_constructible<T>
+                 && is_trivially_move_assignable<T>
+                 && is_trivially_destructible<T>))
+              && (is_move_constructible<T> && is_move_assignable<T>)) {
     return assign_optional(move(x));
   }
   friend constexpr void swap(optional &a, optional &b)
-    noexcept(is_nothrow_move_constructible_v<T>
-             && is_nothrow_swappable_v<T>)
-    requires (is_move_constructible_v<T> && is_swappable_v<T>) {
-    if constexpr (is_trivially_move_constructible_v<T>
-                  && is_trivially_move_assignable_v<T>) {
+    noexcept(is_nothrow_move_constructible<T>
+             && is_nothrow_swappable<T>)
+    requires (is_move_constructible<T> && is_swappable<T>) {
+    if constexpr (is_trivially_move_constructible<T>
+                  && is_trivially_move_assignable<T>) {
       default_swap(a, b);
     }
     else {
@@ -8031,26 +8596,26 @@ public:
 
   template <class...S>
   constexpr explicit optional(in_place_t, S &&...s)
-    requires is_constructible_v<T, S &&...>
+    requires is_constructible<T, S &&...>
     : buf(inner::optional_in_place_tag{}, forward<S>(s)...), y(true) {}
   template <class U, class...S>
   constexpr explicit optional(in_place_t, initializer_list<U> l, S &&...s)
-    requires is_constructible_v<T, initializer_list<U> &, S &&...>
+    requires is_constructible<T, initializer_list<U> &, S &&...>
     : buf(inner::optional_in_place_tag{}, l, forward<S>(s)...), y(true) {}
 
   template <class U = T>
-  explicit(negation<is_convertible<U &&, T>>::value)
+  explicit(negation<template_is_convertible<U &&, T>>::value)
   constexpr optional(U &&x)
-    requires (!is_same_v<remove_cvref_t<U>, optional>
-              && !is_same_v<remove_cvref_t<U>, in_place_t>
-              && is_constructible_v<T, U>)
+    requires (!is_same<remove_cvref<U>, optional>
+              && !is_same<remove_cvref<U>, in_place_t>
+              && is_constructible<T, U>)
     : buf(inner::optional_in_place_tag{}, forward<U>(x)), y(true) {}
   template <class U = T>
   optional &operator =(U &&x)
-    requires (!is_same_v<remove_cvref_t<U>, optional>
-              && !(is_scalar_v<T> && is_same_v<T, remove_cvref_t<U>>)
-              && is_constructible_v<T, U>
-              && is_assignable_v<T &, U>) {
+    requires (!is_same<remove_cvref<U>, optional>
+              && !(is_scalar<T> && is_same<T, remove_cvref<U>>)
+              && is_constructible<T, U>
+              && is_assignable<T &, U>) {
     if (y)
       buf.value = forward<U>(x);
     else {
@@ -8061,77 +8626,77 @@ public:
   }
 
   template <class U>
-  explicit(negation<is_convertible<const U &, T>>::value)
+  explicit(negation<template_is_convertible<const U &, T>>::value)
   optional(const optional<U> &x)
-    requires (!is_same_v<U, T>
-              && is_constructible_v<T, const U &>
-              && !is_constructible_v<T, optional<U> &>
-              && !is_constructible_v<T, optional<U> &&>
-              && !is_constructible_v<T, const optional<U> &>
-              && !is_constructible_v<T, const optional<U> &&>
-              && !is_convertible_v<optional<U> &, T>
-              && !is_convertible_v<optional<U> &&, T>
-              && !is_convertible_v<const optional<U> &, T>
-              && !is_convertible_v<const optional<U> &&, T>) {
+    requires (!is_same<U, T>
+              && is_constructible<T, const U &>
+              && !is_constructible<T, optional<U> &>
+              && !is_constructible<T, optional<U> &&>
+              && !is_constructible<T, const optional<U> &>
+              && !is_constructible<T, const optional<U> &&>
+              && !is_convertible<optional<U> &, T>
+              && !is_convertible<optional<U> &&, T>
+              && !is_convertible<const optional<U> &, T>
+              && !is_convertible<const optional<U> &&, T>) {
     construct_from_optional(x);
   }
   template <class U>
   optional<T> &operator =(const optional<U> &x)
-    requires (!is_same_v<U, T>
-              && is_constructible_v<T, const U &>
-              && is_assignable_v<T &, const U &>
-              && !is_constructible_v<T, optional<U> &>
-              && !is_constructible_v<T, optional<U> &&>
-              && !is_constructible_v<T, const optional<U> &>
-              && !is_constructible_v<T, const optional<U> &&>
-              && !is_convertible_v<optional<U> &, T>
-              && !is_convertible_v<optional<U> &&, T>
-              && !is_convertible_v<const optional<U> &, T>
-              && !is_convertible_v<const optional<U> &&, T>
-              && !is_assignable_v<T &, optional<U> &>
-              && !is_assignable_v<T &, optional<U> &&>
-              && !is_assignable_v<T &, const optional<U> &>
-              && !is_assignable_v<T &, const optional<U> &&>) {
+    requires (!is_same<U, T>
+              && is_constructible<T, const U &>
+              && is_assignable<T &, const U &>
+              && !is_constructible<T, optional<U> &>
+              && !is_constructible<T, optional<U> &&>
+              && !is_constructible<T, const optional<U> &>
+              && !is_constructible<T, const optional<U> &&>
+              && !is_convertible<optional<U> &, T>
+              && !is_convertible<optional<U> &&, T>
+              && !is_convertible<const optional<U> &, T>
+              && !is_convertible<const optional<U> &&, T>
+              && !is_assignable<T &, optional<U> &>
+              && !is_assignable<T &, optional<U> &&>
+              && !is_assignable<T &, const optional<U> &>
+              && !is_assignable<T &, const optional<U> &&>) {
     return assign_optional(x);
   }
 
   template <class U>
-  explicit(negation<is_convertible<U &&, T>>::value)
+  explicit(negation<template_is_convertible<U &&, T>>::value)
   optional(optional<U> &&x)
-    requires (!is_same_v<U, T>
-              && is_constructible_v<T, U>
-              && !is_constructible_v<T, optional<U> &>
-              && !is_constructible_v<T, optional<U> &&>
-              && !is_constructible_v<T, const optional<U> &>
-              && !is_constructible_v<T, const optional<U> &&>
-              && !is_convertible_v<optional<U> &, T>
-              && !is_convertible_v<optional<U> &&, T>
-              && !is_convertible_v<const optional<U> &, T>
-              && !is_convertible_v<const optional<U> &&, T>) {
+    requires (!is_same<U, T>
+              && is_constructible<T, U>
+              && !is_constructible<T, optional<U> &>
+              && !is_constructible<T, optional<U> &&>
+              && !is_constructible<T, const optional<U> &>
+              && !is_constructible<T, const optional<U> &&>
+              && !is_convertible<optional<U> &, T>
+              && !is_convertible<optional<U> &&, T>
+              && !is_convertible<const optional<U> &, T>
+              && !is_convertible<const optional<U> &&, T>) {
     construct_from_optional(move(x));
   }
   template <class U>
   optional<T> &operator =(optional<U> &&x)
-    requires (!is_same_v<U, T>
-              && is_constructible_v<T, U>
-              && is_assignable_v<T &, U>
-              && !is_constructible_v<T, optional<U> &>
-              && !is_constructible_v<T, optional<U> &&>
-              && !is_constructible_v<T, const optional<U> &>
-              && !is_constructible_v<T, const optional<U> &&>
-              && !is_convertible_v<optional<U> &, T>
-              && !is_convertible_v<optional<U> &&, T>
-              && !is_convertible_v<const optional<U> &, T>
-              && !is_convertible_v<const optional<U> &&, T>
-              && !is_assignable_v<T &, optional<U> &>
-              && !is_assignable_v<T &, optional<U> &&>
-              && !is_assignable_v<T &, const optional<U> &>
-              && !is_assignable_v<T &, const optional<U> &&>) {
+    requires (!is_same<U, T>
+              && is_constructible<T, U>
+              && is_assignable<T &, U>
+              && !is_constructible<T, optional<U> &>
+              && !is_constructible<T, optional<U> &&>
+              && !is_constructible<T, const optional<U> &>
+              && !is_constructible<T, const optional<U> &&>
+              && !is_convertible<optional<U> &, T>
+              && !is_convertible<optional<U> &&, T>
+              && !is_convertible<const optional<U> &, T>
+              && !is_convertible<const optional<U> &&, T>
+              && !is_assignable<T &, optional<U> &>
+              && !is_assignable<T &, optional<U> &&>
+              && !is_assignable<T &, const optional<U> &>
+              && !is_assignable<T &, const optional<U> &&>) {
     return assign_optional(move(x));
   }
 
   template <class...S>
-  T &emplace(S &&...s) requires (is_constructible_v<T, S &&...>) {
+  T &emplace(S &&...s) requires (is_constructible<T, S &&...>) {
     operator =(nullopt);
     buf.enable(forward<S>(s)...);
     y = true;
@@ -8139,7 +8704,7 @@ public:
   }
   template <class U, class...S>
   T &emplace(initializer_list<U> l, S &&...s)
-    requires is_constructible_v<T, initializer_list<U> &, S &&...> {
+    requires is_constructible<T, initializer_list<U> &, S &&...> {
     operator =(nullopt);
     buf.enable(l, forward<S>(s)...);
     y = true;
@@ -8202,12 +8767,12 @@ public:
 
   template <class U>
   constexpr T value_or(U &&x) const &
-    requires (is_copy_constructible_v<T> && is_convertible_v<U &&, T>) {
+    requires (is_copy_constructible<T> && is_convertible<U &&, T>) {
     return y ? **this : static_cast<T>(forward<U>(x));
   }
   template <class U>
   constexpr T value_or(U &&x) &&
-    requires (is_move_constructible_v<T> && is_convertible_v<U &&, T>) {
+    requires (is_move_constructible<T> && is_convertible<U &&, T>) {
     return y ? move(**this) : static_cast<T>(forward<U>(x));
   }
 
@@ -8219,17 +8784,17 @@ private:
   template <class X, class F>
   static constexpr auto and_then_impl(X &&x, F &&f) {
     using t = decltype(forward<X>(x).value());
-    using U = invoke_result_t<F, t>;
+    using U = invoke_result<F, t>;
     if (x.has_value()) {
       return invoke(forward<F>(f), static_cast<t>(*x));
     } else {
-      return remove_cvref_t<U>{};
+      return remove_cvref<U>{};
     }
   }
   template <class X, class F>
   static constexpr auto transform_impl(X &&x, F &&f) {
     using t = decltype(forward<X>(x).value());
-    using U = remove_cv_t<invoke_result_t<F, t>>;
+    using U = remove_cv<invoke_result<F, t>>;
     U u(invoke(forward<F>(f), static_cast<t>(*x)));
     if (x.has_value()) {
       return optional<U>(invoke(forward<F>(f), static_cast<t>(*x)));
@@ -8239,7 +8804,7 @@ private:
   }
   template <class X, class F>
   static constexpr optional or_else_impl(X &&x, F &&f) {
-    static_assert(is_same_v<remove_cvref_t<invoke_result_t<F>>, optional>);
+    static_assert(is_same<remove_cvref<invoke_result<F>>, optional>);
     if (x.has_value())
       return forward<X>(x);
     else
@@ -8296,7 +8861,7 @@ public:
   }
 
   template <class...S>
-  invoke_result_t<const T &, S &&...> operator ()(S &&...s) const {
+  invoke_result<const T &, S &&...> operator ()(S &&...s) const {
     return invoke(value(), forward<S>(s)...);
   }
 };
@@ -8343,7 +8908,7 @@ template <class T, class U>
 struct compare_optional_with_t_result_type {
   using type = decltype(inner::fns::compare_optional_with_t_help_f
                         (type_tag<T>{}, type_tag<U>{}));
-  static constexpr bool enabled = !is_same_v<type, void>;
+  static constexpr bool enabled = !is_same<type, void>;
 };
 template <class T, class U>
 requires inner::is_class_optional<U>::value
@@ -8354,9 +8919,9 @@ struct compare_optional_with_t_result_type<T, U> {
 
 }
 template <class T, class U>
-constexpr enable_if_t
-<inner::compare_optional_with_t_result_type<T, U>::enabled,
- typename inner::compare_optional_with_t_result_type<T, U>::type>
+constexpr
+enable_if<inner::compare_optional_with_t_result_type<T, U>::enabled,
+          typename inner::compare_optional_with_t_result_type<T, U>::type>
 operator <=>(const optional<T> &x, const U &y)
   requires (!inner::is_class_optional<U>::value) {
   return x.has_value() ? synth_3way(*x, y) : strong_lt;
@@ -8364,8 +8929,8 @@ operator <=>(const optional<T> &x, const U &y)
 
 struct fo_make_optional {
   template <class T>
-  constexpr optional<decay_t<T>> operator ()(T &&x) const {
-    return optional<decay_t<T>>(forward<T>(x));
+  constexpr optional<decay<T>> operator ()(T &&x) const {
+    return optional<decay<T>>(forward<T>(x));
   }
   template <class T, class...S>
   constexpr optional<T> operator ()(in_place_type_t<T>, S &&...s) const {
@@ -8385,18 +8950,18 @@ inline constexpr fo_make_optional make_optional{};
 namespace re {
 
 template <class F>
-requires is_object_v<F>
+requires is_object<F>
 struct fo_assign_non_assignable {
   template <class X = F>
-  enable_if_t<is_assignable_v<X &, const X &>>
+  enable_if<is_assignable<X &, const X &>>
   operator ()(F &to, const F &from) const
-    noexcept(is_nothrow_assignable_v<F &, const F &>) {
+    noexcept(is_nothrow_assignable<F &, const F &>) {
     to = from;
   }
   template <class X = F>
-  enable_if_t<!is_assignable_v<X &, const X &>>
+  enable_if<!is_assignable<X &, const X &>>
   operator ()(F &to, const F &from) const
-    noexcept(is_nothrow_constructible_v<F, const F &>) {
+    noexcept(is_nothrow_constructible<F, const F &>) {
     if (addressof(to) != addressof(from)) {
       to.~F();
       ::new(addressof(to)) F(from);
@@ -8404,15 +8969,15 @@ struct fo_assign_non_assignable {
   }
 
   template <class X = F>
-  enable_if_t<is_assignable_v<X &, X &&>>
+  enable_if<is_assignable<X &, X &&>>
   operator ()(F &to, F &&from) const
-    noexcept(is_nothrow_assignable_v<F &, F &&>) {
+    noexcept(is_nothrow_assignable<F &, F &&>) {
     to = move(from);
   }
   template <class X = F>
-  enable_if_t<!is_assignable_v<X &, X &&>>
+  enable_if<!is_assignable<X &, X &&>>
   operator ()(F &to, F &&from) const
-    noexcept(is_nothrow_constructible_v<F, F &&>) {
+    noexcept(is_nothrow_constructible<F, F &&>) {
     if (addressof(to) != addressof(from)) {
       to.~F();
       ::new(addressof(to)) F(move(from));
@@ -8423,17 +8988,17 @@ template <class F>
 inline constexpr fo_assign_non_assignable<F> assign_non_assignable{};
 
 template <class F>
-requires is_object_v<F>
+requires is_object<F>
 class copyable_wrapper {
   template <class T>
-  requires is_object_v<T>
+  requires is_object<T>
   friend class copyable_wrapper;
 
   F f = F{};
 
 public:
   copyable_wrapper() = delete;
-  copyable_wrapper() requires is_default_constructible_v<F> = default;
+  copyable_wrapper() requires is_default_constructible<F> = default;
   ~copyable_wrapper() = default;
   copyable_wrapper(const copyable_wrapper &) = default;
   copyable_wrapper(copyable_wrapper &&) = default;
@@ -8441,23 +9006,23 @@ public:
   copyable_wrapper &operator =(copyable_wrapper &&) = delete;
   constexpr copyable_wrapper &operator =(const copyable_wrapper &x)
     noexcept(noexcept(assign_non_assignable<F>(f, x.f)))
-    requires (is_copy_constructible_v<F> && !is_const_v<F>) {
+    requires (is_copy_constructible<F> && !is_const<F>) {
     assign_non_assignable<F>(f, x.f);
     return *this;
   }
   constexpr copyable_wrapper &operator =(copyable_wrapper &&x)
     noexcept(noexcept(assign_non_assignable<F>(f, move(x).f)))
-    requires (is_move_constructible_v<F> && !is_const_v<F>) {
+    requires (is_move_constructible<F> && !is_const<F>) {
     assign_non_assignable<F>(f, move(x).f);
     return *this;
   }
   template <class FF = F>
   friend constexpr void swap(copyable_wrapper &x,
                              copyable_wrapper &y)
-    noexcept(is_nothrow_swappable_v<FF>
+    noexcept(is_nothrow_swappable<FF>
              || nothrow_default_swappable<copyable_wrapper<FF>>)
     requires default_swappable<copyable_wrapper<FF>> {
-    if constexpr (is_nothrow_swappable_v<FF>) {
+    if constexpr (is_nothrow_swappable<FF>) {
       adl_swap(x.f, y.f);
     }
     else {
@@ -8467,11 +9032,11 @@ public:
 
   constexpr explicit copyable_wrapper(const F &ff) : f(ff) {}
   constexpr explicit copyable_wrapper(F &&ff)
-    requires (!is_same_v<F &&, const F &>) : f(forward<F>(ff)) {}
+    requires (!is_same<F &&, const F &>) : f(forward<F>(ff)) {}
 
   template <class F2>
   copyable_wrapper(const copyable_wrapper<F2> &x)
-    requires (!is_same_v<F, F2> && is_convertible_v<const F2 &, F>)
+    requires (!is_same<F, F2> && is_convertible<const F2 &, F>)
     : f(x.f) {}
 
   constexpr F *operator ->() noexcept {
@@ -8507,7 +9072,7 @@ class semiregular_function {
   template <class>
   friend class semiregular_function;
 
-  using t0 = conditional_t<is_default_constructible_v<F>, F, optional<F>>;
+  using t0 = conditional<is_default_constructible<F>, F, optional<F>>;
   using t = copyable_wrapper<t0>;
 
   t f = t{};
@@ -8520,7 +9085,7 @@ public:
   semiregular_function(semiregular_function &&) = default;
   semiregular_function &operator =(semiregular_function &&) = default;
   friend constexpr void swap(semiregular_function &x, semiregular_function &y)
-    noexcept(is_nothrow_swappable_v<t>) {
+    noexcept(is_nothrow_swappable<t>) {
     adl_swap(x.f, y.f);
   }
 
@@ -8528,7 +9093,7 @@ public:
 
   template <class F2>
   semiregular_function(const semiregular_function<F2> &x)
-    requires (!is_same_v<F, F2> && is_convertible_v<const F2 &, F>)
+    requires (!is_same<F, F2> && is_convertible<const F2 &, F>)
     : f(x.f) {}
 
   template <class...S>
@@ -8543,7 +9108,7 @@ public:
   }
 
   constexpr F base() const {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       return *f;
     }
     else {
@@ -8569,12 +9134,12 @@ namespace inner::fns {
 
 template <class T>
 size_t integer_hash(T x)
-  requires (is_integral_v<T> && sizeof(T) <= sizeof(size_t)) {
-  return static_cast<size_t>(static_cast<make_unsigned_t<T>>(x));
+  requires (is_integral<T> && sizeof(T) <= sizeof(size_t)) {
+  return static_cast<size_t>(static_cast<make_unsigned<T>>(x));
 }
 template <class T>
 size_t integer_hash(T x)
-  requires (is_integral_v<T> && sizeof(T) == (2u * sizeof(size_t))) {
+  requires (is_integral<T> && sizeof(T) == (2u * sizeof(size_t))) {
   size_t buf[2];
   memcpy(static_cast<void *>(addressof(buf)),
          static_cast<const void *>(addressof(x)),
@@ -8622,17 +9187,18 @@ struct hash {
 namespace inner {
 
 struct check_is_nothrow_hashable {
-  template <class T, bool Y = noexcept(declval<const hash<decay_t<T>> &>()
+  template <class T, bool Y = noexcept(declval<const hash<decay<T>> &>()
                                        (declval<const T &>()))>
-  static enable_if_t<Y> f(type_pack<T>);
+  static enable_if<Y> f(type_pack<T>);
 };
 
 }
 template <class T>
-struct is_nothrow_hashable
-  : f_is_well_formed<inner::check_is_nothrow_hashable, T> {};
+struct template_is_nothrow_hashable
+  : template_f_is_well_formed<inner::check_is_nothrow_hashable, T> {};
 template <class T>
-inline constexpr bool is_nothrow_hashable_v = is_nothrow_hashable<T>::value;
+inline constexpr bool is_nothrow_hashable
+  = template_is_nothrow_hashable<T>::value;
 
 template <>
 struct hash<void> {
@@ -8640,8 +9206,8 @@ struct hash<void> {
   using result_type = size_t;
   template <class T>
   size_t operator ()(const T &x)
-    const noexcept(noexcept(hash<decay_t<T>>()(x))) {
-    return hash<decay_t<T>>{}(x);
+    const noexcept(noexcept(hash<decay<T>>()(x))) {
+    return hash<decay<T>>{}(x);
   }
 };
 
@@ -8799,7 +9365,7 @@ struct hash<optional<T>> : private hash<T> {
   using result_type = size_t;
 
   size_t operator ()(const optional<T> &x)
-    const noexcept(is_nothrow_hashable_v<T>) {
+    const noexcept(is_nothrow_hashable<T>) {
     return x != nullopt ? hash<T>::operator ()(*x) : 0u;
   }
 };
@@ -8810,8 +9376,8 @@ struct hash<tuple<T1, T2>> : private hash<T1>, private hash<T2> {
   using result_type = size_t;
 
   size_t operator ()(const tuple<T1, T2> &x)
-    const noexcept(is_nothrow_hashable_v<T1>
-                   && is_nothrow_hashable_v<T2>) {
+    const noexcept(is_nothrow_hashable<T1>
+                   && is_nothrow_hashable<T2>) {
     return hash<T1>::operator ()(x.first)
       ^ hash<T2>::operator ()(x.second);
   }
@@ -8822,7 +9388,7 @@ struct hash<tuple<T, T>> : private hash<T> {
   using result_type = size_t;
 
   size_t operator ()(const tuple<T, T> &x)
-    const noexcept(is_nothrow_hashable_v<T>) {
+    const noexcept(is_nothrow_hashable<T>) {
     return hash<T>::operator ()(x.first)
       ^ hash<T>::operator ()(x.second);
   }
@@ -8849,7 +9415,7 @@ inline constexpr from_range_t from_range{};
 
 struct fo_min_value {
   template <class T, class S>
-  constexpr common_type_t<T, S> operator ()(T a, S b) const {
+  constexpr common_type<T, S> operator ()(T a, S b) const {
     return b < a ? b : a;
   }
 };
@@ -8857,7 +9423,7 @@ inline constexpr fo_min_value min_value{};
 
 struct fo_max_value {
   template <class T, class S>
-  constexpr common_type_t<T, S> operator ()(T a, S b) const {
+  constexpr common_type<T, S> operator ()(T a, S b) const {
     return a < b ? b : a;
   }
 };
@@ -9068,7 +9634,7 @@ public:
 
   template <class FF>
   constexpr explicit exit_fn_t(FF &&ff) noexcept
-    requires is_constructible_v<F, FF &&> : f(forward<FF>(ff)) {}
+    requires is_constructible<F, FF &&> : f(forward<FF>(ff)) {}
 };
 template <class F>
 class switchable_exit_fn_t {
@@ -9090,7 +9656,7 @@ public:
 
   template <class FF>
   constexpr switchable_exit_fn_t(FF &&ff, bool y = true) noexcept
-    requires is_constructible_v<F, FF &&> : y(y), f(forward<FF>(ff)) {}
+    requires is_constructible<F, FF &&> : y(y), f(forward<FF>(ff)) {}
 
   constexpr explicit operator bool() const {
     return y;
@@ -9106,22 +9672,22 @@ public:
 }
 struct fo_exit_fn {
   template <class F>
-  constexpr inner::exit_fn_t<decay_t<F>> operator ()(F &&f) const {
-    return inner::exit_fn_t<decay_t<F>>(forward<F>(f));
+  constexpr inner::exit_fn_t<decay<F>> operator ()(F &&f) const {
+    return inner::exit_fn_t<decay<F>>(forward<F>(f));
   }
   template <class F>
-  constexpr inner::switchable_exit_fn_t<decay_t<F>> operator ()
+  constexpr inner::switchable_exit_fn_t<decay<F>> operator ()
   (F &&f, bool y) const {
-    return inner::switchable_exit_fn_t<decay_t<F>>(forward<F>(f), y);
+    return inner::switchable_exit_fn_t<decay<F>>(forward<F>(f), y);
   }
 };
 inline constexpr fo_exit_fn exit_fn{};
 
 struct fo_copy {
   template <class T>
-  constexpr remove_cvref_t<T> operator ()(T &&x) const
-    noexcept(is_nothrow_constructible_v<remove_cvref_t<T>, T &&>) {
-    return remove_cvref_t<T>(forward<T>(x));
+  constexpr remove_cvref<T> operator ()(T &&x) const
+    noexcept(is_nothrow_constructible<remove_cvref<T>, T &&>) {
+    return remove_cvref<T>(forward<T>(x));
   }
   template <class A, class B>
   auto operator ()(A &&, B) const;
@@ -9133,10 +9699,10 @@ struct fo_copy_if_rvalue {
     return forward<T>(x);
   }
   template <class T>
-  constexpr remove_cvref_t<T> operator ()(T &&x) const
-    noexcept(is_nothrow_constructible_v<remove_cvref_t<T>, T &&>)
-    requires is_rvalue_reference_v<T &&> {
-    return remove_cvref_t<T>(forward<T>(x));
+  constexpr remove_cvref<T> operator ()(T &&x) const
+    noexcept(is_nothrow_constructible<remove_cvref<T>, T &&>)
+    requires is_rvalue_reference<T &&> {
+    return remove_cvref<T>(forward<T>(x));
   }
 };
 inline constexpr fo_copy_if_rvalue copy_if_rvalue{};
@@ -9155,7 +9721,7 @@ struct fo_is_lvalue {
     return true;
   }
   template <class T>
-  constexpr bool operator ()(T &&) const requires (!is_reference_v<T>) {
+  constexpr bool operator ()(T &&) const requires (!is_reference<T>) {
     return false;
   }
 };
@@ -9172,7 +9738,7 @@ struct fo_deref {
 inline constexpr fo_deref deref{};
 template <class T>
 concept can_apply_deref = requires(T &&x) {
-  requires is_referenceable_v<T>;
+  requires is_referenceable<T>;
   deref(forward<T>(x));
 };
 
@@ -9194,10 +9760,11 @@ struct check_is_allocator_aware {
 
 }
 template <class T>
-struct is_allocator_aware
-  : f_is_well_formed<inner::check_is_allocator_aware<T>, T> {};
+struct template_is_allocator_aware
+  : template_f_is_well_formed<inner::check_is_allocator_aware<T>, T> {};
 template <class T>
-inline constexpr bool is_allocator_aware_v = is_allocator_aware<T>::value;
+inline constexpr bool is_allocator_aware
+  = template_is_allocator_aware<T>::value;
 
 template <class T>
 struct fo_ccast {
@@ -9214,8 +9781,8 @@ struct fo_bit_cast {
   template <class T>
   X operator ()(const T &t) const noexcept
     requires (sizeof(T) == sizeof(X)
-              && is_trivially_copyable_v<X>
-              && is_trivially_copyable_v<T>) {
+              && is_trivially_copyable<X>
+              && is_trivially_copyable<T>) {
     X x;
     memcpy(static_cast<void *>(addressof(x)),
            static_cast<const void *>(addressof(t)),
@@ -9228,17 +9795,17 @@ inline constexpr fo_bit_cast<X> bit_cast{};
 
 struct fo_to_signed {
   template <class I>
-  constexpr make_signed_t<I> operator ()(I x) const
+  constexpr make_signed<I> operator ()(I x) const
     noexcept requires integral<I> {
-    return static_cast<make_signed_t<I>>(x);
+    return static_cast<make_signed<I>>(x);
   }
 };
 inline constexpr fo_to_signed to_signed{};
 struct fo_to_unsigned {
   template <class I>
-  constexpr make_unsigned_t<I> operator ()(I x) const
+  constexpr make_unsigned<I> operator ()(I x) const
     noexcept requires integral<I> {
-    return static_cast<make_unsigned_t<I>>(x);
+    return static_cast<make_unsigned<I>>(x);
   }
 };
 inline constexpr fo_to_unsigned to_unsigned{};
@@ -9254,7 +9821,7 @@ struct check_is_template {
 }
 template <class R, template <class...> class T>
 concept is_template = requires(R &&r) {
-  inner::check_is_template<T>::f(type_tag<remove_cvref_t<R>>{});
+  inner::check_is_template<T>::f(type_tag<remove_cvref<R>>{});
 };
 
 struct fo_is_aligned {
@@ -9269,7 +9836,7 @@ inline constexpr fo_is_aligned is_aligned{};
 
 struct fo_div_round_up {
   template<class I>
-  constexpr I operator ()(I x, I y) const requires is_integral_v<I> {
+  constexpr I operator ()(I x, I y) const requires is_integral<I> {
     if (y == 0)
       throw_or_terminate<logic_error>("re::div_round_up(x, y): divided by 0\n");
     I r = x / y;
@@ -9293,7 +9860,7 @@ inline constexpr fo_div_round_up div_round_up{};
 struct fo_div_round {
   template <class I>
   I operator ()(I a, I b) const
-    requires (is_integral_v<I> && is_unsigned_v<I>) {
+    requires (is_integral<I> && is_unsigned<I>) {
     if (b == 0u)
       throw_or_terminate<logic_error>("re::div_round(x, y): divided by 0\n");
     const I q = a / b;
@@ -9305,7 +9872,7 @@ struct fo_div_round {
   }
   template <class I>
   I operator ()(I a, I b) const
-    requires (is_integral_v<I> && is_signed_v<I>) {
+    requires (is_integral<I> && is_signed<I>) {
     if (b == 0)
       throw_or_terminate<logic_error>("re::div_round(x, y): divided by 0\n");
     const I q = a / b;
@@ -9348,7 +9915,7 @@ template <class T>
 struct fo_integral_cast {
   template <class U>
   constexpr T operator ()(U u) const requires integral<U> && integral<T> {
-    if constexpr (is_unsigned_v<U>) {
+    if constexpr (is_unsigned<U>) {
       if (u > numeric_limits<T>::max())
         throw_or_terminate<length_error>
           ("re::integral_cast<T>(x): upper overflow\n");
@@ -9360,7 +9927,7 @@ struct fo_integral_cast {
             ("re::integral_cast<T>(x): upper overflow\n");
       }
       else {
-        if constexpr (is_unsigned_v<T>) {
+        if constexpr (is_unsigned<T>) {
           throw_or_terminate<length_error>
             ("re::integral_cast<T>(x): lower overflow\n");
         }
@@ -9391,7 +9958,7 @@ struct fo_call_by_n_times {
 inline constexpr fo_call_by_n_times call_by_n_times{};
 
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 class non_propagating_cache : optional<T> {
   using base_t = optional<T>;
   using this_t = non_propagating_cache;
@@ -9422,7 +9989,7 @@ public:
 
   template <class...S>
   explicit non_propagating_cache(in_place_t, S &&...s)
-    requires is_constructible_v<T, S &&...>
+    requires is_constructible<T, S &&...>
     : base_t(in_place, forward<S>(s)...) {}
 
   template <class...S>
@@ -9460,21 +10027,21 @@ class simple_wrapper {
 
 public:
   simple_wrapper() = delete;
-  simple_wrapper() requires is_default_constructible_v<T> : v() {}
+  simple_wrapper() requires is_default_constructible<T> : v() {}
   simple_wrapper(const simple_wrapper &) = default;
   simple_wrapper &operator =(const simple_wrapper &) = default;
   simple_wrapper(simple_wrapper &&) = default;
   simple_wrapper &operator =(simple_wrapper &&) = default;
   template <class TT = T>
   friend constexpr void swap(simple_wrapper &x, simple_wrapper &y)
-    noexcept(is_nothrow_swappable_v<TT>)
-    requires is_swappable_v<TT> && default_swappable<simple_wrapper<TT>> {
+    noexcept(is_nothrow_swappable<TT>)
+    requires is_swappable<TT> && default_swappable<simple_wrapper<TT>> {
     adl_swap(x.v, y.v);
   }
 
   template <class...S>
   explicit simple_wrapper(in_place_t, S &&...s)
-    requires is_constructible_v<T, S &&...>
+    requires is_constructible<T, S &&...>
     : v(forward<S>(s)...) {}
 
   T *operator ->() noexcept {
@@ -9510,7 +10077,7 @@ inline constexpr fo_copy_and_move copy_and_move{};
 template <class T>
 class derivable_wrapper : private T {
 public:
-  constexpr derivable_wrapper() noexcept(is_nothrow_default_constructible_v<T>)
+  constexpr derivable_wrapper() noexcept(is_nothrow_default_constructible<T>)
     : T() {}
   ~derivable_wrapper() = default;
   derivable_wrapper(const derivable_wrapper &) = default;
@@ -9518,8 +10085,8 @@ public:
   derivable_wrapper(derivable_wrapper &&) = default;
   derivable_wrapper &operator =(derivable_wrapper &&) = default;
   friend constexpr void swap(derivable_wrapper &x, derivable_wrapper &y)
-    noexcept(is_nothrow_swappable_v<T>)
-    requires is_swappable_v<T> {
+    noexcept(is_nothrow_swappable<T>)
+    requires is_swappable<T> {
     adl_swap(*x, *y);
   }
 
@@ -9543,7 +10110,7 @@ public:
   }
 };
 template <class T>
-requires (is_scalar_v<T> || is_final_v<T>)
+requires (is_scalar<T> || is_final<T>)
 class derivable_wrapper<T> {
   T x{};
 
@@ -9555,8 +10122,8 @@ public:
   derivable_wrapper(derivable_wrapper &&) = default;
   derivable_wrapper &operator =(derivable_wrapper &&) = default;
   friend constexpr void swap(derivable_wrapper &x, derivable_wrapper &y)
-    noexcept(is_nothrow_swappable_v<T>)
-    requires is_swappable_v<T> {
+    noexcept(is_nothrow_swappable<T>)
+    requires is_swappable<T> {
     adl_swap(*x, *y);
   }
 
@@ -9586,7 +10153,7 @@ struct fo_container_regular_max_size {
     using vt = typename C::value_type;
     using szt = typename C::size_type;
     using dft = typename C::difference_type;
-    constexpr make_unsigned_t<ptrdiff_t> n
+    constexpr make_unsigned<ptrdiff_t> n
       = min_value(integral_traits<dft>::max(),
                   to_signed(integral_traits<ptrdiff_t>::max() / sizeof(vt)));
     constexpr szt n2 = min_value(n, integral_traits<szt>::max());
@@ -9604,7 +10171,7 @@ struct fo_function_return_false {
   }
   template <class F, class...S>
   constexpr bool operator ()(F &&f, S &&...s) const
-    requires is_same_v<decltype(f(forward<S>(s)...)), bool> {
+    requires is_same<decltype(f(forward<S>(s)...)), bool> {
     return !forward<F>(f)(forward<S>(s)...);
   }
 };
@@ -9746,16 +10313,15 @@ inline constexpr fo_sub_to_zero_at_most sub_to_zero_at_most{};
 
 template <size_t N>
 using max_uint_of_max_size
-  = conditional_t<sizeof(uint64_t) <= N,
-                  uint64_t,
-                  conditional_t<sizeof(uint32_t) <= N,
-                                uint32_t,
-                                conditional_t<sizeof(uint16_t) <= N,
-                                              uint16_t,
-                                              conditional_t<(sizeof(uint8_t)
-                                                             <= N),
-                                                            uint8_t,
-                                                            void>>>>;
+  = conditional<sizeof(uint64_t) <= N,
+                uint64_t,
+                conditional<sizeof(uint32_t) <= N,
+                            uint32_t,
+                            conditional<sizeof(uint16_t) <= N,
+                                        uint16_t,
+                                        conditional<(sizeof(uint8_t) <= N),
+                                                    uint8_t,
+                                                    void>>>>;
 
 }
 
@@ -9776,21 +10342,25 @@ struct float_base {
   static constexpr uint_t e_max = 0b111'11111u;
   static constexpr uint_t f_max = 0b111'11111'11111'11111'11111u;
 
-  static float positive_inf() {
-    return bit_cast<float>((uint32_t)((uint32_t)0b111'11111u << k));
+  static constexpr float positive_inf() {
+    // return bit_cast<float>((uint32_t)((uint32_t)0b111'11111u << k));
+    return INFINITY;
   }
-  static float negative_inf() {
-    return bit_cast<float>((uint32_t)((uint32_t)0b1111'11111u << k));
+  static constexpr float negative_inf() {
+    // return bit_cast<float>((uint32_t)((uint32_t)0b1111'11111u << k));
+    return -INFINITY;
   }
-  static float positive_nan() {
-    return bit_cast<float>((uint32_t)((uint32_t)0b0'111'11111'1u
-                                      << (uint32_t)(k - 1u))
-                           | (uint32_t)1u);
+  static constexpr float positive_nan() {
+    // return bit_cast<float>((uint32_t)((uint32_t)0b0'111'11111'1u
+    //                                   << (uint32_t)(k - 1u))
+    //                        | (uint32_t)1u);
+    return NAN;
   }
-  static float negative_nan() {
-    return bit_cast<float>((uint32_t)((uint32_t)0b1'111'11111'1u
-                                      << (uint32_t)(k - 1u))
-                           | (uint32_t)1u);
+  static constexpr float negative_nan() {
+    // return bit_cast<float>((uint32_t)((uint32_t)0b1'111'11111'1u
+    //                                   << (uint32_t)(k - 1u))
+    //                        | (uint32_t)1u);
+    return -NAN;
   }
 };
 struct double_base {
@@ -9804,21 +10374,25 @@ struct double_base {
   static constexpr uint_t f_max
     = 0b11'1111111111'1111111111'1111111111'1111111111'1111111111u;
 
-  static double positive_inf() {
-    return bit_cast<double>((uint64_t)((uint64_t)0b01'11111'11111u << k));
+  static constexpr double positive_inf() {
+    // return bit_cast<double>((uint64_t)((uint64_t)0b01'11111'11111u << k));
+    return INFINITY;
   }
-  static double negative_inf() {
-    return bit_cast<double>((uint64_t)((uint64_t)0b11'11111'11111u << k));
+  static constexpr double negative_inf() {
+    // return bit_cast<double>((uint64_t)((uint64_t)0b11'11111'11111u << k));
+    return -(double)INFINITY;
   }
-  static double positive_nan() {
-    return bit_cast<double>((uint64_t)((uint64_t)0b0'1'11111'11111'1u
-                                       << (uint64_t)(k - 1u))
-                            | (uint64_t)1u);
+  static constexpr double positive_nan() {
+    // return bit_cast<double>((uint64_t)((uint64_t)0b0'1'11111'11111'1u
+    //                                    << (uint64_t)(k - 1u))
+    //                         | (uint64_t)1u);
+    return NAN;
   }
-  static double negative_nan() {
-    return bit_cast<double>((uint64_t)((uint64_t)0b1'1'11111'11111'1u
-                                       << (uint64_t)(k - 1u))
-                            | (uint64_t)1u);
+  static constexpr double negative_nan() {
+    // return bit_cast<double>((uint64_t)((uint64_t)0b1'1'11111'11111'1u
+    //                                    << (uint64_t)(k - 1u))
+    //                         | (uint64_t)1u);
+    return -(double)NAN;
   }
 };
 
@@ -9837,17 +10411,38 @@ struct floating_point_min_traits : BASE {
   using BASE::positive_nan;
   using BASE::negative_nan;
 
-  static bool is_positive(float_t x) {
+  struct info_t {
+    bool sign;
+    uint_t e;
+    uint_t f;
+
+    bool operator ==(const info_t &) const = default;
+  };
+  static info_t info(float_t x) noexcept {
+    const uint_t u = bit_cast<uint_t>(x);
+    const uint_t n_plus_1 = n + 1u;
+    return info_t((uint_t)(u >> (uint_t)(n + k)) == 0u,
+                  (uint_t)((uint_t)(u << (uint_t)1u) >> (uint_t)(k + 1u)),
+                  (uint_t)((uint_t)(u << n_plus_1) >> n_plus_1));
+  }
+  static float_t make(info_t x) noexcept {
+    uint_t tmp = ((uint_t)(x.e << (uint_t)k) | x.f);
+    if (!x.sign)
+      tmp = (uint_t)(tmp | ((uint_t)1u << (uint_t)(n + k)));
+    return bit_cast<float_t>(tmp);
+  }
+  static float_t make(bool sign, uint_t e, uint_t f) noexcept {
+    return make(info_t(sign, e, f));
+  }
+
+  static bool sign(float_t x) noexcept {
     return (uint_t)(bit_cast<uint_t>(x) >> (uint_t)(n + k)) == 0u;
   }
-  static bool is_negative(float_t x) {
-    return !is_positive(x);
-  }
-  static uint_t e(float_t x) {
+  static uint_t e(float_t x) noexcept {
     return (uint_t)((uint_t)(bit_cast<uint_t>(x) << (uint_t)1u)
                     >> (uint_t)(k + 1u));
   }
-  static uint_t f(float_t x) {
+  static uint_t f(float_t x) noexcept {
     const uint_t z = n + 1u;
     return (uint_t)((uint_t)(bit_cast<uint_t>(x) << z) >> z);
   }
@@ -9859,7 +10454,8 @@ struct floating_point_min_traits : BASE {
     return e(x) == 0u;
   }
   static bool is_infinity(float_t x) {
-    return e(x) == e_max && f(x) == 0u;
+    // return e(x) == e_max && f(x) == 0u;
+    return x == (float_t)INFINITY || x == -(float_t)INFINITY;
   }
   static bool is_nan(float_t x) {
     return e(x) == e_max && f(x) != 0u;
@@ -9934,10 +10530,10 @@ struct numeric_limits<double> {
   static constexpr double max() {
     return DBL_MAX;
   }
-  static double infinity() {
+  static constexpr double infinity() {
     return inner::double_min_traits::positive_inf();
   }
-  static double nan() {
+  static constexpr double nan() {
     return inner::double_min_traits::positive_nan();
   }
   static bool has_infinity(double f) {
@@ -10130,9 +10726,9 @@ struct fo_abs {
   }
   template <class T = intmax_t>
   intmax_t operator ()(intmax_t x) const noexcept
-    requires (!is_same<T, int>::value
-              && !is_same<T, long>::value
-              && !is_same<T, long long>::value) {
+    requires (!is_same<T, int>
+              && !is_same<T, long>
+              && !is_same<T, long long>) {
     return std::abs(x);
   }
   float operator ()(float x) const noexcept {
@@ -10225,14 +10821,158 @@ struct fo_tan {
 inline constexpr fo_tan tan{};
 
 struct fo_approx_equal {
-  bool operator ()(float x, float y, float dif) const {
+  bool operator ()(float x, float y, float dif) const noexcept {
     return abs(x - y) <= dif;
   }
-  bool operator ()(double x, double y, double dif) const {
+  bool operator ()(double x, double y, double dif) const noexcept {
     return abs(x - y) <= dif;
   }
 };
 inline constexpr fo_approx_equal approx_equal{};
+
+struct fo_lerp {
+  constexpr float operator ()(float a, float b, float t) const noexcept {
+    return std::lerp(a, b, t);
+  }
+  constexpr double operator ()(double a, double b,
+                               double t) const noexcept {
+    return std::lerp(a, b, t);
+  }
+};
+inline constexpr fo_lerp lerp{};
+
+}
+
+// basic functions for char32_t
+namespace re {
+
+struct fo_unicode_is_common_space {
+  bool operator ()(char32_t c) const noexcept {
+    switch (c) {
+    case 0x9u:
+    case 0x20u:
+    case 0xA0u:
+    case 0x2000u:
+    case 0x2001u:
+    case 0x2002u:
+    case 0x2003u:
+    case 0x2004u:
+    case 0x2005u:
+    case 0x2006u:
+    case 0x2007u:
+    case 0x2008u:
+    case 0x2009u:
+    case 0x200Au:
+    case 0x202Fu:
+    case 0x205Fu:
+    case 0x3000u:
+    case 0x200Bu:
+    case 0x200Cu:
+    case 0x200Du:
+    case 0x2060u:
+    case 0xFEFEu:
+      return true;
+    default:
+      return false;
+    }
+  }
+};
+inline constexpr fo_unicode_is_common_space unicode_is_common_space{};
+
+struct fo_unicode_isspace {
+  bool operator ()(char32_t c) const noexcept {
+    switch (c) {
+    case 0x9u:
+    case 0xAu:
+    case 0xBu:
+    case 0xCu:
+    case 0xDu:
+    case 0x20u:
+    case 0xA0u:
+    case 0x2000u:
+    case 0x2001u:
+    case 0x2002u:
+    case 0x2003u:
+    case 0x2004u:
+    case 0x2005u:
+    case 0x2006u:
+    case 0x2007u:
+    case 0x2008u:
+    case 0x2009u:
+    case 0x200Au:
+    case 0x202Fu:
+    case 0x205Fu:
+    case 0x3000u:
+    case 0x200Bu:
+    case 0x200Cu:
+    case 0x200Du:
+    case 0x2060u:
+    case 0xFEFEu:
+      return true;
+    default:
+      return false;
+    }
+  }
+};
+inline constexpr fo_unicode_isspace unicode_isspace{};
+
+struct fo_unicode_is_lower {
+  bool operator ()(char32_t c) const noexcept {
+    return U'a' <= c && c <= U'z';
+  }
+};
+inline constexpr fo_unicode_is_lower unicode_is_lower{};
+struct fo_unicode_is_upper {
+  bool operator ()(char32_t c) const noexcept {
+    return U'A' <= c && c <= U'Z';
+  }
+};
+inline constexpr fo_unicode_is_upper unicode_is_upper{};
+struct fo_unicode_is_alpha {
+  bool operator ()(char32_t c) const noexcept {
+    return unicode_is_upper(c) || unicode_is_lower(c);
+  }
+};
+inline constexpr fo_unicode_is_alpha unicode_is_alpha{};
+struct fo_unicode_is_digit {
+  bool operator ()(char32_t c) const noexcept {
+    return U'0' <= c && c <= U'9';
+  }
+};
+inline constexpr fo_unicode_is_digit unicode_is_digit{};
+struct fo_unicode_is_alnum {
+  bool operator ()(char32_t c) const noexcept {
+    return unicode_is_digit(c) || unicode_is_upper(c) || unicode_is_lower(c);
+  }
+};
+inline constexpr fo_unicode_is_alnum unicode_is_alnum{};
+
+struct fo_unicode_is_xdigit {
+  bool operator ()(char32_t c) const noexcept {
+    return (U'0' <= c && c <= U'9')
+      || (U'a' <= c && c <= U'f')
+      || (U'A' <= c && c <= U'F');
+  }
+};
+inline constexpr fo_unicode_is_xdigit unicode_is_xdigit{};
+
+struct fo_unicode_to_upper {
+  char32_t operator ()(char32_t c) const noexcept {
+    if (unicode_is_lower(c))
+      return c + to_unsigned(U'A' - U'a');
+    return c;
+  }
+};
+inline constexpr fo_unicode_to_upper unicode_to_upper{};
+
+struct fo_unicode_to_lower {
+  char32_t operator ()(char32_t c) const noexcept {
+    if (unicode_is_upper(c))
+      return c + to_unsigned(U'a' - U'A');
+    return c;
+  }
+};
+inline constexpr fo_unicode_to_lower unicode_to_lower{};
 
 }
 

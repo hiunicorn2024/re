@@ -179,12 +179,12 @@ public:
     return *this;
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const char *>
-              && is_rng<R> && is_citr<rng_itr<R>>
-              && (is_same_v<rng_vt<R>, char>
-                  || is_same_v<rng_vt<R>, signed char>
-                  || is_same_v<rng_vt<R>, unsigned char>),
-              const this_t &>
+  enable_if<(!is_convertible<R &&, const char *>
+             && is_rng<R> && is_citr<rng_itr<R>>
+             && (is_same<rng_vt<R>, char>
+                 || is_same<rng_vt<R>, signed char>
+                 || is_same<rng_vt<R>, unsigned char>)),
+            const this_t &>
   put(R &&r) const {
     if (empty())
       throw_or_terminate<logic_error>
@@ -196,13 +196,13 @@ public:
     return *this;
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const char *>
-              && is_rng<R> && !is_citr<rng_itr<R>>
-              && is_iitr<rng_itr<R>>
-              && (is_same_v<rng_vt<R>, char>
-                  || is_same_v<rng_vt<R>, signed char>
-                  || is_same_v<rng_vt<R>, unsigned char>),
-              const this_t &>
+  enable_if<(!is_convertible<R &&, const char *>
+             && is_rng<R> && !is_citr<rng_itr<R>>
+             && is_iitr<rng_itr<R>>
+             && (is_same<rng_vt<R>, char>
+                 || is_same<rng_vt<R>, signed char>
+                 || is_same<rng_vt<R>, unsigned char>)),
+            const this_t &>
   put(R &&r) const {
     if (empty())
       throw_or_terminate<logic_error>
@@ -222,10 +222,10 @@ public:
     return *this;
   }
   template <class R>
-  enable_if_t<!is_convertible_v<R &&, const wchar_t *>
-              && is_rng<R> && is_iitr<rng_itr<R>>
-              && is_same_v<rng_vt<R>, wchar_t>,
-              const this_t &>
+  enable_if<(!is_convertible<R &&, const wchar_t *>
+             && is_rng<R> && is_iitr<rng_itr<R>>
+             && is_same<rng_vt<R>, wchar_t>),
+            const this_t &>
   putws(R &&r) const {
     if (empty())
       throw_or_terminate<logic_error>
@@ -357,6 +357,16 @@ struct fo_setprecision {
   }
 };
 inline constexpr fo_setprecision setprecision{};
+
+struct print_tag_precision_fold0 {
+  size_t value{};
+};
+struct fo_setprecision_fold0 {
+  print_tag_precision_fold0 operator ()(size_t w) const noexcept {
+    return print_tag_precision_fold0(w);
+  }
+};
+inline constexpr fo_setprecision_fold0 setprecision_fold0{};
 
 }
 
@@ -627,10 +637,20 @@ struct fo_sscan {
     else
       return false;
   }
+  bool operator ()(u32sview &v, u32sview v2) const {
+    const auto v_sz = ssize(v);
+    const auto v2_sz = ssize(v2);
+    if (v_sz >= v2_sz && !v2.empty() && equal(v2, v.begin())) {
+      v = {v.begin() + v2_sz, v.end()};
+      return true;
+    }
+    else
+      return false;
+  }
   template <class T>
   bool operator ()(string_reference<const T> &v,
                    string_reference<const T> v2) const
-    requires (!is_same_v<remove_cv_t<T>, char>) {
+    requires (!is_same<remove_cv<T>, char>) {
     const auto v_sz = ssize(v);
     const auto v2_sz = ssize(v2);
     if (v_sz >= v2_sz && !v2.empty() && equal(v2, v.begin())) {
@@ -643,27 +663,27 @@ struct fo_sscan {
 
   template <class U, class T>
   bool operator ()(string_reference<const U> &v, T &o) const
-    requires is_integral_v<T> {
+    requires is_integral<T> {
     return inner::fns::sscan_int_impl<inner::sscan_int_traits_dec<T>>(v, o);
   }
   template <class U, class T>
   bool operator ()(string_reference<const U> &v, T &o, print_tag_dec) const
-    requires is_integral_v<T> {
+    requires is_integral<T> {
     return operator ()(v, o);
   }
   template <class U, class T>
   bool operator ()(string_reference<const U> &v, T &o, print_tag_bin) const
-    requires is_integral_v<T> {
+    requires is_integral<T> {
     return inner::fns::sscan_int_impl<inner::sscan_int_traits_bin<T>>(v, o);
   }
   template <class U, class T>
   bool operator ()(string_reference<const U> &v, T &o, print_tag_oct) const
-    requires is_integral_v<T> {
+    requires is_integral<T> {
     return inner::fns::sscan_int_impl<inner::sscan_int_traits_oct<T>>(v, o);
   }
   template <class U, class T>
   bool operator ()(string_reference<const U> &v, T &o, print_tag_hex) const
-    requires is_integral_v<T> {
+    requires is_integral<T> {
     return inner::fns::sscan_int_impl<inner::sscan_int_traits_hex<T>>(v, o);
   }
 
@@ -762,8 +782,66 @@ struct fo_sscan_line {
       }
     }
   }
+
+  template <class T>
+  optional<string_reference<const T>>
+  operator ()(string_reference<const T> &v, bool &has_ln) const {
+    using view_t = string_reference<const T>;
+    const auto it = v.begin();
+    for (;;) {
+      auto it2 = v.begin();
+      if (sscan_ln(v)) {
+        has_ln = true;
+        return view_t(it, it2);
+      }
+      else {
+        if (v.empty()) {
+          has_ln = false;
+          if (it != it2)
+            return view_t(it, it2);
+          else
+            return nullopt;
+        }
+        else
+          v = {v.begin() + 1, v.end()};
+      }
+    }
+  }
 };
 inline constexpr fo_sscan_line sscan_line{};
+
+struct fo_sscan_spaces {
+  void operator ()(sview &v) const {
+    if (!v.empty()) {
+      auto it = v.begin();
+      while (it != v.end() && isspace(*it))
+        ++it;
+      v = {it, v.end()};
+    }
+  }
+  void operator ()(u32sview &v) const {
+    if (!v.empty()) {
+      auto it = v.begin();
+      while (it != v.end() && unicode_isspace(*it))
+        ++it;
+      v = {it, v.end()};
+    }
+  }
+};
+inline constexpr fo_sscan_spaces sscan_spaces{};
+
+struct fo_sscan_common_spaces {
+  template <class T>
+  void operator ()(string_reference<const T> &v) const {
+    if (!v.empty()) {
+      auto it = v.begin();
+      while (it != v.end() && unicode_is_common_space(to_unsigned(*it)))
+        ++it;
+      v = {it, v.end()};
+    }
+  }
+};
+inline constexpr fo_sscan_common_spaces sscan_common_spaces{};
 
 }
 
@@ -886,6 +964,7 @@ struct float_print_args : print_args {
   size_t separator_n = 0u;
   bool scientific_notation = false;
   size_t precision = numeric_limits<size_t>::max();
+  bool fold_zero = true;
 
   float_print_args() = default;
   ~float_print_args() = default;
@@ -945,6 +1024,13 @@ struct float_print_args : print_args {
 
   float_print_args &setprecision(size_t x) {
     precision = x;
+    fold_zero = (x == numeric_limits<size_t>::max());
+    return *this;
+  }
+
+  float_print_args &setprecision_fold0(size_t x) {
+    precision = x;
+    fold_zero = true;
     return *this;
   }
 };
@@ -1007,7 +1093,7 @@ public:
   S &operator ()(S &&s, string_reference<const rng_vt<S>> sv,
                  SS &&...ss) const
     requires (!(sizeof...(SS) == 1u
-                && is_convertible_v<nth_type_t<0, SS &&...>, print_args>)) {
+                && is_convertible<nth_type<0, SS &&...>, print_args>)) {
     print_args pa{};
     return impl_for_string(s, sv, pa, forward<SS>(ss)...);
   }
@@ -1015,11 +1101,11 @@ public:
 private:
   template <class I, class S, class...SS>
   static S &impl_for_int(S &&s, I i, int_print_args &pa) {
-    typename decay_t<S>::size_type n = s.size();
+    typename decay<S>::size_type n = s.size();
     auto guard = exit_fn([&]() {s.resize(n);}, true);
 
     bool sign_symbol_is_shown = false;
-    make_unsigned_t<I> u{};
+    make_unsigned<I> u{};
     if (i < 0) {
       s.push_back(U'-');
       sign_symbol_is_shown = true;
@@ -1164,28 +1250,28 @@ private:
 
 public:
   template <class I, class S>
-  enable_if_t<is_same_v<bool, decay_t<I>>, S &>
+  enable_if<is_same<bool, decay<I>>, S &>
   operator ()(S &&s, I y, int_print_args pa = {}) const {
     return impl_for_int(s, (int)y, pa);
   }
   template <class I, class S, class...SS>
-  enable_if_t<is_same_v<bool, decay_t<I>>, S &>
+  enable_if<is_same<bool, decay<I>>, S &>
   operator ()(S &&s, I y, SS &&...ss) const {
     int_print_args pa{};
     return impl_for_int(s, (int)y, pa, forward<SS>(ss)...);
   }
 
   template <class I, class S>
-  enable_if_t<!is_same_v<bool, decay_t<I>> && is_integral_v<I>, S &>
+  enable_if<!is_same<bool, decay<I>> && is_integral<I>, S &>
   operator ()(S &&s, I i, int_print_args pa = {}) const {
     return impl_for_int(s, i, pa);
   }
   template <class I, class S, class...SS>
-  enable_if_t<!is_same_v<bool, decay_t<I>> && is_integral_v<I>
-              && !(sizeof...(SS) == 1u
-                   && is_convertible_v
-                   <nth_type_t<0, SS &&...>, int_print_args>),
-              S &>
+  enable_if<(!is_same<bool, decay<I>> && is_integral<I>
+             && !(sizeof...(SS) == 1u
+                  && is_convertible
+                  <nth_type<0, SS &&...>, int_print_args>)),
+            S &>
   operator ()(S &&s, I i, SS &&...ss) const {
     int_print_args pa{};
     return impl_for_int(s, i, pa, forward<SS>(ss)...);
@@ -1266,6 +1352,12 @@ private:
     pa.setprecision(u.value);
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
+  template <class F, class S, class...SS>
+  static S &impl_for_float(S &&s, F x, float_print_args &pa,
+                           print_tag_precision_fold0 u, SS &&...ss) {
+    pa.setprecision_fold0(u.value);
+    return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
+  }
 public:
   template <class S>
   inline S &operator ()(S &&s, float x, float_print_args pa = {}) const {
@@ -1278,16 +1370,16 @@ public:
   template <class S, class...SS>
   S &operator ()(S &&s, float x, SS &&...ss) const
     requires (!(sizeof...(SS) == 1u
-                && is_convertible_v
-                <nth_type_t<0, SS &&...>, float_print_args>)) {
+                && is_convertible
+                <nth_type<0, SS &&...>, float_print_args>)) {
     float_print_args pa{};
     return impl_for_float<float>(s, x, pa, forward<SS>(ss)...);
   }
   template <class S, class...SS>
   S &operator ()(S &&s, double x, SS &&...ss) const
     requires (!(sizeof...(SS) == 1u
-                && is_convertible_v
-                <nth_type_t<0, SS &&...>, float_print_args>)) {
+                && is_convertible
+                <nth_type<0, SS &&...>, float_print_args>)) {
     float_print_args pa{};
     return impl_for_float<double>(s, x, pa, forward<SS>(ss)...);
   }
@@ -1342,6 +1434,98 @@ struct fo_putwsln {
   }
 };
 inline constexpr fo_putwsln putwsln{};
+
+template <class T, class C>
+template <class F>
+string matrix<T, C>::sprint(F f) const {
+  string ret;
+  size_t max_w = 0;
+  for (decltype(auto) x : range()) {
+    const string tmp_s = f(x);
+    if (const auto z = tmp_s.size();
+        z > max_w)
+      max_w = z;
+  }
+  for (auto r : rows())
+    for_each_excluding_last(r,
+                            [max_w, &ret, &f](const value_type &x) {
+                              const string tmp_s = f(x);
+                              re::sprint(ret, tmp_s, setw(max_w));
+                              ret.push_back(' ');
+                            },
+                            [max_w, &ret, &f](const value_type &x) {
+                              const string tmp_s = f(x);
+                              re::sprint(ret, tmp_s, setw(max_w));
+                              ret.push_back('\n');
+                            });
+  return ret;
+}
+template <class T, class C>
+string matrix<T, C>::sprint() const {
+  return sprint([](const T &x) {
+    string ret;
+    re::sprint(ret, x, setprecision_fold0(5));
+    return ret;
+  });
+}
+
+template <class T, class C>
+string matrix<T, C>::
+sprint_solutions_of_linear_equations(size_t precision,
+                                     double zero_threshold) const
+  requires is_same<T, double> {
+
+  matrix m = *this;
+  vector<pair<int, bool>> buf;
+  m.make_echelon_impl(zero_threshold, buf);
+
+  if (width() <= 1 || buf[width() - 1].first >= 0)
+    return "no solution"_s;
+  string ret;
+  for (int &i : iters(0, width() - 1)) {
+    if (buf[i].first < 0) {
+      re::sprint(ret, "x"_sv);
+      re::sprint(ret, i);
+      re::sprint(ret, " = any\n"_sv);
+      continue;
+    }
+    const auto r = m.row(buf[i].first);
+
+    re::sprint(ret, "x"_sv);
+    re::sprint(ret, i);
+    re::sprint(ret, " = "_sv);
+    if (!buf[i].second) {
+      for_each_excluding_first(filter_rng(irng(i + 1, width() - 1),
+                                          [=](int j) {
+                                            return ref(r, j) != 0.0;
+                                          }),
+                               [&ret, &r, precision](int j) {
+                                 re::sprint(ret, " + "_sv);
+                                 re::sprint(ret, -ref(r, j),
+                                            setprecision(precision));
+                                 re::sprint(ret, "*x"_sv);
+                                 re::sprint(ret, j);
+                               },
+                               [&ret, &r, precision](int j) {
+                                 re::sprint(ret, -ref(r, j),
+                                            setprecision(precision));
+                                 re::sprint(ret, "*x"_sv);
+                                 re::sprint(ret, j);
+                               });
+      if (const double tmp = back(r);
+          tmp != 0.0) {
+        re::sprint(ret, " + "_sv);
+        re::sprint(ret, tmp, setprecision(precision));
+      }
+      re::sprint(ret, "\n"_sv);
+    }
+    else {
+      re::sprint(ret, back(r), setprecision(precision));
+      re::sprint(ret, "\n"_sv);
+    }
+  }
+  return ret;
+}
 
 }
 
@@ -1450,7 +1634,8 @@ template <class S = string>
 S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
                                       size_t precision, size_t sep_n,
                                       bool upper_case,
-                                      bool show_pos) {
+                                      bool show_pos,
+                                      bool fold_zero) {
   // sv has valid format and is not empty
   // sv has no leading zero except "0."
   using view_t = string_reference<const rng_vt<S>>;
@@ -1477,10 +1662,11 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
                        sv.end());
   rng_dft<view_t> e = 0;
   const auto eqf = [](auto c, auto c2) {return to_unsigned(c) == c2;};
+  const auto not0 = [](auto c) {return to_unsigned(c) != U'0';};
   if (equal(sv_l, single_rng(U'0'), eqf)
       && all_of_equal(sv_r, U'0', eqf)) {
     s2.append(U'0');
-    if (!(precision == numeric_limits<size_t>::max() || precision == 0u)) {
+    if (precision != 0u && !fold_zero) {
       s2.append(U'.');
       s2.append(rng(precision, U'0'));
     }
@@ -1491,18 +1677,7 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
       e = -1 + (sv_r.begin() - i);
       view_t v(i, sv_r.end());
       const view_t v2(next(i), sv_r.end()); // v2 may be empty
-      if (precision == numeric_limits<size_t>::max()) {
-        s2.append(front(v));
-        if (!all_of_equal(v2, U'0', eqf)) {
-          s2.append(U'.');
-          auto j = v2.end();
-          while (to_unsigned(*--j) == U'0')
-            ;
-          ++j;
-          s2.append(view_t(v2.begin(), j));
-        }
-      }
-      else if (precision == 0u) {
+      if (precision == 0u) {
         if (empty(v2))
           s2.append(front(v));
         else {
@@ -1520,9 +1695,18 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
       }
       else if (size(v2) <= precision) {
         s2.append(front(v));
-        s2.append(U'.');
-        s2.append(v2);
-        s2.append(rng(precision - size(v2), U'0'));
+        if (!fold_zero) {
+          s2.append(U'.');
+          s2.append(v2);
+          s2.append(rng(precision - size(v2), U'0'));
+        }
+        else {
+          if (!all_of_equal(v2, U'0', eqf)) {
+            // v2 is not empty
+            s2.append(U'.');
+            s2.append(view_t(v2.begin(), next(find_last_if(v2, not0))));
+          }
+        }
       }
       else {
         const auto j = nth(v2, to_signed(precision)); // j is dereferenceable
@@ -1530,13 +1714,23 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
           s2.append(front(v));
           s2.append(U'.');
           s2.append(view_t(v2.begin(), j));
+
+          if (fold_zero) {
+            while (to_unsigned(s2.back()) == U'0')
+              s2.pop_back();
+            if (to_unsigned(s2.back()) == U'.')
+              s2.pop_back();
+          }
         }
         else {
           if (all_of_equal(view_t(v.begin(), j), U'9', eqf)) {
             s2.append(U'1');
-            s2.append(U'.');
-            s2.append(rng(precision, U'0'));
             ++e;
+
+            if (!fold_zero) {
+              s2.append(U'.');
+              s2.append(rng(precision, U'0'));
+            }
           }
           else {
             s2.append(front(v));
@@ -1552,24 +1746,25 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
                   c = U'0';
               }
             }
+
+            if (fold_zero) {
+              while (to_unsigned(s2.back()) == U'0')
+                s2.pop_back();
+              if (to_unsigned(s2.back()) == U'.')
+                s2.pop_back();
+            }
           }
         }
       }
     }
     else {
+      // sv_l is not empty
+
       e = ssize(sv_l);
       --e;
-      if (precision == numeric_limits<size_t>::max()) {
-        s2.append(front(sv_l));
-        s2.append(U'.');
-        s2.append(view_t(next(sv_l.begin()), sv_l.end()));
-        s2.append(sv_r);
-        while (to_unsigned(back(s2)) == U'0')
-          s2.pop_back();
-        if (to_unsigned(s2.back()) == U'.')
-          s2.pop_back();
-      }
-      else if (precision == 0u) {
+      const view_t sv_l_excluding_first(next(sv_l.begin()), sv_l.end());
+
+      if (precision == 0u) {
         if (e == 0) {
           if (sv_r.empty())
             s2.append(front(sv_l));
@@ -1588,7 +1783,7 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
         }
         else {
           // sv_l has two or more elements
-          if (to_unsigned(*next(sv_l.begin())) < U'5')
+          if (to_unsigned(front(sv_l_excluding_first)) < U'5')
             s2.append(front(sv_l));
           else {
             if (to_unsigned(front(sv_l)) < U'9')
@@ -1601,80 +1796,131 @@ S fixed_fraction_string_to_scientific(string_reference<const rng_vt<S>> sv,
         }
       }
       else {
-        const ptrdiff_t l_numbers = ssize(sv_l) - 1;
-        const ptrdiff_t numbers = l_numbers + ssize(sv_r);
-        if (numbers <= to_signed(precision)) {
+        const size_t l_numbers = ssize(sv_l) - 1u;
+        const size_t numbers = l_numbers + size(sv_r);
+        if (numbers <= precision) {
           s2.append(front(sv_l));
-          s2.append(U'.');
-          s2.append(view_t(next(sv_l.begin()), sv_l.end()));
-          s2.append(sv_r);
-          s2.append(rng(to_signed(precision) - numbers, U'0'));
-        }
-        else {
-          if (to_signed(precision) < l_numbers) {
-            const auto j = next(sv_l.begin()) + precision;
-            // j is dereferenceable
-            if (to_unsigned(*j) < U'5') {
-              s2.append(front(sv_l));
+          if (!fold_zero) {
+            s2.append(U'.');
+            s2.append(sv_l_excluding_first);
+            s2.append(sv_r);
+            s2.append(rng(precision - numbers, U'0'));
+          }
+          else {
+            if (!all_of_equal(sv_r, U'0', eqf)) {
+              // sv_r is not empty
               s2.append(U'.');
-              s2.append(view_t(next(sv_l.begin()), j));
+              s2.append(sv_l_excluding_first);
+              s2.append(view_t(sv_r.begin(), next(find_last_if(sv_r, not0))));
             }
             else {
-              if (all_of_equal(view_t(sv_l.begin(), j), U'9', eqf)) {
-                s2.append(U'1');
+              if (!all_of_equal(sv_l_excluding_first, U'0', eqf)) {
+                // sv_l_excluding_first is not empty
                 s2.append(U'.');
-                s2.append(rng(precision, U'0'));
-                ++e;
-              }
-              else {
-                s2.append(front(sv_l));
-                s2.append(U'.');
-                s2.append(view_t(next(sv_l.begin()), j));
-                for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
-                  if (to_unsigned(c) != U'.') {
-                    if (to_unsigned(c) != U'9') {
-                      ++c;
-                      break;
-                    }
-                    else
-                      c = U'0';
-                  }
-                }
+                s2.append
+                  (view_t(sv_l_excluding_first.begin(),
+                          next(find_last_if(sv_l_excluding_first, not0))));
               }
             }
           }
-          else {
-            const auto j = next(sv_r.begin(), (precision - l_numbers));
-            // j is dereferenceable
-            if (to_unsigned(*j) < U'5') {
-              s2.append(front(sv_l));
-              s2.append(U'.');
-              s2.append(view_t(next(sv_l.begin()), sv_l.end()));
-              s2.append(view_t(sv_r.begin(), j));
+        }
+        else if (precision < l_numbers) {
+          const auto j = sv_l_excluding_first.begin() + precision;
+          // j is dereferenceable
+          if (to_unsigned(*j) < U'5') {
+            s2.append(front(sv_l));
+            s2.append(U'.');
+            s2.append(view_t(sv_l_excluding_first.begin(), j));
+
+            if (fold_zero) {
+              while (to_unsigned(s2.back()) == U'0')
+                s2.pop_back();
+              if (to_unsigned(s2.back()) == U'.')
+                s2.pop_back();
             }
-            else {
-              if (all_of_equal(sv_l, U'9', eqf)
-                  && all_of_equal(view_t(sv_r.begin(), j), U'9', eqf)) {
-                s2.append(U'1');
+          }
+          else {
+            if (all_of_equal(view_t(sv_l.begin(), j), U'9', eqf)) {
+              s2.append(U'1');
+              ++e;
+
+              if (!fold_zero) {
                 s2.append(U'.');
                 s2.append(rng(precision, U'0'));
-                ++e;
               }
-              else {
-                s2.append(front(sv_l));
-                s2.append(U'.');
-                s2.append(view_t(next(sv_l.begin()), sv_l.end()));
-                s2.append(view_t(sv_r.begin(), j));
-                for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
-                  if (to_unsigned(c) != U'.') {
-                    if (to_unsigned(c) != U'9') {
-                      ++c;
-                      break;
-                    }
-                    else
-                      c = U'0';
+            }
+            else {
+              s2.append(front(sv_l));
+              s2.append(U'.');
+              s2.append(view_t(next(sv_l.begin()), j));
+              for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
+                if (to_unsigned(c) != U'.') {
+                  if (to_unsigned(c) != U'9') {
+                    ++c;
+                    break;
                   }
+                  else
+                    c = U'0';
                 }
+              }
+
+              if (fold_zero) {
+                while (to_unsigned(s2.back()) == U'0')
+                  s2.pop_back();
+                if (to_unsigned(s2.back()) == U'.')
+                  s2.pop_back();
+              }
+            }
+          }
+        }
+        else {
+          const auto j = next(sv_r.begin(), (precision - l_numbers));
+          // j is dereferenceable
+          if (to_unsigned(*j) < U'5') {
+            s2.append(front(sv_l));
+            s2.append(U'.');
+            s2.append(view_t(next(sv_l.begin()), sv_l.end()));
+            s2.append(view_t(sv_r.begin(), j));
+
+            if (fold_zero) {
+              while (to_unsigned(s2.back()) == U'0')
+                s2.pop_back();
+              if (to_unsigned(s2.back()) == U'.')
+                s2.pop_back();
+            }
+          }
+          else {
+            if (all_of_equal(sv_l, U'9', eqf)
+                && all_of_equal(view_t(sv_r.begin(), j), U'9', eqf)) {
+              s2.append(U'1');
+              ++e;
+
+              if (!fold_zero) {
+                s2.append(U'.');
+                s2.append(rng(precision, U'0'));
+              }
+            }
+            else {
+              s2.append(front(sv_l));
+              s2.append(U'.');
+              s2.append(sv_l_excluding_first);
+              s2.append(view_t(sv_r.begin(), j));
+              for (auto &c : rrng(nth(s2, s2_old_ssz), s2.end())) {
+                if (to_unsigned(c) != U'.') {
+                  if (to_unsigned(c) != U'9') {
+                    ++c;
+                    break;
+                  }
+                  else
+                    c = U'0';
+                }
+              }
+
+              if (fold_zero) {
+                while (to_unsigned(s2.back()) == U'0')
+                  s2.pop_back();
+                if (to_unsigned(s2.back()) == U'.')
+                  s2.pop_back();
               }
             }
           }
@@ -2419,14 +2665,25 @@ public:
     return this->sscan_scientific<char>(sv);
   }
   template <class S = string>
-  S sprint_scientific(size_t precision = 6u,
+  S sprint_scientific(size_t precision,
+                      bool fold_zero,
                       size_t sep_n = 0u,
                       bool upper_case = false,
                       bool show_pos = false) const {
     const S s = sprint<S>();
     string_reference<const rng_vt<S>> sv = s;
     return inner::fns::fixed_fraction_string_to_scientific<S>
-      (sv, precision, sep_n, upper_case, show_pos);
+      (sv, precision, sep_n, upper_case, show_pos, fold_zero);
+  }
+  template <class S = string>
+  S sprint_scientific(size_t precision) const {
+    return sprint_scientific<S>(precision,
+                                (precision == numeric_limits<size_t>::max()),
+                                0u, false, false);
+  }
+  template <class S = string>
+  S sprint_scientific() const {
+    return sprint_scientific<S>(6u, false, 0u, false, false);
   }
 };
 
@@ -2441,7 +2698,8 @@ namespace inner::fns {
 template <class S>
 S fixed_fraction_string_apply_print_args(string_reference<const rng_vt<S>> sv,
                                          size_t precision, size_t sep_n,
-                                         bool show_pos) {
+                                         bool show_pos,
+                                         bool fold_zero) {
   // sv has valid format and is not empty
   // sv has no leading zero except "0."
   using view_t = string_reference<const rng_vt<S>>;
@@ -2466,24 +2724,16 @@ S fixed_fraction_string_apply_print_args(string_reference<const rng_vt<S>> sv,
   view_t r1(sv.begin(), dot_pos); // r1 is not empty
   view_t r2((dot_pos != sv.end() ? next(dot_pos) : sv.end()), sv.end());
   const auto eqf = [](auto c1, auto c2) {return to_unsigned(c1) == c2;};
+  const auto not0 = [](auto c) {return to_unsigned(c) != U'0';};
   if (r2.empty()) {
     s2.append(r1);
-    if (precision != numeric_limits<size_t>::max() && precision != 0u) {
+    if (precision != 0u && !fold_zero) {
       s2.append(U'.');
       s2.append(rng(precision, U'0'));
     }
   }
   else {
-    if (precision == numeric_limits<size_t>::max()) {
-      s2.append(r1);
-      s2.append(U'.');
-      s2.append(r2);
-      while (s2.back() == U'0')
-        s2.pop_back();
-      if (s2.back() == U'.')
-        s2.pop_back();
-    }
-    else if (precision == 0u) {
+    if (precision == 0u) {
       if (to_unsigned(r2.front()) < U'5')
         s2.append(r1);
       else {
@@ -2494,7 +2744,8 @@ S fixed_fraction_string_apply_print_args(string_reference<const rng_vt<S>> sv,
         else {
           const auto old_ssz = ssize(s2);
           s2.append(r1);
-          for (auto &c : rrng(ref_t(nth(s2, old_ssz), s2.end()))) {
+          for (auto &j : r_iters(nth(s2, old_ssz), s2.end())) {
+            auto &c = *j;
             if (to_unsigned(c) != U'9') {
               ++c;
               break;
@@ -2505,43 +2756,67 @@ S fixed_fraction_string_apply_print_args(string_reference<const rng_vt<S>> sv,
         }
       }
     }
-    else {
-      if (precision >= r2.size()) {
-        s2.append(r1);
+    else if (precision >= r2.size()) {
+      s2.append(r1);
+      if (!fold_zero) {
         s2.append(U'.');
         s2.append(r2);
         s2.append(rng(precision - size(r2), U'0'));
       }
       else {
-        const view_t v(r2.begin(), nth(r2, precision));
-        if (to_unsigned(ref(r2, precision)) < U'5') {
-          s2.append(r1);
+        if (!all_of_equal(r2, U'0', eqf)) {
+          // r2 is not empty
           s2.append(U'.');
-          s2.append(v);
+          s2.append(view_t(r2.begin(), next(find_last_if(r2, not0))));
         }
-        else {
-          if (all_of_equal(r1, U'9', eqf) && all_of_equal(v, U'9', eqf)) {
-            s2.append(U'1');
-            s2.append(rng(size(r1), U'0'));
+      }
+    }
+    else {
+      const view_t v(r2.begin(), nth(r2, to_signed(precision)));
+      if (to_unsigned(ref(r2, to_signed(precision))) < U'5') {
+        s2.append(r1);
+        s2.append(U'.');
+        s2.append(v);
+
+        if (fold_zero) {
+          while (to_unsigned(s2.back()) == U'0')
+            s2.pop_back();
+          if (to_unsigned(s2.back()) == U'.')
+            s2.pop_back();
+        }
+      }
+      else {
+        if (all_of_equal(r1, U'9', eqf) && all_of_equal(v, U'9', eqf)) {
+          s2.append(U'1');
+          s2.append(rng(size(r1), U'0'));
+
+          if (!fold_zero) {
             s2.append(U'.');
             s2.append(rng(size(v), U'0'));
           }
-          else {
-            s2.append(r1);
-            s2.append(U'.');
-            s2.append(v);
-            auto it = s2.end();
-            for (;;) {
-              --it;
-              if (to_unsigned(*it) != U'.') {
-                if (to_unsigned(*it) != U'9') {
-                  ++*it;
-                  break;
-                }
-                else
-                  *it = U'0';
+        }
+        else {
+          s2.append(r1);
+          s2.append(U'.');
+          s2.append(v);
+          auto it = s2.end();
+          for (;;) {
+            --it;
+            if (to_unsigned(*it) != U'.') {
+              if (to_unsigned(*it) != U'9') {
+                ++*it;
+                break;
               }
+              else
+                *it = U'0';
             }
+          }
+
+          if (fold_zero) {
+            while (to_unsigned(s2.back()) == U'0')
+              s2.pop_back();
+            if (to_unsigned(s2.back()) == U'.')
+              s2.pop_back();
           }
         }
       }
@@ -2638,7 +2913,7 @@ F sscan_float_final_step(int32_t e2, FN take_n_bits, bool non_neg) {
 }
 template <class F, class S>
 S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
-  typename decay_t<S>::size_type old_sz = s.size();
+  typename decay<S>::size_type old_sz = s.size();
   auto guard = exit_fn([&]() {s.resize(old_sz);}, true);
 
   using traits = floating_point_traits<F>;
@@ -2665,7 +2940,7 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
     sprint_sv(s, (pa.upper_case ? "NAN"_sv : "nan"_sv),
               static_cast<const print_args &>(pa));
   else if (traits::is_infinity(x)) {
-    if (traits::is_positive(x))
+    if (traits::sign(x))
       sprint_sv(s,
                 (pa.upper_case
                  ? (pa.show_positive_symbol ? "+INF"_sv : "INF"_sv)
@@ -2676,7 +2951,7 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
   }
   else {
     if (x == (F)0.0f) {
-      if (floating_point_traits<F>::is_positive(x)) {
+      if (floating_point_traits<F>::sign(x)) {
         if (pa.show_positive_symbol)
           s.push_back(U'+');
       }
@@ -2704,7 +2979,7 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
       }
       else
         s.push_back(U'-');
-      s.append_range(dot_left.sprint<decay_t<S>>());
+      s.append_range(dot_left.sprint<decay<S>>());
 
       size_t k = 0;
       if (dot_right.is_zero() == false) {
@@ -2736,14 +3011,14 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
 
     const string_reference<const rng_vt<S>> r(nth(as_const(s), old_sz),
                                               s.cend());
-    decay_t<S> s2
+    decay<S> s2
       = !pa.scientific_notation
-      ? (inner::fns::fixed_fraction_string_apply_print_args<decay_t<S>>
+      ? (inner::fns::fixed_fraction_string_apply_print_args<decay<S>>
          (r, pa.precision, pa.separator_n,
-          pa.show_positive_symbol))
-      : (inner::fns::fixed_fraction_string_to_scientific<decay_t<S>>
+          pa.show_positive_symbol, pa.fold_zero))
+      : (inner::fns::fixed_fraction_string_to_scientific<decay<S>>
          (r, pa.precision, pa.separator_n, pa.upper_case,
-          pa.show_positive_symbol));
+          pa.show_positive_symbol, pa.fold_zero));
     s.replace(r.begin(), r.end(), s2);
 
     const auto new_sz = s.size() - old_sz;
@@ -2893,7 +3168,7 @@ bool fo_sscan::impl_for_float(string_reference<T> &v, F &o) {
   string_reference<T> v2 = v;
   int32_t tmp{};
 
-  make_signed_t<size_t> order = 0;
+  make_signed<size_t> order = 0;
   bool touched_1st_non0 = false;
   const auto update_order = [&]() {
     if (touched_1st_non0)
@@ -3104,7 +3379,8 @@ public:
     adl_swap(x.ss, y.ss);
   }
 
-  ssplitter(view_t s, view_t x) {
+  template <class SEARCH_F = decay<decltype(search)>>
+  ssplitter(view_t s, view_t x, SEARCH_F search_f = SEARCH_F{}) {
     const auto ed = re::end(s);
     const auto x_sz = re::size(x);
     if (x_sz == 1u) {
@@ -3124,7 +3400,7 @@ public:
           ss.append(STR(s));
         else {
           for (;;) {
-            const auto it2 = search(rng(it, ed), x);
+            const auto it2 = search_f(rng(it, ed), x);
             ss.append(STR(it, it2));
             if (it2 == ed)
               break;
@@ -3145,8 +3421,6 @@ public:
         it = it2 + 1;
       }
   }
-  // template <class SEARCHER>
-  // ssplitter(view_t s, view_t x, SEARCHER f); // todo
 
   auto begin() {
     return ss.begin();
@@ -3172,7 +3446,7 @@ public:
   }
 
   template <class OI>
-  enable_if_t<!is_rng<OI>, OI> operator ()(view_t v, OI o) const {
+  enable_if<!is_rng<OI>, OI> operator ()(view_t v, OI o) const {
     if (!empty()) {
       const auto ed = re::end(ss);
       const auto ed_pr = prev(ed);
@@ -3186,7 +3460,7 @@ public:
     return o;
   }
   template <class IT, class OI>
-  enable_if_t<!is_rng<IT> && !is_convertible_v<IT, view_t>, pair<IT, OI>>
+  enable_if<!is_rng<IT> && !is_convertible<IT, view_t>, pair<IT, OI>>
   operator ()(IT iter, OI o) const {
     if (!empty()) {
       const auto ed = re::end(ss);
@@ -3202,7 +3476,7 @@ public:
     return {iter, o};
   }
   template <class R, class OI>
-  enable_if_t<is_rng<R> && !is_convertible_v<R, view_t>, pair<rng_itr<R>, OI>>
+  enable_if<is_rng<R> && !is_convertible<R, view_t>, pair<rng_itr<R>, OI>>
   operator ()(R &&r, OI o) const {
     if (!re::empty(r)) {
       bool used_out = false;
@@ -3233,10 +3507,10 @@ public:
 
 struct fo_ssplit {
   template <class S, class OI>
-  OI operator ()(S &&s, string_reference<add_const_t<rng_vt<S>>> delimiter,
+  OI operator ()(S &&s, string_reference<add_const<rng_vt<S>>> delimiter,
                  OI o) const {
-    using str_t = remove_reference_t<S>;
-    using sv_t = string_reference<add_const_t<rng_vt<S>>>;
+    using str_t = remove_reference<S>;
+    using sv_t = string_reference<add_const<rng_vt<S>>>;
 
     if (s.empty())
       return o;
@@ -3262,6 +3536,566 @@ struct fo_ssplit {
   }
 };
 inline constexpr fo_ssplit ssplit{};
+
+}
+
+// arithmetic_parser
+namespace re {
+
+struct default_arithmetic_grammar {
+  enum class opr {
+    paren,
+    pos, neg,
+    pow,
+    mul, div,
+    add, sub,
+  };
+  using operator_type = opr;
+  using operand_type = double;
+  using stack_type = vector<operand_type>;
+  using function_type = function<operand_type (const stack_type &)>;
+  using char_type = char;
+  using string_type = string;
+  using view_type = sview;
+
+  const auto &operator_list() const {
+    using fn_t = function_type;
+    static const auto g
+      = vec(hvec(true)
+            (hvec(opr::paren, 1,
+                  fn_t([](const stack_type &s) {return back(s);}))
+             ("(", "", ")")
+             ),
+
+            hvec(true)
+            (hvec(opr::pos, 1,
+                  fn_t([](const stack_type &s) {return back(s);}))
+             ("+", ""),
+             hvec(opr::neg, 1,
+                  fn_t([](const stack_type &s) {return -back(s);}))
+             ("-", "")
+             ),
+
+            hvec(true)
+            (hvec(opr::pow, 2,
+                  fn_t([](const stack_type &s) {
+                    return pow(*prev(s.end(), 2), back(s));
+                  }))
+             ("", "^", "")
+             ),
+
+            hvec(true)
+            (hvec(opr::mul, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) * back(s);
+                  }))
+             ("", "*", ""),
+             hvec(opr::div, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) / back(s);
+                  }))
+             ("", "/", "")
+             ),
+
+            hvec(true)
+            (hvec(opr::add, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) + back(s);
+                  }))
+             ("", "+", ""),
+             hvec(opr::sub, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) - back(s);
+                  }))
+             ("", "-", "")
+             )
+            );
+    return g;
+  }
+
+private:
+  flat_map<string, flat_map<int, function_type>> m;
+  void init_m() {
+    using fn_t = function_type;
+    m["abs"] = {
+      {1, fn_t([](const stack_type &s) {return abs(back(s));})}
+    };
+  }
+public:
+  const auto &function_list() const {
+    return m;
+  }
+
+  static optional<operand_type> scan_operand(view_type &v) {
+    operand_type ret;
+    if (sscan(v, ret))
+      return ret;
+    else
+      return nullopt;
+  }
+
+private:
+  using this_t = default_arithmetic_grammar;
+public:
+  default_arithmetic_grammar() {
+    init_m();
+  }
+  ~default_arithmetic_grammar() = default;
+  default_arithmetic_grammar(const this_t &) = delete;
+  this_t &operator =(this_t &) = delete;
+  default_arithmetic_grammar(this_t &&) noexcept = default;
+  this_t &operator =(this_t &&) noexcept = default;
+  friend void swap(this_t &x1, this_t &x2) noexcept {
+    adl_swap(x1.m, x2.m);
+  }
+};
+struct default_arithmetic_grammar_u32 {
+  enum class opr {
+    paren,
+    pos, neg,
+    pow,
+    mul, div,
+    add, sub,
+  };
+  using operator_type = opr;
+  using operand_type = double;
+  using stack_type = vector<operand_type>;
+  using function_type = function<operand_type (const stack_type &)>;
+  using char_type = char32_t;
+  using string_type = u32string;
+  using view_type = u32sview;
+
+  const auto &operator_list() const {
+    using fn_t = function_type;
+    static const auto g
+      = vec(hvec(true)
+            (hvec(opr::paren, 1,
+                  fn_t([](const stack_type &s) {return back(s);}))
+             (U"("_sv, U"", U")")
+             ),
+
+            hvec(true)
+            (hvec(opr::pos, 1,
+                  fn_t([](const stack_type &s) {return back(s);}))
+             (U"+"_sv, U""),
+             hvec(opr::neg, 1,
+                  fn_t([](const stack_type &s) {return -back(s);}))
+             (U"-"_sv, U"")
+             ),
+
+            hvec(true)
+            (hvec(opr::pow, 2,
+                  fn_t([](const stack_type &s) {
+                    return pow(*prev(s.end(), 2), back(s));
+                  }))
+             (U""_sv, U"^", U"")
+             ),
+
+            hvec(true)
+            (hvec(opr::mul, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) * back(s);
+                  }))
+             (U""_sv, U"*", U""),
+             hvec(opr::div, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) / back(s);
+                  }))
+             (U""_sv, U"/", U"")
+             ),
+
+            hvec(true)
+            (hvec(opr::add, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) + back(s);
+                  }))
+             (U""_sv, U"+", U""),
+             hvec(opr::sub, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) - back(s);
+                  }))
+             (U""_sv, U"-", U"")
+             )
+            );
+    return g;
+  }
+
+private:
+  flat_map<u32string, flat_map<int, function_type>> m;
+  void init_m() {
+    using fn_t = function_type;
+    m[U"abs"] = {
+      {1, fn_t([](const stack_type &s) {return abs(back(s));})}
+    };
+  }
+public:
+  const auto &function_list() const {
+    return m;
+  }
+
+  static optional<operand_type> scan_operand(view_type &v) {
+    operand_type ret;
+    if (sscan(v, ret))
+      return ret;
+    else
+      return nullopt;
+  }
+
+private:
+  using this_t = default_arithmetic_grammar_u32;
+public:
+  default_arithmetic_grammar_u32() {
+    init_m();
+  }
+  ~default_arithmetic_grammar_u32() = default;
+  default_arithmetic_grammar_u32(const this_t &) = delete;
+  this_t &operator =(this_t &) = delete;
+  default_arithmetic_grammar_u32(this_t &&) noexcept = default;
+  this_t &operator =(this_t &&) noexcept = default;
+  friend void swap(this_t &x1, this_t &x2) noexcept {
+    adl_swap(x1.m, x2.m);
+  }
+};
+
+namespace inner {
+
+template <class G>
+struct arithmetic_grammar_opr_block {
+  using operator_sequence_type
+    = decltype(front(front(declval<const G &>().operator_list()).vec).vec);
+
+  bool left_to_right;
+  int precedence;
+  int operand_count;
+  const typename G::function_type *fn_ptr;
+  const operator_sequence_type *seq_ptr;
+  rng_itr<const operator_sequence_type &> seq_pos;
+    // only stop at operand position or the end
+};
+template <class G>
+struct arithmetic_grammar_fn_block {
+  const remove_cvref<decltype(declval<const G &>().function_list()
+                              [declval<const typename G::string_type &>()])
+                     > *overload_list_ptr;
+  int arg_pos;
+};
+
+template <class T>
+concept can_shrink_to_fit = requires (T &x) {
+  x.shrink_to_fit();
+};
+
+}
+template <class G>
+class arithmetic_parser {
+  using opr_node_t = inner::arithmetic_grammar_opr_block<G>;
+  using fn_node_t = inner::arithmetic_grammar_fn_block<G>;
+  using s_node_t = variant<opr_node_t, fn_node_t>;
+
+  G g;
+  vector<s_node_t> s;
+  typename G::stack_type opd_s;
+
+  template <bool USE_FAILED_POS>
+  static void assign_failed_pos(typename G::view_type::iterator *,
+                                typename G::view_type::iterator) {}
+  template <bool USE_FAILED_POS>
+  static void assign_failed_pos(typename G::view_type::iterator *failed_pos,
+                                typename G::view_type::iterator it)
+    requires USE_FAILED_POS {
+    *failed_pos = it;
+  }
+
+  template <bool USE_FAILED_POS>
+  optional<typename G::operand_type>
+  impl(typename G::view_type &v,
+       typename G::view_type::iterator *failed_pos) {
+    // note: two or more contiguous operators are acceptable
+    //   but two or more contiguous operands are not acceptable
+    //   e.g. seq("", "+", "+", "") is acceptable,
+    //     but seq("", "", "+") is not acceptable
+
+    const auto take_a_step = [&]()->bool {
+      const auto start_pos = v.begin();
+      assign_failed_pos<USE_FAILED_POS>(failed_pos, start_pos);
+      using view_t = typename G::view_type;
+
+      sscan_spaces(v);
+
+      decltype(auto) l = g.operator_list();
+      for (auto &l_it : iters(l)) {
+        const auto &precedence_block = *l_it;
+        for (auto &opr_info : precedence_block.vec) {
+          const auto &seq = opr_info.vec;
+          if (view_t(front(seq)).empty())
+            continue;
+          auto it = seq.begin();
+          if (sscan(v, *it)) {
+            for (;;) {
+              ++it;
+              if (it == seq.end())
+                print_then_terminate
+                  ("re::arithmetic_parser::impl(): "
+                   "operator with no operand\n");
+              if (view_t(*it).empty())
+                break;
+              sscan_spaces(v);
+              if (!sscan(v, *it))
+                return false;
+            }
+            s.emplace_back(in_place_index<0>,
+                           precedence_block.h,
+                           l_it - l.begin(),
+                           at<1>(opr_info.h),
+                           addressof(at<2>(opr_info.h)),
+                           addressof(seq),
+                           it);
+            return true;
+          }
+        }
+      }
+
+      decltype(auto) fn_m = g.function_list();
+      for (const auto &x : fn_m) {
+        const auto &fn_name = x.first;
+        const auto &overload_list = x.second;
+        if (sscan(v, fn_name)) {
+          sscan_spaces(v);
+          typename G::char_type tmp_c{};
+          if (sscan_single(v, tmp_c) && to_unsigned(tmp_c) == U'(') {
+            s.emplace_back(in_place_index<1>,
+                           addressof(overload_list),
+                           0);
+            return true;
+          }
+          else {
+            v = {start_pos, v.end()};
+            continue;
+          }
+        }
+      }
+
+      if (auto tmp = g.scan_operand(v);
+          tmp.has_value())
+        opd_s.push_back(move(*tmp));
+      else
+        return false;
+    redo_label:
+      assign_failed_pos<USE_FAILED_POS>(failed_pos, v.begin());
+      const auto old_v_begin = v.begin();
+      for (auto &l_it : iters(l)) {
+        const auto &precedence_block = *l_it;
+        for (auto &opr_info : precedence_block.vec) {
+          const auto &seq = opr_info.vec;
+          if (!view_t(front(seq)).empty())
+            continue;
+          auto it = next(seq.begin());
+          if (it == seq.end())
+            print_then_terminate
+              ("re::arithmetic_parser::impl(): "
+               "operator must contain at least one string label\n");
+
+          sscan_spaces(v);
+          if (sscan(v, *it)) {
+            for (;;) {
+              sscan_spaces(v);
+              ++it;
+              if (it == seq.end() || view_t(*it).empty())
+                break;
+              if (!sscan(v, *it))
+                return false;
+            }
+
+            const int current_precedence = l_it - l.begin();
+            for (;;) {
+              if (s.empty())
+                break;
+              auto &top_var = s.back();
+              if (top_var.index() == 0) {
+                auto &top = at<0>(top_var);
+                if (top.seq_pos != before_end(*top.seq_ptr))
+                  break;
+                if (top.precedence < current_precedence
+                    || (top.precedence == current_precedence
+                        && top.left_to_right)) {
+                  auto tmp = (*top.fn_ptr)(opd_s);
+                  opd_s.pop_back(top.operand_count);
+                  opd_s.push_back(move(tmp));
+                  s.pop_back();
+                }
+                else
+                  break;
+              }
+              else
+                break;
+            }
+
+            if (it != seq.end()) {
+              // view_t(*it).empty()
+              s.emplace_back(in_place_index<0>,
+                             precedence_block.h,
+                             l_it - l.begin(),
+                             at<1>(opr_info.h),
+                             addressof(at<2>(opr_info.h)),
+                             addressof(seq),
+                             it);
+              return true;
+            }
+            else {
+              opd_s.back() = at<2>(opr_info.h)(opd_s);
+              goto redo_label;
+            }
+          }
+        }
+      }
+      v = {old_v_begin, v.end()};
+
+      // the last operand is just eaten,
+      //   so there is no more connector operator afterward
+      for (;;) {
+        if (s.empty())
+          return true;
+
+        auto &top_var = s.back();
+        if (top_var.index() == 0) {
+          auto &top = at<0>(top_var);
+          if (top.seq_pos == before_end(*top.seq_ptr)) {
+            // only this way can continue the previous for (;;)
+            auto tmp = (*top.fn_ptr)(opd_s);
+            opd_s.pop_back(top.operand_count);
+            opd_s.push_back(move(tmp));
+            s.pop_back();
+          }
+          else {
+            ++top.seq_pos;
+            while (top.seq_pos != top.seq_ptr->end()
+                   && !view_t(*top.seq_pos).empty()) {
+              sscan_spaces(v);
+              if (!sscan(v, *top.seq_pos))
+                return false;
+              ++top.seq_pos;
+            }
+            if (top.seq_pos != top.seq_ptr->end()) {
+              // view_t(*top.seq_pos).empty()
+              return true;
+            }
+            else {
+              auto tmp = (*top.fn_ptr)(opd_s);
+              opd_s.pop_back(top.operand_count);
+              opd_s.push_back(move(tmp));
+              s.pop_back();
+              goto redo_label;
+            }
+          }
+        }
+        else {
+          auto &top = at<1>(top_var);
+          const auto &overload_l = *top.overload_list_ptr;
+          ++top.arg_pos;
+
+          if (top.arg_pos > overload_l.back().first)
+            return false;
+
+          sscan_spaces(v);
+          typename G::char_type tmp_c{};
+          sscan_single(v, tmp_c);
+          if (to_unsigned(tmp_c) == U')') {
+            const auto i = overload_l.find(top.arg_pos);
+            if (i != overload_l.end()) {
+              auto tmp = (i->second)(opd_s);
+              opd_s.pop_back(top.arg_pos);
+              opd_s.push_back(move(tmp));
+              s.pop_back();
+              goto redo_label;
+            }
+            else
+              return false;
+          }
+          else if (to_unsigned(tmp_c) == U',')
+            return true;
+          else
+            return false;
+        }
+      }
+    };
+
+    const auto v_backup = v;
+    do {
+      if (!take_a_step()) {
+        v = v_backup;
+        s.clear();
+        opd_s.clear();
+        return nullopt;
+      }
+    } while (!s.empty());
+
+    if (opd_s.size() != 1u)
+      print_then_terminate
+        ("re::arithmetic_parser::impl(): the size of stack is not 1\n");
+    auto ret = move(opd_s.back());
+    opd_s.clear();
+    return ret;
+  }
+
+public:
+  arithmetic_parser() = default;
+  ~arithmetic_parser() = default;
+  arithmetic_parser(const arithmetic_parser &) = delete;
+  arithmetic_parser &operator =(const arithmetic_parser &) = delete;
+  arithmetic_parser(arithmetic_parser &&) = default;
+  arithmetic_parser &operator =(arithmetic_parser &&) = default;
+  friend void swap(arithmetic_parser &x1, arithmetic_parser &x2)
+    noexcept(is_nothrow_swappable<G>) {
+    adl_swap(x1.g, x2.g);
+  }
+
+  explicit arithmetic_parser(const G &gg)
+    requires is_copy_constructible<G>
+    : g(gg) {}
+  explicit arithmetic_parser(G &&gg)
+    requires is_move_constructible<G>
+    : g(move(gg)) {}
+
+  optional<typename G::operand_type>
+  operator ()(typename G::view_type &v,
+              typename G::view_type::iterator &failed_pos) {
+    auto tmp = failed_pos;
+    auto ret = impl<true>(v, addressof(tmp));
+    if (ret.empty()) {
+      failed_pos = tmp;
+      return nullopt;
+    }
+    else
+      return ret;
+  }
+  optional<typename G::operand_type>
+  operator ()(typename G::view_type &v) {
+    return impl<false>(v, nullptr);
+  }
+
+  void shrink() {
+    s.shrink_to_fit();
+    if constexpr (inner::can_shrink_to_fit<typename G::stack_type>) {
+      opd_s.shrink_to_fit();
+    }
+  }
+};
+
+using default_arithmetic_parser = arithmetic_parser<default_arithmetic_grammar>;
+using default_arithmetic_parser_u32
+  = arithmetic_parser<default_arithmetic_grammar_u32>;
+
+struct fo_sscan_arithmetic {
+  optional<double> operator ()(sview &v) const {
+    default_arithmetic_parser parser;
+    return parser(v);
+  }
+  optional<double> operator ()(u32sview &v) const {
+    default_arithmetic_parser_u32 parser;
+    return parser(v);
+  }
+};
+inline constexpr fo_sscan_arithmetic sscan_arithmetic{};
 
 }
 
@@ -3494,9 +4328,9 @@ public:
 
   template <class S = string>
   S read() const
-    requires (is_crng<S> && (is_same_v<rng_vt<S>, char>
-                             || is_same_v<rng_vt<S>, signed char>
-                             || is_same_v<rng_vt<S>, unsigned char>)) {
+    requires (is_crng<S> && (is_same<rng_vt<S>, char>
+                             || is_same<rng_vt<S>, signed char>
+                             || is_same<rng_vt<S>, unsigned char>)) {
     if (p == INVALID_HANDLE_VALUE)
       throw_or_terminate<logic_error>("re::file::read(): null file\n");
     S s;
@@ -3550,10 +4384,10 @@ public:
   }
   template <class R>
   void write(R &&r) const
-    requires (is_crng<R> && (is_same_v<rng_vt<R>, char>
-                             || is_same_v<rng_vt<R>, signed char>
-                             || is_same_v<rng_vt<R>, unsigned char>)
-              && !is_convertible_v<R, sview>) {
+    requires (is_crng<R> && (is_same<rng_vt<R>, char>
+                             || is_same<rng_vt<R>, signed char>
+                             || is_same<rng_vt<R>, unsigned char>)
+              && !is_convertible<R, sview>) {
     if (p == INVALID_HANDLE_VALUE)
       throw_or_terminate<logic_error>("re::file::write(r): null file\n");
     file_write_impl(r, p);

@@ -15,10 +15,10 @@ struct primary_iter_traits;
 
 template <class I>
 concept with_primary_iter_traits
-  = is_base_of_v<primary_iter_traits<I>, iterator_traits<I>>;
+  = is_base_of<primary_iter_traits<I>, iterator_traits<I>>;
 
 template <class T>
-concept can_reference = is_referenceable_v<T>;
+concept can_reference = is_referenceable<T>;
 template <class T>
 concept dereferenceable = requires(T &t) {
   {*t}->can_reference;
@@ -29,7 +29,7 @@ concept dereferenceable = requires(T &t) {
 template <class>
 struct incrementable_traits {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct incrementable_traits<T *> {
   using difference_type = ptrdiff_t;
 };
@@ -44,7 +44,7 @@ template <class T>
 requires ((!requires {typename T::difference_type;})
           && requires(const T &a, const T &b) {{a - b}->integral;})
 struct incrementable_traits<T> {
-  using difference_type = make_signed_t<decltype(declval<T>() - declval<T>())>;
+  using difference_type = make_signed<decltype(declval<T>() - declval<T>())>;
 };
 namespace inner {
 
@@ -61,16 +61,16 @@ struct iter_dif_t_impl<I> {
 }
 template <class I>
 using iter_difference_t
-  = typename inner::iter_dif_t_impl<remove_cvref_t<I>>::type;
+  = typename inner::iter_dif_t_impl<remove_cvref<I>>::type;
 
 namespace inner {
 
 template <class>
 struct cond_value_type {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct cond_value_type<T> {
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
 };
 
 template <class T>
@@ -84,9 +84,9 @@ struct indirectly_readable_traits {};
 template <class T>
 struct indirectly_readable_traits<T *> : inner::cond_value_type<T> {};
 template <class T>
-requires is_array_v<T>
+requires is_array<T>
 struct indirectly_readable_traits<T> {
-  using value_type = remove_cv_t<remove_extent_t<T>>;
+  using value_type = remove_cv<remove_extent<T>>;
 };
 template <class T>
 struct indirectly_readable_traits<const T>: indirectly_readable_traits<T> {};
@@ -101,8 +101,8 @@ requires inner::has_member_element_type<T>
 struct indirectly_readable_traits<T> {};
 template <inner::has_member_value_type T>
 requires inner::has_member_element_type<T>
-  && same_as<remove_cv_t<typename T::element_type>,
-             remove_cv_t<typename T::value_type>>
+  && same_as<remove_cv<typename T::element_type>,
+             remove_cv<typename T::value_type>>
 struct indirectly_readable_traits<T>
   : inner::cond_value_type<typename T::value_type> {};
 namespace inner {
@@ -124,7 +124,7 @@ struct iter_value_t_impl<I> {};
 
 }
 template <class I>
-using iter_value_t = typename inner::iter_value_t_impl<remove_cvref_t<I>>::type;
+using iter_value_t = typename inner::iter_value_t_impl<remove_cvref<I>>::type;
 
 template <inner::dereferenceable T>
 using iter_reference_t = decltype(*declval<T &>());
@@ -143,10 +143,10 @@ concept cpp17_input_iterator
   && requires(I i) {
     typename incrementable_traits<I>::difference_type;
     typename indirectly_readable_traits<I>::value_type;
-    typename common_reference_t
+    typename common_reference
     <decltype(*declval<I &>()) &&,
      typename indirectly_readable_traits<I>::value_type &>;
-    typename common_reference_t
+    typename common_reference
     <decltype(*i++) &&, typename indirectly_readable_traits<I>::value_type &>;
     requires signed_integral<typename incrementable_traits<I>::difference_type>;
   };
@@ -154,8 +154,8 @@ template <class I>
 concept cpp17_forward_iterator
   = cpp17_input_iterator<I>
   && constructible_from<I>
-  && is_lvalue_reference_v<decltype(*declval<I &>())>
-  && same_as<remove_cvref_t<decltype(*declval<I &>())>,
+  && is_lvalue_reference<decltype(*declval<I &>())>
+  && same_as<remove_cvref<decltype(*declval<I &>())>,
              typename indirectly_readable_traits<I>::value_type>
   && requires(I i) {
     {i++}->convertible_to<const I &>;
@@ -301,9 +301,9 @@ struct primary_iter_traits<I> {
 template <class I>
 struct iterator_traits : inner::primary_iter_traits<I> {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct iterator_traits<T *> {
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -336,7 +336,7 @@ struct fo_iter_move {
   }
   template <class T>
   constexpr decltype(auto) operator ()(T &&x) const noexcept {
-    if constexpr (is_lvalue_reference_v<decltype(*forward<T>(x))>) {
+    if constexpr (is_lvalue_reference<decltype(*forward<T>(x))>) {
       return move(*forward<T>(x));
     }
     else {
@@ -359,10 +359,10 @@ template <class I1, class I2>
 void iter_swap(I1, I2) = delete;
 template <class X, class Y>
 concept iter_swap_adl_capable
-  = ((re::is_class_v<re::remove_reference_t<X>>
-     || re::is_enum_v<re::remove_reference_t<X>>)
-    || (re::is_class_v<re::remove_reference_t<Y>>
-        || re::is_enum_v<re::remove_reference_t<Y>>))
+  = ((re::is_class<re::remove_reference<X>>
+     || re::is_enum<re::remove_reference<X>>)
+    || (re::is_class<re::remove_reference<Y>>
+        || re::is_enum<re::remove_reference<Y>>))
   && requires(X &&x, Y &&y) {iter_swap(static_cast<X &&>(x),
                                        static_cast<Y &&>(y));};
 
@@ -394,11 +394,11 @@ concept indirectly_readable_impl
 }
 template <class T>
 concept indirectly_readable
-  = inner::indirectly_readable_impl<remove_cvref_t<T>>;
+  = inner::indirectly_readable_impl<remove_cvref<T>>;
 
 template <indirectly_readable T>
-using iter_common_reference_t
-  = common_reference_t<iter_reference_t<T>, iter_value_t<T> &>;
+using iter_common_reference
+  = common_reference<iter_reference_t<T>, iter_value_t<T> &>;
 
 template <class O, class T>
 concept indirectly_writable = requires(O &&o, T &&t) {
@@ -445,17 +445,17 @@ struct fo_iter_swap {
     noexcept(noexcept(ranges::swap(*declval<X>(), *declval<Y>())))
     ->decltype(ranges::swap(*declval<X>(), *declval<Y>()))
     requires (!re_adl::iter_swap_adl_capable<X, Y>)
-    && indirectly_readable<remove_reference_t<X>>
-    && indirectly_readable<remove_reference_t<Y>>
-    && swappable_with<iter_reference_t<remove_reference_t<X>>,
-                      iter_reference_t<remove_reference_t<Y>>> {
+    && indirectly_readable<remove_reference<X>>
+    && indirectly_readable<remove_reference<Y>>
+    && swappable_with<iter_reference_t<remove_reference<X>>,
+                      iter_reference_t<remove_reference<Y>>> {
     return ranges::swap(*forward<X>(x), *forward<Y>(y));
   }
   template <class X, class Y>
-  constexpr enable_if_t<indirectly_movable_storable
-                        <remove_reference_t<X>, remove_reference_t<Y>>
-                        && indirectly_movable_storable
-                        <remove_reference_t<Y>, remove_reference_t<X>>>
+  constexpr enable_if<indirectly_movable_storable
+                      <remove_reference<X>, remove_reference<Y>>
+                      && indirectly_movable_storable
+                      <remove_reference<Y>, remove_reference<X>>>
   operator ()(X &&x, Y &&y) const
     noexcept(noexcept((void)(*declval<X>()
                              = inner::fns::iter_exchange_move
@@ -493,7 +493,7 @@ template <class S, class I>
 inline constexpr bool disable_sized_sentinel_for = false;
 template <class S, class I>
 concept sized_sentinel_for = sentinel_for<S, I>
-  && !disable_sized_sentinel_for<remove_cv_t<S>, remove_cv_t<I>>
+  && !disable_sized_sentinel_for<remove_cv<S>, remove_cv<I>>
   && requires(const I &i, const S &s) {
     {s - i}->same_as<iter_difference_t<I>>;
     {i - s}->same_as<iter_difference_t<I>>;
@@ -505,7 +505,7 @@ namespace inner {
 template <class I>
 struct iter_concept_impl {
   static consteval bool is_primary() {
-    return is_base_of_v<inner::primary_iter_traits<I>, iterator_traits<I>>;
+    return is_base_of<inner::primary_iter_traits<I>, iterator_traits<I>>;
   }
 
   template <class T>
@@ -523,7 +523,7 @@ struct iter_concept_impl {
   template <class T>
   static void f();
 
-  using traits_t = conditional_t<is_primary(), I, iterator_traits<I>>;
+  using traits_t = conditional<is_primary(), I, iterator_traits<I>>;
   using type = decltype(f<traits_t>());
 };
 template <class T>
@@ -534,7 +534,7 @@ using iter_concept = typename inner::iter_concept_impl<T>::type;
 template <class I>
 concept input_iterator = input_or_output_iterator<I>
   && indirectly_readable<I>
-  && (!is_void_v<inner::iter_concept<I>>)
+  && (!is_void<inner::iter_concept<I>>)
   && derived_from<inner::iter_concept<I>, input_iterator_tag>;
 
 template <class I, class T>
@@ -568,10 +568,10 @@ concept random_access_iterator = bidirectional_iterator<I>
 template <class I>
 concept contiguous_iterator = random_access_iterator<I>
   && derived_from<inner::iter_concept<I>, contiguous_iterator_tag>
-  && is_lvalue_reference_v<iter_reference_t<I>>
-  && same_as<iter_value_t<I>, remove_cvref_t<iter_reference_t<I>>>
+  && is_lvalue_reference<iter_reference_t<I>>
+  && same_as<iter_value_t<I>, remove_cvref<iter_reference_t<I>>>
   && requires(const I &i) {
-    {to_address(i)}->same_as<add_pointer_t<iter_reference_t<I>>>;
+    {to_address(i)}->same_as<add_pointer<iter_reference_t<I>>>;
   };
 
 template <class F, class I>
@@ -579,25 +579,25 @@ concept indirectly_unary_invocable = indirectly_readable<I>
   && copy_constructible<F>
   && invocable<F &, iter_value_t<I> &>
   && invocable<F &, iter_reference_t<I>>
-  && invocable<F &, iter_common_reference_t<I>>
-  && common_reference_with<invoke_result_t<F &, iter_value_t<I> &>,
-                           invoke_result_t<F &, iter_reference_t<I>>>;
+  && invocable<F &, iter_common_reference<I>>
+  && common_reference_with<invoke_result<F &, iter_value_t<I> &>,
+                           invoke_result<F &, iter_reference_t<I>>>;
 
 template <class F, class I>
 concept indirectly_regular_unary_invocable = indirectly_readable<I>
   && copy_constructible<F>
   && regular_invocable<F &, iter_value_t<I> &>
   && regular_invocable<F &, iter_reference_t<I>>
-  && regular_invocable<F &, iter_common_reference_t<I>>
-  && common_reference_with<invoke_result_t<F &, iter_value_t<I> &>,
-                           invoke_result_t<F &, iter_reference_t<I>>>;
+  && regular_invocable<F &, iter_common_reference<I>>
+  && common_reference_with<invoke_result<F &, iter_value_t<I> &>,
+                           invoke_result<F &, iter_reference_t<I>>>;
 
 template <class F, class I>
 concept indirect_unary_predicate = indirectly_readable<I>
   && copy_constructible<F>
   && predicate<F &, iter_value_t<I> &>
   && predicate<F &, iter_reference_t<I>>
-  && predicate<F &, iter_common_reference_t<I>>;
+  && predicate<F &, iter_common_reference<I>>;
 
 template <class F, class I1, class I2>
 concept indirect_binary_predicate
@@ -607,7 +607,7 @@ concept indirect_binary_predicate
   && predicate<F &, iter_value_t<I1> &, iter_reference_t<I2>>
   && predicate<F &, iter_reference_t<I1>, iter_value_t<I2> &>
   && predicate<F &, iter_reference_t<I1>, iter_reference_t<I2>>
-  && predicate<F &, iter_common_reference_t<I1>, iter_common_reference_t<I2>>;
+  && predicate<F &, iter_common_reference<I1>, iter_common_reference<I2>>;
 
 template <class F, class I1, class I2 = I1>
 concept indirect_equivalence_relation
@@ -617,8 +617,8 @@ concept indirect_equivalence_relation
   && equivalence_relation<F &, iter_value_t<I1> &, iter_reference_t<I2>>
   && equivalence_relation<F &, iter_reference_t<I1>, iter_value_t<I2> &>
   && equivalence_relation<F &, iter_reference_t<I1>, iter_reference_t<I2>>
-  && equivalence_relation<F &, iter_common_reference_t<I1>,
-                          iter_common_reference_t<I2>>;
+  && equivalence_relation<F &, iter_common_reference<I1>,
+                          iter_common_reference<I2>>;
 
 template <class F, class I1, class I2 = I1>
 concept indirect_strict_weak_order
@@ -627,17 +627,17 @@ concept indirect_strict_weak_order
   && strict_weak_order<F &, iter_value_t<I1> &, iter_reference_t<I2>>
   && strict_weak_order<F &, iter_reference_t<I1>, iter_value_t<I2> &>
   && strict_weak_order<F &, iter_reference_t<I1>, iter_reference_t<I2>>
-  && strict_weak_order<F &, iter_common_reference_t<I1>,
-                       iter_common_reference_t<I2>>;
+  && strict_weak_order<F &, iter_common_reference<I1>,
+                       iter_common_reference<I2>>;
 
 template <class F, class...IS>
 requires (indirectly_readable<IS> && ...)
   && invocable<F, iter_reference_t<IS>...>
-using indirect_result_t = invoke_result_t<F, iter_reference_t<IS>...>;
+using indirect_result_t = invoke_result<F, iter_reference_t<IS>...>;
 
 template <indirectly_readable I, indirectly_regular_unary_invocable<I> PROJ>
 struct projected {
-  using value_type = remove_cvref_t<indirect_result_t<PROJ &, I>>;
+  using value_type = remove_cvref<indirect_result_t<PROJ &, I>>;
   indirect_result_t<PROJ &, I> operator *() const;
 };
 template <weakly_incrementable I, class PROJ>
@@ -710,9 +710,9 @@ struct itr_vt_impl<I> {
 template <class I>
 struct itr_vt_impl<const I> : itr_vt_impl<I> {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct itr_vt_impl<T *> {
-  using type = remove_cv_t<T>;
+  using type = remove_cv<T>;
 };
 
 template <class I>
@@ -727,7 +727,7 @@ struct itr_ptr_impl<I> {
 template <class I>
 struct itr_ptr_impl<const I> : itr_ptr_impl<I> {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct itr_ptr_impl<T *> {
   using type = T *;
 };
@@ -744,7 +744,7 @@ struct itr_ref_impl<I> {
 template <class I>
 struct itr_ref_impl<const I> : itr_ref_impl<I> {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct itr_ref_impl<T *> {
   using type = T &;
 };
@@ -752,18 +752,17 @@ struct itr_ref_impl<T *> {
 template <class I>
 struct itr_cref_impl {
   using r = typename inner::itr_ref_impl<I>::type;
-  using type = conditional_t<is_lvalue_reference_v<r>,
-                             add_lvalue_reference_t
-                             <add_const_t<remove_reference_t<r>>>,
-                             r>;
+  using type = conditional<is_lvalue_reference<r>,
+                           add_lvalue_reference<add_const<remove_reference<r>>>,
+                           r>;
 };
 
 template <class I>
 struct itr_rref_impl {
   using r = typename inner::itr_ref_impl<I>::type;
-  using type = conditional_t<is_lvalue_reference_v<r>,
-                             add_rvalue_reference_t<remove_reference_t<r>>,
-                             r>;
+  using type = conditional<is_lvalue_reference<r>,
+                           add_rvalue_reference<remove_reference<r>>,
+                           r>;
 };
 
 template <class I>
@@ -772,14 +771,14 @@ struct itr_common_ref_impl {
 };
 template <class I>
 requires requires {
-  typename common_reference_t<add_lvalue_reference_t
-                              <typename inner::itr_vt_impl<I>::type>,
-                              typename inner::itr_ref_impl<I>::type>;
+  typename common_reference<add_lvalue_reference
+                            <typename inner::itr_vt_impl<I>::type>,
+                            typename inner::itr_ref_impl<I>::type>;
 }
 struct itr_common_ref_impl<I> {
-  using type = common_reference_t<add_lvalue_reference_t
-                                  <typename inner::itr_vt_impl<I>::type>,
-                                  typename inner::itr_ref_impl<I>::type>;
+  using type = common_reference<add_lvalue_reference
+                                <typename inner::itr_vt_impl<I>::type>,
+                                typename inner::itr_ref_impl<I>::type>;
 };
 
 template <class I>
@@ -794,7 +793,7 @@ struct itr_dft_impl<I> {
 template <class I>
 struct itr_dft_impl<const I> : itr_dft_impl<I> {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct itr_dft_impl<T *> {
   using type = ptrdiff_t;
 };
@@ -811,7 +810,7 @@ struct itr_ctg_impl<I> {
 template <class I>
 struct itr_ctg_impl<const I> : itr_ctg_impl<I> {};
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 struct itr_ctg_impl<T *> {
   using type = contiguous_iterator_tag;
 };
@@ -825,9 +824,9 @@ template <class I>
 using itr_ref = typename inner::itr_ref_impl<I>::type;
 template <class I>
 using itr_ptr_from_ref
-  = conditional_t<is_reference_v<itr_ref<I>>,
-                  add_pointer_t<remove_reference_t<itr_ref<I>>>,
-                  void>;
+  = conditional<is_reference<itr_ref<I>>,
+                add_pointer<remove_reference<itr_ref<I>>>,
+                void>;
 template <class I>
 using itr_cref = typename inner::itr_cref_impl<I>::type;
 template <class I>
@@ -840,23 +839,23 @@ template <class I>
 using itr_ctg = typename inner::itr_ctg_impl<I>::type;
 
 template <class I>
-inline constexpr bool is_itr = is_base_of_v<input_iterator_tag, itr_ctg<I>>
-  || is_base_of_v<output_iterator_tag, itr_ctg<I>>;
+inline constexpr bool is_itr = is_base_of<input_iterator_tag, itr_ctg<I>>
+  || is_base_of<output_iterator_tag, itr_ctg<I>>;
 template <class I>
-inline constexpr bool is_oitr = is_base_of_v<output_iterator_tag, itr_ctg<I>>;
+inline constexpr bool is_oitr = is_base_of<output_iterator_tag, itr_ctg<I>>;
 template <class I>
-inline constexpr bool is_iitr = is_base_of_v<input_iterator_tag, itr_ctg<I>>;
+inline constexpr bool is_iitr = is_base_of<input_iterator_tag, itr_ctg<I>>;
 template <class I>
-inline constexpr bool is_fitr = is_base_of_v<forward_iterator_tag, itr_ctg<I>>;
+inline constexpr bool is_fitr = is_base_of<forward_iterator_tag, itr_ctg<I>>;
 template <class I>
 inline constexpr bool is_bitr
-  = is_base_of_v<bidirectional_iterator_tag, itr_ctg<I>>;
+  = is_base_of<bidirectional_iterator_tag, itr_ctg<I>>;
 template <class I>
 inline constexpr bool is_ritr
-  = is_base_of_v<random_access_iterator_tag, itr_ctg<I>>;
+  = is_base_of<random_access_iterator_tag, itr_ctg<I>>;
 template <class I>
 inline constexpr bool is_citr
-  = is_base_of_v<contiguous_iterator_tag, itr_ctg<I>>;
+  = is_base_of<contiguous_iterator_tag, itr_ctg<I>>;
 template <class I>
 inline constexpr bool is_just_iitr = is_iitr<I> && !is_fitr<I>;
 template <class I>
@@ -867,23 +866,35 @@ template <class I>
 inline constexpr bool is_just_ritr = is_ritr<I> && !is_citr<I>;
 
 template <class CTG>
-inline constexpr bool is_itr_ctg = is_base_of_v<input_iterator_tag, CTG>
-  || is_base_of_v<output_iterator_tag, CTG>;
+inline constexpr bool is_itr_ctg = is_base_of<input_iterator_tag, CTG>
+  || is_base_of<output_iterator_tag, CTG>;
 template <class CTG>
-inline constexpr bool is_oitr_ctg = is_base_of_v<output_iterator_tag, CTG>;
+inline constexpr bool is_oitr_ctg = is_base_of<output_iterator_tag, CTG>;
 template <class CTG>
-inline constexpr bool is_iitr_ctg = is_base_of_v<input_iterator_tag, CTG>;
+inline constexpr bool is_iitr_ctg = is_base_of<input_iterator_tag, CTG>;
 template <class CTG>
-inline constexpr bool is_fitr_ctg = is_base_of_v<forward_iterator_tag, CTG>;
+inline constexpr bool is_fitr_ctg = is_base_of<forward_iterator_tag, CTG>;
 template <class CTG>
 inline constexpr bool is_bitr_ctg
-  = is_base_of_v<bidirectional_iterator_tag, CTG>;
+  = is_base_of<bidirectional_iterator_tag, CTG>;
 template <class CTG>
 inline constexpr bool is_ritr_ctg
-  = is_base_of_v<random_access_iterator_tag, CTG>;
+  = is_base_of<random_access_iterator_tag, CTG>;
 template <class CTG>
 inline constexpr bool is_citr_ctg
-  = is_base_of_v<contiguous_iterator_tag, CTG>;
+  = is_base_of<contiguous_iterator_tag, CTG>;
+template <class CTG>
+inline constexpr bool is_just_iitr_ctg
+  = is_iitr_ctg<CTG> && !is_fitr_ctg<CTG>;
+template <class CTG>
+inline constexpr bool is_just_fitr_ctg
+  = is_fitr_ctg<CTG> && !is_bitr_ctg<CTG>;
+template <class CTG>
+inline constexpr bool is_just_bitr_ctg
+  = is_bitr_ctg<CTG> && !is_ritr_ctg<CTG>;
+template <class CTG>
+inline constexpr bool is_just_ritr_ctg
+  = is_ritr_ctg<CTG> && !is_citr_ctg<CTG>;
 
 namespace inner {
 
@@ -897,15 +908,21 @@ concept iter_is_counted_impl = requires(const I &x, const I &y) {
 
 }
 template <class I>
-struct iterator_is_counted : bool_constant<inner::iter_is_counted_impl<I>> {};
+struct template_iterator_is_counted
+  : bool_constant<inner::iter_is_counted_impl<I>> {};
 template <class I>
-struct iterator_is_counted<const I> : iterator_is_counted<I> {};
+struct template_iterator_is_counted<const I>
+  : template_iterator_is_counted<I> {};
 template <class I>
-inline constexpr bool itr_is_counted = iterator_is_counted<I>::value;
+inline constexpr bool iterator_is_counted
+  = template_iterator_is_counted<I>::value;
+template <class I>
+inline constexpr bool itr_is_counted
+  = template_iterator_is_counted<I>::value;
 
 struct fo_advance {
   template <class I, class T>
-  constexpr void operator ()(I &i, T n) const requires is_integral_v<T> {
+  constexpr void operator ()(I &i, T n) const requires is_integral<T> {
     if constexpr (is_ritr<I>) {
       i += n;
     }
@@ -925,7 +942,7 @@ struct fo_advance {
     }
   }
   template <class I, class T>
-  constexpr void operator ()(I &i, T j) const requires (!is_integral_v<T>) {
+  constexpr void operator ()(I &i, T j) const requires (!is_integral<T>) {
     if constexpr (itr_is_counted<I>) {
       operator ()(i, j - i);
     }
@@ -937,17 +954,29 @@ struct fo_advance {
   template <class I, class T>
   constexpr itr_dft<I> operator ()(I &i, itr_dft<I> n, T j) const {
     if constexpr (itr_is_counted<I>) {
-      auto n2 = j - i;
-      auto nn = ((n >= 0) ? n : -n);
-      auto nn2 = ((n2 >= 0) ? n2 : -n2);
-      if (nn >= nn2) {
-        operator ()(i, j);
-        return n - n2;
+      const auto j_minus_i = j - i;
+      if (n > 0) {
+        if (n < j_minus_i) {
+          operator ()(i, n);
+          return 0;
+        }
+        else {
+          operator ()(i, j);
+          return n - j_minus_i;
+        }
       }
-      else {
-        operator ()(i, n);
+      else if (n < 0) {
+        if (n > j_minus_i) {
+          operator ()(i, n);
+          return 0;
+        }
+        else {
+          operator ()(i, j);
+          return n - j_minus_i;
+        }
+      }
+      else
         return 0;
-      }
     }
     else if constexpr (is_bitr<I>) {
       itr_dft<I> c = 0;
@@ -1008,7 +1037,7 @@ struct fo_next {
     return i;
   }
   template <class I, class S>
-  constexpr I operator ()(I i, S bound) const requires (!is_integral_v<S>) {
+  constexpr I operator ()(I i, S bound) const requires (!is_integral<S>) {
     advance(i, bound);
     return i;
   }
@@ -1040,25 +1069,46 @@ inline constexpr fo_prev prev{};
 namespace inner {
 
 template <class A, class B,
-          bool Y1 = is_convertible_v<A, B>,
-          bool Y2 = is_convertible_v<B, A>>
-struct common_iter : common_type<A, B> {};
+          bool Y1 = is_convertible<A, B>,
+          bool Y2 = is_convertible<B, A>>
+struct common_iter_impl : template_common_type<A, B> {};
 template <class A, class B>
-struct common_iter<A, B, true, false> {
+struct common_iter_impl<A, B, true, false> {
   using type = B;
 };
 template <class A, class B>
-struct common_iter<A, B, false, true> {
+struct common_iter_impl<A, B, false, true> {
   using type = A;
 };
 
 }
 template <class A, class B>
-using common_iter_t = typename inner::common_iter<A, B>::type;
-template <class A, class B>
-concept has_common_iter = requires {
-  typename common_iter_t<A, B>;
+using common_iter_t = typename inner::common_iter_impl<A, B>::type;
+
+template <class T, class...S>
+struct template_common_iterator_category {};
+template <class T, class U, class...S>
+requires (sizeof...(S) != 0u)
+struct template_common_iterator_category<T, U, S...> {
+  using type = template_common_iterator_category
+    <typename template_common_iterator_category<T, U>::type,
+     S...>::type;
 };
+template <class T>
+struct template_common_iterator_category<T, T> {
+  using type = T;
+};
+template <class T, class U>
+struct template_common_iterator_category<T, U> {
+  using type = conditional<is_base_of<T, U>, T, U>;
+};
+template <class T>
+struct template_common_iterator_category<T> {
+  using type = T;
+};
+template <class T, class...S>
+using common_iterator_category
+  = typename template_common_iterator_category<T, S...>::type;
 
 template <class VT>
 class iter_post_increment_return_type {
@@ -1076,7 +1126,7 @@ public:
 
   template <class T>
   constexpr explicit iter_post_increment_return_type(T &&xx)
-    requires is_convertible_v<T &&, VT> : x(forward<T>(xx)) {}
+    requires is_convertible<T &&, VT> : x(forward<T>(xx)) {}
 
   constexpr VT operator *() && {
     return move(x);
@@ -1160,7 +1210,7 @@ namespace inner {
 
 template <class R>
 concept is_rng_impl = requires(R &r) {
-  requires is_same_v<decltype(begin(r)), decltype(end(r))>;
+  requires is_same<decltype(begin(r)), decltype(end(r))>;
 };
 
 }
@@ -1181,7 +1231,7 @@ struct fo_size {
     return r.size();
   }
   template <class R>
-  constexpr make_unsigned_t<itr_dft<decltype(begin(declval<R &>()))>>
+  constexpr make_unsigned<itr_dft<decltype(begin(declval<R &>()))>>
   operator ()(R &r) const requires (!inner::has_mfn_size<R> && is_rng<R>) {
     return distance(begin(r), end(r));
   }
@@ -1191,7 +1241,7 @@ struct fo_size {
     return r.size();
   }
   template <class R>
-  constexpr make_unsigned_t<itr_dft<decltype(begin(declval<const R &>()))>>
+  constexpr make_unsigned<itr_dft<decltype(begin(declval<const R &>()))>>
   operator ()(const R &r) const
     requires (!inner::has_mfn_size<const R> && is_rng<const R>) {
     return distance(begin(r), end(r));
@@ -1215,15 +1265,15 @@ inline constexpr fo_size size{};
 struct fo_ssize {
   template <class R>
   constexpr auto operator ()(R &r) const
-    ->common_type_t<ptrdiff_t, make_signed_t<decltype(size(r))>> {
+    ->common_type<ptrdiff_t, make_signed<decltype(size(r))>> {
     return static_cast
-      <common_type_t<ptrdiff_t, make_signed_t<decltype(size(r))>>>(size(r));
+      <common_type<ptrdiff_t, make_signed<decltype(size(r))>>>(size(r));
   }
   template <class R>
   constexpr auto operator ()(const R &r) const
-    ->common_type_t<ptrdiff_t, make_signed_t<decltype(size(r))>> {
+    ->common_type<ptrdiff_t, make_signed<decltype(size(r))>> {
     return static_cast
-      <common_type_t<ptrdiff_t, make_signed_t<decltype(size(r))>>>(size(r));
+      <common_type<ptrdiff_t, make_signed<decltype(size(r))>>>(size(r));
   }
 };
 inline constexpr fo_ssize ssize{};
@@ -1279,7 +1329,7 @@ class n_value_iterator {
   ptrdiff_t n;
 
 public:
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using difference_type = ptrdiff_t;
   using pointer = T *;
   using reference = T &;
@@ -1374,7 +1424,7 @@ class n_value {
 
 public:
   n_value() = delete;
-  n_value() requires is_default_constructible_v<T> = default;
+  n_value() requires is_default_constructible<T> = default;
   ~n_value() = default;
   n_value(const n_value &) = default;
   n_value &operator =(const n_value &) = default;
@@ -1382,8 +1432,8 @@ public:
   n_value &operator =(n_value &&) = default;
   template <class TT = T>
   friend constexpr void swap(n_value &x, n_value &y)
-    noexcept(is_nothrow_swappable_v<TT>)
-    requires is_swappable_v<TT> && default_swappable<n_value<TT>> {
+    noexcept(is_nothrow_swappable<TT>)
+    requires is_swappable<TT> && default_swappable<n_value<TT>> {
     adl_swap(x.n, y.n);
     adl_swap(x.value, y.value);
   }
@@ -1391,13 +1441,13 @@ public:
   template <class...S>
   constexpr explicit(sizeof...(S) == 0)
   n_value(size_t nn, S &&...s)
-    requires is_constructible_v<T, S &&...> : n(nn), value(forward<S>(s)...) {}
+    requires is_constructible<T, S &&...> : n(nn), value(forward<S>(s)...) {}
 
-  constexpr n_value_iterator<add_const_t<remove_reference_t<T>>>
+  constexpr n_value_iterator<add_const<remove_reference<T>>>
   begin() const noexcept {
     return {value, 0};
   };
-  constexpr n_value_iterator<add_const_t<remove_reference_t<T>>>
+  constexpr n_value_iterator<add_const<remove_reference<T>>>
   end() const noexcept {
     return {value, to_signed(n)};
   };
@@ -1409,15 +1459,17 @@ public:
   }
 };
 template <class R>
-struct range_is_n_value : false_type {};
+struct template_range_is_n_value : false_type {};
 template <class R>
-struct range_is_n_value<const R> : range_is_n_value<R> {};
+struct template_range_is_n_value<const R> : template_range_is_n_value<R> {};
 template <class R>
-struct range_is_n_value<R &> : range_is_n_value<R> {};
+struct template_range_is_n_value<R &> : template_range_is_n_value<R> {};
 template <class R>
-struct range_is_n_value<R &&> : range_is_n_value<R> {};
+struct template_range_is_n_value<R &&> : template_range_is_n_value<R> {};
 template <class T>
-struct range_is_n_value<n_value<T>> : true_type {};
+struct template_range_is_n_value<n_value<T>> : true_type {};
+template <class T>
+inline constexpr bool range_is_n_value = template_range_is_n_value<T>::value;
 
 namespace inner {
 
@@ -1428,7 +1480,7 @@ struct rng_itr_impl {
 template <class R>
 requires requires (R &r) {begin(r);}
 struct rng_itr_impl<R> {
-  using type = conditional_t<is_rng<R>, decltype(begin(declval<R &>())), void>;
+  using type = conditional<is_rng<R>, decltype(begin(declval<R &>())), void>;
 };
 
 template <class R>
@@ -1438,7 +1490,7 @@ struct rng_szt_impl {
 template <class R>
 requires requires (R &r) {size(r);}
 struct rng_szt_impl<R> {
-  using type = conditional_t<is_rng<R>, decltype(size(declval<R &>())), void>;
+  using type = conditional<is_rng<R>, decltype(size(declval<R &>())), void>;
 };
 
 template <class R>
@@ -1446,7 +1498,7 @@ struct rng_is_counted_impl : false_type {};
 template <class R>
 requires requires (R &r) {begin(r);}
 struct rng_is_counted_impl<R>
-  : iterator_is_counted<decltype(begin(declval<R &>()))> {};
+  : template_iterator_is_counted<decltype(begin(declval<R &>()))> {};
 
 }
 
@@ -1474,11 +1526,12 @@ template <class R>
 using rng_ctg = itr_ctg<rng_itr<R>>;
 template <class R>
 inline constexpr bool rng_is_sized = inner::has_mfn_size<R>
-  || is_bounded_array_v<remove_reference_t<R>>;
+  || is_bounded_array<remove_reference<R>>;
 template <class R>
 inline constexpr bool rng_is_counted = inner::rng_is_counted_impl<R>::value;
 template <class R>
-inline constexpr bool rng_is_n_value = is_rng<R> && range_is_n_value<R>::value;
+inline constexpr bool rng_is_n_value
+  = is_rng<R> && template_range_is_n_value<R>::value;
 
 template <class R>
 struct range_traits {
@@ -1532,7 +1585,7 @@ struct check_can_be_iter_pair {
 };
 template <class R>
 struct can_be_iter_pair
-  : f_is_well_formed<check_can_be_iter_pair, R> {};
+  : template_f_is_well_formed<check_can_be_iter_pair, R> {};
 
 }
 template <class R>
@@ -1540,25 +1593,30 @@ inline constexpr bool is_iter_pair
   = is_rng<R> && inner::can_be_iter_pair<R>::value;
 
 template <class R>
-struct is_range_reference : bool_constant<is_rng<R> && is_iter_pair<R>> {};
+struct template_is_range_reference
+  : bool_constant<is_rng<R> && is_iter_pair<R>> {};
 template <class T>
-struct is_range_reference<n_value<T>> : is_lvalue_reference<T> {};
+struct template_is_range_reference<n_value<T>>
+  : template_is_lvalue_reference<T> {};
 template <class R>
-struct is_range_reference<const R>
-  : bool_constant<is_rng<const R> && is_range_reference<R>::value> {};
+struct template_is_range_reference<const R>
+  : bool_constant<is_rng<const R> && template_is_range_reference<R>::value> {};
 template <class R>
-struct is_range_reference<R &> : bool_constant<is_rng<R>> {};
+struct template_is_range_reference<R &> : bool_constant<is_rng<R>> {};
 template <class R>
-struct is_range_reference<R &&> : is_range_reference<R> {};
+struct template_is_range_reference<R &&> : template_is_range_reference<R> {};
 template <class R>
-inline constexpr bool is_rng_ref = is_range_reference<R>::value;
+inline constexpr bool is_range_reference
+  = template_is_range_reference<R>::value;
+template <class R>
+inline constexpr bool is_rng_ref = template_is_range_reference<R>::value;
 
 namespace inner::fns {
 
 template <class R>
 R get_rng_forward_t(R &&);
 template <class R>
-decay_t<R> get_rng_forward_t(R &&) requires is_rng_ref<decay_t<R>>;
+decay<R> get_rng_forward_t(R &&) requires is_rng_ref<decay<R>>;
 
 }
 template <class R>
@@ -1588,7 +1646,7 @@ struct fo_before_end {
     return r.before_end();
   }
   template <class FR>
-  constexpr enable_if_t<is_frng<FR>, rng_itr<FR>> operator ()(FR &r) const {
+  constexpr enable_if<is_frng<FR>, rng_itr<FR>> operator ()(FR &r) const {
     if constexpr (is_brng<FR>) {
       return prev(end(r));
     }
@@ -1610,7 +1668,7 @@ struct fo_before_end {
     return r.before_end();
   }
   template <class FR>
-  constexpr enable_if_t<is_frng<const FR>, rng_itr<const FR>>
+  constexpr enable_if<is_frng<const FR>, rng_itr<const FR>>
   operator ()(const FR &r) const {
     if constexpr (is_brng<const FR>) {
       return prev(end(r));
@@ -1673,13 +1731,13 @@ struct fo_rbegin {
 
   template <class R>
   constexpr auto operator ()(R &r) const
-    requires (is_brng<R> && !is_array_v<remove_reference_t<R>>) {
+    requires (is_brng<R> && !is_array<remove_reference<R>>) {
     return inner::fns::make_ritr(end(r));
   }
   template <class R>
   constexpr auto operator ()(const R &r) const
     requires (is_brng<const R>
-              && !is_array_v<remove_reference_t<const R>>) {
+              && !is_array<remove_reference<const R>>) {
     return inner::fns::make_ritr(end(r));
   }
 };
@@ -1696,13 +1754,13 @@ struct fo_rend {
 
   template <class R>
   constexpr auto operator ()(R &r) const
-    requires (is_brng<R> && !is_array_v<remove_reference_t<R>>) {
+    requires (is_brng<R> && !is_array<remove_reference<R>>) {
     return inner::fns::make_ritr(begin(r));
   }
   template <class R>
   constexpr auto operator ()(const R &r) const
     requires (is_brng<const R>
-              && !is_array_v<remove_reference_t<const R>>) {
+              && !is_array<remove_reference<const R>>) {
     return inner::fns::make_ritr(begin(r));
   }
 };
@@ -2020,7 +2078,7 @@ public:
   degraded_iterator(this_t &&) = default;
   degraded_iterator &operator =(this_t &&) = default;
   friend constexpr void swap(degraded_iterator &x, degraded_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.it, y.it);
   }
 
@@ -2031,7 +2089,7 @@ public:
 
   template <class II>
   constexpr degraded_iterator(const degraded_iterator<II, CTG> &x)
-    requires (!is_same_v<I, II>) && is_convertible_v<const II &, I>
+    requires (!is_same<I, II>) && is_convertible<const II &, I>
     : it(x.it) {}
 
   constexpr I operator ->() const requires can_apply_to_address<const I &> {
@@ -2122,7 +2180,7 @@ template <class TAG>
 struct fo_degraded_itr {
   template <class I>
   constexpr degraded_iterator<I, TAG> operator ()(I i) const
-    requires is_base_of_v<TAG, itr_ctg<I>> {
+    requires is_base_of<TAG, itr_ctg<I>> {
     return degraded_iterator<I, TAG>(i);
   }
 };
@@ -2177,7 +2235,7 @@ public:
   using reference = itr_ref<BI>;
   using pointer = BI;
   using difference_type = itr_dft<BI>;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <is_ritr<BI>, random_access_iterator_tag, bidirectional_iterator_tag>;
 
   reverse_iterator() = default;
@@ -2188,7 +2246,7 @@ public:
   reverse_iterator &operator =(reverse_iterator &&) = default;
   friend constexpr void swap(reverse_iterator &x,
                              reverse_iterator &y)
-    noexcept(is_nothrow_swappable_v<BI>) {
+    noexcept(is_nothrow_swappable<BI>) {
     adl_swap(x.iter, y.iter);
   }
 
@@ -2196,12 +2254,12 @@ public:
 
   template <class BI2>
   constexpr reverse_iterator(const reverse_iterator<BI2> &x)
-    requires (!is_same_v<BI, BI2>) && is_convertible_v<const BI2 &, BI>
+    requires (!is_same<BI, BI2>) && is_convertible<const BI2 &, BI>
     : iter(x.iter) {}
   template <class BI2>
   constexpr reverse_iterator &operator =(const reverse_iterator<BI2> &x)
-    requires (!is_same_v<BI, BI2> && is_convertible_v<const BI2 &, BI>
-              && is_assignable_v<BI &, const BI2 &>) {
+    requires (!is_same<BI, BI2> && is_convertible<const BI2 &, BI>
+              && is_assignable<BI &, const BI2 &>) {
     iter = x.iter;
     return *this;
   }
@@ -2447,7 +2505,7 @@ public:
   insert_iterator(insert_iterator &&) = default;
   insert_iterator &operator =(insert_iterator &&) = default;
   friend constexpr void swap(insert_iterator &x, insert_iterator &y)
-    noexcept(is_nothrow_swappable_v<iter_t>) {
+    noexcept(is_nothrow_swappable<iter_t>) {
     adl_swap(x.container, y.container);
     adl_swap(x.iter, y.iter);
   }
@@ -2572,9 +2630,9 @@ public:
 };
 struct fo_to_back {
   template <class C>
-  constexpr to_back_iterator<remove_reference_t<C>>
+  constexpr to_back_iterator<remove_reference<C>>
   operator ()(C &&c) const {
-    return to_back_iterator<remove_reference_t<C>>(forward<C>(c));
+    return to_back_iterator<remove_reference<C>>(forward<C>(c));
   }
 };
 inline constexpr fo_to_back to_back{};
@@ -2601,7 +2659,7 @@ public:
   to_front_iterator(to_front_iterator &&) = default;
   to_front_iterator &operator =(to_front_iterator &&) = default;
   friend constexpr void swap(to_front_iterator &x, to_front_iterator &y)
-    noexcept(is_nothrow_swappable_v<iter_t>) {
+    noexcept(is_nothrow_swappable<iter_t>) {
     adl_swap(x.c, y.c);
     adl_swap(x.i, y.i);
   }
@@ -2645,9 +2703,9 @@ public:
 };
 struct fo_to_front {
   template <class C>
-  constexpr to_front_iterator<remove_reference_t<C>>
+  constexpr to_front_iterator<remove_reference<C>>
   operator ()(C &&c) const {
-    return to_front_iterator<remove_reference_t<C>>(forward<C>(c));
+    return to_front_iterator<remove_reference<C>>(forward<C>(c));
   }
 };
 inline constexpr fo_to_front to_front{};
@@ -2675,7 +2733,7 @@ public:
   any_output_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<semiregular_function<UF>>) {
+    noexcept(is_nothrow_swappable<semiregular_function<UF>>) {
     adl_swap(x.fn, y.fn);
   }
 
@@ -2734,7 +2792,7 @@ public:
   move_iterator(move_iterator &&) = default;
   move_iterator &operator =(move_iterator &&) = default;
   friend constexpr void swap(move_iterator &x, move_iterator &y)
-    noexcept(is_nothrow_swappable_v<II>) {
+    noexcept(is_nothrow_swappable<II>) {
     adl_swap(x.i, y.i);
   }
 
@@ -2742,11 +2800,11 @@ public:
 
   template <class II2>
   constexpr move_iterator(const move_iterator<II2> &x)
-    requires (!is_same_v<II, II2> && convertible_to<const II2 &, II>)
+    requires (!is_same<II, II2> && convertible_to<const II2 &, II>)
     : i(x.i) {}
   template <class II2>
   constexpr move_iterator &operator =(const move_iterator<II2> &x)
-    requires (!is_same_v<II, II2> && convertible_to<const II2 &, II>
+    requires (!is_same<II, II2> && convertible_to<const II2 &, II>
               && assignable_from<II &, const II2 &>) {
     i = x.i;
     return *this;
@@ -2756,7 +2814,7 @@ public:
     return *i;
   }
   constexpr reference operator *() const
-    requires (!is_same_v<itr_rref<II>, itr_ref<II>>) {
+    requires (!is_same<itr_rref<II>, itr_ref<II>>) {
     return static_cast<reference>(*i);
   }
   constexpr pointer operator ->() const
@@ -2869,7 +2927,7 @@ public:
   counted_iterator(counted_iterator &&) = default;
   counted_iterator &operator =(counted_iterator &&) = default;
   friend constexpr void swap(counted_iterator &x, counted_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.iter, y.iter);
     adl_swap(x.len, y.len);
   }
@@ -3007,7 +3065,7 @@ public:
   iterator_wrapper(iterator_wrapper &&) = default;
   iterator_wrapper &operator =(iterator_wrapper &&) = default;
   friend constexpr void swap(iterator_wrapper &x, iterator_wrapper &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.i, y.i);
   }
 
@@ -3140,7 +3198,7 @@ struct fo_rng {
   // rng(it1, it2)
   template <class A, class B>
   constexpr iter_pair<common_iter_t<A, B>>
-  operator ()(A a, B b) const requires (!is_integral_v<A> && !is_integral_v<B>);
+  operator ()(A a, B b) const requires (!is_integral<A> && !is_integral<B>);
 
   // rng(r)
   template <class R>
@@ -3150,17 +3208,17 @@ struct fo_rng {
   // rng(it1, n)
   template <class A, class B>
   constexpr iter_pair<A> operator ()(A, B) const
-    requires (!is_integral_v<A> && is_integral_v<B> && is_ritr<A>);
+    requires (!is_integral<A> && is_integral<B> && is_ritr<A>);
   template <class A, class B>
   constexpr iter_pair<iter_n_iterator<A>> operator ()(A, B) const
-    requires (!is_integral_v<A> && is_integral_v<B> && !is_ritr<A>);
+    requires (!is_integral<A> && is_integral<B> && !is_ritr<A>);
 
   // rng(n, x)
   template <class A, class B>
-  constexpr n_value<B> operator ()(A, B) const requires is_integral_v<A>;
+  constexpr n_value<B> operator ()(A, B) const requires is_integral<A>;
   template <class A, class B>
-  constexpr n_value<add_const_t<B> &>
-  operator ()(A, reference_wrapper<B>) const requires is_integral_v<A>;
+  constexpr n_value<add_const<B> &>
+  operator ()(A, reference_wrapper<B>) const requires is_integral<A>;
 };
 inline constexpr fo_rng rng{};
 
@@ -3198,13 +3256,13 @@ inline constexpr fo_rrng rrng{};
 struct fo_irng {
   // irng(n1, n2)
   template <class A, class B>
-  constexpr iter_pair<iterator_iterator<common_type_t<A, B>>>
+  constexpr iter_pair<iterator_iterator<common_type<A, B>>>
   operator ()(A, B) const
-    requires (is_integral_v<A> && is_integral_v<B>);
+    requires (is_integral<A> && is_integral<B>);
   template <class A, class B>
   constexpr iter_pair<iterator_iterator<common_iter_t<A, B>>>
   operator ()(A, B) const
-    requires (!is_integral_v<A> && !is_integral_v<B>);
+    requires (!is_integral<A> && !is_integral<B>);
 
   // irng(r)
   template <class R>
@@ -3213,7 +3271,7 @@ struct fo_irng {
   // irng(it1, n)
   template <class A, class B>
   constexpr auto operator ()(A, B) const
-    requires (!is_integral_v<A> && is_integral_v<B>);
+    requires (!is_integral<A> && is_integral<B>);
 };
 inline constexpr fo_irng irng{};
 struct fo_iitr {
@@ -3252,8 +3310,8 @@ public:
   using size_type = size_t;
 
   friend constexpr void swap(array &x, array &y)
-    noexcept(is_nothrow_swappable_v<value_type>)
-    requires is_swappable_v<value_type> {
+    noexcept(is_nothrow_swappable<value_type>)
+    requires is_swappable<value_type> {
     auto i = x.begin();
     for (auto ii = y.begin(); ii != y.end(); ++ii) {
       adl_swap(*i, *ii);
@@ -3530,24 +3588,24 @@ constexpr const T &&get(const array<T, N> &&a) noexcept {
 namespace inner::fns {
 
 template <class T, size_t N, size_t...IDS>
-constexpr array<remove_cv_t<T>, N>
+constexpr array<remove_cv<T>, N>
 to_array_impl(T (&a)[N], index_sequence<IDS...>) {
-  return array<remove_cv_t<T>, N>{a[IDS]...};
+  return array<remove_cv<T>, N>{a[IDS]...};
 }
 template <class T, size_t N, size_t...IDS>
-constexpr array<remove_cv_t<T>, N>
+constexpr array<remove_cv<T>, N>
 to_array_impl2(T (&a)[N], index_sequence<IDS...>) {
-  return array<remove_cv_t<T>, N>{move(a[IDS])...};
+  return array<remove_cv<T>, N>{move(a[IDS])...};
 }
 
 }
 struct fo_to_array {
   template <class T, size_t N>
-  constexpr array<remove_cv_t<T>, N> operator ()(T (&a)[N]) const {
+  constexpr array<remove_cv<T>, N> operator ()(T (&a)[N]) const {
     return inner::fns::to_array_impl(a, make_index_sequence<N>{});
   }
   template <class T, size_t N>
-  constexpr array<remove_cv_t<T>, N> operator ()(T (&&a)[N]) const {
+  constexpr array<remove_cv<T>, N> operator ()(T (&&a)[N]) const {
     return inner::fns::to_array_impl2(a, make_index_sequence<N>{});
   }
 };
@@ -3555,9 +3613,9 @@ inline constexpr fo_to_array to_array{};
 
 struct fo_seq {
   template <class X, class...S>
-  constexpr array<decay_t<X &&>, 1 + sizeof...(S)>
+  constexpr array<decay<X &&>, 1 + sizeof...(S)>
   operator ()(X &&x, S &&...s) const {
-    using t = decay_t<X &&>;
+    using t = decay<X &&>;
     return {t(forward<X>(x)), t(forward<S>(s))...};
   }
 };
@@ -3571,9 +3629,11 @@ namespace re {
 template <class IT>
 class iter_pair;
 template <size_t I, class IT>
-struct tuple_element<I, iter_pair<IT>> : tuple_element<I, pair<IT, IT>> {};
+struct template_tuple_element<I, iter_pair<IT>>
+  : template_tuple_element<I, pair<IT, IT>> {};
 template <class IT>
-struct tuple_size<iter_pair<IT>> : tuple_size<pair<IT, IT>> {};
+struct template_tuple_size<iter_pair<IT>>
+  : template_tuple_size<pair<IT, IT>> {};
 template <class IT>
 class iter_pair : public pair<IT, IT> {
   using base_t = pair<IT, IT>;
@@ -3588,23 +3648,23 @@ public:
   iter_pair(iter_pair &&) = default;
   iter_pair &operator =(iter_pair &&) = default;
   friend constexpr void swap(iter_pair &x, iter_pair &y)
-    noexcept(is_nothrow_swappable_v<IT>) {
+    noexcept(is_nothrow_swappable<IT>) {
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
   template <class X, class Y>
   constexpr iter_pair(X x, Y y)
-    requires is_constructible_v<IT, X &> && is_constructible_v<IT, Y &>
+    requires is_constructible<IT, X &> && is_constructible<IT, Y &>
     : base_t(x, y)  {}
 
   template <class T>
-  constexpr explicit(!is_convertible_v<const T &, IT>)
+  constexpr explicit(!is_convertible<const T &, IT>)
   iter_pair(const iter_pair<T> &x)
-    requires (!is_same_v<T, IT> && is_constructible_v<IT, const T &>)
+    requires (!is_same<T, IT> && is_constructible<IT, const T &>)
     : base_t(static_cast<const pair<T, T> &>(x)) {}
   template <class T>
   constexpr iter_pair &operator =(const iter_pair<T> &x)
-    requires (!is_same_v<T, IT> && is_assignable_v<IT &, const T &>) {
+    requires (!is_same<T, IT> && is_assignable<IT &, const T &>) {
     base_t::operator =(static_cast<const pair<T, T> &>(x));
     return *this;
   }
@@ -3620,11 +3680,11 @@ public:
     return begin() == end();
   }
 
-  constexpr make_unsigned_t<itr_dft<IT>> size() const
+  constexpr make_unsigned<itr_dft<IT>> size() const
     requires itr_is_counted<IT> {
     return end() - begin();
   }
-  constexpr size_t size() const requires is_null_pointer_v<IT> {
+  constexpr size_t size() const requires is_null_pointer<IT> {
     return 0;
   }
 };
@@ -3644,7 +3704,7 @@ constexpr auto operator ==(const iter_pair<X> &x,
 template <class A, class B>
 constexpr iter_pair<common_iter_t<A, B>>
 fo_rng::operator ()(A a, B b) const
-  requires (!is_integral_v<A> && !is_integral_v<B>) {
+  requires (!is_integral<A> && !is_integral<B>) {
   return {a, b};
 }
 
@@ -3671,7 +3731,7 @@ class composite_input_iterator {
 
 public:
   using reference = decltype(declval<const DEREF &>()(declval<const T &>()));
-  using value_type = remove_cvref_t<reference>;
+  using value_type = remove_cvref<reference>;
   using difference_type = ptrdiff_t;
   using pointer = void;
   using iterator_category = input_iterator_tag;
@@ -3683,10 +3743,10 @@ public:
   composite_input_iterator(this_t &&) = default;
   composite_input_iterator &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &a, this_t &b)
-    noexcept(is_nothrow_swappable_v<T>
-             && is_nothrow_swappable_v<semiregular_function<DEREF>>
-             && is_nothrow_swappable_v<semiregular_function<PP>>
-             && is_nothrow_swappable_v<copyable_wrapper<optional<EQ>>>) {
+    noexcept(is_nothrow_swappable<T>
+             && is_nothrow_swappable<semiregular_function<DEREF>>
+             && is_nothrow_swappable<semiregular_function<PP>>
+             && is_nothrow_swappable<copyable_wrapper<optional<EQ>>>) {
     adl_swap(a.x, b.x);
     adl_swap(a.df, b.df);
     adl_swap(a.pp, b.pp);
@@ -3724,7 +3784,7 @@ class composite_forward_iterator {
 
 public:
   using reference = decltype(declval<const DEREF &>()(declval<const T &>()));
-  using value_type = remove_cvref_t<reference>;
+  using value_type = remove_cvref<reference>;
   using difference_type = ptrdiff_t;
   using pointer = void;
   using iterator_category = forward_iterator_tag;
@@ -3736,10 +3796,10 @@ public:
   composite_forward_iterator(this_t &&) = default;
   composite_forward_iterator &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &a, this_t &b)
-    noexcept(is_nothrow_swappable_v<T>
-             && is_nothrow_swappable_v<semiregular_function<DEREF>>
-             && is_nothrow_swappable_v<semiregular_function<PP>>
-             && is_nothrow_swappable_v<copyable_wrapper<optional<EQ>>>) {
+    noexcept(is_nothrow_swappable<T>
+             && is_nothrow_swappable<semiregular_function<DEREF>>
+             && is_nothrow_swappable<semiregular_function<PP>>
+             && is_nothrow_swappable<copyable_wrapper<optional<EQ>>>) {
     adl_swap(a.x, b.x);
     adl_swap(a.df, b.df);
     adl_swap(a.pp, b.pp);
@@ -3780,7 +3840,7 @@ class composite_bidirectional_iterator {
 
 public:
   using reference = decltype(declval<const DEREF &>()(declval<const T &>()));
-  using value_type = remove_cvref_t<reference>;
+  using value_type = remove_cvref<reference>;
   using difference_type = ptrdiff_t;
   using pointer = void;
   using iterator_category = bidirectional_iterator_tag;
@@ -3792,11 +3852,11 @@ public:
   composite_bidirectional_iterator(this_t &&) = default;
   composite_bidirectional_iterator &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &a, this_t &b)
-    noexcept(is_nothrow_swappable_v<T>
-             && is_nothrow_swappable_v<semiregular_function<DEREF>>
-             && is_nothrow_swappable_v<semiregular_function<PP>>
-             && is_nothrow_swappable_v<copyable_wrapper<optional<EQ>>>
-             && is_nothrow_swappable_v<semiregular_function<MM>>) {
+    noexcept(is_nothrow_swappable<T>
+             && is_nothrow_swappable<semiregular_function<DEREF>>
+             && is_nothrow_swappable<semiregular_function<PP>>
+             && is_nothrow_swappable<copyable_wrapper<optional<EQ>>>
+             && is_nothrow_swappable<semiregular_function<MM>>) {
     adl_swap(a.x, b.x);
     adl_swap(a.df, b.df);
     adl_swap(a.pp, b.pp);
@@ -3882,7 +3942,7 @@ class range_wrapper : range_fns {
 
 public:
   range_wrapper() = delete;
-  range_wrapper() requires is_default_constructible_v<R> = default;
+  range_wrapper() requires is_default_constructible<R> = default;
   ~range_wrapper() = default;
   range_wrapper(const range_wrapper &) = default;
   range_wrapper &operator =(const range_wrapper &) = default;
@@ -3890,8 +3950,8 @@ public:
   range_wrapper &operator =(range_wrapper &&) = default;
   template <class RR = R>
   friend constexpr void swap(range_wrapper &x, range_wrapper &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<range_wrapper<RR>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<range_wrapper<RR>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -3900,20 +3960,20 @@ public:
   constexpr auto begin() {
     return begin(r);
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return begin(r);
   }
   constexpr auto end() {
     return end(r);
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return end(r);
   }
 
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r);
   }
 
@@ -3921,12 +3981,13 @@ public:
     return size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<const R>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<const R>) {
     return size(r);
   }
 };
 template <class R>
-struct is_range_reference<range_wrapper<R>> : is_range_reference<R> {};
+struct template_is_range_reference<range_wrapper<R>>
+  : template_is_range_reference<R> {};
 
 struct fo_wrap_rng {
   template <class R>
@@ -3959,7 +4020,7 @@ class base_range : range_fns {
 
 public:
   base_range() = delete;
-  base_range() requires is_default_constructible_v<R> = default;
+  base_range() requires is_default_constructible<R> = default;
   ~base_range() = default;
   base_range(const base_range &) = default;
   base_range &operator =(const base_range &) = default;
@@ -3967,8 +4028,8 @@ public:
   base_range &operator =(base_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(base_range &x, base_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<base_range<RR>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<base_range<RR>>) {
     adl_swap(x.r, y.r);
   }
 
@@ -3977,20 +4038,20 @@ public:
   constexpr auto begin() {
     return begin(r).base();
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return begin(r).base();
   }
   constexpr auto end() {
     return end(r).base();
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return end(r).base();
   }
 
   constexpr bool empty() {
     return begin() == end();
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return begin() == end();
   }
 
@@ -3999,14 +4060,15 @@ public:
     return to_unsigned(end() - begin());
   }
   constexpr auto size() const
-    requires (is_rng<add_const_t<R>>
+    requires (is_rng<add_const<R>>
               && itr_is_counted<decltype(declval<rng_itr<const R>>()
                                          .base())>) {
     return to_unsigned(end() - begin());
   }
 };
 template <class R>
-struct is_range_reference<base_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<base_range<R>>
+  : template_is_range_reference<R> {};
 struct fo_base_rng {
   template <class R>
   constexpr auto operator ()(R &&r) const requires is_rng<R> {
@@ -4032,7 +4094,7 @@ class inplace_base_range : range_fns {
 
 public:
   inplace_base_range() = delete;
-  inplace_base_range() requires is_default_constructible_v<R> = default;
+  inplace_base_range() requires is_default_constructible<R> = default;
   ~inplace_base_range() = default;
   inplace_base_range(const inplace_base_range &) = default;
   inplace_base_range &operator =(const inplace_base_range &) = default;
@@ -4041,8 +4103,8 @@ public:
   template <class RR = R>
   friend constexpr void swap(inplace_base_range &x,
                              inplace_base_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR>
               && default_swappable<inplace_base_range<RR>>) {
     adl_swap(x.r, y.r);
   }
@@ -4052,20 +4114,20 @@ public:
   constexpr auto begin() {
     return begin(r).base();
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return begin(r).base();
   }
   constexpr auto end() {
     return end(r).base();
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return end(r).base();
   }
 
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r);
   }
 
@@ -4073,12 +4135,13 @@ public:
     return size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
     return size(r);
   }
 };
 template <class R>
-struct is_range_reference<inplace_base_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<inplace_base_range<R>>
+  : template_is_range_reference<R> {};
 struct fo_inplace_base_rng {
   template <class R>
   constexpr auto operator ()(R &&r) const requires is_rng<R> {
@@ -4097,7 +4160,7 @@ inline constexpr fo_inplace_base_rng inplace_base_rng{};
 namespace re {
 
 template <class T>
-requires is_object_v<T>
+requires is_object<T>
 class empty_range {
 public:
   static constexpr T *begin() {
@@ -4114,7 +4177,7 @@ public:
   }
 };
 template <class T>
-struct is_range_reference<empty_range<T>> : true_type {};
+struct template_is_range_reference<empty_range<T>> : true_type {};
 
 template <class T>
 struct fo_empty_rng {
@@ -4136,7 +4199,7 @@ class single_range {
 
 public:
   single_range() = delete;
-  single_range() requires is_default_constructible_v<T> = default;
+  single_range() requires is_default_constructible<T> = default;
   ~single_range() = default;
   single_range(const single_range &) = default;
   single_range &operator =(const single_range &) = default;
@@ -4144,15 +4207,15 @@ public:
   single_range &operator =(single_range &&) = default;
   template <class TT = T>
   friend constexpr void swap(single_range &x, single_range &y)
-    noexcept(is_nothrow_swappable_v<TT>)
-    requires is_swappable_v<TT> && default_swappable<single_range<TT>> {
+    noexcept(is_nothrow_swappable<TT>)
+    requires is_swappable<TT> && default_swappable<single_range<TT>> {
     adl_swap(x.v, y.v);
   }
 
   constexpr explicit single_range(T x) : v(forward<T>(x)) {}
   template <class...S>
   constexpr explicit single_range(in_place_t, S &&...s)
-    requires is_constructible_v<T, S &&...> : v(forward<S>(s)...) {}
+    requires is_constructible<T, S &&...> : v(forward<S>(s)...) {}
 
   constexpr auto begin() noexcept {
     return addressof(v);
@@ -4213,13 +4276,13 @@ class counted_range : range_fns {
 
 public:
   counted_range() = delete;
-  counted_range() requires is_default_constructible_v<R> = default;
+  counted_range() requires is_default_constructible<R> = default;
   ~counted_range() = default;
   counted_range(const counted_range &) = default;
   counted_range &operator =(const counted_range &) = default;
   constexpr counted_range(counted_range &&) = delete;
   constexpr counted_range(counted_range &&x)
-    requires is_move_constructible_v<R>
+    requires is_move_constructible<R>
     : r(forward<R>(x.r)), sz(x.sz) {
     if constexpr (!is_rng_ref<R>) {
       x.re_calc_size();
@@ -4227,7 +4290,7 @@ public:
   }
   constexpr counted_range &operator =(counted_range &&) = delete;
   constexpr counted_range &operator =(counted_range &&x)
-    requires (!is_rng_ref<R> && is_move_assignable_v<R>) {
+    requires (!is_rng_ref<R> && is_move_assignable<R>) {
     if (addressof(x) != this) {
       r = forward<R>(x.r);
       sz = x.sz;
@@ -4237,8 +4300,8 @@ public:
   }
   template <class RR = R>
   friend constexpr void swap(counted_range &x, counted_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<counted_range<RR>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<counted_range<RR>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.sz, y.sz);
   }
@@ -4251,13 +4314,13 @@ public:
   constexpr auto begin() {
     return counted_itr((sz == 0 ? end(r) : begin(r)), sz);
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return counted_itr((sz == 0 ? end(r) : begin(r)), sz);
   }
   constexpr auto end() {
     return counted_itr(end(r), 0);
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return counted_itr(end(r), 0);
   }
 
@@ -4270,7 +4333,8 @@ public:
   }
 };
 template <class R>
-struct is_range_reference<counted_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<counted_range<R>>
+  : template_is_range_reference<R> {};
 
 struct fo_counted_rng {
   template <class R>
@@ -4315,7 +4379,7 @@ class degraded_range : range_fns {
 
 public:
   degraded_range() = delete;
-  degraded_range() requires is_default_constructible_v<R> = default;
+  degraded_range() requires is_default_constructible<R> = default;
   ~degraded_range() = default;
   degraded_range(const degraded_range &) = default;
   degraded_range &operator =(const degraded_range &) = default;
@@ -4323,8 +4387,8 @@ public:
   degraded_range &operator =(degraded_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(degraded_range &x, degraded_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR>
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR>
               && default_swappable<degraded_range<RR, TAG>>) {
     adl_swap(x.r, y.r);
   }
@@ -4334,20 +4398,20 @@ public:
   constexpr auto begin() {
     return degraded_iterator<rng_itr<R>, TAG>(begin(r));
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return degraded_iterator<rng_itr<const R>, TAG>(begin(r));
   }
   constexpr auto end() {
     return degraded_iterator<rng_itr<R>, TAG>(end(r));
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return degraded_iterator<rng_itr<const R>, TAG>(end(r));
   }
 
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r);
   }
 
@@ -4355,12 +4419,13 @@ public:
     return size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
     return size(r);
   }
 };
 template <class R, class TAG>
-struct is_range_reference<degraded_range<R, TAG>> : is_range_reference<R> {};
+struct template_is_range_reference<degraded_range<R, TAG>>
+  : template_is_range_reference<R> {};
 template <class R>
 using degraded_input_range
   = degraded_range<rng_forward_t<R>, input_iterator_tag>;
@@ -4445,7 +4510,7 @@ class move_range {
 
 public:
   move_range() = delete;
-  move_range() requires is_default_constructible_v<R> = default;
+  move_range() requires is_default_constructible<R> = default;
   ~move_range() = default;
   move_range(const move_range &) = default;
   move_range &operator =(const move_range &) = default;
@@ -4453,8 +4518,8 @@ public:
   move_range &operator =(move_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(move_range &x, move_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires is_swappable_v<RR> && default_swappable<move_range<RR>> {
+    noexcept(is_nothrow_swappable<RR>)
+    requires is_swappable<RR> && default_swappable<move_range<RR>> {
     adl_swap(x.r, y.r);
   }
 
@@ -4466,17 +4531,17 @@ public:
   constexpr auto end() {
     return move_itr(re::end(r));
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return move_itr(re::begin(r));
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return move_itr(re::end(r));
   }
 
   constexpr bool empty() {
     return re::empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return re::empty(r);
   }
 
@@ -4484,12 +4549,13 @@ public:
     return re::size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
     return re::size(r);
   }
 };
 template <class R>
-struct is_range_reference<move_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<move_range<R>>
+  : template_is_range_reference<R> {};
 
 template <class R>
 constexpr auto fo_move_rng::operator ()(R &&r) const requires is_rng<R> {
@@ -4520,7 +4586,7 @@ class reverse_range : range_fns {
 
 public:
   reverse_range() = delete;
-  reverse_range() requires is_default_constructible_v<R> = default;
+  reverse_range() requires is_default_constructible<R> = default;
   ~reverse_range() = default;
   reverse_range(const reverse_range &) = default;
   reverse_range &operator =(const reverse_range &) = default;
@@ -4528,8 +4594,8 @@ public:
   reverse_range &operator =(reverse_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(reverse_range &x, reverse_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires is_swappable_v<RR> && default_swappable<reverse_range<RR>> {
+    noexcept(is_nothrow_swappable<RR>)
+    requires is_swappable<RR> && default_swappable<reverse_range<RR>> {
     adl_swap(x.r, y.r);
   }
 
@@ -4541,17 +4607,17 @@ public:
   constexpr auto end() {
     return rend(r);
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return rbegin(r);
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return rend(r);
   }
 
   constexpr bool empty() {
     return re::empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return re::empty(r);
   }
 
@@ -4559,12 +4625,13 @@ public:
     return re::size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
     return re::size(r);
   }
 };
 template <class R>
-struct is_range_reference<reverse_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<reverse_range<R>>
+  : template_is_range_reference<R> {};
 
 // rrng(r)
 // rrng(a, b)
@@ -4597,7 +4664,7 @@ public:
   using reference = itr_ref<I>;
   using pointer = I;
   using difference_type = itr_dft<I>;
-  using iterator_category = conditional_t
+  using iterator_category = conditional
     <is_fitr<I>, forward_iterator_tag, itr_ctg<I>>;
 
   iter_n_iterator() = default;
@@ -4607,7 +4674,7 @@ public:
   iter_n_iterator(iter_n_iterator &&) = default;
   iter_n_iterator &operator =(iter_n_iterator &&) = default;
   friend constexpr void swap(iter_n_iterator &x, iter_n_iterator &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.iter, y.iter);
     adl_swap(x.n, y.n);
   }
@@ -4616,7 +4683,7 @@ public:
 
   template <class II>
   constexpr iter_n_iterator(const iter_n_iterator<II> &x)
-    requires (!same_as<I, II>) && is_convertible_v<const II &, I>
+    requires (!same_as<I, II>) && is_convertible<const II &, I>
     : iter(x.iter), n(x.n) {}
 
   constexpr I base() const {
@@ -4646,13 +4713,13 @@ public:
 template <class I1, class I2>
 constexpr bool operator ==(const iter_n_iterator<I1> &x,
                            const iter_n_iterator<I2> &y)
-  requires is_same_v<itr_dft<I1>, itr_dft<I2>> {
+  requires is_same<itr_dft<I1>, itr_dft<I2>> {
   return x.nth() == y.nth();
 }
 template <class I1, class I2>
 constexpr itr_dft<I1> operator -(const iter_n_iterator<I1> &x,
                                  const iter_n_iterator<I2> &y)
-  requires is_same_v<itr_dft<I1>, itr_dft<I2>> {
+  requires is_same<itr_dft<I1>, itr_dft<I2>> {
   return x.nth() - y.nth();
 }
 
@@ -4666,13 +4733,13 @@ inline constexpr fo_iter_n_itr iter_n_itr{};
 
 template <class A, class B>
 constexpr iter_pair<A> fo_rng::operator ()(A a, B b) const
-  requires (!is_integral_v<A> && is_integral_v<B> && is_ritr<A>) {
+  requires (!is_integral<A> && is_integral<B> && is_ritr<A>) {
   return iter_pair<A>(a, a + b);
 }
 template <class A, class B>
 constexpr iter_pair<iter_n_iterator<A>>
 fo_rng::operator ()(A a, B b) const
-  requires (!is_integral_v<A> && is_integral_v<B> && !is_ritr<A>) {
+  requires (!is_integral<A> && is_integral<B> && !is_ritr<A>) {
   using it = iter_n_iterator<A>;
   return iter_pair<it>(it(a, 0), it(a, b));
 }
@@ -4684,14 +4751,14 @@ namespace re {
 
 template <class A, class B>
 constexpr n_value<B>
-fo_rng::operator ()(A a, B b) const requires is_integral_v<A> {
+fo_rng::operator ()(A a, B b) const requires is_integral<A> {
   return n_value<B>(to_unsigned(a), forward<B>(b));
 }
 template <class A, class B>
-constexpr n_value<add_const_t<B> &>
+constexpr n_value<add_const<B> &>
 fo_rng::operator ()(A a, reference_wrapper<B> b) const
-  requires is_integral_v<A> {
-  return n_value<add_const_t<B> &>(to_unsigned(a), b.get());
+  requires is_integral<A> {
+  return n_value<add_const<B> &>(to_unsigned(a), b.get());
 }
 
 }
@@ -4707,11 +4774,11 @@ struct iitr_minus_f {
   f(type_pack<T>);
 };
 template <class T>
-using get_iitr_dft = return_type_of_f_or<iitr_minus_f, ptrdiff_t, T>;
+using get_iitr_dft = template_return_type_of_f_or<iitr_minus_f, ptrdiff_t, T>;
 
 template <class I, bool IS_ITER = is_itr<I>>
 struct get_iitr_ctg
-  : conditional<is_citr<I>, random_access_iterator_tag, itr_ctg<I>> {};
+  : template_conditional<is_citr<I>, random_access_iterator_tag, itr_ctg<I>> {};
 template <class I>
 struct get_iitr_ctg<I, false> : type_tag<random_access_iterator_tag> {};
 
@@ -4727,7 +4794,7 @@ class iterator_iterator {
 
 public:
   using value_type = I;
-  using difference_type = make_signed_t<typename inner::get_iitr_dft<I>::type>;
+  using difference_type = make_signed<typename inner::get_iitr_dft<I>::type>;
   using pointer = void;
   using reference = I;
   using iterator_category = typename inner::get_iitr_ctg<I>::type;
@@ -4739,7 +4806,7 @@ public:
   iterator_iterator(this_t &&) = default;
   iterator_iterator &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<I>) {
+    noexcept(is_nothrow_swappable<I>) {
     adl_swap(x.n, y.n);
   }
 
@@ -4750,7 +4817,7 @@ public:
 
   template <class II>
   constexpr iterator_iterator(const iterator_iterator<II> &x)
-    requires (!is_same_v<I, II> && is_convertible_v<const II &, I>): n(x.n) {}
+    requires (!is_same<I, II> && is_convertible<const II &, I>): n(x.n) {}
 
   constexpr reference operator *() const {
     return n;
@@ -4860,8 +4927,8 @@ public:
   iterator_range &operator =(iterator_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(iterator_range &x, iterator_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires is_swappable_v<RR> && default_swappable<iterator_range<RR>> {
+    noexcept(is_nothrow_swappable<RR>)
+    requires is_swappable<RR> && default_swappable<iterator_range<RR>> {
     adl_swap(x.r, y.r);
   }
 
@@ -4873,17 +4940,17 @@ public:
   constexpr auto end() {
     return iterator_iterator<decltype(end(r))>(end(r));
   }
-  constexpr auto begin() const requires is_rng<add_const_t<R>> {
+  constexpr auto begin() const requires is_rng<add_const<R>> {
     return iterator_iterator<decltype(begin(r))>(begin(r));
   }
-  constexpr auto end() const requires is_rng<add_const_t<R>> {
+  constexpr auto end() const requires is_rng<add_const<R>> {
     return iterator_iterator<decltype(end(r))>(end(r));
   }
 
   constexpr bool empty() {
     return empty(r);
   }
-  constexpr bool empty() const requires is_rng<add_const_t<R>> {
+  constexpr bool empty() const requires is_rng<add_const<R>> {
     return empty(r);
   }
 
@@ -4891,24 +4958,25 @@ public:
     return size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
     return size(r);
   }
 };
 template <class R>
-struct is_range_reference<iterator_range<R>> : is_range_reference<R> {};
+struct template_is_range_reference<iterator_range<R>>
+  : template_is_range_reference<R> {};
 
 template <class A, class B>
-constexpr iter_pair<iterator_iterator<common_type_t<A, B>>>
+constexpr iter_pair<iterator_iterator<common_type<A, B>>>
 fo_irng::operator ()(A a, B b) const
-  requires (is_integral_v<A> && is_integral_v<B>) {
-  using it = iterator_iterator<common_type_t<A, B>>;
+  requires (is_integral<A> && is_integral<B>) {
+  using it = iterator_iterator<common_type<A, B>>;
   return iter_pair<it>(it(a), it(b));
 }
 template <class A, class B>
 constexpr iter_pair<iterator_iterator<common_iter_t<A, B>>>
 fo_irng::operator ()(A a, B b) const
-  requires (!is_integral_v<A> && !is_integral_v<B>) {
+  requires (!is_integral<A> && !is_integral<B>) {
   using it = iterator_iterator<common_iter_t<A, B>>;
   return iter_pair<it>(a, b);
 }
@@ -4919,7 +4987,7 @@ constexpr auto fo_irng::operator ()(R &&r) const requires is_rng<R> {
 }
 template <class A, class B>
 constexpr auto fo_irng::operator ()(A a, B b) const
-  requires (!is_integral_v<A> && is_integral_v<B>) {
+  requires (!is_integral<A> && is_integral<B>) {
   return irng(rng(a, b));
 }
 
@@ -4943,9 +5011,9 @@ public:
   using reference = decltype(call_or_deref_call
                              (declval<const F &>(), declval<itr_ref<II>>()));
   using pointer = itr_ptr_from_ref<this_t>;
-  using value_type = remove_cvref_t<reference>;
+  using value_type = remove_cvref<reference>;
   using iterator_category
-    = conditional_t<is_ritr<II>, random_access_iterator_tag, itr_ctg<II>>;
+    = conditional<is_ritr<II>, random_access_iterator_tag, itr_ctg<II>>;
 
   bind_iterator() = default;
   ~bind_iterator() = default;
@@ -4954,8 +5022,8 @@ public:
   bind_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend constexpr void swap(this_t &x, this_t &y)
-    noexcept(is_nothrow_swappable_v<II>
-             && is_nothrow_swappable_v<semiregular_function<F>>) {
+    noexcept(is_nothrow_swappable<II>
+             && is_nothrow_swappable<semiregular_function<F>>) {
     adl_swap(x.i, y.i);
     adl_swap(x.f, y.f);
   }
@@ -4964,16 +5032,16 @@ public:
 
   template <class II2, class FF>
   constexpr bind_iterator(const bind_iterator<II2, FF> &x)
-    requires (!(is_same_v<II, II2> && is_same_v<F, FF>)
-              && is_convertible_v<const II2 &, II>
-              && is_convertible_v<const FF &, F>)
+    requires (!(is_same<II, II2> && is_same<F, FF>)
+              && is_convertible<const II2 &, II>
+              && is_convertible<const FF &, F>)
     : i(x.i), f(x.f) {}
 
   constexpr reference operator *() const {
     return f(*i);
   }
   constexpr pointer operator ->() const
-    requires (!is_same_v<pointer, void>) {
+    requires (!is_same<pointer, void>) {
     return addressof(operator *());
   }
   constexpr this_t &operator ++() {
@@ -5067,16 +5135,16 @@ class bind_range : range_fns {
 
 public:
   bind_range() = delete;
-  bind_range() requires (is_default_constructible_v<R>
-                         && is_default_constructible_v<F>) = default;
+  bind_range() requires (is_default_constructible<R>
+                         && is_default_constructible<F>) = default;
   bind_range(const bind_range &) = default;
   bind_range &operator =(const bind_range &) = default;
   bind_range(bind_range &&) = default;
   bind_range &operator =(bind_range &&) = default;
   template <class RR = R>
   friend constexpr void swap(bind_range &x, bind_range &y)
-    noexcept(is_nothrow_swappable_v<RR>)
-    requires (is_swappable_v<RR> && default_swappable<bind_range<RR, F>>) {
+    noexcept(is_nothrow_swappable<RR>)
+    requires (is_swappable<RR> && default_swappable<bind_range<RR, F>>) {
     adl_swap(x.r, y.r);
     adl_swap(x.fn, y.fn);
   }
@@ -5084,7 +5152,7 @@ public:
   constexpr bind_range(R rr, F ff) : r(forward<R>(rr)), fn(ff) {}
 
   constexpr auto begin() {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       return bind_iterator<rng_itr<R>, F>(begin(r), *fn);
     }
     else {
@@ -5092,7 +5160,7 @@ public:
     }
   }
   constexpr auto end() {
-    if constexpr (is_default_constructible_v<F>) {
+    if constexpr (is_default_constructible<F>) {
       return bind_iterator<rng_itr<R>, F>(end(r), *fn);
     }
     else {
@@ -5100,9 +5168,9 @@ public:
     }
   }
   constexpr auto begin() const
-    requires (is_rng<add_const_t<R>>
-              && is_invocable_v<const F &, rng_cref<add_const_t<R>>>) {
-    if constexpr (is_default_constructible_v<F>) {
+    requires (is_rng<add_const<R>>
+              && is_invocable<const F &, rng_cref<add_const<R>>>) {
+    if constexpr (is_default_constructible<F>) {
       return bind_iterator<rng_itr<const R>, F>(begin(r), *fn);
     }
     else {
@@ -5111,9 +5179,9 @@ public:
     }
   }
   constexpr auto end() const
-    requires (is_rng<add_const_t<R>>
-              && is_invocable_v<const F &, rng_cref<add_const_t<R>>>) {
-    if constexpr (is_default_constructible_v<F>) {
+    requires (is_rng<add_const<R>>
+              && is_invocable<const F &, rng_cref<add_const<R>>>) {
+    if constexpr (is_default_constructible<F>) {
       return bind_iterator<rng_itr<const R>, F>(end(r), *fn);
     }
     else {
@@ -5126,8 +5194,8 @@ public:
     return empty(r);
   }
   constexpr bool empty() const
-    requires (is_rng<add_const_t<R>>
-              && is_invocable_v<const F &, rng_cref<add_const_t<R>>>) {
+    requires (is_rng<add_const<R>>
+              && is_invocable<const F &, rng_cref<add_const<R>>>) {
     return empty(r);
   }
 
@@ -5135,15 +5203,15 @@ public:
     return size(r);
   }
   constexpr rng_szt<R> size() const
-    requires (is_rng<add_const_t<R>> && rng_is_sized<add_const_t<R>>
-              && is_invocable_v<const F &, rng_cref<add_const_t<R>>>) {
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>
+              && is_invocable<const F &, rng_cref<add_const<R>>>) {
     return size(r);
   }
 };
 template <class R, class F>
-struct is_range_reference<bind_range<R, F>>
-  : bool_constant<is_range_reference<R>::value
-                  && is_default_constructible_v<F>> {};
+struct template_is_range_reference<bind_range<R, F>>
+  : bool_constant<template_is_range_reference<R>::value
+                  && is_default_constructible<F>> {};
 struct fo_bind_rng {
   template <class R, class F>
   constexpr auto operator ()(R &&r, F f) const requires is_rng<R> {
@@ -5166,7 +5234,7 @@ inline constexpr fo_deref_rng deref_rng{};
 struct fo_deref_itr {
   template <class I>
   constexpr auto operator ()(I i) const {
-    using f_t = decay_t<decltype(deref)>;
+    using f_t = decay<decltype(deref)>;
     return bind_iterator<I, f_t>(i, f_t{});
   }
 };
@@ -5176,13 +5244,13 @@ namespace inner {
 
 struct as_cref {
   template <class T>
-  constexpr add_const_t<remove_reference_t<T>> &
-  operator ()(T &&x) const noexcept requires is_lvalue_reference_v<T &&> {
+  constexpr add_const<remove_reference<T>> &
+  operator ()(T &&x) const noexcept requires is_lvalue_reference<T &&> {
     return x;
   }
   template <class T>
   constexpr T operator ()(T &&x) const noexcept
-    requires is_rvalue_reference_v<T &&> {
+    requires is_rvalue_reference<T &&> {
     return T(forward<T>(x));
   }
 };
@@ -5202,11 +5270,198 @@ inline constexpr fo_const_rng const_rng{};
 struct fo_const_itr {
   template <class I>
   constexpr auto operator ()(I i) const
-    requires (is_itr<I> && is_reference_v<itr_ref<I>>) {
+    requires (is_itr<I> && is_reference<itr_ref<I>>) {
     return bind_itr(i, inner::as_cref{});
   }
 };
 inline constexpr fo_const_itr const_itr{};
+
+}
+
+// cache_latest_range
+namespace re {
+
+template <class I>
+class iterator_reference_cache {
+  using this_t = iterator_reference_cache;
+
+  static constexpr bool is_real_ref = is_reference<itr_ref<I>>;
+
+  using ref_t = itr_ref<I>;
+  using vt = conditional<is_real_ref, add_pointer<ref_t>, ref_t>;
+  using opt_t = optional<vt>;
+
+  opt_t x;
+
+public:
+  iterator_reference_cache() = default;
+  ~iterator_reference_cache() = default;
+  iterator_reference_cache(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  iterator_reference_cache(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  friend void swap(this_t &x1, this_t &x2)
+    noexcept(is_nothrow_swappable<opt_t>) requires is_swappable<opt_t> {
+    adl_swap(x1.x, x2.x);
+  }
+
+  this_t &operator =(ref_t u) {
+    if constexpr (is_real_ref)  {
+      x.emplace(addressof(u));
+    }
+    else {
+      x.emplace(u);
+    }
+    return *this;
+  }
+  void reset() noexcept {
+    x.reset();
+  }
+
+  explicit operator bool() const noexcept {
+    return x.has_value();
+  }
+  bool empty() const noexcept {
+    return x.empty();
+  }
+
+  ref_t &operator *() {
+    if constexpr (is_real_ref) {
+      return **x;
+    }
+    else {
+      return *x;
+    }
+  }
+  const ref_t &operator *() const {
+    if constexpr (is_real_ref) {
+      return **x;
+    }
+    else {
+      return *x;
+    }
+  }
+};
+
+template <class I, class X = iterator_reference_cache<I>>
+class cache_latest_iterator {
+  using this_t = cache_latest_iterator;
+
+  I i = {};
+  X *x = {};
+
+public:
+  using value_type = itr_vt<I>;
+  using reference = decltype(*declval<X &>());
+  using pointer = I;
+  using difference_type = itr_dft<I>;
+  using iterator_category = input_iterator_tag;
+
+  cache_latest_iterator() = default;
+  ~cache_latest_iterator() = default;
+  cache_latest_iterator(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  cache_latest_iterator(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  friend constexpr void swap(this_t &x1, this_t &x2)
+    noexcept(is_nothrow_swappable<I>) {
+    adl_swap(x1.i, x2.i);
+    adl_swap(x1.x, x2.x);
+  }
+
+  constexpr explicit cache_latest_iterator(I ii, X *xx) : i(ii), x(xx) {}
+  constexpr I base() const {
+    return i;
+  }
+
+  friend constexpr bool operator ==(const this_t &x1, const this_t &x2) {
+    return x1.i == x2.i;
+  }
+  constexpr reference operator *() const {
+    if (!*x)
+      *x = *i;
+    return **x;
+  }
+  constexpr this_t &operator ++() {
+    (*x).reset();
+    ++i;
+    return *this;
+  }
+  value_type *operator ++(int);
+};
+struct fo_cache_latest_itr {
+  template <class I>
+  cache_latest_iterator<I>
+  operator ()(I i, iterator_reference_cache<I> &x) const {
+    return cache_latest_iterator<I>(i, addressof(x));
+  }
+};
+inline constexpr fo_cache_latest_itr cache_latest_itr{};
+
+template <class R>
+class cache_latest_range : range_fns {
+  using this_t = cache_latest_range;
+
+  using cache_t = iterator_reference_cache<rng_itr<R>>;
+
+  R r = R{};
+  cache_t c;
+
+  using range_fns::begin;
+  using range_fns::end;
+  using range_fns::empty;
+  using range_fns::size;
+
+public:
+  cache_latest_range() = default;
+  ~cache_latest_range() = default;
+  cache_latest_range(const this_t &) = default;
+  this_t &operator =(const this_t &) = default;
+  cache_latest_range(this_t &&) = default;
+  this_t &operator =(this_t &&) = default;
+  template <class RR = R>
+  friend constexpr void swap(this_t &x1, this_t &x2)
+    noexcept(is_nothrow_swappable<RR>
+             && is_nothrow_swappable<cache_t>)
+    requires (is_swappable<RR>
+              && default_swappable<cache_latest_range<R>>
+              && is_swappable<cache_t>) {
+    adl_swap(x1.r, x2.r);
+    adl_swap(x1.c, x2.c);
+  }
+
+  constexpr explicit cache_latest_range(R rr) : r(forward<R>(rr)) {}
+
+  constexpr auto begin() {
+    return cache_latest_iterator<rng_itr<R>>(begin(r), addressof(c));
+  }
+  constexpr auto end() {
+    return cache_latest_iterator<rng_itr<R>>(end(r), addressof(c));
+  }
+
+  constexpr bool empty() {
+    return empty(r);
+  }
+  constexpr bool empty() const
+    requires is_rng<add_const<R>> {
+    return empty(r);
+  }
+
+  constexpr auto size() requires rng_is_sized<R> {
+    return size(r);
+  }
+  constexpr auto size() const
+    requires (is_rng<add_const<R>> && rng_is_sized<add_const<R>>) {
+    return size(r);
+  }
+};
+struct fo_cache_latest_rng {
+  template <class R>
+  constexpr auto operator ()(R &&r) const {
+    return cache_latest_range<rng_forward_t<R>>(forward<R>(r));
+  }
+};
+inline constexpr fo_cache_latest_rng cache_latest_rng{};
 
 }
 
@@ -5345,14 +5600,14 @@ namespace re {
 template <class FR, class FI>
 concept can_memmove_from_range_to_iterator
   = is_crng<FR> && is_citr<FI>
-  && is_same_v<rng_vt<FR>, itr_vt<FI>>
-  && is_trivially_copyable_v<itr_vt<FI>>
-  && (is_same_v<itr_ref<FI>, itr_vt<FI> &>
-      || is_same_v<itr_ref<FI>, itr_vt<FI> &&>)
-  && (is_same_v<rng_ref<FR>, itr_vt<FI> &>
-      || is_same_v<rng_ref<FR>, const itr_vt<FI> &>
-      || is_same_v<rng_ref<FR>, itr_vt<FI> &&>
-      || is_same_v<rng_ref<FR>, const itr_vt<FI> &&>);
+  && is_same<rng_vt<FR>, itr_vt<FI>>
+  && is_trivially_copyable<itr_vt<FI>>
+  && (is_same<itr_ref<FI>, itr_vt<FI> &>
+      || is_same<itr_ref<FI>, itr_vt<FI> &&>)
+  && (is_same<rng_ref<FR>, itr_vt<FI> &>
+      || is_same<rng_ref<FR>, const itr_vt<FI> &>
+      || is_same<rng_ref<FR>, itr_vt<FI> &&>
+      || is_same<rng_ref<FR>, const itr_vt<FI> &&>);
 
 }
 

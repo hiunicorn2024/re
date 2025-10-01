@@ -353,7 +353,7 @@ public:
 };
 
 template <class LL>
-requires (is_same_v<LL, long long> && sizeof(size_t) == 8u)
+requires (is_same<LL, long long> && sizeof(size_t) == 8u)
 struct atomic<LL> {
   using value_type = LL;
 
@@ -675,7 +675,7 @@ private:
   virtual const type_info &deleter_typeid() noexcept = 0;
 public:
   template <class D>
-  D *get_deleter() noexcept requires is_same_v<remove_cv_t<D>, D> {
+  D *get_deleter() noexcept requires is_same<remove_cv<D>, D> {
     void *const p = deleter_stored_ptr();
     if (p == nullptr)
       return nullptr;
@@ -695,7 +695,7 @@ class shared_ptr_control_block_impl
   using base_t = shared_ptr_control_block;
   using base_t::counter;
 
-  using element_t = remove_extent_t<T>;
+  using element_t = remove_extent<T>;
   element_t *p;
 
 public:
@@ -739,7 +739,7 @@ private:
     return addressof(derivable_wrapper<D>::operator *());
   }
   void *deleter_stored_ptr_impl() noexcept
-    requires (!is_same_v<remove_cv_t<D>, D>) {
+    requires (!is_same<remove_cv<D>, D>) {
     return nullptr;
   }
   virtual void *deleter_stored_ptr() noexcept override {
@@ -763,11 +763,11 @@ class weak_ptr {
 
   using this_t = weak_ptr;
 
-  remove_extent_t<T> *p;
+  remove_extent<T> *p;
   inner::shared_ptr_control_block *cb;
 
 public:
-  using element_type = remove_extent_t<T>;
+  using element_type = remove_extent<T>;
 
   weak_ptr() noexcept : p{}, cb{} {}
   ~weak_ptr() = default;
@@ -789,8 +789,7 @@ public:
 
   template<class Y>
   weak_ptr(const weak_ptr<Y> &x) noexcept
-    requires (!is_same_v<Y, T>
-              && is_compatible_pointer_with_v<Y *, T *>)
+    requires (!is_same<Y, T> && is_compatible_pointer_with<Y *, T *>)
     : p(x.p), cb(x.cb) {}
   template <class Y>
   weak_ptr &operator =(const weak_ptr<Y> &x) noexcept {
@@ -800,8 +799,7 @@ public:
 
   template <class Y>
   weak_ptr(weak_ptr<Y> &&x) noexcept
-    requires (!is_same_v<Y, T>
-              && is_compatible_pointer_with_v<Y *, T *>)
+    requires (!is_same<Y, T> && is_compatible_pointer_with<Y *, T *>)
     : p(x.p), cb(x.cb) {
     x.p = nullptr;
     x.cb = nullptr;
@@ -814,11 +812,11 @@ public:
 
   template <class Y>
   weak_ptr(const shared_ptr<Y> &x) noexcept
-    requires is_compatible_pointer_with_v<Y *, T *>
+    requires is_compatible_pointer_with<Y *, T *>
     : p(x.p), cb(x.cb) {}
   template <class Y>
   weak_ptr &operator =(const shared_ptr<Y> &x) noexcept
-    requires is_compatible_pointer_with_v<Y *, T *> {
+    requires is_compatible_pointer_with<Y *, T *> {
     copy_and_swap(this_t(x), *this);
     return *this;
   }
@@ -983,11 +981,11 @@ class shared_ptr {
 
   using cb_t = inner::shared_ptr_control_block;
 
-  remove_extent_t<T> *p;
+  remove_extent<T> *p;
   cb_t *cb;
 
 public:
-  using element_type = remove_extent_t<T>;
+  using element_type = remove_extent<T>;
   using weak_type = weak_ptr<T>;
 
   constexpr shared_ptr() noexcept : p{}, cb{} {}
@@ -1033,16 +1031,16 @@ private:
   void enable_shrd_from_this(Y *pp)
     requires requires {
       inner::fns::get_enable_shared_from_this(pp);
-      requires is_convertible_v<remove_cv_t<Y> *, T *>;
+      requires is_convertible<remove_cv<Y> *, T *>;
     } {
     const auto enable_shard_p = inner::fns::get_enable_shared_from_this(pp);
     enable_shard_p->weak_this
-      = shared_ptr<remove_cv_t<Y>>(*this, const_cast<remove_cv_t<Y> *>(pp));
+      = shared_ptr<remove_cv<Y>>(*this, const_cast<remove_cv<Y> *>(pp));
   }
 public:
   template <class Y>
   explicit shared_ptr(Y *pp)
-    requires (!is_array_v<T> && is_convertible_v<Y *, T *>)
+    requires (!is_array<T> && is_convertible<Y *, T *>)
     : p(pp)
     , cb(default_alloc_wrapper<inner::shared_ptr_control_block_impl<Y>>()
          .new_1(pp)) {
@@ -1050,18 +1048,18 @@ public:
   }
   template <class Y>
   explicit shared_ptr(Y *pp)
-    requires (is_unbounded_array_v<T>
-              && is_convertible_v<Y (*)[], T *>)
+    requires (is_unbounded_array<T>
+              && is_convertible<Y (*)[], T *>)
     : p(pp)
     , cb(default_alloc_wrapper<inner::shared_ptr_control_block_impl<Y []>>()
          .new_1(pp)) {}
   template <class Y>
   explicit shared_ptr(Y *pp)
-    requires (is_bounded_array_v<T>
-              && is_convertible_v<Y (*)[extent_v<T>], T *>)
+    requires (is_bounded_array<T>
+              && is_convertible<Y (*)[extent<T>], T *>)
     : p(pp)
     , cb(default_alloc_wrapper
-         <inner::shared_ptr_control_block_impl<Y [extent_v<T>]>>()
+         <inner::shared_ptr_control_block_impl<Y [extent<T>]>>()
          .new_1(pp)) {}
   template <class Y>
   void reset(Y *pp) {
@@ -1071,9 +1069,9 @@ public:
   template <class Y, class D>
   shared_ptr(Y *pp, D d)
     requires requires {
-      requires !is_array_v<T>;
-      requires is_convertible_v<Y *, T *>;
-      requires is_move_constructible_v<D>;
+      requires !is_array<T>;
+      requires is_convertible<Y *, T *>;
+      requires is_move_constructible<D>;
       d(pp);
     }
     : p(pp)
@@ -1085,9 +1083,9 @@ public:
   template <class Y, class D>
   shared_ptr(Y *pp, D d)
     requires requires {
-      requires is_unbounded_array_v<T>;
-      requires is_convertible_v<Y (*)[], T *>;
-      requires is_move_constructible_v<D>;
+      requires is_unbounded_array<T>;
+      requires is_convertible<Y (*)[], T *>;
+      requires is_move_constructible<D>;
       d(pp);
     }
     : p(pp)
@@ -1097,14 +1095,14 @@ public:
   template <class Y, class D>
   shared_ptr(Y *pp, D d)
     requires requires {
-      requires is_bounded_array_v<T>;
-      requires is_convertible_v<Y (*)[extent_v<T>], T *>;
-      requires is_move_constructible_v<D>;
+      requires is_bounded_array<T>;
+      requires is_convertible<Y (*)[extent<T>], T *>;
+      requires is_move_constructible<D>;
       d(pp);
     }
     : p(pp)
     , cb(default_alloc_wrapper
-         <inner::shared_ptr_control_block_impl<Y [extent_v<T>], D>>()
+         <inner::shared_ptr_control_block_impl<Y [extent<T>], D>>()
          .new_1(pp, move(d))) {}
   template <class D>
   shared_ptr(nullptr_t, D d)
@@ -1121,11 +1119,11 @@ public:
   template <class Y, class D, class A>
   shared_ptr(Y *pp, D d, A a)
     requires requires {
-      requires !is_array_v<T>;
-      requires is_convertible_v<Y *, T *>;
-      requires is_move_constructible_v<D>;
+      requires !is_array<T>;
+      requires is_convertible<Y *, T *>;
+      requires is_move_constructible<D>;
       d(pp);
-      requires is_pointer_v<alloc_ptr<A>>;
+      requires is_pointer<alloc_ptr<A>>;
     }
     : p(pp)
     , cb(allocator_wrapper<A>(a)
@@ -1137,11 +1135,11 @@ public:
   template <class Y, class D, class A>
   shared_ptr(Y *pp, D d, A a)
     requires requires {
-      requires is_unbounded_array_v<T>;
-      requires is_convertible_v<Y (*)[], T *>;
-      requires is_move_constructible_v<D>;
+      requires is_unbounded_array<T>;
+      requires is_convertible<Y (*)[], T *>;
+      requires is_move_constructible<D>;
       d(pp);
-      requires is_pointer_v<alloc_ptr<A>>;
+      requires is_pointer<alloc_ptr<A>>;
     }
     : p(pp)
     , cb(allocator_wrapper<A>(a)
@@ -1151,24 +1149,24 @@ public:
   template <class Y, class D, class A>
   shared_ptr(Y *pp, D d, A a)
     requires requires {
-      requires is_bounded_array_v<T>;
-      requires is_convertible_v<Y (*)[extent_v<T>], T *>;
-      requires is_move_constructible_v<D>;
+      requires is_bounded_array<T>;
+      requires is_convertible<Y (*)[extent<T>], T *>;
+      requires is_move_constructible<D>;
       d(pp);
-      requires is_pointer_v<alloc_ptr<A>>;
+      requires is_pointer<alloc_ptr<A>>;
     }
     : p(pp)
     , cb(allocator_wrapper<A>(a)
          .template rebind
          <inner::shared_ptr_control_block_impl
-          <Y [extent_v<T>], D, alloc_rebind<A, Y>>>()
+          <Y [extent<T>], D, alloc_rebind<A, Y>>>()
          .new_1(pp, move(d), a)) {}
   template <class D, class A>
   shared_ptr(nullptr_t, D d, A a)
     requires requires {
-      requires is_move_constructible_v<D>;
+      requires is_move_constructible<D>;
       d(p);
-      requires is_pointer_v<alloc_ptr<A>>;
+      requires is_pointer<alloc_ptr<A>>;
     }
     : p{}, cb(allocator_wrapper<A>(a)
               .template rebind
@@ -1181,8 +1179,7 @@ public:
 
   template <class Y>
   shared_ptr(const shared_ptr<Y> &x) noexcept
-    requires (!is_same_v<Y, T>
-              && is_compatible_pointer_with_v<Y *, T *>)
+    requires (!is_same<Y, T> && is_compatible_pointer_with<Y *, T *>)
     : p(x.p), cb(x.cb) {
     if (cb != nullptr) {
       if (cb->plus_1())
@@ -1193,24 +1190,21 @@ public:
   }
   template <class Y>
   shared_ptr &operator =(const shared_ptr<Y> &x) noexcept
-    requires (!is_same_v<Y, T>
-              && is_compatible_pointer_with_v<Y *, T *>) {
+    requires (!is_same<Y, T> && is_compatible_pointer_with<Y *, T *>) {
     copy_and_swap(this_t(x), *this);
     return *this;
   }
 
   template <class Y>
   shared_ptr(shared_ptr<Y> &&x) noexcept
-    requires (!is_same_v<Y, T>
-              && is_compatible_pointer_with_v<Y *, T *>)
+    requires (!is_same<Y, T> && is_compatible_pointer_with<Y *, T *>)
     : p(x.p), cb(x.cb) {
     x.p = nullptr;
     x.cb = nullptr;
   }
   template <class Y>
   shared_ptr &operator =(shared_ptr<Y> &&x) noexcept
-    requires (!is_same_v<Y, T>
-              && is_compatible_pointer_with_v<Y *, T *>) {
+    requires (!is_same<Y, T> && is_compatible_pointer_with<Y *, T *>) {
     copy_and_swap(this_t(move(x)), *this);
     return *this;
   }
@@ -1235,9 +1229,9 @@ public:
 
   template <class Y, class D>
   shared_ptr(unique_ptr<Y, D> &&x)
-    requires (is_pointer_v<typename unique_ptr<Y, D>::pointer>
-              && !is_array_v<T>
-              && is_convertible_v
+    requires (is_pointer<typename unique_ptr<Y, D>::pointer>
+              && !is_array<T>
+              && is_convertible
               <typename unique_ptr<Y, D>::pointer, T *>) {
     if (const auto tmp_p = x.get();
         tmp_p == nullptr) {
@@ -1254,8 +1248,8 @@ public:
   }
   template <class Y, class D>
   shared_ptr &operator =(unique_ptr<Y, D> &&x)
-    requires (is_pointer_v<typename unique_ptr<Y, D>::pointer>
-              && is_convertible_v
+    requires (is_pointer<typename unique_ptr<Y, D>::pointer>
+              && is_convertible
               <typename unique_ptr<Y, D>::pointer, T *>) {
     copy_and_swap(this_t(move(x)), *this);
     return *this;
@@ -1263,7 +1257,7 @@ public:
 
   template <class Y>
   explicit shared_ptr(const weak_ptr<Y> &x)
-    requires is_compatible_pointer_with_v<Y *, T *> {
+    requires is_compatible_pointer_with<Y *, T *> {
     if (x.expired())
       throw_or_terminate<bad_weak_ptr>();
     p = x.p;
@@ -1277,14 +1271,14 @@ public:
   element_type *get() const noexcept {
     return p;
   }
-  element_type &operator *() const noexcept requires (!is_array_v<T>) {
+  element_type &operator *() const noexcept requires (!is_array<T>) {
     return *p;
   }
-  element_type *operator->() const noexcept requires (!is_array_v<T>) {
+  element_type *operator->() const noexcept requires (!is_array<T>) {
     return p;
   }
   element_type &operator [](ptrdiff_t i) const noexcept
-    requires is_array_v<T> {
+    requires is_array<T> {
     return p[i];
   }
 
@@ -1347,9 +1341,9 @@ struct shrdp_cb_mkshrd_uba_deleter {
 };
 struct shrdp_cb_mkshrd_default_tag {};
 template <class T,
-          class D = conditional_t<is_unbounded_array_v<T>,
-                                  shrdp_cb_mkshrd_uba_deleter,
-                                  shrdp_cb_mkshrd_deleter>>
+          class D = conditional<is_unbounded_array<T>,
+                                shrdp_cb_mkshrd_uba_deleter,
+                                shrdp_cb_mkshrd_deleter>>
 class shrdp_cb_mkshrd : public shared_ptr_control_block, D {
   template <class>
   friend class shared_ptr;
@@ -1385,33 +1379,33 @@ public:
   this_t &operator =(this_t &&) noexcept = delete;
 
   template <class...S>
-  shrdp_cb_mkshrd(in_place_t, S &&...s) requires (!is_array_v<T>)
+  shrdp_cb_mkshrd(in_place_t, S &&...s) requires (!is_array<T>)
     : base_t(1) {
     ::new(void_ptr()) T(forward<S>(s)...);
   }
-  shrdp_cb_mkshrd(in_place_t) requires is_bounded_array_v<T> : base_t(1) {
+  shrdp_cb_mkshrd(in_place_t) requires is_bounded_array<T> : base_t(1) {
     construct_array(ptr());
   }
   template <class U>
   shrdp_cb_mkshrd(in_place_t, const U &u)
-    requires is_bounded_array_v<T> : base_t(1) {
+    requires is_bounded_array<T> : base_t(1) {
     construct_array(ptr(), u);
   }
 
   shrdp_cb_mkshrd(shrdp_cb_mkshrd_default_tag)
-    requires (!is_array_v<T>) : base_t(1) {
+    requires (!is_array<T>) : base_t(1) {
     ::new(void_ptr()) T;
   }
   shrdp_cb_mkshrd(shrdp_cb_mkshrd_default_tag)
-    requires is_bounded_array_v<T> : base_t(1) {
+    requires is_bounded_array<T> : base_t(1) {
     default_construct_array(ptr());
   }
 
   T *ptr() noexcept {
     return reinterpret_cast<T *>(addressof(data));
   }
-  remove_extent_t<T> *element_ptr() noexcept {
-    return reinterpret_cast<remove_extent_t<T> *>(addressof(data));
+  remove_extent<T> *element_ptr() noexcept {
+    return reinterpret_cast<remove_extent<T> *>(addressof(data));
   }
   void *void_ptr() noexcept {
     return const_cast<void *>(reinterpret_cast<const volatile void *>(ptr()));
@@ -1432,7 +1426,7 @@ class shrdp_cb_mkshrd<T [], D> : public shared_ptr_control_block, D {
   using base_t::minus_1;
 
   using buf_ptr = typename allocator_wrapper<typename D::alloc_t>
-    ::template headed_buffer_ptr<this_t, remove_cv_t<T>>;
+    ::template headed_buffer_ptr<this_t, remove_cv<T>>;
   buf_ptr buf_p = buf_ptr(nullptr);
 
   virtual void clear() noexcept override {
@@ -1504,11 +1498,11 @@ public:
   this_t &operator =(this_t &&) noexcept = delete;
 
   template <class...S>
-  shrdp_cb_allcshrd(in_place_t, const A &a, S &&...s) requires (!is_array_v<T>)
+  shrdp_cb_allcshrd(in_place_t, const A &a, S &&...s) requires (!is_array<T>)
     : base_t(1), alw_t(a) {
     alw_t::construct_non_array_fn()(no_cv_ptr(), forward<S>(s)...);
   }
-  shrdp_cb_allcshrd(in_place_t, const A &a) requires is_bounded_array_v<T>
+  shrdp_cb_allcshrd(in_place_t, const A &a) requires is_bounded_array<T>
     : base_t(1), alw_t(a) {
     construct_array(no_cv_ptr(),
                     alw_t::construct_non_array_fn(),
@@ -1516,7 +1510,7 @@ public:
   }
   template <class U>
   shrdp_cb_allcshrd(in_place_t, const A &a, const U &u)
-    requires is_bounded_array_v<T>
+    requires is_bounded_array<T>
     : base_t(1), alw_t(a) {
     construct_array(no_cv_ptr(), u,
                     alw_t::construct_non_array_fn(),
@@ -1524,23 +1518,23 @@ public:
   }
 
   shrdp_cb_allcshrd(shrdp_cb_allcshrd_default_tag, const A &a)
-    requires (!is_array_v<T>)
+    requires (!is_array<T>)
     : base_t(1), alw_t(a) {
     alw_t::default_construct_non_array_fn()(no_cv_ptr());
   }
   shrdp_cb_allcshrd(shrdp_cb_allcshrd_default_tag, const A &a)
-    requires is_bounded_array_v<T>
+    requires is_bounded_array<T>
     : base_t(1), alw_t(a) {
     default_construct_array(no_cv_ptr(),
                             alw_t::default_construct_non_array_fn(),
                             alw_t::destroy_non_array_fn());
   }
 
-  remove_cv_t<T> *no_cv_ptr() noexcept {
-    return reinterpret_cast<remove_cv_t<T> *>(addressof(data));
+  remove_cv<T> *no_cv_ptr() noexcept {
+    return reinterpret_cast<remove_cv<T> *>(addressof(data));
   }
-  remove_extent_t<T> *element_ptr() noexcept {
-    return reinterpret_cast<remove_extent_t<T> *>(addressof(data));
+  remove_extent<T> *element_ptr() noexcept {
+    return reinterpret_cast<remove_extent<T> *>(addressof(data));
   }
 };
 template <class T, class A>
@@ -1561,7 +1555,7 @@ class shrdp_cb_allcshrd<T [], A>
 
   using alw_t = allocator_wrapper<A>;
 
-  using buf_ptr = alw_t::template headed_buffer_ptr<this_t, remove_cv_t<T>>;
+  using buf_ptr = alw_t::template headed_buffer_ptr<this_t, remove_cv<T>>;
   buf_ptr buf_p = buf_ptr(nullptr);
 
   virtual void clear() noexcept override {
@@ -1639,7 +1633,7 @@ private:
     default_alloc_wrapper<byte> alw;
     const auto bufp
       = alw.allocate_headed_buffer<inner::shrdp_cb_mkshrd<T []>,
-                                   remove_cv_t<T>>(n);
+                                   remove_cv<T>>(n);
     auto guard
       = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
                 true);
@@ -1686,7 +1680,7 @@ struct fo_make_shared_for_overwrite<T []> {
     default_alloc_wrapper<byte> alw;
     const auto bufp
       = alw.allocate_headed_buffer<inner::shrdp_cb_mkshrd<T []>,
-                                   remove_cv_t<T>>(n);
+                                   remove_cv<T>>(n);
     auto guard
       = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
                 true);
@@ -1753,7 +1747,7 @@ private:
     const auto bufp
       = alw.template allocate_headed_buffer<inner::shrdp_cb_allcshrd
                                             <T [], alloc_rebind<A, byte>>,
-                                            remove_cv_t<T>>(n, alw.get());
+                                            remove_cv<T>>(n, alw.get());
     auto guard
       = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
                 true);
@@ -1809,7 +1803,7 @@ struct fo_allocate_shared_for_overwrite<T []> {
     const auto bufp
       = alw.template allocate_headed_buffer<inner::shrdp_cb_allcshrd
                                             <T [], alloc_rebind<A, byte>>,
-                                            remove_cv_t<T>>(n, alw.get());
+                                            remove_cv<T>>(n, alw.get());
     auto guard
       = exit_fn([&alw, bufp]() {alw.deallocate_headed_buffer(bufp);},
                 true);
@@ -1918,7 +1912,7 @@ template <class D>
 struct fo_get_deleter {
   template <class T>
   D *operator ()(const shared_ptr<T> &p) const noexcept
-    requires is_same_v<remove_cv_t<D>, D> {
+    requires is_same<remove_cv<D>, D> {
     return p.cb->template get_deleter<D>();
   }
 };
@@ -2049,11 +2043,11 @@ public:
 
   template <class F, class...S>
   explicit thread(F &&f, S &&...s)
-    requires (is_constructible_v<decay_t<F>, F>
-              && (is_constructible_v<unwrap_ref_decay_t<S>, S> && ...)
-              && is_invocable_v<decay_t<F>, unwrap_ref_decay_t<S>...>) {
-    using t = inner::thread_stored_fn_impl<decay_t<F>,
-                                           unwrap_ref_decay_t<S>...>;
+    requires (is_constructible<decay<F>, F>
+              && (... && is_constructible<unwrap_ref_decay<S>, S>)
+              && is_invocable<decay<F>, unwrap_ref_decay<S>...>) {
+    using t = inner::thread_stored_fn_impl<decay<F>,
+                                           unwrap_ref_decay<S>...>;
     const auto fp = default_alloc_wrapper<t>{}
       .new_1(in_place, forward<F>(f), forward<S>(s)...);
     h = CreateThread(NULL, 0,
@@ -2520,7 +2514,7 @@ class mutex_area {
   mutex m;
 
 public:
-  mutex_area() noexcept(is_nothrow_default_constructible_v<T>) : v(), m() {}
+  mutex_area() noexcept(is_nothrow_default_constructible<T>) : v(), m() {}
   ~mutex_area() = default;
   mutex_area(const mutex_area &) = delete;
   mutex_area &operator =(const mutex_area &) = delete;
@@ -3145,8 +3139,7 @@ public:
 
   template <class F>
   explicit pool_thread(F &&f)
-    requires (is_constructible_v<decay_t<F>, F>
-              && is_invocable_v<decay_t<F>>) {
+    requires (is_constructible<decay<F>, F> && is_invocable<decay<F>>) {
     p = addressof(default_thread_pool());
     it = p->awake(forward<F>(f));
     if (it == handle_t{})

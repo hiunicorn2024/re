@@ -8,9 +8,9 @@ namespace re {
 template <class UINT, UINT A, UINT C, UINT M>
 class linear_congruential_engine;
 template <class UINT, UINT A, UINT C, UINT M>
-requires (is_same_v<UINT, uint32_t>
-          || is_same_v<UINT, uint_fast32_t>
-          || is_same_v<UINT, uint_least32_t>)
+requires (is_same<UINT, uint32_t>
+          || is_same<UINT, uint_fast32_t>
+          || is_same<UINT, uint_least32_t>)
 class linear_congruential_engine<UINT, A, C, M> {
   using this_t = linear_congruential_engine;
 
@@ -359,12 +359,12 @@ public:
   }
 
   result_type operator ()(result_type i, result_type j)
-    requires is_integral_v<result_type> {
+    requires is_integral<result_type> {
     return uniform_int_distribution<result_type>(i, j)(e);
   }
 
   bool gen_bool(result_type num, result_type den)
-    requires is_integral_v<result_type> {
+    requires is_integral<result_type> {
     return rational_bernoulli_distribution<result_type>(num, den)(e);
   }
   bool operator ()(double p) {
