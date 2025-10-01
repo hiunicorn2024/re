@@ -74,9 +74,9 @@ void test_mixed_set_common_operations_impl(F mk, F2 key) {
   // special member functions
   {
     static_assert(regular<S>);
-    static_assert(is_nothrow_movable_v<S>);
-    static_assert(!is_nothrow_copyable_v<S>);
-    static_assert(is_nothrow_swappable_v<S>);
+    static_assert(is_nothrow_movable<S>);
+    static_assert(!is_nothrow_copyable<S>);
+    static_assert(is_nothrow_swappable<S>);
 
     S s1 = {mk(1)};
     S s2 = {mk(2), mk(3)};
@@ -799,9 +799,9 @@ void test_mixed_multiset_common_operations_impl(F mk, F2 key) {
   // special member functions
   {
     static_assert(regular<S>);
-    static_assert(is_nothrow_movable_v<S>);
-    static_assert(!is_nothrow_copyable_v<S>);
-    static_assert(is_nothrow_swappable_v<S>);
+    static_assert(is_nothrow_movable<S>);
+    static_assert(!is_nothrow_copyable<S>);
+    static_assert(is_nothrow_swappable<S>);
 
     S s1 = {mk(1)};
     S s2 = {mk(2), mk(3)};

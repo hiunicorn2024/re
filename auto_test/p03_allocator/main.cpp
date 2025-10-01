@@ -59,43 +59,43 @@ void test_allocator_traits() {
   };
   using at1 = allocator_traits<a1>;
   using at2 = allocator_traits<a2>;
-  static_assert(is_same_v<at1::pointer, int *>);
-  static_assert(is_same_v<at2::pointer, float *>);
+  static_assert(is_same<at1::pointer, int *>);
+  static_assert(is_same<at2::pointer, float *>);
 
   struct a3 : tmp_alloc_0<> {
     using const_pointer = float *;
   };
   using at3 = allocator_traits<a3>;
-  static_assert(is_same_v<at3::const_pointer, float *>);
-  static_assert(is_same_v<at1::const_pointer, const int *>);
+  static_assert(is_same<at3::const_pointer, float *>);
+  static_assert(is_same<at1::const_pointer, const int *>);
 
   struct a4 : tmp_alloc_0<> {
     using void_pointer = float *;
   };
   using at4 = allocator_traits<a4>;
-  static_assert(is_same_v<at4::void_pointer, float *>);
-  static_assert(is_same_v<at1::void_pointer, void *>);
+  static_assert(is_same<at4::void_pointer, float *>);
+  static_assert(is_same<at1::void_pointer, void *>);
 
   struct a5 : tmp_alloc_0<> {
     using const_void_pointer = float *;
   };
   using at5 = allocator_traits<a5>;
-  static_assert(is_same_v<at5::const_void_pointer, float *>);
-  static_assert(is_same_v<at1::const_void_pointer, const void *>);
+  static_assert(is_same<at5::const_void_pointer, float *>);
+  static_assert(is_same<at1::const_void_pointer, const void *>);
 
   struct a6 : tmp_alloc_0<> {
     using difference_type = float *;
   };
   using at6 = allocator_traits<a6>;
-  static_assert(is_same_v<at6::difference_type, float *>);
-  static_assert(is_same_v<at1::difference_type, ptrdiff_t>);
+  static_assert(is_same<at6::difference_type, float *>);
+  static_assert(is_same<at1::difference_type, ptrdiff_t>);
 
   struct a7 : tmp_alloc_0<> {
     using size_type = float *;
   };
   using at7 = allocator_traits<a7>;
-  static_assert(is_same_v<at7::size_type, float *>);
-  static_assert(is_same_v<at1::size_type, make_unsigned_t<ptrdiff_t>>);
+  static_assert(is_same<at7::size_type, float *>);
+  static_assert(is_same<at1::size_type, make_unsigned<ptrdiff_t>>);
 
   struct a8 : tmp_alloc_0<> {
     using propagate_on_container_copy_assignment = true_type;
@@ -142,11 +142,11 @@ void test_allocator_traits() {
 
   using a12 = tmp_alloc_12;
   using at12 = allocator_traits<a12>;
-  static_assert(is_same_v<at12::rebind_alloc<float>, void>);
-  static_assert(is_same_v<at0::rebind_alloc<float>, tmp_alloc_0<float>>);
-  static_assert(is_same_v<at12::rebind_traits<float>, allocator_traits<void>>);
-  static_assert(is_same_v<at0::rebind_traits<float>,
-                          allocator_traits<tmp_alloc_0<float>>>);
+  static_assert(is_same<at12::rebind_alloc<float>, void>);
+  static_assert(is_same<at0::rebind_alloc<float>, tmp_alloc_0<float>>);
+  static_assert(is_same<at12::rebind_traits<float>, allocator_traits<void>>);
+  static_assert(is_same<at0::rebind_traits<float>,
+                        allocator_traits<tmp_alloc_0<float>>>);
 
   a0 a;
   int *p = at0::allocate(a, 0);
@@ -185,7 +185,7 @@ void test_allocator_traits() {
     int x = 1;
     a13 tmp_a;
     using at13 = allocator_traits<a13>;
-    static_assert(f_is_well_formed_v
+    static_assert(f_is_well_formed
                   <inner::check_alloc_is_capable_of_hint_allocation,
                    a13>);
     const auto u = at13::allocate(tmp_a, 3,
@@ -196,33 +196,33 @@ void test_allocator_traits() {
     a13 v = at13::select_on_container_copy_construction(tmp_a);
     assert(a13::i == 4);
   }
-  static_assert(!f_is_well_formed_v
+  static_assert(!f_is_well_formed
                 <inner::check_alloc_can_destroy_by_member_function,
                  a0, int>);
-  static_assert(f_is_well_formed_v
+  static_assert(f_is_well_formed
                 <inner::check_alloc_can_destroy_by_member_function,
                  a13, int>);
-  static_assert(!f_is_well_formed_v
+  static_assert(!f_is_well_formed
                 <inner::check_alloc_can_construct_by_member_function,
                  a0, int, int>);
-  static_assert(f_is_well_formed_v
+  static_assert(f_is_well_formed
                 <inner::check_alloc_can_construct_by_member_function,
                  a13, int, int>);
-  static_assert(!f_is_well_formed_v
+  static_assert(!f_is_well_formed
                 <inner::check_alloc_has_member_function_max_size, a0>);
   static_assert
-    (!f_is_well_formed_v
+    (!f_is_well_formed
      <inner::check_alloc_can_select_on_container_copy_construction,
       a0>);
   static_assert
-    (f_is_well_formed_v
+    (f_is_well_formed
      <inner::check_alloc_can_select_on_container_copy_construction,
       a13>);
   static_assert
-    (f_is_well_formed_v
+    (f_is_well_formed
      <inner::check_alloc_is_capable_of_hint_allocation, a13>);
   static_assert
-    (!f_is_well_formed_v
+    (!f_is_well_formed
      <inner::check_alloc_is_capable_of_hint_allocation, a0>);
 
   {
@@ -269,7 +269,7 @@ void test_allocator_traits() {
     static_assert(nothrow_move_constructible_by_allocator<allocator<int>, int>);
     static_assert(allocator_provides_construct_function<tmp_al2, int, int &&>);
     static_assert(!nothrow_move_constructible_by_allocator<tmp_al2, int>);
-    static_assert(!is_nothrow_move_constructible_v<test_object<int>>);
+    static_assert(!is_nothrow_move_constructible<test_object<int>>);
     static_assert(!nothrow_move_constructible_by_allocator
                   <tmp_al2, test_object<int>>);
     static_assert(!allocator_with_primary_traits<tmp_al>);
@@ -636,11 +636,11 @@ void test_default_allocator() {
   static_assert(at::is_always_equal::value);
 
   static_assert(regular<al>);
-  static_assert(is_trivially_constructible_v<al>);
-  static_assert(is_trivially_copy_constructible_v<al>);
-  static_assert(is_trivially_move_constructible_v<al>);
-  static_assert(is_trivially_copy_assignable_v<al>);
-  static_assert(is_trivially_move_assignable_v<al>);
+  static_assert(is_trivially_constructible<al>);
+  static_assert(is_trivially_copy_constructible<al>);
+  static_assert(is_trivially_move_constructible<al>);
+  static_assert(is_trivially_copy_assignable<al>);
+  static_assert(is_trivially_move_assignable<al>);
   al a;
   at::rebind_alloc<int> aa(a);
   test_equality(a, aa);
@@ -667,11 +667,11 @@ void test_default_allocator() {
 void test_allocator_wrapper() {
   {
     using alw_t = allocator_wrapper<test_allocator<int>>;
-    static_assert(is_default_constructible_v<alw_t>);
-    static_assert(!is_trivially_constructible_v<alw_t>);
-    static_assert(is_trivially_destructible_v<alw_t>);
-    static_assert(is_trivially_copyable_v<alw_t>);
-    static_assert(is_nothrow_swappable_v<alw_t>);
+    static_assert(is_default_constructible<alw_t>);
+    static_assert(!is_trivially_constructible<alw_t>);
+    static_assert(is_trivially_destructible<alw_t>);
+    static_assert(is_trivially_copyable<alw_t>);
+    static_assert(is_nothrow_swappable<alw_t>);
     static_assert(regular<alw_t::allocator_type>);
     static_assert(same_as<alw_t::allocator_type, test_allocator<int>>);
     static_assert(same_as
@@ -686,7 +686,7 @@ void test_allocator_wrapper() {
     using alw2_t = allocator_wrapper<stateful_test_allocator<pair<int, int>>>;
     alw_t a;
     alw2_t aa(a.get());
-    static_assert(!is_implicitly_constructible_v<alw2_t, decltype(a.get())>);
+    static_assert(!is_implicitly_constructible<alw2_t, decltype(a.get())>);
     test_equal(a.get(), aa.get());
     test_equal(a.get(), as_const(aa).get());
     test_equal(as_const(a).get(), aa.get());
@@ -927,9 +927,9 @@ void test_allocator_wrapper() {
     assert(instance_counter<int>::count() == 0);
     a.deallocate(p, 3);
 
-    static_assert(!is_default_constructible_v<alw_t::destroy_function>);
-    static_assert(is_trivially_copyable_v<alw_t::destroy_function>);
-    static_assert(is_swappable_v<alw_t::destroy_function>);
+    static_assert(!is_default_constructible<alw_t::destroy_function>);
+    static_assert(is_trivially_copyable<alw_t::destroy_function>);
+    static_assert(is_swappable<alw_t::destroy_function>);
 
     p = a.allocate();
     a.construct(p);
@@ -1272,7 +1272,7 @@ void test_allocator_wrapper() {
           assert(*x == n + 1);
         assert(t::count() == 20);
 
-        static_assert(!is_nothrow_move_assignable_v<t>);
+        static_assert(!is_nothrow_move_assignable<t>);
         assert(t::copy_assignment_countdown() == 0);
         t::copy_assignment_countdown(n);
         try {
@@ -1354,7 +1354,6 @@ void test_allocator_wrapper() {
 
   // new_1
   // new_n
-  // new_1_with_placement_new
   // delete_1
   // delete_n
   {
@@ -1362,12 +1361,6 @@ void test_allocator_wrapper() {
     alw_t a;
     {
       auto p = a.new_1(1);
-      assert(*p == 1);
-      assert(p->count() == 1);
-      a.delete_1(p);
-    }
-    {
-      auto p = a.new_1_with_placement_new(1);
       assert(*p == 1);
       assert(p->count() == 1);
       a.delete_1(p);
@@ -1591,7 +1584,7 @@ void test_unique_ptr() {
     using alloc_t = stateful_test_allocator<t>;
     using d_t = alloc_delete<alloc_t>;
     static_assert(semiregular<d_t>);
-    static_assert(is_nothrow_swappable_v<d_t>);
+    static_assert(is_nothrow_swappable<d_t>);
     alloc_t a;
     d_t d(a);
     static_assert(same_as<d_t::allocator_type, alloc_t>);
@@ -1602,8 +1595,8 @@ void test_unique_ptr() {
     using d2_t = alloc_delete<alloc2_t>;
     d2_t d2(a);
     assert(d2.get_allocator() == d.get_allocator());
-    static_assert(is_convertible_v<const d2_t &, d_t>);
-    static_assert(is_convertible_v<const d_t &, d2_t>);
+    static_assert(is_convertible<const d2_t &, d_t>);
+    static_assert(is_convertible<const d_t &, d2_t>);
     assert(d2_t(d).get_allocator() == d.get_allocator());
 
     auto p = allocator_wrapper<alloc_t>(a).new_1(3);
@@ -1623,9 +1616,9 @@ void test_unique_ptr() {
     struct d_t {
       using pointer = int **;
     };
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::unique_ptr_pointer_type_t<int, d0_t>, int *>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::unique_ptr_pointer_type_t<int, d_t>, int **>);
   }
   // empty base optimization
@@ -1652,13 +1645,13 @@ void test_unique_ptr() {
     static_assert(default_initializable<unique_t>);
     static_assert(movable<unique_t>);
     static_assert(!copyable<unique_t>);
-    static_assert(is_nothrow_default_constructible_v<unique_t>);
-    static_assert(is_destructible_v<unique_t>);
-    static_assert(!is_copy_constructible_v<unique_t>);
-    static_assert(!is_copy_assignable_v<unique_t>);
-    static_assert(is_nothrow_move_constructible_v<unique_t>);
-    static_assert(is_nothrow_move_assignable_v<unique_t>);
-    static_assert(is_nothrow_swappable_v<unique_t>);
+    static_assert(is_nothrow_default_constructible<unique_t>);
+    static_assert(is_destructible<unique_t>);
+    static_assert(!is_copy_constructible<unique_t>);
+    static_assert(!is_copy_assignable<unique_t>);
+    static_assert(is_nothrow_move_constructible<unique_t>);
+    static_assert(is_nothrow_move_assignable<unique_t>);
+    static_assert(is_nothrow_swappable<unique_t>);
 
     alloc_t a{};
     unique_t u(allocator_wrapper<alloc_t>(a).new_1(2), a);
@@ -1949,13 +1942,13 @@ void test_unique_array() {
     static_assert(default_initializable<unique_t>);
     static_assert(movable<unique_t>);
     static_assert(!copyable<unique_t>);
-    static_assert(is_nothrow_default_constructible_v<unique_t>);
-    static_assert(is_destructible_v<unique_t>);
-    static_assert(!is_copy_constructible_v<unique_t>);
-    static_assert(!is_copy_assignable_v<unique_t>);
-    static_assert(is_nothrow_move_constructible_v<unique_t>);
-    static_assert(is_nothrow_move_assignable_v<unique_t>);
-    static_assert(is_nothrow_swappable_v<unique_t>);
+    static_assert(is_nothrow_default_constructible<unique_t>);
+    static_assert(is_destructible<unique_t>);
+    static_assert(!is_copy_constructible<unique_t>);
+    static_assert(!is_copy_assignable<unique_t>);
+    static_assert(is_nothrow_move_constructible<unique_t>);
+    static_assert(is_nothrow_move_assignable<unique_t>);
+    static_assert(is_nothrow_swappable<unique_t>);
 
     alloc_t a{};
     unique_t u(allocator_wrapper<alloc_t>(a).new_array(3, 4), a);
@@ -2508,18 +2501,18 @@ void test_buffer() {
   // compile-time traits
   {
     using buf_t = buffer<int, test_allocator<int>>;
-    static_assert(is_default_constructible_v<buf_t>);
-    static_assert(is_destructible_v<buf_t>);
-    static_assert(!is_copy_constructible_v<buf_t>);
-    static_assert(!is_copy_assignable_v<buf_t>);
-    static_assert(is_move_constructible_v<buf_t>);
-    static_assert(!is_move_assignable_v<buf_t>);
+    static_assert(is_default_constructible<buf_t>);
+    static_assert(is_destructible<buf_t>);
+    static_assert(!is_copy_constructible<buf_t>);
+    static_assert(!is_copy_assignable<buf_t>);
+    static_assert(is_move_constructible<buf_t>);
+    static_assert(!is_move_assignable<buf_t>);
     static_assert(!swappable<buf_t>);
 
     static_assert(is_rng<buf_t>);
     static_assert(is_rng<const buf_t>);
     static_assert(rng_is_sized<buf_t>);
-    static_assert(is_same_v<rng_szt<buf_t>, size_t>);
+    static_assert(is_same<rng_szt<buf_t>, size_t>);
 
     static_assert(same_as<buf_t::value_type, int>);
     static_assert(same_as<buf_t::reference, int &>);
@@ -2903,21 +2896,21 @@ void test_scoped_allocator_adaptor() {
                                           allocator<int *>,
                                           allocator<int **>>;
 
-    static_assert(is_trivially_default_constructible_v<a1_t>);
-    static_assert(is_trivially_destructible_v<a1_t>);
-    static_assert(is_trivially_copy_constructible_v<a1_t>);
-    static_assert(is_trivially_copy_assignable_v<a1_t>);
-    static_assert(is_trivially_move_constructible_v<a1_t>);
-    static_assert(is_trivially_move_assignable_v<a1_t>);
-    static_assert(is_nothrow_swappable_v<a1_t>);
+    static_assert(is_trivially_default_constructible<a1_t>);
+    static_assert(is_trivially_destructible<a1_t>);
+    static_assert(is_trivially_copy_constructible<a1_t>);
+    static_assert(is_trivially_copy_assignable<a1_t>);
+    static_assert(is_trivially_move_constructible<a1_t>);
+    static_assert(is_trivially_move_assignable<a1_t>);
+    static_assert(is_nothrow_swappable<a1_t>);
 
-    static_assert(is_trivially_default_constructible_v<a2_t>);
-    static_assert(is_trivially_destructible_v<a2_t>);
-    static_assert(is_trivially_copy_constructible_v<a2_t>);
-    static_assert(is_trivially_copy_assignable_v<a2_t>);
-    static_assert(is_trivially_move_constructible_v<a2_t>);
-    static_assert(is_trivially_move_assignable_v<a2_t>);
-    static_assert(is_nothrow_swappable_v<a2_t>);
+    static_assert(is_trivially_default_constructible<a2_t>);
+    static_assert(is_trivially_destructible<a2_t>);
+    static_assert(is_trivially_copy_constructible<a2_t>);
+    static_assert(is_trivially_copy_assignable<a2_t>);
+    static_assert(is_trivially_move_constructible<a2_t>);
+    static_assert(is_trivially_move_assignable<a2_t>);
+    static_assert(is_nothrow_swappable<a2_t>);
   }
   {
     using a1_t = scoped_allocator_adaptor<stateful_test_allocator<int>>;

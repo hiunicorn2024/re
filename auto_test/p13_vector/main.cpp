@@ -1107,6 +1107,40 @@ void test_vector_shrink_to_fit() {
   testf(type_tag<vector<test_object<int>>>{});
 }
 
+void test_headed_vector() {
+  // headed_vector
+  {
+    headed_vector<int, int> hv(1, {1, 2, 3});
+    headed_vector<int, double> hv2(hv);
+    headed_vector<int, double> hv3(move(hv));
+    assert(hv.h == 1 && equal(hv.vec, seq(1, 2, 3)));
+    assert(hv2.h == 1 && equal(hv2.vec, seq(1.0, 2, 3)));
+    assert(hv3.h == 1 && equal(hv3.vec, seq(1.0, 2, 3)));
+    headed_vector<double, int> hv4(move(hv));
+    assert(hv.h == 1 && hv.vec.empty());
+    assert(hv4.h == 1 && equal(hv4.vec, seq(1.0, 2, 3)));
+  }
+  // headed_vector_maker
+  // hvec
+  // vec
+  {
+    auto hv = hvec(1)(1, 2, 3);
+    assert(hv.h == 1 && equal(hv.vec, irng(1, 4)));
+    auto v = vec(1, 2, 3);
+    assert(equal(v, irng(1, 4)));
+
+    auto hv2 = hvec(1)();
+    assert(hv2.h == 1 && hv2.vec.empty());
+    auto v2 = vec();
+    assert(v2.empty());
+    headed_vector<int, int> hv3 = hv2;
+    assert(hv3.h == 1 && hv3.vec.empty());
+    hv3.h = 2;
+    hv3 = move(hv2);
+    assert(hv3.h == 1 && hv3.vec.empty());
+  }
+}
+
 void test_vector() {
   printf("container - vector: ");
 
@@ -1127,6 +1161,8 @@ void test_vector() {
   inner::test::test_vector_resize();
   inner::test::test_vector_reallocate();
   inner::test::test_vector_shrink_to_fit();
+
+  inner::test::test_headed_vector();
 
   printf("ok\n");
 }

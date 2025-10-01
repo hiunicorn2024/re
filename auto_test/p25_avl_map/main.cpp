@@ -76,7 +76,7 @@ void test_avltree_adaptor() {
   // special member functions
   {
     const auto init = [](auto *p, auto r, auto a) {
-      using t = decay_t<decltype(*p)>;
+      using t = decay<decltype(*p)>;
       new(p) t(a);
       for (const auto &x : r)
         (*p).insert((*p).end(), x);
@@ -612,8 +612,8 @@ void test_avl_set_common_operations_impl(F mk, F2 key) {
   // special member functions
   {
     static_assert(regular<S>);
-    static_assert(is_nothrow_movable_v<S>);
-    static_assert(is_nothrow_swappable_v<S>);
+    static_assert(is_nothrow_movable<S>);
+    static_assert(is_nothrow_swappable<S>);
     S s1, s2;
     s1.insert(mk(1));
     s2.insert(mk(2));
@@ -679,8 +679,8 @@ void test_avl_set_common_operations_impl(F mk, F2 key) {
       static_assert(swappable<S>);
       static_assert(equality_comparable<S>);
       static_assert(three_way_comparable<S>);
-      static_assert(is_nothrow_movable_v<S>);
-      static_assert(is_nothrow_swappable_v<S>);
+      static_assert(is_nothrow_movable<S>);
+      static_assert(is_nothrow_swappable<S>);
 
       S s(al1);
       assert(s.empty() && s.get_allocator() == al1);
@@ -1112,8 +1112,8 @@ void test_avl_multiset_common_operations_impl(F mk, F2 key) {
   // special member functions
   {
     static_assert(regular<S>);
-    static_assert(is_nothrow_movable_v<S>);
-    static_assert(is_nothrow_swappable_v<S>);
+    static_assert(is_nothrow_movable<S>);
+    static_assert(is_nothrow_swappable<S>);
     S s1, s2;
     s1.insert(mk(1));
     s2.insert(mk(2));
@@ -1181,8 +1181,8 @@ void test_avl_multiset_common_operations_impl(F mk, F2 key) {
       static_assert(swappable<S>);
       static_assert(equality_comparable<S>);
       static_assert(three_way_comparable<S>);
-      static_assert(is_nothrow_movable_v<S>);
-      static_assert(is_nothrow_swappable_v<S>);
+      static_assert(is_nothrow_movable<S>);
+      static_assert(is_nothrow_swappable<S>);
 
       S s(al1);
       assert(s.empty() && s.get_allocator() == al1);

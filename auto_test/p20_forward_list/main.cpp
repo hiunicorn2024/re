@@ -145,12 +145,12 @@ void swap(myt2 &x, myt2 &y) noexcept {
 }
 void test_forward_list_intrusive_mode() {
   using L = forward_list_adaptor<forward_list_traits<myt2>>;
-  static_assert(is_default_constructible_v<L>);
-  static_assert(!is_copy_constructible_v<L>);
-  static_assert(!is_copy_assignable_v<L>);
-  static_assert(is_nothrow_move_constructible_v<L>);
-  static_assert(is_nothrow_move_assignable_v<L>);
-  static_assert(is_nothrow_swappable_v<L>);
+  static_assert(is_default_constructible<L>);
+  static_assert(!is_copy_constructible<L>);
+  static_assert(!is_copy_assignable<L>);
+  static_assert(is_nothrow_move_constructible<L>);
+  static_assert(is_nothrow_move_assignable<L>);
+  static_assert(is_nothrow_swappable<L>);
 
   {
     vector<myt2> v = {1, 2, 3, 4, 5};
@@ -327,9 +327,9 @@ void test_forward_list_briefly() {
 
   static_assert(forward_iterator<typename L::iterator>);
   static_assert(forward_iterator<typename L::const_iterator>);
-  static_assert(is_convertible_v
+  static_assert(is_convertible
                 <const typename L::iterator &, typename L::const_iterator>);
-  static_assert(!is_convertible_v
+  static_assert(!is_convertible
                 <const typename L::const_iterator &, typename L::iterator>);
   assert(l.begin() == l.end());
   assert(l.cbegin() == l.end());

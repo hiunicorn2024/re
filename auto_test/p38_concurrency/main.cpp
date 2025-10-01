@@ -106,9 +106,9 @@ struct test_llong_t<LL, SZT> {
     assert((vx |= 0b01110) == 0b11111);
     assert(vx == 0b11111);
 
-    assert((x ^= (llong)(((make_unsigned_t<llong>)-1) << 4u)) == (llong)-1);
+    assert((x ^= (llong)(((make_unsigned<llong>)-1) << 4u)) == (llong)-1);
     assert(x == (int)-1);
-    assert((vx ^= (llong)(((make_unsigned_t<llong>)-1) << 5u)) == (llong)-1);
+    assert((vx ^= (llong)(((make_unsigned<llong>)-1) << 5u)) == (llong)-1);
     assert(vx == (int)-1);
   }
 };
@@ -1696,11 +1696,11 @@ void test_thread() {
 void test_mutex() {
   // special member functions
   {
-    static_assert(is_default_constructible_v<mutex>);
-    static_assert(!is_copy_constructible_v<mutex>);
-    static_assert(!is_copy_assignable_v<mutex>);
-    static_assert(!is_move_constructible_v<mutex>);
-    static_assert(!is_move_assignable_v<mutex>);
+    static_assert(is_default_constructible<mutex>);
+    static_assert(!is_copy_constructible<mutex>);
+    static_assert(!is_copy_assignable<mutex>);
+    static_assert(!is_move_constructible<mutex>);
+    static_assert(!is_move_assignable<mutex>);
   }
 
   // try_lock()
@@ -1816,12 +1816,12 @@ void test_lock() {
     {
       mutex m;
       using lock_t = unique_lock<mutex>;
-      static_assert(is_default_constructible_v<lock_t>);
-      static_assert(!is_copy_constructible_v<lock_t>);
-      static_assert(!is_copy_assignable_v<lock_t>);
-      static_assert(is_move_constructible_v<lock_t>);
-      static_assert(is_move_assignable_v<lock_t>);
-      static_assert(is_swappable_v<lock_t>);
+      static_assert(is_default_constructible<lock_t>);
+      static_assert(!is_copy_constructible<lock_t>);
+      static_assert(!is_copy_assignable<lock_t>);
+      static_assert(is_move_constructible<lock_t>);
+      static_assert(is_move_assignable<lock_t>);
+      static_assert(is_swappable<lock_t>);
 
       lock_t l;
       assert(!l.owns_lock()
@@ -2016,11 +2016,11 @@ void test_shared_lock() {
 void test_condition_variable() {
   // special member functions
   {
-    static_assert(is_default_constructible_v<condition_variable>);
-    static_assert(!is_copy_constructible_v<condition_variable>);
-    static_assert(!is_copy_assignable_v<condition_variable>);
-    static_assert(!is_move_constructible_v<condition_variable>);
-    static_assert(!is_move_assignable_v<condition_variable>);
+    static_assert(is_default_constructible<condition_variable>);
+    static_assert(!is_copy_constructible<condition_variable>);
+    static_assert(!is_copy_assignable<condition_variable>);
+    static_assert(!is_move_constructible<condition_variable>);
+    static_assert(!is_move_assignable<condition_variable>);
   }
   // 1-N producer-consumer model
   //   produce N and notify all consumers to eat (every consumer eat 1)

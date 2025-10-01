@@ -125,8 +125,8 @@ void test_for_each() {
     ez_forward_list<int> v;
     const auto f1 = [&](int x) {buf.insert(buf.end(), x);};
     const auto f2 = [&](int x) {buf.insert(buf.end(), x * 100);};
-    for_each_excluding_first(v, f1);
-    for_each_excluding_first(v, f1, f2);
+    assert(for_each_excluding_first(v, f1) == end(v));
+    assert(for_each_excluding_first(v, f1, f2) == end(v));
     assert(empty(buf) && empty(v));
     for (int &i : iters(0, 10)) {
       v.erase_after(v.before_begin(), v.end());
@@ -134,14 +134,14 @@ void test_for_each() {
       assert(equal(v, irng(1, i + 1)));
 
       buf.erase(buf.begin(), buf.end());
-      for_each_excluding_first(v, f1);
+      assert(for_each_excluding_first(v, f1) == end(v));
       if (2 <= i + 1)
         assert(equal(buf, irng(2, i + 1)));
       else
         assert(empty(buf));
 
       buf.erase(buf.begin(), buf.end());
-      for_each_excluding_first(v, f1, f2);
+      assert(for_each_excluding_first(v, f1, f2) == end(v));
       if (!empty(v)) {
         assert(front(buf) == 100);
         if (2 <= i + 1)
@@ -170,26 +170,192 @@ void test_for_each() {
       assert(equal(l, ll) && equal(l, irng(0, i)));
 
       buf.erase(buf.begin(), buf.end());
-      for_each_excluding_last(l, f1);
+      assert(for_each_excluding_last(l, f1) == end(l));
       assert((empty(l) && empty(buf))
              || (size(buf) + 1 == size(l) && equal(buf, begin(l))));
       buf.erase(buf.begin(), buf.end());
-      for_each_excluding_last(ll, f1);
+      assert(for_each_excluding_last(ll, f1) == end(ll));
       assert((empty(ll) && empty(buf))
              || (size(buf) + 1 == size(ll) && equal(buf, begin(ll))));
 
       buf.erase(buf.begin(), buf.end());
-      for_each_excluding_last(l, f1, f2);
+      assert(for_each_excluding_last(l, f1, f2) == end(l));
       assert((empty(l) && empty(buf))
              || (size(buf) == size(l)
                  && equal(rng(begin(buf), prev(end(buf))), begin(l))
                  && back(buf) == (i - 1) + 100));
       buf.erase(buf.begin(), buf.end());
-      for_each_excluding_last(ll, f1, f2);
+      assert(for_each_excluding_last(ll, f1, f2) == end(ll));
       assert((empty(ll) && empty(buf))
              || (size(buf) == size(ll)
                  && equal(rng(begin(buf), prev(end(buf))), begin(ll))
                  && back(buf) == (i - 1) + 100));
+    }
+  }
+
+  // for_each_excluding_first_n
+  // for_each_excluding_last_n
+  {
+    const auto test_f = []<class L>(type_tag<L>) {
+      // empty
+      {
+        L r = {};
+        int n1 = 0;
+        int n2 = 0;
+        assert(for_each_excluding_first_n(r, 0,
+                                          [&](int) {++n2;},
+                                          [&](int) {++n1;})
+               == end(r));
+        assert(n1 == 0 && n2 == 0);
+        assert(for_each_excluding_first_n(r, 1,
+                                          [&](int) {++n2;},
+                                          [&](int) {++n1;})
+               == end(r));
+        assert(n1 == 0 && n2 == 0);
+        assert(for_each_excluding_first_n(r, 3,
+                                          [&](int) {++n2;},
+                                          [&](int) {++n1;})
+               == end(r));
+        assert(n1 == 0 && n2 == 0);
+
+        n1 = n2 = 0;
+        assert(for_each_excluding_last_n(r, 0,
+                                         [&](int) {++n2;},
+                                         [&](int) {++n1;})
+               == end(r));
+        assert(n1 == 0 && n2 == 0);
+        assert(for_each_excluding_last_n(r, 1,
+                                         [&](int) {++n2;},
+                                         [&](int) {++n1;})
+               == end(r));
+        assert(n1 == 0 && n2 == 0);
+        assert(for_each_excluding_last_n(r, 3,
+                                         [&](int) {++n2;},
+                                         [&](int) {++n1;})
+               == end(r));
+        assert(n1 == 0 && n2 == 0);
+      }
+      // single element
+      {
+        L r = {1};
+        int n1 = 0;
+        int n2 = 0;
+        assert(for_each_excluding_first_n(r, 0,
+                                          [&](int i) {n2 += i;},
+                                          [&](int i) {n1 += i;})
+               == end(r));
+        assert(n1 == 0 && n2 == 1);
+        n1 = n2 = 0;
+        assert(for_each_excluding_first_n(r, 1,
+                                          [&](int i) {n2 += i;},
+                                          [&](int i) {n1 += i;})
+               == end(r));
+        assert(n1 == 1 && n2 == 0);
+        n1 = n2 = 0;
+        assert(for_each_excluding_first_n(r, 3,
+                                          [&](int i) {n2 += i;},
+                                          [&](int i) {n1 += i;})
+               == end(r));
+        assert(n1 == 1 && n2 == 0);
+      }
+      // four elements
+      {
+        L r = {1, 2, 3, 4};
+        using vt = ez_vector<int>;
+        vt v1;
+        vt v2;
+
+        const auto f_first = [&](int n) {
+          v1.erase(v1.begin(), v1.end());
+          v2.erase(v2.begin(), v2.end());
+          assert(for_each_excluding_first_n
+                 (r, n,
+                  [&](int &i) {v2.insert(v2.end(), i);},
+                  [&](int &i) {v1.insert(v1.end(), i);})
+                 == end(r));
+        };
+        const auto f_last = [&](int n) {
+          v1.erase(v1.begin(), v1.end());
+          v2.erase(v2.begin(), v2.end());
+          assert(for_each_excluding_last_n
+                 (r, n,
+                  [&](int &i) {v1.insert(v1.end(), i);},
+                  [&](int &i) {v2.insert(v2.end(), i);})
+                 == end(r));
+        };
+
+        f_first(0);
+        assert(v1 == vt({}));
+        assert(v2 == vt({1, 2, 3, 4}));
+        f_last(0);
+        assert(v1 == vt({1, 2, 3, 4}));
+        assert(v2 == vt({}));
+
+        f_first(1);
+        assert(v1 == vt({1}));
+        assert(v2 == vt({2, 3, 4}));
+        f_last(1);
+        assert(v1 == vt({1, 2, 3}));
+        assert(v2 == vt({4}));
+
+        f_first(2);
+        assert(v1 == vt({1, 2}));
+        assert(v2 == vt({3, 4}));
+        f_last(2);
+        assert(v1 == vt({1, 2}));
+        assert(v2 == vt({3, 4}));
+
+        f_first(4);
+        assert(v1 == vt({1, 2, 3, 4}));
+        assert(v2 == vt({}));
+        f_last(4);
+        assert(v1 == vt({}));
+        assert(v2 == vt({1, 2, 3, 4}));
+
+        f_first(5);
+        assert(v1 == vt({1, 2, 3, 4}));
+        assert(v2 == vt({}));
+        f_last(5);
+        assert(v1 == vt({}));
+        assert(v2 == vt({1, 2, 3, 4}));
+
+        f_first(100);
+        assert(v1 == vt({1, 2, 3, 4}));
+        assert(v2 == vt({}));
+        f_last(100);
+        assert(v1 == vt({}));
+        assert(v2 == vt({1, 2, 3, 4}));
+      }
+    };
+    test_f(type_tag<ez_forward_list<int>>{});
+    test_f(type_tag<ez_vector<int>>{});
+
+    // for_each_excluding_first_n for iitr-range
+    {
+      ez_vector<int> v = {};
+      auto r = degraded_irng(v);
+      assert(is_just_irng<decltype(r)>);
+      ez_vector<int> v1;
+      ez_vector<int> v2;
+
+      for (int i : iters(0, 10))
+        for (int j : iters(0, i + 5)) {
+          v.erase(v.begin(), v.end());
+          v1.erase(v1.begin(), v1.end());
+          v2.erase(v2.begin(), v2.end());          
+
+          for (int k : iters(0, i))
+            v.insert(v.end(), k);
+
+          assert(for_each_excluding_first_n
+                 (r, j,
+                  [&v2](auto &x) {v2.insert(v2.end(), x);},
+                  [&v1](auto &x) {v1.insert(v1.end(), x);})
+                 == end(r));
+          const auto mid_it = next(v.begin(), j, v.end());
+          test_rng(rng(v.begin(), mid_it), v1);
+          test_rng(rng(mid_it, v.end()), v2);
+        }
     }
   }
 }
@@ -306,6 +472,29 @@ void test_adjacent_find() {
   assert(adjacent_find(a, equal_to<>{}) == nth(a, 1));
   assert(adjacent_find(b) == nth(b, 1));
   assert(adjacent_find(b, equal_to<>{}) == nth(b, 1));
+
+  // adjacent_find_both
+  // adjacent_find_both_while
+  {
+    ez_vector<char> v
+      = {1, 2, 3, 4, 'a', 'b', 5, 6};
+    assert(adjacent_find_both(v, isalpha) == nth(v, 4));
+    assert(adjacent_find_both(rrng(v), isalpha).base() == nth(v, 6));
+    assert(adjacent_find_both_while
+           (v, isalpha, [&v](char &c) {return addressof(c) - v.begin() <= 3;})
+           == v.end());
+    assert(adjacent_find_both_while
+           (v, isalpha, [&v](char &c) {return addressof(c) - v.begin() <= 4;})
+           == nth(v, 4));
+
+    v = {1, 2, 3, 'a', 'b'};
+    assert(adjacent_find_both(v, isalpha) == nth(v, 3));
+    assert(adjacent_find_both(rrng(v), isalpha).base() == v.end());
+
+    v = {'a', 'b'};
+    assert(adjacent_find_both(v, isalpha) == nth(v, 0));
+    assert(adjacent_find_both(rrng(v), isalpha).base() == v.end());
+  }
 }
 void test_count() {
   const int a[] = {1, 2, 2, 3};
@@ -1220,6 +1409,15 @@ void test_partition() {
             const auto x = partition_copy(as_const(l),
                                           begin(v0), begin(v1), eq);
             assert(x.first == end(v0) && x.second == end(v1));
+            assert(equal(v0, rng(i, 0)) && equal(v1, rng(j, 1)));
+
+            fill(v0, 0);
+            fill(v1, 0);
+            const auto xx = partition_copy_plus(as_const(l),
+                                                begin(v0), begin(v1), eq);
+            assert(at<0>(xx) == end(l));
+            assert(at<1>(xx) == end(v0));
+            assert(at<2>(xx) == end(v1));
             assert(equal(v0, rng(i, 0)) && equal(v1, rng(j, 1)));
 
             const auto it = partition(l, eq);
@@ -2578,6 +2776,160 @@ void test_midpoint() {
     assert(midpoint(end(b), begin(b)) == nth(b, 2));
     assert(midpoint(begin(b), begin(b)) == begin(b));
   }
+
+  // for floating point
+
+  const auto put_info = [](auto x) {
+    // for bug tracing
+    puti(x.sign);
+    putb(x.e);
+    putb(x.f);
+  };
+
+  // NAN
+  {
+    // float
+    {
+      using ts = floating_point_traits<float>;
+      assert(ts::is_nan(midpoint(NAN, NAN)));
+      assert(ts::is_nan(midpoint(NAN, 1.0f)));
+      assert(ts::is_nan(midpoint(1.0f, NAN)));
+    }
+    // double
+    {
+      using ts = floating_point_traits<double>;
+      assert(ts::is_nan(midpoint(ts::nan(), ts::nan())));
+      assert(ts::is_nan(midpoint(ts::nan(), 1.0)));
+      assert(ts::is_nan(midpoint(1.0, ts::nan())));
+    }
+  }
+  // overflow
+  {
+    // float
+    {
+      using ts = floating_point_traits<float>;
+
+      assert(ts::is_infinity(midpoint(ts::infinity(), ts::max())));
+      assert(ts::is_infinity(midpoint(ts::max(), ts::infinity())));
+
+      assert(ts::is_infinity(midpoint(ts::lowest(), ts::infinity())));
+      assert(ts::is_infinity(midpoint(ts::infinity(), ts::lowest())));
+
+      assert(ts::is_infinity(midpoint(1.0f, ts::infinity())));
+      assert(ts::is_infinity(midpoint(ts::infinity(), 1.0f)));
+    }
+    // double
+    {
+      using ts = floating_point_traits<double>;
+
+      assert(ts::is_infinity(midpoint(ts::infinity(), ts::max())));
+      assert(ts::is_infinity(midpoint(ts::max(), ts::infinity())));
+
+      assert(ts::is_infinity(midpoint(ts::lowest(), ts::infinity())));
+      assert(ts::is_infinity(midpoint(ts::infinity(), ts::lowest())));
+
+      assert(ts::is_infinity(midpoint(1.0, ts::infinity())));
+      assert(ts::is_infinity(midpoint(ts::infinity(), 1.0)));
+    }
+  }
+
+  // usual
+  {
+    assert(midpoint(1.0, 2.0) == 1.5);
+    assert(midpoint(2.0, 1.0) == 1.5);
+    assert(midpoint(1.0f, 2.0f) == 1.5f);
+    assert(midpoint(2.0f, 1.0f) == 1.5f);
+  }
+
+  // for divide 2 with precision losing
+  {
+    // float
+    {
+      using ts = floating_point_traits<float>;
+      using float_t = ts::float_t;
+      const float_t f = ts::min();
+      const float_t f2 = midpoint(0.0f, f);
+      const float_t f3 = midpoint(0.0f, -f);
+      assert(f2 == ts::make(true, 0, 0b100'00000'00000'00000'00000u));
+      assert(f3 == ts::make(false, 0, 0b100'00000'00000'00000'00000u));
+
+      assert(midpoint(ts::make(true, 0, 0b111u),
+                      ts::make(false, 0, 0b111u)) == 0.0f);
+      assert(midpoint(ts::make(true, 0, 0b110u),
+                      ts::make(false, 0, 0b111u)) == ts::make(true, 0, 0b0u));
+      assert(midpoint(ts::make(false, 0, 0b111u),
+                      ts::make(true, 0, 0b110u)) == ts::make(false, 0, 0b1u));
+
+      assert(ts::make(true, 2u, 0u) == (ts::min() * 2));
+      assert(midpoint
+             (ts::make(0, 1u, 0b100'0000000000'0000000000u),
+              ts::make(1, 2u, 0b100'0000000000'0000000000u))
+             == ts::make(1, 0u, 0b110'0000000000'0000000000u));
+      assert(midpoint
+             (ts::make(0, 1u, 0b100'0000000000'0000000001u),
+              ts::make(1, 2u, 0b100'0000000000'0000000000u))
+             == ts::make(1, 0u, 0b101'1111111111'1111111111u));
+      assert(midpoint
+             (ts::make(1, 2u, 0b100'0000000000'0000000000u),
+              ts::make(0, 1u, 0b100'0000000000'0000000001u))
+             == ts::make(1, 0u, 0b110'0000000000'0000000000u));
+    }
+    // double
+    {
+      using ts = floating_point_traits<double>;
+      using float_t = ts::float_t;
+      const float_t f = ts::min();
+      const float_t f2 = midpoint(0.0, f);
+      const float_t f3 = midpoint(0.0, -f);
+      assert(f2
+             == ts::make
+             (true, 0,
+              0b10'0000000000'0000000000'0000000000'0000000000'0000000000u));
+      assert(f3
+             == ts::make
+             (false, 0,
+              0b10'0000000000'0000000000'0000000000'0000000000'0000000000u));
+
+      assert(midpoint(ts::make(true, 0, 0b111u),
+                      ts::make(false, 0, 0b111u)) == 0.0f);
+      assert(midpoint(ts::make(true, 0, 0b110u),
+                      ts::make(false, 0, 0b111u)) == ts::make(true, 0, 0b0u));
+      assert(midpoint(ts::make(false, 0, 0b111u),
+                      ts::make(true, 0, 0b110u)) == ts::make(false, 0, 0b1u));
+
+      assert(ts::make(true, 2u, 0u) == (ts::min() * 2));
+      assert(midpoint
+             (ts::make
+              (0, 1u,
+               0b10'0000000000'0000000000'0000000000'0000000000'0000000000u),
+              ts::make
+              (1, 2u,
+               0b10'0000000000'0000000000'0000000000'0000000000'0000000000u))
+             == ts::make
+             (1, 0u,
+              0b11'0000000000'0000000000'0000000000'0000000000'0000000000u));
+      assert(midpoint
+             (ts::make
+              (0, 1u,
+               0b10'0000000000'0000000000'0000000000'0000000000'0000000001u),
+              ts::make
+              (1, 2u,
+               0b10'0000000000'0000000000'0000000000'0000000000'0000000000u))
+             == ts::make
+             (1, 0u,
+              0b10'1111111111'1111111111'1111111111'1111111111'1111111111u));
+      assert(midpoint
+             (ts::make
+              (1, 2u,
+               0b10'0000000000'0000000000'0000000000'0000000000'0000000000u),
+              ts::make
+              (0, 1u,
+               0b10'0000000000'0000000000'0000000000'0000000000'0000000001u))
+             == ts::make
+             (1, 0u,
+              0b11'0000000000'0000000000'0000000000'0000000000'0000000000u));
+    }
+  }
 }
 void test_for_each_node() {
   ez_list<test_object<int>> z;
@@ -2795,60 +3147,219 @@ void test_list_unique() {
   assert(equal(l, irng(0, 6)));
   assert(equal(ll, ez_vector{0, 0, 1, 4}));
 }
+void test_two_way_search() {
+  // inner::fns::maximal_suffix_and_its_period
+  {
+    // empty
+    {
+      auto r = empty_rng<char>();
+      auto [it, p] = inner::fns::maximal_suffix_and_its_period(r);
+      assert(it == r.end());
+      assert(p == 0);
+      tie(it, p) = inner::fns::maximal_suffix_and_its_period
+        (r, bind(synth_3way, _2, _1));
+      assert(it == r.end());
+      assert(p == 0);
+    }
+    // 1 element
+    {
+      auto r = single_rng('a');
+      auto [it, p] = inner::fns::maximal_suffix_and_its_period(r);
+      assert(it == r.begin());
+      assert(p == 1);
+      tie(it, p) = inner::fns::maximal_suffix_and_its_period
+        (r, bind(synth_3way, _2, _1));
+      assert(it == r.begin());
+      assert(p == 1);
+    }
+    // 2 elements
+    {
+      ez_vector<char> v;
+      v = {'a', 'a'};
+      auto [it, p] = inner::fns::maximal_suffix_and_its_period(v);
+      assert(it == v.begin());
+      assert(p == 1);
+      tie(it, p) = inner::fns::maximal_suffix_and_its_period
+        (v, bind(synth_3way, _2, _1));
+      assert(it == v.begin());
+      assert(p == 1);
+      v = {'a', 'b'};
+      tie(it, p) = inner::fns::maximal_suffix_and_its_period(v);
+      assert(it == before_end(v));
+      assert(p == 1);
+      tie(it, p) = inner::fns::maximal_suffix_and_its_period
+        (v, bind(synth_3way, _2, _1));
+      assert(it == v.begin());
+      assert(p == 2);
+    }
+    // 7 elements
+    {
+      const auto get_period = []<class R>(R &&r)->rng_dft<R> {
+        auto r_sz = ssize(r);
+        if (r_sz == 0)
+          return 0;
+        else if (r_sz == 1)
+          return 1;
+        else {
+          int p = r_sz;
+          for (auto &possible_p : iters(1, r_sz)) {
+            bool y = true;
+            for (auto &j : iters(0, r_sz)) {
+              for (auto k = j + possible_p; k < r_sz; k += possible_p) {
+                if (ref(r, j) != ref(r, k)) {
+                  y = false;
+                  goto quit_lbl;
+                }
+              }
+            }
+          quit_lbl:
+            if (y) {
+              p = possible_p;
+              break;
+            }
+          }
+          return p;
+        }
+      };
+      ez_vector<int> v;
+      const auto r = irng(0, 4);
+      for (int i1 : r)
+        for (int i2 : r)
+          for (int i3 : r)
+            for (int i4 : r)
+              for (int i5 : r)
+                for (int i6 : r)
+                  for (int i7 : r) {
+                    v = {i1, i2, i3, i4, i5, i6, i7};
+                    ez_vector<ez_vector<int>> vv;
+                    for (int i : irng(0, 7)) {
+                      vv.insert(vv.end(), {});
+                      auto &back_v = back(vv);
+                      for (int j : rng(nth(v, i), v.end()))
+                        back_v.insert(back_v.end(), j);
+                    }
+                    sort(vv);
+                    auto [it, p] = inner::fns::maximal_suffix_and_its_period(v);
+                    test_rng(back(vv), rng(it, v.end()));
+                    assert(p == get_period(back(vv)));
+                  }
+    }
+  }
+  // two_way_search
+  {
+    FILE *fp;
+    fp = fopen("./main.cpp", "r+b");
+    assert(fp != nullptr);
+    ez_vector<char> s;
+    int c;
+    while ((c = fgetc(fp)) != EOF)
+      s.insert(s.end(), c);
+    fclose(fp);
+    // for_each(s, putchar);
+
+    ez_vector<ez_vector<char>> vv;
+    auto it = s.begin();
+    const auto check_char = [](char c) {
+      return isdigit(c) || isalpha(c) || c == '_';
+    };
+    while (it != s.end()) {
+      if (check_char(*it)) {
+        auto it2 = next(it);
+        while (it2 != s.end() && check_char(*it2))
+          ++it2;
+        {
+          ez_vector<char> tmp_v;
+          for (char x : rng(it, it2))
+            tmp_v.insert(tmp_v.end(), x);
+          if (!contains(vv, tmp_v))
+            vv.insert(vv.end(), move(tmp_v));
+        }
+        it = it2;
+      }
+      else
+        ++it;
+    }
+
+    sort(vv);
+    // for (auto &x : vv) {for_each(x, putchar); putchar('\n');}
+
+    ez_vector<int> all_pos_v0;
+    ez_vector<int> all_pos_v;
+    for (const auto &word : vv) {
+      all_pos_v0.erase(all_pos_v0.begin(), all_pos_v0.end());
+      all_pos_v.erase(all_pos_v.begin(), all_pos_v.end());
+
+      auto i = s.begin();
+      while ((i = search(rng(i, s.end()), word)) != s.end()) {
+        assert(i + ssize(word) <= s.end());
+        all_pos_v0.insert(all_pos_v0.end(), i - s.begin());
+        i += ssize(word);
+      }
+      i = s.begin();
+      while ((i = two_way_search(rng(i, s.end()), word)) != s.end()) {
+        assert(i + ssize(word) <= s.end());
+        all_pos_v.insert(all_pos_v.end(), i - s.begin());
+        i += ssize(word);
+      }
+      assert(all_pos_v0 == all_pos_v);
+    }
+  }
+}
 
 void test_algorithm() {
   printf("algorithm: ");
 
-  inner::test::test_equal();
-  inner::test::test_allanynone_of();
-  inner::test::test_for_each();
-  inner::test::test_find();
-  inner::test::test_find_last();
-  inner::test::test_find_first_of();
-  inner::test::test_find_last_of();
-  inner::test::test_adjacent_find();
-  inner::test::test_count();
-  inner::test::test_mismatch();
-  inner::test::test_is_permutation();
-  inner::test::test_find_subrange();
-  inner::test::test_search();
-  inner::test::test_find_end();
-  inner::test::test_contains();
-  inner::test::test_starts_ends_with();
-  inner::test::test_fold_left_right();
-  inner::test::test_copy_move();
-  inner::test::test_swap_ranges();
-  inner::test::test_transform();
-  inner::test::test_replace();
-  inner::test::test_fill();
-  inner::test::test_generate();
-  inner::test::test_remove();
-  inner::test::test_unique();
-  inner::test::test_reverse();
-  inner::test::test_rotate();
-  inner::test::test_shift();
-  inner::test::test_shuffle();
-  inner::test::test_sample();
-  inner::test::test_binary_search();
-  inner::test::test_partition();
-  inner::test::test_merge();
-  inner::test::test_set_operations();
-  inner::test::test_heap_operations();
-  inner::test::test_minmax();
-  inner::test::test_bounded_value();
-  inner::test::test_lexicographical_compare();
-  inner::test::test_permutation();
-  inner::test::test_sorting();
-  inner::test::test_accumulate();
-  inner::test::test_inner_product();
-  inner::test::test_partial_sum();
-  inner::test::test_adjacent_difference();
-  inner::test::test_iota();
-  inner::test::test_gcd_and_lcm();
-  inner::test::test_midpoint();
-  inner::test::test_for_each_node();
-  inner::test::test_list_fns();
-  inner::test::test_list_unique();
+  test_equal();
+  test_allanynone_of();
+  test_for_each();
+  test_find();
+  test_find_last();
+  test_find_first_of();
+  test_find_last_of();
+  test_adjacent_find();
+  test_count();
+  test_mismatch();
+  test_is_permutation();
+  test_find_subrange();
+  test_search();
+  test_find_end();
+  test_contains();
+  test_starts_ends_with();
+  test_fold_left_right();
+  test_copy_move();
+  test_swap_ranges();
+  test_transform();
+  test_replace();
+  test_fill();
+  test_generate();
+  test_remove();
+  test_unique();
+  test_reverse();
+  test_rotate();
+  test_shift();
+  test_shuffle();
+  test_sample();
+  test_binary_search();
+  test_partition();
+  test_merge();
+  test_set_operations();
+  test_heap_operations();
+  test_minmax();
+  test_bounded_value();
+  test_lexicographical_compare();
+  test_permutation();
+  test_sorting();
+  test_accumulate();
+  test_inner_product();
+  test_partial_sum();
+  test_adjacent_difference();
+  test_iota();
+  test_gcd_and_lcm();
+  test_midpoint();
+  test_for_each_node();
+  test_list_fns();
+  test_list_unique();
+  test_two_way_search();
 
   printf("ok\n");
 }

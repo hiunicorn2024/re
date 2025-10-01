@@ -9,15 +9,15 @@ void test_owner_ptr() {
     using t = owner_ptr<int>;
     static_assert(semiregular<t>);
     static_assert(swappable<t>);
-    static_assert(!is_nothrow_copy_constructible_v<t>);
-    static_assert(!is_nothrow_copy_assignable_v<t>);
-    static_assert(is_nothrow_move_constructible_v<t>);
-    static_assert(is_nothrow_move_assignable_v<t>);
-    static_assert(is_nothrow_swappable_v<t>);
-    static_assert(is_convertible_v<nullptr_t, t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(!is_nothrow_constructible_v<t, int>);
-    static_assert(!is_convertible_v<int, t>);
+    static_assert(!is_nothrow_copy_constructible<t>);
+    static_assert(!is_nothrow_copy_assignable<t>);
+    static_assert(is_nothrow_move_constructible<t>);
+    static_assert(is_nothrow_move_assignable<t>);
+    static_assert(is_nothrow_swappable<t>);
+    static_assert(is_convertible<nullptr_t, t>);
+    static_assert(is_constructible<t, int>);
+    static_assert(!is_nothrow_constructible<t, int>);
+    static_assert(!is_convertible<int, t>);
     static_assert(noexcept(*declval<t &>()));
     static_assert(noexcept(declval<t &>().operator ->()));
     static_assert(noexcept(declval<t &>().empty()));
@@ -120,8 +120,8 @@ void test_owner_ptr() {
 }
 
 void test_test_throwing() {
-  static_assert(is_trivial_empty_v<decltype(test_throwing_any)>);
-  static_assert(is_trivial_empty_v<decltype(test_throwing<int>)>);
+  static_assert(is_empty<decltype(test_throwing_any)>);
+  static_assert(is_empty<decltype(test_throwing<int>)>);
 #ifndef RE_NOEXCEPT
   assert(test_throwing_any([]() {throw 0;}));
   assert(!test_throwing_any([]() {}));
@@ -262,12 +262,12 @@ void test_instance_counter() {
   {
     using t = instance_counter<int>;
     static_assert(regular<t>);
-    static_assert(!is_nothrow_constructible_v<t>);
-    static_assert(!is_nothrow_copy_constructible_v<t>);
-    static_assert(!is_nothrow_copy_assignable_v<t>);
-    static_assert(is_nothrow_move_constructible_v<t>);
-    static_assert(is_nothrow_move_assignable_v<t>);
-    static_assert(is_nothrow_swappable_v<t>);
+    static_assert(!is_nothrow_constructible<t>);
+    static_assert(!is_nothrow_copy_constructible<t>);
+    static_assert(!is_nothrow_copy_assignable<t>);
+    static_assert(is_nothrow_move_constructible<t>);
+    static_assert(is_nothrow_move_assignable<t>);
+    static_assert(is_nothrow_swappable<t>);
     static_assert(!noexcept(t(0)));
     static_assert(noexcept(declval<t &>().operator *()));
     static_assert(noexcept(declval<const t &>().operator *()));
@@ -286,21 +286,21 @@ void test_instance_counter() {
     };
     using ttt = instance_counter<tt>;
     static_assert(semiregular<ttt>);
-    static_assert(!is_nothrow_constructible_v<ttt>);
-    static_assert(!is_nothrow_copy_constructible_v<ttt>);
-    static_assert(!is_nothrow_copy_assignable_v<ttt>);
-    static_assert(!is_nothrow_move_constructible_v<ttt>);
-    static_assert(!is_nothrow_move_assignable_v<ttt>);
-    static_assert(!is_nothrow_swappable_v<ttt>);
+    static_assert(!is_nothrow_constructible<ttt>);
+    static_assert(!is_nothrow_copy_constructible<ttt>);
+    static_assert(!is_nothrow_copy_assignable<ttt>);
+    static_assert(!is_nothrow_move_constructible<ttt>);
+    static_assert(!is_nothrow_move_assignable<ttt>);
+    static_assert(!is_nothrow_swappable<ttt>);
 
     using tttt = exception_countdown<int>;
     static_assert(regular<tttt>);
-    static_assert(!is_nothrow_constructible_v<ttt>);
-    static_assert(!is_nothrow_copy_constructible_v<ttt>);
-    static_assert(!is_nothrow_copy_assignable_v<ttt>);
-    static_assert(!is_nothrow_move_constructible_v<ttt>);
-    static_assert(!is_nothrow_move_assignable_v<ttt>);
-    static_assert(!is_nothrow_swappable_v<ttt>);
+    static_assert(!is_nothrow_constructible<ttt>);
+    static_assert(!is_nothrow_copy_constructible<ttt>);
+    static_assert(!is_nothrow_copy_assignable<ttt>);
+    static_assert(!is_nothrow_move_constructible<ttt>);
+    static_assert(!is_nothrow_move_assignable<ttt>);
+    static_assert(!is_nothrow_swappable<ttt>);
     static_assert(!noexcept(tttt(0)));
     static_assert(noexcept(declval<tttt &>().operator *()));
     static_assert(noexcept(declval<const t &>().operator *()));
@@ -378,16 +378,16 @@ void test_instance_counter() {
       [](int x) {assert(x == 1);}(x);
       assert(to_address(x) == addressof(*x));
       assert(*to_address(x) == 1);
-      static_assert(is_same_v<decltype(*x), int &>);
-      static_assert(is_same_v<decltype(to_address(x)), const int *>);
+      static_assert(is_same<decltype(*x), int &>);
+      static_assert(is_same<decltype(to_address(x)), const int *>);
 
       assert(*cx == 1);
       assert(cx == 1);
       [](int x) {assert(x == 1);}(cx);
       assert(to_address(cx) == addressof(*cx));
       assert(*to_address(cx) == 1);
-      static_assert(is_same_v<decltype(*cx), const int &>);
-      static_assert(is_same_v<decltype(to_address(cx)), const int *>);
+      static_assert(is_same<decltype(*cx), const int &>);
+      static_assert(is_same<decltype(to_address(cx)), const int *>);
 
       assert(x == cx);
       assert(x <=> cx == 0);
@@ -520,22 +520,22 @@ void test_instance_counter() {
 }
 
 void test_ez_function() {
-  static_assert(is_nothrow_constructible_v<ez_dynamic<int>>);
-  static_assert(!is_nothrow_copy_constructible_v<ez_dynamic<int>>);
-  static_assert(!is_nothrow_copy_assignable_v<ez_dynamic<int>>);
-  static_assert(is_nothrow_move_constructible_v<ez_dynamic<int>>);
-  static_assert(is_nothrow_move_assignable_v<ez_dynamic<int>>);
+  static_assert(is_nothrow_constructible<ez_dynamic<int>>);
+  static_assert(!is_nothrow_copy_constructible<ez_dynamic<int>>);
+  static_assert(!is_nothrow_copy_assignable<ez_dynamic<int>>);
+  static_assert(is_nothrow_move_constructible<ez_dynamic<int>>);
+  static_assert(is_nothrow_move_assignable<ez_dynamic<int>>);
   static_assert(!noexcept(ez_dynamic<int>::make(0)));
   static_assert(noexcept(declval<ez_dynamic<int> &>().empty()));
   static_assert(noexcept(declval<ez_dynamic<int> &>().clear()));
   static_assert(noexcept(declval<ez_dynamic<int> &>().operator ->()));
   static_assert(noexcept(declval<ez_dynamic<int> &>().operator *()));
 
-  static_assert(is_nothrow_constructible_v<ez_function<int (int)>>);
-  static_assert(!is_nothrow_copy_constructible_v<ez_function<int (int)>>);
-  static_assert(!is_nothrow_copy_assignable_v<ez_function<int (int)>>);
-  static_assert(is_nothrow_move_constructible_v<ez_function<int (int)>>);
-  static_assert(is_nothrow_move_assignable_v<ez_function<int (int)>>);
+  static_assert(is_nothrow_constructible<ez_function<int (int)>>);
+  static_assert(!is_nothrow_copy_constructible<ez_function<int (int)>>);
+  static_assert(!is_nothrow_copy_assignable<ez_function<int (int)>>);
+  static_assert(is_nothrow_move_constructible<ez_function<int (int)>>);
+  static_assert(is_nothrow_move_assignable<ez_function<int (int)>>);
   static_assert(!noexcept(ez_function<int (int)>([](int)->int {return 0;})));
   static_assert(!noexcept(declval<ez_function<int (int)> &>()(0)));
   static_assert(noexcept(declval<ez_function<int (int)> &>().empty()));
@@ -827,15 +827,15 @@ void test_ez_vector() {
     static_assert(noexcept(declval<vt &>().size()));
     static_assert(noexcept(declval<vt &>().empty()));
     static_assert(noexcept(declval<vt &>().capacity()));
-    static_assert(is_nothrow_constructible_v<vt>);
-    static_assert(is_nothrow_destructible_v<vt>);
-    static_assert(!is_nothrow_copy_constructible_v<vt>);
-    static_assert(!is_nothrow_copy_assignable_v<vt>);
-    static_assert(is_nothrow_move_constructible_v<vt>);
-    static_assert(is_nothrow_move_assignable_v<vt>);
-    static_assert(is_nothrow_swappable_v<vt>);
-    static_assert(is_constructible_v<vt, initializer_list<vt::value_type>>);
-    static_assert(!is_nothrow_constructible_v<vt, initializer_list<int>>);
+    static_assert(is_nothrow_constructible<vt>);
+    static_assert(is_nothrow_destructible<vt>);
+    static_assert(!is_nothrow_copy_constructible<vt>);
+    static_assert(!is_nothrow_copy_assignable<vt>);
+    static_assert(is_nothrow_move_constructible<vt>);
+    static_assert(is_nothrow_move_assignable<vt>);
+    static_assert(is_nothrow_swappable<vt>);
+    static_assert(is_constructible<vt, initializer_list<vt::value_type>>);
+    static_assert(!is_nothrow_constructible<vt, initializer_list<int>>);
     static_assert(three_way_comparable<vt, strong_ordering>);
     static_assert(equality_comparable<vt>);
     static_assert(!noexcept(declval<vt &>() == declval<vt &>()));
@@ -877,13 +877,13 @@ void test_ez_vector() {
     assert(v >= v);
     assert((v <=> v) == 0);
 
-    static_assert(is_same_v<vt::value_type, t>);
-    static_assert(is_same_v<vt::reference, t &>);
-    static_assert(is_same_v<vt::const_reference, const t &>);
-    static_assert(is_same_v<vt::iterator, t *>);
-    static_assert(is_same_v<vt::const_iterator, const t *>);
-    static_assert(is_same_v<vt::difference_type, ptrdiff_t>);
-    static_assert(is_same_v<vt::size_type, size_t>);
+    static_assert(is_same<vt::value_type, t>);
+    static_assert(is_same<vt::reference, t &>);
+    static_assert(is_same<vt::const_reference, const t &>);
+    static_assert(is_same<vt::iterator, t *>);
+    static_assert(is_same<vt::const_iterator, const t *>);
+    static_assert(is_same<vt::difference_type, ptrdiff_t>);
+    static_assert(is_same<vt::size_type, size_t>);
   }
   assert(t::count() == 0);
   {
@@ -1042,12 +1042,12 @@ void test_ez_forward_list() {
     static_assert(same_as<l_t::value_type, t>);
     static_assert(same_as<l_t::reference, t &>);
     static_assert(same_as<l_t::const_reference, const t &>);
-    static_assert(is_same_v<l_t::iterator::iterator_category,
-                            forward_iterator_tag>);
-    static_assert(is_same_v<l_t::const_iterator::iterator_category,
-                            forward_iterator_tag>);
-    static_assert(is_convertible_v<l_t::iterator, l_t::const_iterator>);
-    static_assert(!is_convertible_v<l_t::const_iterator, l_t::iterator>);
+    static_assert(is_same<l_t::iterator::iterator_category,
+                          forward_iterator_tag>);
+    static_assert(is_same<l_t::const_iterator::iterator_category,
+                          forward_iterator_tag>);
+    static_assert(is_convertible<l_t::iterator, l_t::const_iterator>);
+    static_assert(!is_convertible<l_t::const_iterator, l_t::iterator>);
     static_assert(same_as<l_t::difference_type, ptrdiff_t>);
     static_assert(same_as<l_t::size_type, size_t>);
   }
@@ -1189,12 +1189,12 @@ void test_ez_slist() {
     static_assert(same_as<l_t::value_type, t>);
     static_assert(same_as<l_t::reference, t &>);
     static_assert(same_as<l_t::const_reference, const t &>);
-    static_assert(is_same_v<l_t::iterator::iterator_category,
-                            forward_iterator_tag>);
-    static_assert(is_same_v<l_t::const_iterator::iterator_category,
-                            forward_iterator_tag>);
-    static_assert(is_convertible_v<l_t::iterator, l_t::const_iterator>);
-    static_assert(!is_convertible_v<l_t::const_iterator, l_t::iterator>);
+    static_assert(is_same<l_t::iterator::iterator_category,
+                          forward_iterator_tag>);
+    static_assert(is_same<l_t::const_iterator::iterator_category,
+                          forward_iterator_tag>);
+    static_assert(is_convertible<l_t::iterator, l_t::const_iterator>);
+    static_assert(!is_convertible<l_t::const_iterator, l_t::iterator>);
     static_assert(same_as<l_t::difference_type, ptrdiff_t>);
     static_assert(same_as<l_t::size_type, size_t>);
   }
@@ -1340,12 +1340,12 @@ void test_ez_bidirectional_list() {
     static_assert(same_as<l_t::value_type, t>);
     static_assert(same_as<l_t::reference, t &>);
     static_assert(same_as<l_t::const_reference, const t &>);
-    static_assert(is_same_v<l_t::iterator::iterator_category,
-                            bidirectional_iterator_tag>);
-    static_assert(is_same_v<l_t::const_iterator::iterator_category,
-                            bidirectional_iterator_tag>);
-    static_assert(is_convertible_v<l_t::iterator, l_t::const_iterator>);
-    static_assert(!is_convertible_v<l_t::const_iterator, l_t::iterator>);
+    static_assert(is_same<l_t::iterator::iterator_category,
+                          bidirectional_iterator_tag>);
+    static_assert(is_same<l_t::const_iterator::iterator_category,
+                          bidirectional_iterator_tag>);
+    static_assert(is_convertible<l_t::iterator, l_t::const_iterator>);
+    static_assert(!is_convertible<l_t::const_iterator, l_t::iterator>);
     static_assert(same_as<l_t::difference_type, ptrdiff_t>);
     static_assert(same_as<l_t::size_type, size_t>);
   }
@@ -1526,12 +1526,12 @@ void test_ez_list() {
     static_assert(same_as<l_t::value_type, t>);
     static_assert(same_as<l_t::reference, t &>);
     static_assert(same_as<l_t::const_reference, const t &>);
-    static_assert(is_same_v<l_t::iterator::iterator_category,
-                            bidirectional_iterator_tag>);
-    static_assert(is_same_v<l_t::const_iterator::iterator_category,
-                            bidirectional_iterator_tag>);
-    static_assert(is_convertible_v<l_t::iterator, l_t::const_iterator>);
-    static_assert(!is_convertible_v<l_t::const_iterator, l_t::iterator>);
+    static_assert(is_same<l_t::iterator::iterator_category,
+                          bidirectional_iterator_tag>);
+    static_assert(is_same<l_t::const_iterator::iterator_category,
+                          bidirectional_iterator_tag>);
+    static_assert(is_convertible<l_t::iterator, l_t::const_iterator>);
+    static_assert(!is_convertible<l_t::const_iterator, l_t::iterator>);
     static_assert(same_as<l_t::difference_type, ptrdiff_t>);
     static_assert(same_as<l_t::size_type, size_t>);
   }
@@ -1712,11 +1712,11 @@ void test_ez_map() {
   {
     using map_t = ez_map<int, int>;
     static_assert(semiregular<map_t>);
-    static_assert(!is_nothrow_default_constructible_v<map_t>);
-    static_assert(!is_nothrow_copy_constructible_v<map_t>);
-    static_assert(!is_nothrow_copy_assignable_v<map_t>);
-    static_assert(is_nothrow_move_constructible_v<map_t>);
-    static_assert(is_nothrow_move_assignable_v<map_t>);
+    static_assert(!is_nothrow_default_constructible<map_t>);
+    static_assert(!is_nothrow_copy_constructible<map_t>);
+    static_assert(!is_nothrow_copy_assignable<map_t>);
+    static_assert(is_nothrow_move_constructible<map_t>);
+    static_assert(is_nothrow_move_assignable<map_t>);
     static_assert(!noexcept(declval<map_t &>()[1]));
     static_assert(!noexcept(declval<map_t &>().find(1)));
     static_assert(noexcept(declval<map_t &>().end()));
@@ -2056,12 +2056,12 @@ void test_test_allocator() {
     static_assert(same_as<alloc_t::value_type, int>);
     static_assert(same_as<alloc_t::size_type, size_t>);
     static_assert(regular<alloc_t>);
-    static_assert(is_nothrow_default_constructible_v<alloc_t>);
-    static_assert(is_trivially_copyable_v<alloc_t>);
-    static_assert(is_nothrow_swappable_v<alloc_t>);
+    static_assert(is_nothrow_default_constructible<alloc_t>);
+    static_assert(is_trivially_copyable<alloc_t>);
+    static_assert(is_nothrow_swappable<alloc_t>);
     static_assert(noexcept(declval<alloc_t &>() == declval<alloc_t &>()));
-    static_assert(is_convertible_v<alloc_t, alloc2_t>);
-    static_assert(is_nothrow_convertible_v<alloc_t, alloc2_t>);
+    static_assert(is_convertible<alloc_t, alloc2_t>);
+    static_assert(is_nothrow_convertible<alloc_t, alloc2_t>);
     static_assert(!noexcept(declval<alloc_t &>().allocate(1)));
     static_assert(noexcept(declval<alloc_t &>().deallocate(nullptr, 1)));
     static_assert(noexcept(declval<alloc_t &>().empty()));
@@ -2090,15 +2090,15 @@ void test_test_allocator() {
     static_assert(same_as<alloc_t::value_type, int>);
     static_assert(same_as<alloc_t::size_type, size_t>);
     static_assert(regular<alloc_t>);
-    static_assert(!is_nothrow_default_constructible_v<alloc_t>);
-    static_assert(is_nothrow_copy_constructible_v<alloc_t>);
-    static_assert(is_nothrow_copy_assignable_v<alloc_t>);
-    static_assert(is_nothrow_move_constructible_v<alloc_t>);
-    static_assert(is_nothrow_move_assignable_v<alloc_t>);
-    static_assert(is_nothrow_swappable_v<alloc_t>);
+    static_assert(!is_nothrow_default_constructible<alloc_t>);
+    static_assert(is_nothrow_copy_constructible<alloc_t>);
+    static_assert(is_nothrow_copy_assignable<alloc_t>);
+    static_assert(is_nothrow_move_constructible<alloc_t>);
+    static_assert(is_nothrow_move_assignable<alloc_t>);
+    static_assert(is_nothrow_swappable<alloc_t>);
     static_assert(noexcept(declval<alloc_t &>() == declval<alloc_t &>()));
-    static_assert(is_convertible_v<alloc_t, alloc2_t>);
-    static_assert(is_nothrow_convertible_v<alloc_t, alloc2_t>);
+    static_assert(is_convertible<alloc_t, alloc2_t>);
+    static_assert(is_nothrow_convertible<alloc_t, alloc2_t>);
     static_assert(!noexcept(declval<alloc_t &>().allocate(1)));
     static_assert(noexcept(declval<alloc_t &>().deallocate(nullptr, 1)));
     static_assert(noexcept(declval<alloc_t &>().empty()));
@@ -2150,21 +2150,21 @@ void test_test_object() {
   {
     using t = test_object<int>;
     static_assert(regular<t>);
-    static_assert(!is_nothrow_default_constructible_v<t>);
-    static_assert(!is_nothrow_copy_constructible_v<t>);
-    static_assert(!is_nothrow_copy_assignable_v<t>);
-    static_assert(!is_nothrow_move_constructible_v<t>);
-    static_assert(!is_nothrow_move_assignable_v<t>);
-    static_assert(is_convertible_v<int, t>);
-    static_assert(!is_nothrow_convertible_v<int, t>);
-    static_assert(is_assignable_v<t &, const int &>);
-    static_assert(!is_nothrow_assignable_v<t &, const int &>);
+    static_assert(!is_nothrow_default_constructible<t>);
+    static_assert(!is_nothrow_copy_constructible<t>);
+    static_assert(!is_nothrow_copy_assignable<t>);
+    static_assert(!is_nothrow_move_constructible<t>);
+    static_assert(!is_nothrow_move_assignable<t>);
+    static_assert(is_convertible<int, t>);
+    static_assert(!is_nothrow_convertible<int, t>);
+    static_assert(is_assignable<t &, const int &>);
+    static_assert(!is_nothrow_assignable<t &, const int &>);
     static_assert(noexcept(*declval<t &>()));
     static_assert(noexcept(*declval<const t &>()));
     static_assert(noexcept(declval<t &>().operator ->()));
     static_assert(noexcept(declval<const t &>().operator ->()));
-    static_assert(is_nothrow_convertible_v<t &, int &>);
-    static_assert(is_nothrow_convertible_v<const t &, const int &>);
+    static_assert(is_nothrow_convertible<t &, int &>);
+    static_assert(is_nothrow_convertible<const t &, const int &>);
   }
   {
     using t = test_object<int>;
@@ -2206,10 +2206,10 @@ void test_test_object() {
     struct t {
       explicit t(int) {}
     };
-    static_assert(!is_convertible_v<int, t>);
-    static_assert(is_constructible_v<test_object<t>, int>);
-    static_assert(!is_convertible_v<int, test_object<t>>);
-    static_assert(!is_assignable_v<test_object<t> &, int>);
+    static_assert(!is_convertible<int, t>);
+    static_assert(is_constructible<test_object<t>, int>);
+    static_assert(!is_convertible<int, test_object<t>>);
+    static_assert(!is_assignable<test_object<t> &, int>);
 
     test_object<int> x = 1;
     assert(x == 1);

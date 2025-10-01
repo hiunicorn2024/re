@@ -302,6 +302,17 @@ void test_dup_compressed_array() {
     assert(v.empty());
   }
 
+  // explicit this_t(const dup_compressed_array<T2, AL2> &)
+  // this_t(const dup_compressed_array<T2, AL2> &, F)
+  {
+    const dup_compressed_array<int> v(seq(1, 1, 2, 2, 3, 4, 4, 4));
+    const dup_compressed_array<double> v2(v);
+    assert(equal(v2, seq(1.0, 1, 2, 2, 3, 4, 4, 4)));
+    const dup_compressed_array<double> v3(v,
+                                          [](int x)->double {return x * 2.0;});
+    assert(equal(v3, seq(2.0, 2, 4, 4, 6, 8, 8, 8)));    
+  }
+
   // this_t(from_range, r, a = {})
   // explicit this_t(r)
   // this_t(r, a = {})

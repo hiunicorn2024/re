@@ -141,12 +141,12 @@ template <bool NOSZ>
 void test_list_intrusive_mode() {
   vector<myt> v;
   using L = list_adaptor<list_traits<myt, 0, !NOSZ>>;
-  static_assert(is_default_constructible_v<L>);
-  static_assert(!is_copy_constructible_v<L>);
-  static_assert(!is_copy_assignable_v<L>);
-  static_assert(is_nothrow_move_constructible_v<L>);
-  static_assert(is_nothrow_move_assignable_v<L>);
-  static_assert(is_nothrow_swappable_v<L>);
+  static_assert(is_default_constructible<L>);
+  static_assert(!is_copy_constructible<L>);
+  static_assert(!is_copy_assignable<L>);
+  static_assert(is_nothrow_move_constructible<L>);
+  static_assert(is_nothrow_move_assignable<L>);
+  static_assert(is_nothrow_swappable<L>);
 
   {
     v = {1, 2, 3, 4, 5};

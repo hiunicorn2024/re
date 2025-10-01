@@ -214,7 +214,7 @@ void test_string_briefly() {
       v.reserve(20);
       assert(v.capacity() == 20);
       v.shrink_to_fit();
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 0);
@@ -228,7 +228,7 @@ void test_string_briefly() {
       assert(!v.full());
       v.shrink_to_fit();
       assert(equal(v, seq(1, 2, 3)));
-      if (!is_sso_string<decay_t<decltype(v)>>::value) {
+      if (!is_sso_string<decay<decltype(v)>>::value) {
         assert(v.capacity() == 3);
         assert(v.full());
       }
@@ -241,21 +241,21 @@ void test_string_briefly() {
     {
       V v;
       assert(v.empty());
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 0);
 
       v.reallocate(0);
       assert(v.empty());
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 0);
 
       v.reallocate(2);
       assert(v.empty());
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 2);
@@ -263,20 +263,20 @@ void test_string_briefly() {
       v = {1, 2, 3};
       v.shrink_to_fit();
       assert(equal(v, seq(1, 2, 3)));
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 3);
       v.reallocate(5);
       assert(equal(v, seq(1, 2, 3)));
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 5);
 
       v.reallocate(3);
       assert(equal(v, seq(1, 2, 3)));
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 3);
@@ -1086,64 +1086,64 @@ void test_sso_string() {
 void test_string_reference() {
   // compile-time check for sref constructors
   {
-    static_assert(is_convertible_v<char &, sref>);
-    static_assert(!is_convertible_v<const char &, sref>);
-    static_assert(!is_convertible_v<signed char &, sref>);
-    static_assert(!is_convertible_v<const signed char &, sref>);
-    static_assert(!is_convertible_v<unsigned char &, sref>);
-    static_assert(!is_convertible_v<const unsigned char &, sref>);
+    static_assert(is_convertible<char &, sref>);
+    static_assert(!is_convertible<const char &, sref>);
+    static_assert(!is_convertible<signed char &, sref>);
+    static_assert(!is_convertible<const signed char &, sref>);
+    static_assert(!is_convertible<unsigned char &, sref>);
+    static_assert(!is_convertible<const unsigned char &, sref>);
 
-    static_assert(is_convertible_v<iter_pair<char *>, sref>);
-    static_assert(!is_convertible_v<iter_pair<const char *>, sref>);
-    static_assert(!is_convertible_v<iter_pair<unsigned char *>, sref>);
-    static_assert(!is_convertible_v<iter_pair<const unsigned char *>, sref>);
-    static_assert(!is_convertible_v<iter_pair<signed char *>, sref>);
-    static_assert(!is_convertible_v<iter_pair<const signed char *>, sref>);
+    static_assert(is_convertible<iter_pair<char *>, sref>);
+    static_assert(!is_convertible<iter_pair<const char *>, sref>);
+    static_assert(!is_convertible<iter_pair<unsigned char *>, sref>);
+    static_assert(!is_convertible<iter_pair<const unsigned char *>, sref>);
+    static_assert(!is_convertible<iter_pair<signed char *>, sref>);
+    static_assert(!is_convertible<iter_pair<const signed char *>, sref>);
 
-    static_assert(is_convertible_v<ez_vector<char>, sref>);
-    static_assert(!is_convertible_v<ez_vector<const char>, sref>);
-    static_assert(!is_convertible_v<ez_vector<unsigned char>, sref>);
-    static_assert(!is_convertible_v<ez_vector<const unsigned char>, sref>);
-    static_assert(!is_convertible_v<ez_vector<signed char>, sref>);
-    static_assert(!is_convertible_v<ez_vector<const signed char>, sref>);
+    static_assert(is_convertible<ez_vector<char>, sref>);
+    static_assert(!is_convertible<ez_vector<const char>, sref>);
+    static_assert(!is_convertible<ez_vector<unsigned char>, sref>);
+    static_assert(!is_convertible<ez_vector<const unsigned char>, sref>);
+    static_assert(!is_convertible<ez_vector<signed char>, sref>);
+    static_assert(!is_convertible<ez_vector<const signed char>, sref>);
 
-    static_assert(is_convertible_v<char (&)[2], sref>);
-    static_assert(!is_convertible_v<const char (&)[2], sref>);
-    static_assert(!is_convertible_v<unsigned char (&)[2], sref>);
+    static_assert(is_convertible<char (&)[2], sref>);
+    static_assert(!is_convertible<const char (&)[2], sref>);
+    static_assert(!is_convertible<unsigned char (&)[2], sref>);
 
-    static_assert(is_convertible_v<char *, sref>);
-    static_assert(!is_convertible_v<unsigned char *, sref>);
+    static_assert(is_convertible<char *, sref>);
+    static_assert(!is_convertible<unsigned char *, sref>);
   }
   // compile-time check for sview constructors
   {
-    static_assert(is_convertible_v<char &, sview>);
-    static_assert(is_convertible_v<const char &, sview>);
-    static_assert(!is_convertible_v<signed char &, sview>);
-    static_assert(!is_convertible_v<unsigned char &, char &>);
-    static_assert(!is_convertible_v<const signed char &, sview>);
-    static_assert(!is_convertible_v<unsigned char &, sview>);
-    static_assert(!is_convertible_v<const unsigned char &, sview>);
+    static_assert(is_convertible<char &, sview>);
+    static_assert(is_convertible<const char &, sview>);
+    static_assert(!is_convertible<signed char &, sview>);
+    static_assert(!is_convertible<unsigned char &, char &>);
+    static_assert(!is_convertible<const signed char &, sview>);
+    static_assert(!is_convertible<unsigned char &, sview>);
+    static_assert(!is_convertible<const unsigned char &, sview>);
 
-    static_assert(is_convertible_v<iter_pair<char *>, sview>);
-    static_assert(is_convertible_v<iter_pair<const char *>, sview>);
-    static_assert(!is_convertible_v<iter_pair<unsigned char *>, sview>);
-    static_assert(!is_convertible_v<iter_pair<const unsigned char *>, sview>);
-    static_assert(!is_convertible_v<iter_pair<signed char *>, sview>);
-    static_assert(!is_convertible_v<iter_pair<const signed char *>, sview>);
+    static_assert(is_convertible<iter_pair<char *>, sview>);
+    static_assert(is_convertible<iter_pair<const char *>, sview>);
+    static_assert(!is_convertible<iter_pair<unsigned char *>, sview>);
+    static_assert(!is_convertible<iter_pair<const unsigned char *>, sview>);
+    static_assert(!is_convertible<iter_pair<signed char *>, sview>);
+    static_assert(!is_convertible<iter_pair<const signed char *>, sview>);
 
-    static_assert(is_convertible_v<ez_vector<char>, sview>);
-    static_assert(is_convertible_v<ez_vector<const char>, sview>);
-    static_assert(!is_convertible_v<ez_vector<unsigned char>, sview>);
-    static_assert(!is_convertible_v<ez_vector<const unsigned char>, sview>);
-    static_assert(!is_convertible_v<ez_vector<signed char>, sview>);
-    static_assert(!is_convertible_v<ez_vector<const signed char>, sview>);
+    static_assert(is_convertible<ez_vector<char>, sview>);
+    static_assert(is_convertible<ez_vector<const char>, sview>);
+    static_assert(!is_convertible<ez_vector<unsigned char>, sview>);
+    static_assert(!is_convertible<ez_vector<const unsigned char>, sview>);
+    static_assert(!is_convertible<ez_vector<signed char>, sview>);
+    static_assert(!is_convertible<ez_vector<const signed char>, sview>);
 
-    static_assert(is_convertible_v<char (&)[2], sview>);
-    static_assert(is_convertible_v<const char (&)[2], sview>);
-    static_assert(!is_convertible_v<unsigned char (&)[2], sview>);
+    static_assert(is_convertible<char (&)[2], sview>);
+    static_assert(is_convertible<const char (&)[2], sview>);
+    static_assert(!is_convertible<unsigned char (&)[2], sview>);
 
-    static_assert(is_convertible_v<char *, sview>);
-    static_assert(!is_convertible_v<unsigned char *, sview>);
+    static_assert(is_convertible<char *, sview>);
+    static_assert(!is_convertible<unsigned char *, sview>);
   }
 
   {
@@ -1427,6 +1427,40 @@ void test_utf8_utf16_utf32_conversion() {
   }
 }
 
+void test_unicode_helper_fns() {
+  assert(unicode_is_common_space(U' '));
+  assert(!unicode_is_common_space(U'a'));
+
+  assert(all_of(U"abcdefghijklmnopqrstuvwxyz"_sv, unicode_is_lower));
+  assert(!unicode_is_lower(U'1'));
+
+  assert(all_of(U"ABCDEFGHIJKLMNOPQRSTUVWXYZ"_sv, unicode_is_upper));
+  assert(!unicode_is_upper(U'1'));
+
+  assert(all_of(U"abcdefghijklmnopqrstuvwxyz"_sv, unicode_is_alpha));
+  assert(all_of(U"ABCDEFGHIJKLMNOPQRSTUVWXYZ"_sv, unicode_is_alpha));
+  assert(!unicode_is_alpha(U'1'));
+
+  assert(all_of(U"0123456789"_sv, unicode_is_digit));
+  assert(!unicode_is_digit(U'a'));
+
+  assert(all_of(U"0123456789"
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "abcdefghijklmnopqrstuvwxyz"_sv, unicode_is_alnum));
+  assert(!unicode_is_alnum(U'-'));
+
+  assert(all_of(U"0123456789abcdefABCDEF"_sv, unicode_is_xdigit));
+  assert(!unicode_is_xdigit(U'z'));
+
+  auto s = U"0abcdefghijklmnopqrstuvwxyz"_s;
+  for_each(s, [](char32_t &x) {x = unicode_to_upper(x);});
+  assert(s == U"0ABCDEFGHIJKLMNOPQRSTUVWXYZ"_sv);
+
+  s = U"0ABCDEFGHIJKLMNOPQRSTUVWXYZ"_s;
+  for_each(s, [](char32_t &x) {x = unicode_to_lower(x);});
+  assert(s == U"0abcdefghijklmnopqrstuvwxyz"_sv);
+}
+
 void test_string2() {
   printf("container - sso_string: ");
 
@@ -1434,6 +1468,7 @@ void test_string2() {
   inner::test::test_string_reference();
   inner::test::test_string_compare();
   inner::test::test_utf8_utf16_utf32_conversion();
+  inner::test::test_unicode_helper_fns();
 
   printf("ok\n");
 }

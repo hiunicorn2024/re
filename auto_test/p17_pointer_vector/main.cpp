@@ -27,14 +27,14 @@ void test_pointer_vector_iterator() {
   int a[3][1] = {{1}, {2}, {3}};
   using itr_t = inner::ptrvec_iterator<int, decltype(begin(a))>;
   using citr_t = inner::ptrvec_iterator<const int, decltype(begin(a))>;
-  static_assert(is_same_v<itr_vt<itr_t>, int>);
-  static_assert(is_same_v<itr_vt<citr_t>, int>);
-  static_assert(is_same_v<itr_dft<itr_t>, ptrdiff_t>);
-  static_assert(is_same_v<itr_dft<citr_t>, ptrdiff_t>);
-  static_assert(is_same_v<itr_ptr<itr_t>, int *>);
-  static_assert(is_same_v<itr_ptr<citr_t>, const int *>);
-  static_assert(is_same_v<itr_ref<itr_t>, int &>);
-  static_assert(is_same_v<itr_ref<citr_t>, const int &>);
+  static_assert(is_same<itr_vt<itr_t>, int>);
+  static_assert(is_same<itr_vt<citr_t>, int>);
+  static_assert(is_same<itr_dft<itr_t>, ptrdiff_t>);
+  static_assert(is_same<itr_dft<citr_t>, ptrdiff_t>);
+  static_assert(is_same<itr_ptr<itr_t>, int *>);
+  static_assert(is_same<itr_ptr<citr_t>, const int *>);
+  static_assert(is_same<itr_ref<itr_t>, int &>);
+  static_assert(is_same<itr_ref<citr_t>, const int &>);
   static_assert(is_ritr<itr_t> && !is_citr<itr_t>);
   static_assert(is_ritr<citr_t> && !is_citr<citr_t>);
 

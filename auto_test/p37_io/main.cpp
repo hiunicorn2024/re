@@ -34,7 +34,7 @@ void test_c_file() {
   // error()
   // close()
   {
-    static_assert(is_nothrow_default_constructible_v<c_file>);
+    static_assert(is_nothrow_default_constructible<c_file>);
     static_assert(movable<c_file>);
     static_assert(swappable<c_file>);
 
@@ -158,16 +158,16 @@ void test_console_c_file() {
   // stdout_f()
   // base()
   {
-    static_assert(!is_default_constructible_v<console_c_file>);
-    static_assert(is_destructible_v<console_c_file>);
-    static_assert(!is_move_constructible_v<console_c_file>);
-    static_assert(!is_move_assignable_v<console_c_file>);
-    static_assert(!is_copy_constructible_v<console_c_file>);
-    static_assert(!is_copy_assignable_v<console_c_file>);
+    static_assert(!is_default_constructible<console_c_file>);
+    static_assert(is_destructible<console_c_file>);
+    static_assert(!is_move_constructible<console_c_file>);
+    static_assert(!is_move_assignable<console_c_file>);
+    static_assert(!is_copy_constructible<console_c_file>);
+    static_assert(!is_copy_assignable<console_c_file>);
 
-    static_assert(is_same_v<decltype(stdin_f()), console_c_file>);
-    static_assert(is_same_v<decltype(stdout_f()), console_c_file>);
-    static_assert(is_same_v<decltype(stderr_f()), console_c_file>);
+    static_assert(is_same<decltype(stdin_f()), console_c_file>);
+    static_assert(is_same<decltype(stdout_f()), console_c_file>);
+    static_assert(is_same<decltype(stderr_f()), console_c_file>);
     assert(stdin_f().base() == stdin);
     assert(stdout_f().base() == stdout);
     assert(stderr_f().base() == stderr);
@@ -653,6 +653,127 @@ void test_sscan() {
       x = 0;
       assert(sscan(v, x, hex) && v.empty() && x == 0xfffffu);
     }
+  }
+
+  // sscan_single
+  {
+    char c{};
+    sview sv0 = "abc";
+    assert(sscan_single(sv0, c) && c == 'a');
+    assert(sscan_single(sv0, c) && c == 'b');
+    assert(sscan_single(sv0, c) && c == 'c');
+    assert(!sscan_single(sv0, c) && c == 'c');
+
+    u32string s = U"abcd";
+    u32sview sv(s);
+    char32_t c2{};
+    assert(sscan_single(sv, c2) && c2 == U'a');
+    assert(sscan_single(sv, c2) && c2 == U'b');
+    assert(sscan_single(sv, c2) && c2 == U'c');
+    assert(sscan_single(sv, c2) && c2 == U'd');
+    assert(!sscan_single(sv, c2) && c2 == U'd');
+  }
+
+  // sscan_while
+  {
+    sview sv = "123456789";
+    assert(equal(sscan_while(sv, [](char c) {return c < '6';}),
+                 "12345"_sv));
+    assert(equal(sv, "6789"_sv));
+  }
+
+  // sscan_ln
+  {
+    string s = {10u};
+    string s2 = {10u, 'a'};
+    string s3 = {13u};
+    string s4 = {13u, 'a'};
+    string s5 = {13u, 10u};
+    string s6 = {13u, 10u, 'a'};
+
+    sview sv;
+    sv = s;
+    assert(sscan_ln(sv) && sv.empty());
+    sv = s2;
+    assert(sscan_ln(sv) && equal(sv, seq('a')));
+    assert(!sscan_ln(sv) && equal(sv, seq('a')));
+    sv = s3;
+    assert(sscan_ln(sv) && sv.empty());
+    sv = s4;
+    assert(sscan_ln(sv) && equal(sv, seq('a')));
+    assert(!sscan_ln(sv) && equal(sv, seq('a')));
+    sv = s5;
+    assert(sscan_ln(sv) && sv.empty());
+    sv = s6;
+    assert(sscan_ln(sv) && equal(sv, seq('a')));
+    assert(!sscan_ln(sv) && equal(sv, seq('a')));
+  }
+
+  // sscan_line
+  {
+    sview sv = "abcd\nef\rg\r\nhij";
+    assert(sscan_line(sv).value() == "abcd"_sv);
+    assert(sscan_line(sv).value() == "ef"_sv);
+    assert(sscan_line(sv).value() == "g"_sv);
+    assert(sscan_line(sv).value() == "hij"_sv);
+    assert(sscan_line(sv).empty());
+    sv = "abcd\nef\rg\r\n";
+    assert(sscan_line(sv).value() == "abcd"_sv);
+    assert(sscan_line(sv).value() == "ef"_sv);
+    assert(sscan_line(sv).value() == "g"_sv);
+    sv = "";
+    assert(sscan_line(sv).empty());
+    sv = "xyz";
+    assert(sscan_line(sv).value() == "xyz"_sv);
+
+    sv = "abcd\nef\rg\r\nhij";
+    bool has_ln{};
+    assert(sscan_line(sv, has_ln).value() == "abcd"_sv);
+    assert(has_ln);
+    assert(sscan_line(sv, has_ln).value() == "ef"_sv);
+    assert(has_ln);
+    assert(sscan_line(sv, has_ln).value() == "g"_sv);
+    assert(has_ln);
+    assert(sscan_line(sv, has_ln).value() == "hij"_sv);
+    assert(!has_ln);
+    assert(sscan_line(sv, has_ln).empty());
+    assert(!has_ln);
+    sv = "abcd\nef\rg\r\n";
+    assert(sscan_line(sv, has_ln).value() == "abcd"_sv);
+    assert(has_ln);
+    assert(sscan_line(sv, has_ln).value() == "ef"_sv);
+    assert(has_ln);
+    assert(sscan_line(sv, has_ln).value() == "g"_sv);
+    assert(has_ln);
+    sv = "";
+    assert(sscan_line(sv, has_ln).empty());
+    assert(!has_ln);
+    sv = "xyz";
+    assert(sscan_line(sv, has_ln).value() == "xyz"_sv);
+    assert(!has_ln);
+    sv = "xyz\n";
+    assert(sscan_line(sv, has_ln).value() == "xyz"_sv);
+    assert(has_ln);
+  }
+
+  // sscan_spaces
+  // sscan_common_spaces
+  {
+    const string s = " \t \n \r \r\n ab";
+    sview sv = s;
+    sscan_spaces(sv);
+    assert(sv == "ab");
+    sv = s;
+    sscan_common_spaces(sv);
+    assert(sv == "\n \r \r\n ab");
+
+    u32string s2 = U" \t \n \r \r\n cd";
+    u32sview sv2 = s2;
+    sscan_spaces(sv2);
+    assert(sv2 == U"cd");
+    sv2 = s2;
+    sscan_common_spaces(sv2);
+    assert(sv2 == U"\n \r \r\n cd");
   }
 }
 void test_sprint() {
@@ -1295,169 +1416,292 @@ void test_big_int() {
   {
     string s;
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("+0.00000", (size_t)(-1), 0u, false, true);
+      ("+0.00000", (size_t)(-1), 0u, false, true, true);
     assert(s == "+0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("+0.00000", (size_t)(-1), 0u, false, false);
+      ("+0.00000", (size_t)(-1), 0u, false, false, true);
     assert(s == "0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("-0.00000", (size_t)(-1), 0u, false, false);
+      ("-0.00000", (size_t)(-1), 0u, false, false, true);
     assert(s == "-0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00000", (size_t)(-1), 0u, false, false);
+      ("0.00000", (size_t)(-1), 0u, false, false, true);
     assert(s == "0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00000", (size_t)(-1), 0u, false, true);
+      ("0.00000", (size_t)(-1), 0u, false, true, true);
     assert(s == "+0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("+0.00000", (size_t)(-1), 0u, false, true);
+      ("+0.00000", (size_t)(-1), 0u, false, true, true);
     assert(s == "+0e+0");
 
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0", (size_t)-1, 0u, false, false);
+      ("0", (size_t)-1, 0u, false, false, true);
     assert(s == "0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0", 0u, 0u, false, false);
+      ("0", 0u, 0u, false, false, true);
     assert(s == "0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0", 1u, 0u, false, false);
+      ("0", 0u, 0u, false, false, false);
+    assert(s == "0e+0");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0", 1u, 0u, false, false, false);
     assert(s == "0.0e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0", 3u, 0u, false, false);
+      ("0", 1u, 0u, false, false, true);
+    assert(s == "0e+0");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0", 3u, 0u, false, false, false);
     assert(s == "0.000e+0");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0", 3u, 0u, false, false, true);
+    assert(s == "0e+0");
 
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.1", (size_t)-1, 0u, false, false);
+      ("0.1", (size_t)-1, 0u, false, false, true);
     assert(s == "1e-1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.1", (size_t)-1, 0u, false, false);
+      ("0.1", (size_t)-1, 0u, false, false, true);
     assert(s == "1e-1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.10", (size_t)-1, 0u, false, false);
+      ("0.10", (size_t)-1, 0u, false, false, true);
     assert(s == "1e-1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.1234", (size_t)-1, 0u, false, false);
+      ("0.1234", (size_t)-1, 0u, false, false, true);
     assert(s == "1.234e-1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.12340", (size_t)-1, 0u, false, false);
+      ("0.12340", (size_t)-1, 0u, false, false, true);
     assert(s == "1.234e-1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.12340000", (size_t)-1, 0u, false, false);
+      ("0.12340000", (size_t)-1, 0u, false, false, true);
     assert(s == "1.234e-1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.0001", 0u, 0u, false, false);
+      ("0.0001", 0u, 0u, false, false, false);
     assert(s == "1e-4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00015", 0u, 0u, false, false);
+      ("0.0001", 0u, 0u, false, false, true);
+    assert(s == "1e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.00015", 0u, 0u, false, false, false);
     assert(s == "2e-4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00014", 0u, 0u, false, false);
+      ("0.00015", 0u, 0u, false, false, true);
+    assert(s == "2e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.00014", 0u, 0u, false, false, false);
     assert(s == "1e-4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00095", 0u, 0u, false, false);
+      ("0.00014", 0u, 0u, false, false, true);
+    assert(s == "1e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.00095", 0u, 0u, false, false, false);
     assert(s == "1e-3");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00012", 1u, 0u, false, false);
+      ("0.00095", 0u, 0u, false, false, true);
+    assert(s == "1e-3");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.00012", 1u, 0u, false, false, false);
     assert(s == "1.2e-4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.00012", 3u, 0u, false, false);
+      ("0.00012", 1u, 0u, false, false, true);
+    assert(s == "1.2e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.00012", 3u, 0u, false, false, false);
     assert(s == "1.200e-4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.02345678", 1u, 0u, false, false);
+      ("0.00012", 3u, 0u, false, false, true);
+    assert(s == "1.2e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.0001", 3u, 0u, false, false, false);
+    assert(s == "1.000e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.0001", 3u, 0u, false, false, true);
+    assert(s == "1e-4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.02345678", 1u, 0u, false, false, false);
     assert(s == "2.3e-2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.02345678", 2u, 0u, false, false);
+      ("0.02345678", 1u, 0u, false, false, true);
+    assert(s == "2.3e-2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.02345678", 2u, 0u, false, false, false);
     assert(s == "2.35e-2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.02345678", 3u, 0u, false, false);
+      ("0.02345678", 2u, 0u, false, false, true);
+    assert(s == "2.35e-2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.02345678", 3u, 0u, false, false, false);
     assert(s == "2.346e-2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.01995", 2u, 0u, false, false);
+      ("0.02345678", 3u, 0u, false, false, true);
+    assert(s == "2.346e-2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.01995", 2u, 0u, false, false, false);
     assert(s == "2.00e-2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("0.09995", 2u, 0u, false, false);
+      ("0.01995", 2u, 0u, false, false, true);
+    assert(s == "2e-2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.09995", 2u, 0u, false, false, false);
     assert(s == "1.00e-1");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("0.09995", 2u, 0u, false, false, true);
+    assert(s == "1e-1");
 
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("100.00", (size_t)-1, 0u, false, false);
+      ("100.00", (size_t)-1, 0u, false, false, true);
     assert(s == "1e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("1", 0u, 0u, false, false);
+      ("1", 0u, 0u, false, false, false);
     assert(s == "1e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("1.0", 0u, 0u, false, false);
+      ("1", 0u, 0u, false, false, true);
     assert(s == "1e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("1.5", 0u, 0u, false, false);
+      ("1.0", 0u, 0u, false, false, false);
+    assert(s == "1e+0");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("1.0", 0u, 0u, false, false, true);
+    assert(s == "1e+0");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("1.5", 0u, 0u, false, false, false);
     assert(s == "2e+0");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("9.5", 0u, 0u, false, false);
+      ("1.5", 0u, 0u, false, false, true);
+    assert(s == "2e+0");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("9.5", 0u, 0u, false, false, false);
     assert(s == "1e+1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("99.5", 0u, 0u, false, false);
+      ("9.5", 0u, 0u, false, false, true);
+    assert(s == "1e+1");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("99.5", 0u, 0u, false, false, false);
     assert(s == "1e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("999.51234000", 0u, 0u, false, false);
+      ("99.5", 0u, 0u, false, false, true);
+    assert(s == "1e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("999.51234000", 0u, 0u, false, false, false);
     assert(s == "1e+3");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("159999.51234000", 0u, 0u, false, false);
+      ("999.51234000", 0u, 0u, false, false, true);
+    assert(s == "1e+3");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("159999.51234000", 0u, 0u, false, false, false);
+    assert(s == "2e+5");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("159999.51234000", 0u, 0u, false, false, true);
     assert(s == "2e+5");
 
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 1u, 0u, false, false);
+      ("123.45", 1u, 0u, false, false, false);
     assert(s == "1.2e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 2u, 0u, false, false);
+      ("123.45", 1u, 0u, false, false, true);
+    assert(s == "1.2e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 2u, 0u, false, false, false);
     assert(s == "1.23e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 10u, 0u, false, false);
+      ("123.45", 2u, 0u, false, false, true);
+    assert(s == "1.23e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 10u, 0u, false, false, false);
     assert(s == "1.2345000000e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 5u, 0u, false, false);
-    assert(s == "1.23450e+2");
-    s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 4u, 0u, false, false);
+      ("123.45", 10u, 0u, false, false, true);
     assert(s == "1.2345e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 1u, 0u, false, false);
+      ("123.45", 5u, 0u, false, false, false);
+    assert(s == "1.23450e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 5u, 0u, false, false, true);
+    assert(s == "1.2345e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 4u, 0u, false, false, false);
+    assert(s == "1.2345e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 4u, 0u, false, false, true);
+    assert(s == "1.2345e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 1u, 0u, false, false, false);
     assert(s == "1.2e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.45", 1u, 0u, false, false);
+      ("123.45", 1u, 0u, false, false, true);
     assert(s == "1.2e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("125.45", 1u, 0u, false, false);
+      ("123.45", 1u, 0u, false, false, false);
+    assert(s == "1.2e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.45", 1u, 0u, false, false, true);
+    assert(s == "1.2e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("125.45", 1u, 0u, false, false, false);
     assert(s == "1.3e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("999990.45", 3u, 0u, false, false);
+      ("125.45", 1u, 0u, false, false, true);
+    assert(s == "1.3e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("999990.45", 3u, 0u, false, false, false);
     assert(s == "1.000e+6");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("12999.45", 3u, 0u, false, false);
+      ("999990.45", 3u, 0u, false, false, true);
+    assert(s == "1e+6");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("12999.45", 3u, 0u, false, false, false);
     assert(s == "1.300e+4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("12999.45", 3u, 0u, false, false);
+      ("12999.45", 3u, 0u, false, false, true);
+    assert(s == "1.3e+4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("12999.45", 3u, 0u, false, false, false);
     assert(s == "1.300e+4");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.56", 2u, 0u, false, false);
+      ("12999.45", 3u, 0u, false, false, true);
+    assert(s == "1.3e+4");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.56", 2u, 0u, false, false, false);
     assert(s == "1.24e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("123.56", 3u, 0u, false, false);
+      ("123.56", 2u, 0u, false, false, true);
+    assert(s == "1.24e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("123.56", 3u, 0u, false, false, false);
     assert(s == "1.236e+2");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("999.9912", 3u, 0u, false, false);
+      ("123.56", 3u, 0u, false, false, true);
+    assert(s == "1.236e+2");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("999.9912", 3u, 0u, false, false, false);
     assert(s == "1.000e+3");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("999.9952", 4u, 0u, false, false);
+      ("999.9912", 3u, 0u, false, false, true);
+    assert(s == "1e+3");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("999.9952", 4u, 0u, false, false, false);
     assert(s == "1.0000e+3");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("999.9952", 4u, 0u, false, false, true);
+    assert(s == "1e+3");
 
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("999.9952", 4u, 2u, false, false);
+      ("999.9952", 4u, 2u, false, false, false);
     assert(s == "1.00'00e+3");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("100000000000.1234", 4u, 1u, false, false);
+      ("999.9952", 4u, 2u, false, false, true);
+    assert(s == "1e+3");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("100000000000.1234", 4u, 1u, false, false, false);
     assert(s == "1.0'0'0'0e+1'1");
     s = inner::fns::fixed_fraction_string_to_scientific<string>
-      ("100000000000.1234", 4u, 3u, false, false);
+      ("100000000000.1234", 4u, 1u, false, false, true);
+    assert(s == "1e+1'1");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("100000000000.1234", 4u, 3u, false, false, false);
     assert(s == "1.000'0e+11");
+    s = inner::fns::fixed_fraction_string_to_scientific<string>
+      ("100000000000.1234", 4u, 3u, false, false, true);
+    assert(s == "1e+11");
   }
 
   // sscan
@@ -1597,11 +1841,16 @@ void test_big_int() {
     assert(i.sscan_scientific(v) && !i.is_zero() && inner::good(i));
     assert(v.empty());
     assert(i.sprint_scientific() == "1.234568e+19");
-    assert(i.sprint_scientific(6u, 1u, true, true) == "+1.2'3'4'5'6'8E+1'9");
-    assert(i.sprint_scientific(6u, 2u, false, false) == "1.23'45'68e+19");
-    assert(i.sprint_scientific(6u, 3u, false, false) == "1.234'568e+19");
-    assert(i.sprint_scientific(6u, 5u, false, false) == "1.23456'8e+19");
-    assert(i.sprint_scientific(6u, 6u, false, false) == "1.234568e+19");
+    assert(i.sprint_scientific(6u, false, 1u, true, true)
+           == "+1.2'3'4'5'6'8E+1'9");
+    assert(i.sprint_scientific(6u, false, 2u, false, false)
+           == "1.23'45'68e+19");
+    assert(i.sprint_scientific(6u, false, 3u, false, false)
+           == "1.234'568e+19");
+    assert(i.sprint_scientific(6u, false, 5u, false, false)
+           == "1.23456'8e+19");
+    assert(i.sprint_scientific(6u, false, 6u, false, false)
+           == "1.234568e+19");
   }
 
   // sscan (utf16/utf32)
@@ -1692,8 +1941,8 @@ void test_sprint_floating_point_impl() {
 
     assert(traits::is_nan(f));
     assert(traits::is_nan(f2));
-    assert(traits::is_positive(f));
-    assert(traits::is_negative(f2));
+    assert(traits::sign(f));
+    assert(!traits::sign(f2));
 
     assert(traits::e(f) == traits::e(f2));
 
@@ -1712,8 +1961,8 @@ void test_sprint_floating_point_impl() {
     const F neg_inf = -numeric_limits<F>::infinity();
     assert(floating_point_traits<F>::is_infinity(pos_inf));
     assert(floating_point_traits<F>::is_infinity(neg_inf));
-    assert(traits::is_positive(pos_inf));
-    assert(traits::is_negative(neg_inf));
+    assert(traits::sign(pos_inf));
+    assert(!traits::sign(neg_inf));
     assert(traits::e(pos_inf) == traits::e_max);
     assert(traits::e(neg_inf) == traits::e_max);
     assert(traits::f(pos_inf) == 0u);
@@ -1793,80 +2042,125 @@ void test_sprint_floating_point() {
   {
     string s;
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("+0.01234", (size_t)-1, 0u, false);
+      ("+0.01234", (size_t)-1, 0u, false, true);
     assert(s == "0.01234");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("+0.01234", (size_t)-1, 0u, true);
+      ("+0.01234", (size_t)-1, 0u, true, true);
     assert(s == "+0.01234");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("0.01234", (size_t)-1, 0u, false);
+      ("0.01234", (size_t)-1, 0u, false, true);
     assert(s == "0.01234");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("0.01234", (size_t)-1, 0u, true);
+      ("0.01234", (size_t)-1, 0u, true, true);
     assert(s == "+0.01234");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("-0.01234", (size_t)-1, 0u, true);
+      ("-0.01234", (size_t)-1, 0u, true, true);
     assert(s == "-0.01234");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("-0.01234", (size_t)-1, 0u, false);
+      ("-0.01234", (size_t)-1, 0u, false, true);
     assert(s == "-0.01234");
 
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1", (size_t)-1, 0u, false);
+      ("1", (size_t)-1, 0u, false, true);
     assert(s == "1");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1", 0u, 0u, false);
+      ("1", 0u, 0u, false, false);
     assert(s == "1");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1", 1u, 0u, false);
+      ("1", 0u, 0u, false, true);
+    assert(s == "1");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1", 1u, 0u, false, false);
     assert(s == "1.0");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1", 5u, 0u, false);
+      ("1", 1u, 0u, false, true);
+    assert(s == "1");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1", 5u, 0u, false, false);
     assert(s == "1.00000");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("0.00000", (size_t)-1, 0u, false);
+      ("1", 5u, 0u, false, true);
+    assert(s == "1");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("0.00000", (size_t)-1, 0u, false, true);
     assert(s == "0");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("0.12345", 0u, 0u, false);
+      ("0.12345", 0u, 0u, false, false);
     assert(s == "0");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("9.52345", 0u, 0u, false);
+      ("0.12345", 0u, 0u, false, true);
+    assert(s == "0");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("9.52345", 0u, 0u, false, false);
     assert(s == "10");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1239.52345", 0u, 0u, false);
+      ("9.52345", 0u, 0u, false, true);
+    assert(s == "10");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1239.52345", 0u, 0u, false, false);
     assert(s == "1240");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("123999999.52345", 0u, 0u, false);
+      ("1239.52345", 0u, 0u, false, true);
+    assert(s == "1240");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("123999999.52345", 0u, 0u, false, false);
     assert(s == "124000000");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1.234", 3u, 0u, false);
+      ("123999999.52345", 0u, 0u, false, true);
+    assert(s == "124000000");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1.234", 3u, 0u, false, false);
     assert(s == "1.234");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1.234", 4u, 0u, false);
+      ("1.234", 3u, 0u, false, true);
+    assert(s == "1.234");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1.234", 4u, 0u, false, false);
     assert(s == "1.2340");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1.234", 6u, 0u, false);
+      ("1.234", 4u, 0u, false, true);
+    assert(s == "1.234");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1.234", 6u, 0u, false, false);
     assert(s == "1.234000");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1.234", 2u, 0u, false);
+      ("1.234", 6u, 0u, false, true);
+    assert(s == "1.234");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1.234", 2u, 0u, false, false);
     assert(s == "1.23");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1.234", 1u, 0u, false);
+      ("1.234", 2u, 0u, false, true);
+    assert(s == "1.23");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1.234", 1u, 0u, false, false);
     assert(s == "1.2");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("12999.99990", 3u, 0u, false);
+      ("1.234", 1u, 0u, false, true);
+    assert(s == "1.2");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("12999.99990", 3u, 0u, false, false);
     assert(s == "13000.000");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("12999.19990", 3u, 0u, false);
+      ("12999.99990", 3u, 0u, false, true);
+    assert(s == "13000");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("12999.19990", 3u, 0u, false, false);
     assert(s == "12999.200");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("99999.99990", 3u, 0u, false);
+      ("12999.19990", 3u, 0u, false, true);
+    assert(s == "12999.2");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("99999.99990", 3u, 0u, false, false);
     assert(s == "100000.000");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1234.56789", (size_t)-1, 2u, false);
+      ("99999.99990", 3u, 0u, false, true);
+    assert(s == "100000");
+    s = inner::fns::fixed_fraction_string_apply_print_args<string>
+      ("1234.56789", (size_t)-1, 2u, false, true);
     assert(s == "12'34.56'78'9");
     s = inner::fns::fixed_fraction_string_apply_print_args<string>
-      ("1234.56789", (size_t)-1, 2u, true);
+      ("1234.56789", (size_t)-1, 2u, true, true);
     assert(s == "+12'34.56'78'9");
   }
 
@@ -1885,23 +2179,23 @@ void test_sscan_floating_point_impl() {
     for (sview v : seq("nan"_sv, "NAN", "+nan", "+NAN")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_nan(f) && traits::is_positive(f));
+      assert(v.empty() && traits::is_nan(f) && traits::sign(f));
     }
     for (sview v : seq("-nan"_sv, "-NAN")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_nan(f) && traits::is_negative(f));
+      assert(v.empty() && traits::is_nan(f) && !traits::sign(f));
     }
 
     for (wsview v : seq(L"nan"_sv, L"NAN", L"+nan", L"+NAN")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_nan(f) && traits::is_positive(f));
+      assert(v.empty() && traits::is_nan(f) && traits::sign(f));
     }
     for (wsview v : seq(L"-nan"_sv, L"-NAN")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_nan(f) && traits::is_negative(f));
+      assert(v.empty() && traits::is_nan(f) && !traits::sign(f));
     }
   }
   // inf
@@ -1909,45 +2203,45 @@ void test_sscan_floating_point_impl() {
     for (sview v : seq("inf"_sv, "INF", "+inf", "+INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+      assert(v.empty() && traits::is_infinity(f) && traits::sign(f));
     }
     for (sview v : seq("-inf"_sv, "-INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+      assert(v.empty() && traits::is_infinity(f) && !traits::sign(f));
     }
 
     for (wsview v : seq(L"inf"_sv, L"INF", L"+inf", L"+INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+      assert(v.empty() && traits::is_infinity(f) && traits::sign(f));
     }
     for (wsview v : seq(L"-inf"_sv, L"-INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+      assert(v.empty() && traits::is_infinity(f) && !traits::sign(f));
     }
 
     for (u16sview v : seq(u"inf"_sv, u"INF", u"+inf", u"+INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+      assert(v.empty() && traits::is_infinity(f) && traits::sign(f));
     }
     for (u16sview v : seq(u"-inf"_sv, u"-INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+      assert(v.empty() && traits::is_infinity(f) && !traits::sign(f));
     }
 
     for (u32sview v : seq(U"inf"_sv, U"INF", U"+inf", U"+INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_positive(f));
+      assert(v.empty() && traits::is_infinity(f) && traits::sign(f));
     }
     for (u32sview v : seq(U"-inf"_sv, U"-INF")) {
       F f = (F)0;
       assert(sscan(v, f));
-      assert(v.empty() && traits::is_infinity(f) && traits::is_negative(f));
+      assert(v.empty() && traits::is_infinity(f) && !traits::sign(f));
     }
   }
   // finite number
@@ -2159,6 +2453,13 @@ void test_ssplitter() {
   }
 }
 void test_ssplit() {
+  {
+    u32string s = U"ab__cd__efg";
+    vector<u32string> v;
+    ssplit(s, U"__", output_itr([&](auto sv) {v.emplace_back(sv);}));
+    assert(equal(v, seq(U"ab"_sv, U"cd", U"efg")));
+  }
+
   string s = "ab__cd__efg";
   vector<string> v;
   ssplit(s, "__", output_itr([&](auto sv) {v.emplace_back(sv);}));
@@ -2180,6 +2481,182 @@ void test_ssplit() {
   assert(equal(v, seq("__"_sv)));
 }
 
+struct g_t {
+  enum class opr {
+    paren,
+    pos, neg,
+    pow,
+    mul, div,
+    add, sub,
+    cond,
+    fn
+  };
+  using operator_type = opr;
+  static bool operator_is_function(operator_type o) noexcept {
+    return o == opr::fn;
+  }
+  using operand_type = double;
+  using stack_type = vector<operand_type>;
+  using function_type = function<operand_type (const stack_type &)>;
+  using char_type = char;
+  using string_type = string;
+  using view_type = sview;
+  struct tree_node_type {
+    operator_type id;
+    string_type function_name;
+    optional<operand_type> result;
+  };
+
+  const auto &operator_list() const {
+    using fn_t = function_type;
+    static const auto g
+      = vec(hvec(true)
+            (hvec(opr::paren, 1,
+                  fn_t([](const stack_type &s) {return back(s);}))
+             ("(", "", ")")
+             ),
+
+            hvec(true)
+            (hvec(opr::pos, 1,
+                  fn_t([](const stack_type &s) {return back(s);}))
+             ("+", ""),
+             hvec(opr::neg, 1,
+                  fn_t([](const stack_type &s) {return -back(s);}))
+             ("-", "")
+             ),
+
+            hvec(true)
+            (hvec(opr::pow, 2,
+                  fn_t([](const stack_type &s) {
+                    return pow(*prev(s.end(), 2), back(s));
+                  }))
+             ("", "^", "")
+             ),
+
+            hvec(true)
+            (hvec(opr::mul, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) * back(s);
+                  }))
+             ("", "*", ""),
+             hvec(opr::div, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) / back(s);
+                  }))
+             ("", "/", "")
+             ),
+
+            hvec(true)
+            (hvec(opr::add, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) + back(s);
+                  }))
+             ("", "+", ""),
+             hvec(opr::sub, 2,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 2) - back(s);
+                  }))
+             ("", "-", "")
+             ),
+
+            hvec(false)
+            (hvec(opr::cond, 3,
+                  fn_t([](const stack_type &s) {
+                    return *prev(s.end(), 3) ? *prev(s.end(), 2) : back(s);
+                  }))
+             ("", "?", "", ":", ""))
+            );
+    return g;
+  }
+
+private:
+  flat_map<string, flat_map<int, function_type>> m;
+  void init_m() {
+    using fn_t = function_type;
+    m["plus"] = {
+      {1, fn_t([](const stack_type &s) {return back(s);})},
+      {2, fn_t([](const stack_type &s) {return *prev(s.end(), 2) + back(s);})}
+    };
+    m["minus"] = {
+      {1, fn_t([](const stack_type &s) {return -back(s);})},
+      {2, fn_t([](const stack_type &s) {return *prev(s.end(), 2) - back(s);})}
+    };
+    m["abs"] = {
+      {1, fn_t([](const stack_type &s) {return abs(back(s));})},
+    };
+  }
+public:
+  const auto &function_list() const {
+    return m;
+  }
+
+  static optional<operand_type> scan_operand(view_type &v) {
+    operand_type ret;
+    if (sscan(v, ret))
+      return ret;
+    else
+      return nullopt;
+  }
+
+  g_t() {
+    init_m();
+  }
+  ~g_t() = default;
+  g_t(const g_t &) = delete;
+  g_t &operator =(const g_t &) = delete;
+  g_t(g_t &&) noexcept = default;
+  g_t &operator =(g_t &&) noexcept = default;
+};
+void test_arithmetic_parser() {
+  // arithmetic_parser
+  {
+    auto scan_f = arithmetic_parser<g_t>{};
+
+    sview v = "((-(-(3*2)+1+(-2-(2+0.5+3*4)))+3)+-2-22.5 ? 1 : 5 ? 3 : 2)";
+    auto x = scan_f(v);
+    assert(x.has_value());
+    assert(v.empty());
+    assert(*x == ((-(-(3*2)+1+(-2-(2+0.5+3*4)))+3)+-2-22.5 ? 1 : 5 ? 3 : 2));
+
+    v = "1 + ( 100 ) + 3";
+    x = scan_f(v);
+    assert(x.has_value());
+    assert(v.empty());
+    assert(*x == 104);
+
+    v = "1+(100)+4 ";
+    x = scan_f(v);
+    assert(x.has_value());
+    assert(v == " ");
+    assert(*x == 105);
+
+    v = "minus(plus(1, 2*3+2^2), minus(minus(plus(3, 4)))) ";
+    const char *p{};
+    x = scan_f(v, p);
+    assert(x.has_value());
+    assert(p == nullptr);
+    assert(v == " ");
+    assert(*x == 4);
+  }
+  // default_arithmetic_parser
+  // default_arithmetic_parser_u32
+  // sscan_arithmetic
+  {
+    // sview
+    {
+      sview v = "abs(1-2*3^2) xyz";
+      assert(sscan_arithmetic(v).value() == 17.0);
+      assert(v == " xyz");
+    }
+    // u32sview
+    {
+      u32sview v = U"abs(1-2*3^2) xyz";
+      assert(sscan_arithmetic(v).value() == 17.0);
+      assert(v == U" xyz");
+    }
+  }
+}
+
 // XXX_test_dir is initialized to inlcude three files
 string get_path() {
   string dir(".\\");
@@ -2199,8 +2676,8 @@ void test_file() {
   try_remove_file(copy(path).append("\\tmp.txt"));
 
   static_assert(movable<file>);
-  static_assert(!is_copy_constructible_v<file>);
-  static_assert(!is_copy_assignable_v<file>);
+  static_assert(!is_copy_constructible<file>);
+  static_assert(!is_copy_assignable<file>);
 
   const auto test_empty_f = [](auto v) {
     file f(v);
@@ -2608,7 +3085,7 @@ void test_file_ralated_fns() {
 
         auto &l = *t.root();
         assert(l.size() == 3u);
-        ez_vector<typename decay_t<decltype(t)>::key_type::string_type> v, v2;
+        ez_vector<typename decay<decltype(t)>::key_type::string_type> v, v2;
         for (int i : irng(0, 3))
           v.insert(v.end(), l[i]->name);
         v2.insert(v2.end(), {});
@@ -2737,6 +3214,7 @@ void test_io() {
   inner::test::test_fputc_iterator();
   inner::test::test_sscan();
   inner::test::test_sprint();
+  inner::test::test_arithmetic_parser();
   inner::test::test_big_int();
   inner::test::test_sprint_floating_point();
   inner::test::test_sscan_floating_point();

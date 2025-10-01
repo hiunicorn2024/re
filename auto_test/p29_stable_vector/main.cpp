@@ -1969,6 +1969,31 @@ void test_limited_stable_vector_briefly() {
     auto z = s.replace(nth(s, 1), nth(s, 3), seq(0, 0, 0));
     assert(equal(s, seq(1, 0, 0, 0, 4)));
   }
+
+  // splice between different adaptor
+  {
+    {
+      stable_vector<int, test_allocator<int>> v = {1, 2, 3};
+      limited_stable_vector<int, 10, test_allocator<int>> v2 = {0, 4};
+      v2.splice(prev(v2.end()), v);
+      assert(v.empty());
+      assert(equal(v2, irng(0, 5)));
+    }
+    {
+      stable_vector<int, test_allocator<int>> v = {1, 2, 3};
+      limited_stable_vector<int, 10, test_allocator<int>> v2 = {0, 4};
+      v2.splice(prev(v2.end()), v, next(v.begin()));
+      assert(equal(v, seq(1, 3)));
+      assert(equal(v2, seq(0, 2, 4)));
+    }
+    {
+      stable_vector<int, test_allocator<int>> v = {1, 2, 3};
+      limited_stable_vector<int, 10, test_allocator<int>> v2 = {0, 4};
+      v2.splice(prev(v2.end()), v, next(v.begin()), v.end());
+      assert(equal(v, seq(1)));
+      assert(equal(v2, seq(0, 2, 3, 4)));
+    }
+  }
 }
 void test_limited_stable_vector_construct_from_range() {
   auto testf = [](auto tag) {
@@ -2511,9 +2536,9 @@ void test_stbvec_intrusive_mode() {
   using iter_t = typename V::iterator;
 
   {
-    assert((is_same_v<value_t, nd_t>));
-    assert((is_same_v
-            <typename allocator_traits<alloc_t>::value_type, value_t>));
+    static_assert(is_same<value_t, nd_t>);
+    static_assert(is_same
+                  <typename allocator_traits<alloc_t>::value_type, value_t>);
 
     alw_t alw{};
     V v(alw.get());

@@ -94,9 +94,9 @@ void test_split_iterator() {
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
 
-        static_assert(is_nothrow_default_constructible_v<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_default_constructible<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
     }
     // iterator concept
@@ -338,9 +338,9 @@ void test_zip_iterator() {
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
 
-        static_assert(is_nothrow_default_constructible_v<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_default_constructible<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
     }
     // iterator concept
@@ -603,17 +603,17 @@ void test_zip_range() {
       static_assert(semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
       static_assert(!semiregular<r4_t>);
-      static_assert(!is_copy_assignable_v<r4_t>);
-      static_assert(!is_move_assignable_v<r4_t>);
+      static_assert(!is_copy_assignable<r4_t>);
+      static_assert(!is_move_assignable<r4_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
-      static_assert(!is_swappable_v<r4_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
+      static_assert(!is_swappable<r4_t>);
 
-      static_assert(!is_nothrow_copy_assignable_v<r1_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r2_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r3_t>);
+      static_assert(!is_nothrow_copy_assignable<r1_t>);
+      static_assert(!is_nothrow_copy_assignable<r2_t>);
+      static_assert(!is_nothrow_copy_assignable<r3_t>);
     }
     // is_rng
     {
@@ -716,9 +716,9 @@ void test_aligned_zip_iterator() {
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
 
-        static_assert(is_nothrow_default_constructible_v<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_default_constructible<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
     }
     // iterator concept
@@ -877,18 +877,18 @@ void test_aligned_zip_range() {
       static_assert(semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
       static_assert(!semiregular<r4_t>);
-      static_assert(!is_copy_assignable_v<r4_t>);
-      static_assert(!is_move_assignable_v<r4_t>);
+      static_assert(!is_copy_assignable<r4_t>);
+      static_assert(!is_move_assignable<r4_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
-      static_assert(!is_swappable_v<r4_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
+      static_assert(!is_swappable<r4_t>);
 
-      static_assert(!is_nothrow_copy_assignable_v<r1_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r2_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r3_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r4_t>);
+      static_assert(!is_nothrow_copy_assignable<r1_t>);
+      static_assert(!is_nothrow_copy_assignable<r2_t>);
+      static_assert(!is_nothrow_copy_assignable<r3_t>);
+      static_assert(!is_nothrow_copy_assignable<r4_t>);
     }
     // is_rng
     {
@@ -1044,9 +1044,9 @@ void test_enumerate_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -1131,17 +1131,17 @@ void test_enumerate_range() {
       static_assert(!semiregular<r4_t>);
       static_assert(semiregular<r5_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
-      static_assert(!is_swappable_v<r4_t>);
-      static_assert(is_nothrow_swappable_v<r5_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
+      static_assert(!is_swappable<r4_t>);
+      static_assert(is_nothrow_swappable<r5_t>);
 
-      static_assert(copyable<r1_t> && !is_nothrow_copyable_v<r1_t>);
-      static_assert(copyable<r2_t> && !is_nothrow_copyable_v<r2_t>);
-      static_assert(copyable<r3_t> && !is_nothrow_copyable_v<r3_t>);
+      static_assert(copyable<r1_t> && !is_nothrow_copyable<r1_t>);
+      static_assert(copyable<r2_t> && !is_nothrow_copyable<r2_t>);
+      static_assert(copyable<r3_t> && !is_nothrow_copyable<r3_t>);
       static_assert(!copyable<r4_t>);
-      static_assert(copyable<r5_t> && is_nothrow_copyable_v<r5_t>);
+      static_assert(copyable<r5_t> && is_nothrow_copyable<r5_t>);
     }
     // is_rng
     {
@@ -1265,9 +1265,9 @@ void test_exclusive_rotate_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -1480,9 +1480,9 @@ void test_rotate_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -1718,9 +1718,9 @@ void test_loop_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -1815,17 +1815,17 @@ void test_loop_range() {
       static_assert(!semiregular<r4_t>);
       static_assert(semiregular<r5_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
-      static_assert(!is_swappable_v<r4_t>);
-      static_assert(is_nothrow_swappable_v<r5_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
+      static_assert(!is_swappable<r4_t>);
+      static_assert(is_nothrow_swappable<r5_t>);
 
-      static_assert(!is_nothrow_copy_assignable_v<r1_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r2_t>);
-      static_assert(!is_nothrow_copy_assignable_v<r3_t>);
-      static_assert(!is_copy_assignable_v<r4_t>);
-      static_assert(is_nothrow_copy_assignable_v<r5_t>);
+      static_assert(!is_nothrow_copy_assignable<r1_t>);
+      static_assert(!is_nothrow_copy_assignable<r2_t>);
+      static_assert(!is_nothrow_copy_assignable<r3_t>);
+      static_assert(!is_copy_assignable<r4_t>);
+      static_assert(is_nothrow_copy_assignable<r5_t>);
     }
     // is_rng
     {
@@ -1998,29 +1998,160 @@ void test_loop_range() {
     }
   }
 }
+void test_concat_range() {
+  // 1
+  {
+    using a_t = int [3];
+    int a[] = {1, 2, 3, 4, 5};
+    auto r = concat_rng(a);
+    static_assert(is_crng<decltype(r)>);
+    test_rng(r, irng(1, 6));
+    test_ritr(r.begin(), r.end(), a);
+    const auto &c_r = r;
+    test_rng(c_r, irng(1, 6));
+    test_ritr(c_r.begin(), c_r.end(), a);
+
+    ez_vector<int> v;
+    auto r2 = concat_rng(v);
+    static_assert(is_crng<decltype(r2)>);
+    test_rng(r2, empty_rng<int>());
+    test_ritr(r2.begin(), r2.end(), empty_rng<int>());
+    const auto &c_r2 = r2;
+    test_rng(c_r2, empty_rng<int>());
+    test_ritr(c_r2.begin(), c_r2.end(), empty_rng<int>());
+  }
+  // 2
+  {
+    ez_vector<int> v_cmp;
+    ez_vector<int> v1;
+    ez_vector<int> v2;
+    for (int i : iters(0, 4))
+      for (int j : iters(0, 4)) {
+        v1.erase(v1.begin(), v1.end());
+        v2.erase(v2.begin(), v2.end());
+        v_cmp.erase(v_cmp.begin(), v_cmp.end());
+        for (int k : irng(0, i)) {
+          v1.insert(v1.end(), k);
+          v_cmp.insert(v_cmp.end(), k);
+        }
+        for (int k : irng(0, j)) {
+          v2.insert(v2.end(), k);
+          v_cmp.insert(v_cmp.end(), k);
+        }
+        auto r = concat_rng(v1, v2);
+        static_assert(is_just_rrng<decltype(r)>);
+        test_rng(r, v_cmp);
+        test_ritr(r.begin(), r.end(), v_cmp);
+        const auto &c_r = r;
+        test_rng(c_r, v_cmp);
+        test_ritr(c_r.begin(), r.end(), v_cmp);
+      }
+  }
+  // 3
+  {
+    ez_vector<double> v_cmp;
+    ez_vector<int> v1;
+    ez_list<double> v2;
+    ez_forward_list<float> v3;
+    for (int i1 : iters(0, 4))
+      for (int i2 : iters(0, 4))
+        for (int i3 : iters(0, 4)) {
+          v1.erase(v1.begin(), v1.end());
+          v2.erase(v2.begin(), v2.end());
+          v3.erase_after(v3.before_begin(), v3.end());
+          v_cmp.erase(v_cmp.begin(), v_cmp.end());
+          for (int k : irng(0, i1)) {
+            v1.insert(v1.end(), k);
+            v_cmp.insert(v_cmp.end(), k);
+          }
+          for (int k : irng(0, i2)) {
+            v2.insert(v2.end(), k);
+            v_cmp.insert(v_cmp.end(), k);
+          }
+          auto v3_it = v3.before_begin();
+          for (int k : irng(0, i3)) {
+            v3_it = v3.insert_after(v3_it, k);
+            v_cmp.insert(v_cmp.end(), k);
+          }
+          auto r = concat_rng(v1, v2, v3);
+          static_assert(is_just_frng<decltype(r)>);
+          static_assert(is_same<rng_ref<decltype(r)>, double>);
+          test_rng(r, v_cmp);
+          test_fitr(r.begin(), r.end(), v_cmp);
+          const auto &c_r = r;
+          test_rng(c_r, v_cmp);
+          test_fitr(c_r.begin(), c_r.end(), v_cmp);
+        }
+  }
+  // 5
+  {
+    ez_vector<int> v_cmp;
+    ez_vector<int> i_v;
+    ez_vector<ez_vector<int>> vv = {{}, {}, {}, {}, {}};
+    assert(vv.size() == 5u);
+    
+    for (int i1 : iters(0, 4))
+      for (int i2 : iters(0, 4))
+        for (int i3 : iters(0, 4))
+          for (int i4 : iters(0, 4))
+            for (int i5 : iters(0, 4)) {
+              v_cmp.erase(v_cmp.begin(), v_cmp.end());
+              i_v.erase(i_v.begin(), i_v.end());
+              for (auto &v : vv)
+                v.erase(v.begin(), v.end());
+
+              i_v.insert(i_v.end(), i1);
+              i_v.insert(i_v.end(), i2);
+              i_v.insert(i_v.end(), i3);
+              i_v.insert(i_v.end(), i4);
+              i_v.insert(i_v.end(), i5);
+              for (auto it : irng(i_v)) {
+                auto &v = ref(vv, it - i_v.begin());
+                for (int i : iters(0, *it)) {
+                  v.insert(v.end(), i);
+                  v_cmp.insert(v_cmp.end(), i);
+                }
+              }
+
+              auto r = concat_rng(ref(vv, 0), ref(vv, 1), ref(vv, 2),
+                                  ref(vv, 3), ref(vv, 4));
+              using r_t = decltype(r);
+              static_assert(is_just_rrng<r_t>);
+              static_assert(is_same<rng_ref<r_t>, int &>);
+              test_rng(r, v_cmp);
+              test_ritr(r.begin(), r.end(), v_cmp);
+              const auto &c_r = r;
+              test_rng(c_r, v_cmp);
+              test_ritr(c_r.begin(), c_r.end(), v_cmp);
+              test_ritr(r.begin(), c_r.end(), v_cmp);
+              test_ritr(c_r.begin(), r.end(), v_cmp);
+            }
+  }
+}
 
 void test_algorithm_by_range_3() {
   printf("algorithm_by_range_3: ");
 
-  inner::test::test_split();
-  inner::test::test_split_iterator();
-  inner::test::test_split_range();
-  inner::test::test_zip();
-  inner::test::test_zip_iterator();
-  inner::test::test_zip_range();
-  inner::test::test_aligned_zip_iterator();
-  inner::test::test_aligned_zip_range();
-  inner::test::test_enumerate();
-  inner::test::test_enumerate_iterator();
-  inner::test::test_enumerate_range();
-  inner::test::test_exclusive_rotate();
-  inner::test::test_exclusive_rotate_iterator();
-  inner::test::test_exclusive_rotate_range();
-  inner::test::test_rotate_iterator();
-  inner::test::test_rotate_range();
-  inner::test::test_loop();
-  inner::test::test_loop_iterator();
-  inner::test::test_loop_range();
+  test_split();
+  test_split_iterator();
+  test_split_range();
+  test_zip();
+  test_zip_iterator();
+  test_zip_range();
+  test_aligned_zip_iterator();
+  test_aligned_zip_range();
+  test_enumerate();
+  test_enumerate_iterator();
+  test_enumerate_range();
+  test_exclusive_rotate();
+  test_exclusive_rotate_iterator();
+  test_exclusive_rotate_range();
+  test_rotate_iterator();
+  test_rotate_range();
+  test_loop();
+  test_loop_iterator();
+  test_loop_range();
+  test_concat_range();
 
   printf("ok\n");
 }

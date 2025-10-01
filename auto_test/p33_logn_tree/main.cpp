@@ -15,11 +15,11 @@ namespace re::inner::test {
 void test_tree_base() {
   using t = logn_tree<int, test_allocator<int>>;
 
-  static_assert(is_same_v<t::key_type, int>);
-  static_assert(is_same_v<t::reference, t::value_type &>);
-  static_assert(is_same_v<t::const_reference, const t::value_type &>);
-  static_assert(is_same_v<t::difference_type, ptrdiff_t>);
-  static_assert(is_same_v<t::size_type, size_t>);
+  static_assert(is_same<t::key_type, int>);
+  static_assert(is_same<t::reference, t::value_type &>);
+  static_assert(is_same<t::const_reference, const t::value_type &>);
+  static_assert(is_same<t::difference_type, ptrdiff_t>);
+  static_assert(is_same<t::size_type, size_t>);
 
   // zero or one node
   {
@@ -88,8 +88,8 @@ void test_tree_iterator() {
   static_assert(is_bitr<t::iterator>);
   static_assert(bidirectional_iterator<t::iterator>);
   static_assert(bidirectional_iterator<t::const_iterator>);
-  static_assert(is_convertible_v<t::iterator, t::const_iterator>);
-  static_assert(!is_convertible_v<t::const_iterator, t::iterator>);
+  static_assert(is_convertible<t::iterator, t::const_iterator>);
+  static_assert(!is_convertible<t::const_iterator, t::iterator>);
   static_assert(equality_comparable_with<t::iterator, t::const_iterator>);
 
   t x = t(1, t(2), t(3), t(4), t(5, t(6), t(7)));
@@ -1122,15 +1122,15 @@ void test_tree_vector_base() {
   using vec_t = logn_tree_vector<int, test_allocator<int>>;
   using t = logn_tree<int, test_allocator<int>>;
 
-  static_assert(is_same_v<vec_t::key_type, int>);
-  static_assert(is_same_v<vec_t::reference, vec_t::value_type &>);
-  static_assert(is_same_v<vec_t::const_reference, const vec_t::value_type &>);
-  static_assert(is_same_v<vec_t::difference_type, ptrdiff_t>);
-  static_assert(is_same_v<vec_t::size_type, size_t>);
-  static_assert(is_same_v<vec_t::iterator, t::iterator>);
-  static_assert(is_same_v<vec_t::const_iterator, t::const_iterator>);
-  static_assert(is_same_v<vec_t::tree_type, t::tree_type>);
-  static_assert(is_same_v<vec_t::vector_type, t::vector_type>);
+  static_assert(is_same<vec_t::key_type, int>);
+  static_assert(is_same<vec_t::reference, vec_t::value_type &>);
+  static_assert(is_same<vec_t::const_reference, const vec_t::value_type &>);
+  static_assert(is_same<vec_t::difference_type, ptrdiff_t>);
+  static_assert(is_same<vec_t::size_type, size_t>);
+  static_assert(is_same<vec_t::iterator, t::iterator>);
+  static_assert(is_same<vec_t::const_iterator, t::const_iterator>);
+  static_assert(is_same<vec_t::tree_type, t::tree_type>);
+  static_assert(is_same<vec_t::vector_type, t::vector_type>);
 
   // one level
   {

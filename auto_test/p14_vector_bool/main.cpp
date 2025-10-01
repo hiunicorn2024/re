@@ -21,9 +21,9 @@ void test_bool_vector() {
   {
     vector<bool> v;
     assert(v.begin() == v.end());
-    static_assert(is_convertible_v
+    static_assert(is_convertible
                   <decltype(v)::iterator, decltype(v)::const_iterator>);
-    static_assert(!is_convertible_v
+    static_assert(!is_convertible
                   <decltype(v)::const_iterator, decltype(v)::iterator>);
 
     v.push_back(true);

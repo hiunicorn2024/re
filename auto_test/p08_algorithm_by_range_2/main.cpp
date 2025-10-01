@@ -34,9 +34,9 @@ void test_aligned_stride_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -174,19 +174,19 @@ void test_aligned_stride_range() {
       static_assert(!semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
       static_assert(!swappable<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
 
-      static_assert(is_default_constructible_v<r1_t>
-                    && is_nothrow_default_constructible_v<r1_t>);
-      static_assert(!is_default_constructible_v<r2_t>);
-      static_assert(is_default_constructible_v<r3_t>
-                    && is_nothrow_default_constructible_v<r3_t>);
+      static_assert(is_default_constructible<r1_t>
+                    && is_nothrow_default_constructible<r1_t>);
+      static_assert(!is_default_constructible<r2_t>);
+      static_assert(is_default_constructible<r3_t>
+                    && is_nothrow_default_constructible<r3_t>);
 
-      static_assert(copyable<r1_t> && !is_nothrow_copyable_v<r1_t>);
+      static_assert(copyable<r1_t> && !is_nothrow_copyable<r1_t>);
       static_assert(!copyable<r2_t>);
-      static_assert(copyable<r3_t> && is_nothrow_copyable_v<r3_t>);
+      static_assert(copyable<r3_t> && is_nothrow_copyable<r3_t>);
     }
     // is_rng
     {
@@ -299,9 +299,9 @@ void test_stride_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -440,11 +440,11 @@ void test_stride_range() {
       static_assert(semiregular<r6_t>);
       static_assert(semiregular<r7_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(!is_nothrow_copyable_v<r1_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(!is_nothrow_copyable<r1_t>);
 
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(is_nothrow_copyable_v<r2_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(is_nothrow_copyable<r2_t>);
     }
     // is_rng
     {
@@ -630,9 +630,9 @@ void test_aligned_chunk_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -797,19 +797,19 @@ void test_aligned_chunk_range() {
       static_assert(!semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
       static_assert(!swappable<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
 
-      static_assert(is_default_constructible_v<r1_t>
-                    && is_nothrow_default_constructible_v<r1_t>);
-      static_assert(!is_default_constructible_v<r2_t>);
-      static_assert(is_default_constructible_v<r3_t>
-                    && is_nothrow_default_constructible_v<r3_t>);
+      static_assert(is_default_constructible<r1_t>
+                    && is_nothrow_default_constructible<r1_t>);
+      static_assert(!is_default_constructible<r2_t>);
+      static_assert(is_default_constructible<r3_t>
+                    && is_nothrow_default_constructible<r3_t>);
 
-      static_assert(copyable<r1_t> && !is_nothrow_copyable_v<r1_t>);
+      static_assert(copyable<r1_t> && !is_nothrow_copyable<r1_t>);
       static_assert(!copyable<r2_t>);
-      static_assert(copyable<r3_t> && is_nothrow_copyable_v<r3_t>);
+      static_assert(copyable<r3_t> && is_nothrow_copyable<r3_t>);
     }
     // is_rng
     {
@@ -940,9 +940,9 @@ void test_chunk_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -1066,19 +1066,19 @@ void test_chunk_range() {
       static_assert(semiregular<r5_t>);
       static_assert(!semiregular<r6_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(!is_swappable_v<r3_t>);
-      static_assert(is_nothrow_swappable_v<r4_t>);
-      static_assert(is_nothrow_swappable_v<r5_t>);
-      static_assert(!is_swappable_v<r6_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(!is_swappable<r3_t>);
+      static_assert(is_nothrow_swappable<r4_t>);
+      static_assert(is_nothrow_swappable<r5_t>);
+      static_assert(!is_swappable<r6_t>);
 
-      static_assert(copyable<r1_t> && !is_nothrow_copyable_v<r1_t>);
-      static_assert(copyable<r2_t> && is_nothrow_copyable_v<r2_t>);
-      static_assert(!copyable<r3_t> && !is_nothrow_copyable_v<r3_t>);
-      static_assert(copyable<r4_t> && !is_nothrow_copyable_v<r4_t>);
-      static_assert(copyable<r5_t> && is_nothrow_copyable_v<r5_t>);
-      static_assert(!copyable<r6_t> && !is_nothrow_copyable_v<r6_t>);
+      static_assert(copyable<r1_t> && !is_nothrow_copyable<r1_t>);
+      static_assert(copyable<r2_t> && is_nothrow_copyable<r2_t>);
+      static_assert(!copyable<r3_t> && !is_nothrow_copyable<r3_t>);
+      static_assert(copyable<r4_t> && !is_nothrow_copyable<r4_t>);
+      static_assert(copyable<r5_t> && is_nothrow_copyable<r5_t>);
+      static_assert(!copyable<r6_t> && !is_nothrow_copyable<r6_t>);
     }
     // is_rng
     {
@@ -1314,9 +1314,9 @@ void test_chunk_by_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -1440,19 +1440,19 @@ void test_chunk_by_range() {
       static_assert(semiregular<r5_t>);
       static_assert(!semiregular<r6_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
-      static_assert(!is_swappable_v<r3_t>);
-      static_assert(is_nothrow_swappable_v<r4_t>);
-      static_assert(is_nothrow_swappable_v<r5_t>);
-      static_assert(!is_swappable_v<r6_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
+      static_assert(!is_swappable<r3_t>);
+      static_assert(is_nothrow_swappable<r4_t>);
+      static_assert(is_nothrow_swappable<r5_t>);
+      static_assert(!is_swappable<r6_t>);
 
-      static_assert(copyable<r1_t> && !is_nothrow_copyable_v<r1_t>);
-      static_assert(copyable<r2_t> && is_nothrow_copyable_v<r2_t>);
-      static_assert(!copyable<r3_t> && !is_nothrow_copyable_v<r3_t>);
-      static_assert(copyable<r4_t> && !is_nothrow_copyable_v<r4_t>);
-      static_assert(copyable<r5_t> && is_nothrow_copyable_v<r5_t>);
-      static_assert(!copyable<r6_t> && !is_nothrow_copyable_v<r6_t>);
+      static_assert(copyable<r1_t> && !is_nothrow_copyable<r1_t>);
+      static_assert(copyable<r2_t> && is_nothrow_copyable<r2_t>);
+      static_assert(!copyable<r3_t> && !is_nothrow_copyable<r3_t>);
+      static_assert(copyable<r4_t> && !is_nothrow_copyable<r4_t>);
+      static_assert(copyable<r5_t> && is_nothrow_copyable<r5_t>);
+      static_assert(!copyable<r6_t> && !is_nothrow_copyable<r6_t>);
     }
     // is_rng
     {
@@ -1695,15 +1695,15 @@ void test_inner_cartesian_product_range() {
       static_assert(!semiregular<r3_t>);
       static_assert(semiregular<r4_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(!is_swappable_v<r2_t>);
-      static_assert(!is_swappable_v<r3_t>);
-      static_assert(is_nothrow_swappable_v<r4_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(!is_swappable<r2_t>);
+      static_assert(!is_swappable<r3_t>);
+      static_assert(is_nothrow_swappable<r4_t>);
 
-      static_assert(copyable<r1_t> && !is_nothrow_copyable_v<r1_t>);
-      static_assert(!copyable<r2_t> && !is_nothrow_copyable_v<r2_t>);
-      static_assert(!copyable<r3_t> && !is_nothrow_copyable_v<r3_t>);
-      static_assert(copyable<r4_t> && !is_nothrow_copyable_v<r4_t>);
+      static_assert(copyable<r1_t> && !is_nothrow_copyable<r1_t>);
+      static_assert(!copyable<r2_t> && !is_nothrow_copyable<r2_t>);
+      static_assert(!copyable<r3_t> && !is_nothrow_copyable<r3_t>);
+      static_assert(copyable<r4_t> && !is_nothrow_copyable<r4_t>);
     }
     // is_rng
     {
@@ -1868,9 +1868,9 @@ void test_cartesian_product_iterator() {
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
 
-        static_assert(is_nothrow_default_constructible_v<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_default_constructible<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
       {
         using iter_t = cartesian_product_iterator
@@ -1879,9 +1879,9 @@ void test_cartesian_product_iterator() {
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
 
-        static_assert(is_nothrow_default_constructible_v<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_default_constructible<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
     }
     // iterator concept
@@ -1960,11 +1960,11 @@ void test_cartesian_product_range() {
       static_assert(semiregular<r1_t>);
       static_assert(semiregular<r2_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(is_nothrow_swappable_v<r2_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(is_nothrow_swappable<r2_t>);
 
-      static_assert(!is_nothrow_copy_assignable_v<r1_t>);
-      static_assert(is_nothrow_copy_assignable_v<r2_t>);
+      static_assert(!is_nothrow_copy_assignable<r1_t>);
+      static_assert(is_nothrow_copy_assignable<r2_t>);
     }
     // is_rng
     {

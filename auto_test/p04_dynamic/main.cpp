@@ -869,8 +869,8 @@ void test_unique_function() {
     using f_t = unique_function<int ()>;
     f_t f = fp;
     static_assert(movable<f_t>);
-    static_assert(!is_copy_constructible_v<f_t>);
-    static_assert(!is_copy_assignable_v<f_t>);
+    static_assert(!is_copy_constructible<f_t>);
+    static_assert(!is_copy_assignable<f_t>);
     static_assert(swappable<f_t>);
     assert(f() == 1);
     assert(f.local());
@@ -932,7 +932,7 @@ namespace help_move_only_function {
 
 template <class FROM, class TO>
 inline constexpr bool can_convert_assign_to
-  = is_convertible_v<FROM, TO> && is_assignable_v<TO &, FROM>;
+  = is_convertible<FROM, TO> && is_assignable<TO &, FROM>;
 
 }
 void test_move_only_function() {
@@ -1062,10 +1062,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(!is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(!is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) {i += x;};
         f(1);
@@ -1086,10 +1086,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(!is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(!is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(!is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(!is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) {i += x;};
         f(1);
@@ -1109,10 +1109,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(!is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(!is_invocable_v<const fw_t &&, int>);
+        static_assert(!is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(!is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) {i += x;};
         move(f)(1);
@@ -1132,10 +1132,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(is_invocable_v<const fw_t &, int>);
-        static_assert(is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(is_invocable<const fw_t &, int>);
+        static_assert(is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) {i += x;};
         f(1);
@@ -1158,10 +1158,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(is_invocable_v<const fw_t &, int>);
-        static_assert(is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(is_invocable<const fw_t &, int>);
+        static_assert(is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) {i += x;};
         f(1);
@@ -1184,10 +1184,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(!is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(is_invocable_v<const fw_t &&, int>);
+        static_assert(!is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) {i += x;};
         move(f)(1);
@@ -1228,10 +1228,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(!is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(!is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(!is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(!is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) noexcept {i += x;};
         f(1);
@@ -1251,10 +1251,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(!is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(!is_invocable_v<const fw_t &&, int>);
+        static_assert(!is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(!is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) noexcept {i += x;};
         move(f)(1);
@@ -1274,10 +1274,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(is_invocable_v<const fw_t &, int>);
-        static_assert(is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(is_invocable<const fw_t &, int>);
+        static_assert(is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) noexcept {i += x;};
         f(1);
@@ -1300,10 +1300,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(!can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(is_invocable_v<const fw_t &, int>);
-        static_assert(is_invocable_v<const fw_t &&, int>);
+        static_assert(is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(is_invocable<const fw_t &, int>);
+        static_assert(is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) noexcept {i += x;};
         f(1);
@@ -1326,10 +1326,10 @@ void test_move_only_function() {
         static_assert(can_convert_assign_to<ft_c_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_ref_nothrow, fw_t>);
         static_assert(can_convert_assign_to<ft_c_rref_nothrow, fw_t>);
-        static_assert(!is_invocable_v<fw_t &, int>);
-        static_assert(is_invocable_v<fw_t &&, int>);
-        static_assert(!is_invocable_v<const fw_t &, int>);
-        static_assert(is_invocable_v<const fw_t &&, int>);
+        static_assert(!is_invocable<fw_t &, int>);
+        static_assert(is_invocable<fw_t &&, int>);
+        static_assert(!is_invocable<const fw_t &, int>);
+        static_assert(is_invocable<const fw_t &&, int>);
         int i = 0;
         fw_t f = [&i](int x) noexcept {i += x;};
         move(f)(1);
@@ -1429,47 +1429,47 @@ void test_type_erased_invocation() {
 
   {
     using fp = void (*)(int);
-    static_assert(is_invocable_for_all_combinations_v
+    static_assert(is_invocable_for_all_combinations
                   <fp, type_pack<short, int, long, long long>>);
-    static_assert(!is_invocable_for_all_combinations_v
+    static_assert(!is_invocable_for_all_combinations
                   <fp, type_pack<void *>>);
-    static_assert(!is_invocable_for_all_combinations_v
+    static_assert(!is_invocable_for_all_combinations
                   <fp, type_pack<short, void *>>);
-    static_assert(is_invocable_for_all_combinations_v
+    static_assert(is_invocable_for_all_combinations
                   <fp, type_pack<int>>);
   }
   {
     using fp = void (*)(int, int);
-    static_assert(is_invocable_v<fp, int, int>);
-    static_assert(is_invocable_for_all_combinations_v
+    static_assert(is_invocable<fp, int, int>);
+    static_assert(is_invocable_for_all_combinations
                   <fp, type_pack<int>, type_pack<int>>);
-    static_assert(is_invocable_for_all_combinations_v
+    static_assert(is_invocable_for_all_combinations
                   <fp, type_pack<int, long>, type_pack<short, int>>);
-    static_assert(!is_invocable_for_all_combinations_v
+    static_assert(!is_invocable_for_all_combinations
                   <fp, type_pack<int, long>,
                    type_pack<short, int, void *>>);
-    static_assert(!is_invocable_for_all_combinations_v
+    static_assert(!is_invocable_for_all_combinations
                   <fp, type_pack<int, long>,
                    type_pack<int, long>, type_pack<int, long>>);
 
-    static_assert(!has_member_type_type_v
-                  <invoke_result_for_all_combinations
+    static_assert(!has_member_type_type
+                  <template_invoke_result_for_all_combinations
                    <fp, type_pack<int>>>);
-    static_assert(has_member_type_type_v
-                  <invoke_result_for_all_combinations
+    static_assert(has_member_type_type
+                  <template_invoke_result_for_all_combinations
                    <fp, type_pack<int>, type_pack<int>>>);
-    static_assert(is_same_v
-                  <invoke_result_for_all_combinations_t
+    static_assert(is_same
+                  <invoke_result_for_all_combinations
                    <fp, type_pack<int>, type_pack<int>>, void>);
   }
   {
     auto f = [](auto x, auto y) {return x + y;};
-    static_assert(is_invocable_for_all_combinations_v
+    static_assert(is_invocable_for_all_combinations
                   <decltype(f) &,
                    type_pack<bool, short, int>, type_pack<long, long long>>);
-    using r = invoke_result_for_all_combinations_t
+    using r = invoke_result_for_all_combinations
       <decltype(f) &, type_pack<bool, short, int>, type_pack<long, long long>>;
-    static_assert(is_same_v<r, long long>);
+    static_assert(is_same<r, long long>);
 
     auto a = type_erased_invocation_array
       <const void *, r, decltype(f) &,
@@ -1484,13 +1484,13 @@ void test_type_erased_invocation() {
   }
 
   {
-    static_assert(base_of_type_packs_v
+    static_assert(base_of_type_packs
                   <0, type_pack<int, int>, type_pack<int, int, int>,
                    type_pack<int, int, int, int>> == 12);
-    static_assert(base_of_type_packs_v
+    static_assert(base_of_type_packs
                   <1, type_pack<int, int>, type_pack<int, int, int>,
                    type_pack<int, int, int, int>> == 4);
-    static_assert(base_of_type_packs_v
+    static_assert(base_of_type_packs
                   <2, type_pack<int, int>, type_pack<int, int, int>,
                    type_pack<int, int, int, int>> == 1);
 
@@ -1517,8 +1517,8 @@ void test_type_erased_invocation() {
 
 void test_variant() {
   {
-    static_assert(is_trivially_destructible_v<variant<int>>);
-    static_assert(is_trivially_destructible_v<variant<int, void *>>);
+    static_assert(is_trivially_destructible<variant<int>>);
+    static_assert(is_trivially_destructible<variant<int, void *>>);
   }
 
   {
@@ -1617,7 +1617,7 @@ void test_variant() {
   }
   {
     using var_t = variant<const test_object<int>, const int>;
-    static_assert(!is_copy_assignable_v<var_t>);
+    static_assert(!is_copy_assignable<var_t>);
 
     var_t x(in_place_type<const int>, 3);
     var_t y(in_place_index<0>, 1);
@@ -1673,6 +1673,59 @@ void test_variant() {
     assert(*get_if<0>(addressof(x)) == 3);
     assert(get_if<0>(cp) == nullptr);
     assert(*get_if<0>(addressof(as_const(x))) == 3);
+  }
+
+  // visit_with_index and member visit
+  {
+    tuple<int, float, double> p(1, 2.5f, 5.0);
+    variant<int, float, double> x;
+    const auto f = [&p]<size_t ID, class T>(size_constant<ID>, T &&u) {
+      static_assert(is_same
+                    <tuple_element<ID, decay<decltype(p)>>,
+                     decay<T>>);
+      return at<ID>(p) == u;
+    };
+    x.emplace<int>(1);
+    assert(x.visit_with_index(f));
+    x.emplace<float>(2.5f);
+    assert(x.visit_with_index(f));
+    x.emplace<double>(5.0);
+    assert(x.visit_with_index(f));
+    x.emplace<double>(6.0);
+    assert(!x.visit_with_index(f));
+
+    ez_vector<int> v1;
+    ez_vector<float> v2;
+    ez_vector<double> v3;
+    const auto f2 = [&]<class T>(T &&u) {
+      if constexpr (is_same<decay<T>, int>) {
+        v1.insert(v1.end(), u);
+      }
+      else if constexpr (is_same<decay<T>, float>) {
+        v2.insert(v2.end(), u);
+      }
+      else if constexpr (is_same<decay<T>, double>) {
+        v3.insert(v3.end(), u);
+      }
+    };
+    x = 1;
+    x.visit(f2);
+    assert(v1.size() == 1u && *v1.begin() == 1);
+    assert(v2.empty() && v3.empty());
+    x = 2.0f;
+    x.visit(f2);
+    assert(v1.size() == 1u && *v1.begin() == 1);
+    assert(v2.size() == 1u && *v2.begin() == 2.0f);
+    assert(v3.empty());
+    x = 3.0;
+    x.visit(f2);
+    assert(v1.size() == 1u && *v1.begin() == 1);
+    assert(v2.size() == 1u && *v2.begin() == 2.0f);
+    assert(v3.size() == 1u && *v3.begin() == 3.0);
+    x.visit<void>(f2);
+    assert(v1.size() == 1u && *v1.begin() == 1);
+    assert(v2.size() == 1u && *v2.begin() == 2.0f);
+    assert(v3.size() == 2u && *v3.begin() == 3.0 && *(v3.begin() + 1) == 3.0);
   }
 }
 struct F {

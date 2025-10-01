@@ -70,10 +70,10 @@ void test_hashtable_adaptor() {
     static_assert(is_just_bitr<table_t::const_iterator>);    
     static_assert(regular<table_t::iterator>);
     static_assert(regular<table_t::const_iterator>);
-    static_assert(is_nothrow_copyable_v<table_t::iterator>);
-    static_assert(is_nothrow_copyable_v<table_t::const_iterator>);
-    static_assert(is_nothrow_swappable_v<table_t::iterator>);
-    static_assert(is_nothrow_swappable_v<table_t::const_iterator>);
+    static_assert(is_nothrow_copyable<table_t::iterator>);
+    static_assert(is_nothrow_copyable<table_t::const_iterator>);
+    static_assert(is_nothrow_swappable<table_t::iterator>);
+    static_assert(is_nothrow_swappable<table_t::const_iterator>);
 
     table_t s;
     assert(s.empty());
@@ -219,7 +219,7 @@ void test_hashtable_adaptor() {
   // special member functions
   {
     const auto init = [](auto *p, auto r, auto a) {
-      using t = decay_t<decltype(*p)>;
+      using t = decay<decltype(*p)>;
       new(p) t(a);
       for (const auto &x : r)
         (*p).insert(as_const, hash{}, equal_to{}, x);
@@ -550,8 +550,8 @@ void test_unordered_set_common_operations_impl(F mk, F2 key) {
   // special member functions
   {
     static_assert(regular<S>);
-    static_assert(is_nothrow_movable_v<S>);
-    static_assert(is_nothrow_swappable_v<S>);
+    static_assert(is_nothrow_movable<S>);
+    static_assert(is_nothrow_swappable<S>);
     S s1, s2;
     s1.insert(mk(1));
     s2.insert(mk(2));
@@ -593,8 +593,8 @@ void test_unordered_set_common_operations_impl(F mk, F2 key) {
       static_assert(swappable<S>);
       static_assert(equality_comparable<S>);
       static_assert(!three_way_comparable<S>);
-      static_assert(is_nothrow_movable_v<S>);
-      static_assert(is_nothrow_swappable_v<S>);
+      static_assert(is_nothrow_movable<S>);
+      static_assert(is_nothrow_swappable<S>);
 
       S s(al1);
       assert(s.max_load_factor() == 1.0f);
@@ -1207,8 +1207,8 @@ void test_unordered_multiset_common_operations_impl(F mk, F2 key) {
   // special member functions
   {
     static_assert(regular<S>);
-    static_assert(is_nothrow_movable_v<S>);
-    static_assert(is_nothrow_swappable_v<S>);
+    static_assert(is_nothrow_movable<S>);
+    static_assert(is_nothrow_swappable<S>);
     S s1, s2;
     s1.insert(mk(1));
     s2.insert(mk(2));
@@ -1250,8 +1250,8 @@ void test_unordered_multiset_common_operations_impl(F mk, F2 key) {
       static_assert(swappable<S>);
       static_assert(equality_comparable<S>);
       static_assert(!three_way_comparable<S>);
-      static_assert(is_nothrow_movable_v<S>);
-      static_assert(is_nothrow_swappable_v<S>);
+      static_assert(is_nothrow_movable<S>);
+      static_assert(is_nothrow_swappable<S>);
 
       S s(al1);
       assert(s.max_load_factor() == 1.0f);

@@ -171,7 +171,7 @@ struct iterator_traits<inner::test::help_iterator_requirements
 namespace re {
 
 template <>
-struct iterator_is_counted
+struct template_iterator_is_counted
 <degraded_iterator<void ****, bidirectional_iterator_tag>> : false_type {};
 
 }
@@ -560,9 +560,9 @@ void test_iterator_requirements() {
   {
     static_assert(indirectly_readable<int *>);
   }
-  // iter_common_reference_t
+  // iter_common_reference
   {
-    static_assert(same_as<iter_common_reference_t<int *>, int &>);
+    static_assert(same_as<iter_common_reference<int *>, int &>);
   }
   // indirectly_writable
   {
@@ -702,9 +702,9 @@ public:
 
   constexpr explicit test_oi(T *p) : p(p) {}
 
-  constexpr operator test_oi<add_const_t<T>>() const
-    requires (!is_const_v<T>) && (!same_as<add_const_t<T>, T>) {
-    return test_oi<add_const_t<T>>(p);
+  constexpr operator test_oi<add_const<T>>() const
+    requires (!is_const<T>) && (!same_as<add_const<T>, T>) {
+    return test_oi<add_const<T>>(p);
   }
 
   constexpr this_t &operator =(const T &x) {
@@ -731,7 +731,7 @@ class test_ii {
   T *p;
 
 public:
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -746,9 +746,9 @@ public:
 
   constexpr explicit test_ii(T *p) : p(p) {}
 
-  constexpr operator test_ii<add_const_t<T>>() const
-    requires (!is_const_v<T>) && (!same_as<add_const_t<T>, T>) {
-    return test_ii<add_const_t<T>>(p);
+  constexpr operator test_ii<add_const<T>>() const
+    requires (!is_const<T>) && (!same_as<add_const<T>, T>) {
+    return test_ii<add_const<T>>(p);
   }
 
   constexpr reference operator *() const {return *p;}
@@ -777,7 +777,7 @@ class test_fi {
   T *p;
 
 public:
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -792,9 +792,9 @@ public:
 
   constexpr explicit test_fi(T *p) : p(p) {}
 
-  constexpr operator test_fi<add_const_t<T>>() const
-    requires (!is_const_v<T>) && (!same_as<add_const_t<T>, T>) {
-    return test_fi<add_const_t<T>>(p);
+  constexpr operator test_fi<add_const<T>>() const
+    requires (!is_const<T>) && (!same_as<add_const<T>, T>) {
+    return test_fi<add_const<T>>(p);
   }
 
   constexpr reference operator *() const {return *p;}
@@ -823,7 +823,7 @@ class test_bi {
   T *p;
 
 public:
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -838,9 +838,9 @@ public:
 
   constexpr explicit test_bi(T *p) : p(p) {}
 
-  constexpr operator test_bi<add_const_t<T>>() const
-    requires (!is_const_v<T>) && (!same_as<add_const_t<T>, T>) {
-    return test_bi<add_const_t<T>>(p);
+  constexpr operator test_bi<add_const<T>>() const
+    requires (!is_const<T>) && (!same_as<add_const<T>, T>) {
+    return test_bi<add_const<T>>(p);
   }
 
   constexpr reference operator *() const {return *p;}
@@ -879,7 +879,7 @@ class test_ri {
   T *p;
 
 public:
-  using value_type = remove_cv_t<T>;
+  using value_type = remove_cv<T>;
   using reference = T &;
   using pointer = T *;
   using difference_type = ptrdiff_t;
@@ -894,9 +894,9 @@ public:
 
   constexpr explicit test_ri(T *p) : p(p) {}
 
-  constexpr operator test_ri<add_const_t<T>>() const
-    requires (!is_const_v<T>) && (!same_as<add_const_t<T>, T>) {
-    return test_ri<add_const_t<T>>(p);
+  constexpr operator test_ri<add_const<T>>() const
+    requires (!is_const<T>) && (!same_as<add_const<T>, T>) {
+    return test_ri<add_const<T>>(p);
   }
 
   constexpr reference operator *() const {return *p;}
@@ -1080,6 +1080,17 @@ void test_iterator_main_components() {
       static_assert(!is_just_ritr<const int *>);
       static_assert(itr_is_counted<const int *>);
     }
+    {
+      static_assert(is_itr_ctg<input_iterator_tag>);
+      static_assert(is_itr_ctg<output_iterator_tag>);
+      static_assert(is_oitr_ctg<output_iterator_tag>);
+
+      static_assert(is_just_iitr_ctg<input_iterator_tag>);
+      static_assert(is_just_fitr_ctg<forward_iterator_tag>);
+      static_assert(is_just_bitr_ctg<bidirectional_iterator_tag>);
+      static_assert(is_just_ritr_ctg<random_access_iterator_tag>);
+      static_assert(is_citr_ctg<contiguous_iterator_tag>);
+    }
   }
   // itr series for help_iterator::test_oi
   {
@@ -1124,7 +1135,7 @@ void test_iterator_main_components() {
     using ii = test_oi<const int>;
     static_assert(convertible_to<i, ii>);
     static_assert(common_with<i, ii>);
-    static_assert(same_as<common_type_t<i, ii>, ii>);
+    static_assert(same_as<common_type<i, ii>, ii>);
   }
   // itr series for help_iterator::test_ii
   {
@@ -1411,7 +1422,7 @@ void test_iterator_main_components() {
   {
     using namespace help_iterator;
 
-    static_assert(is_trivial_empty_v<decltype(distance)>);
+    static_assert(is_empty<decltype(distance)>);
 
     {
       int a[] = {1, 2, 3};
@@ -1444,7 +1455,7 @@ void test_iterator_main_components() {
   {
     using namespace help_iterator;
 
-    static_assert(is_trivial_empty_v<decltype(advance)>);
+    static_assert(is_empty<decltype(advance)>);
 
     {
       int a[] = {1, 2, 3};
@@ -1533,8 +1544,8 @@ void test_iterator_main_components() {
   // next
   // prev
   {
-    static_assert(is_trivial_empty_v<decltype(next)>);
-    static_assert(is_trivial_empty_v<decltype(prev)>);
+    static_assert(is_empty<decltype(next)>);
+    static_assert(is_empty<decltype(prev)>);
 
     constexpr int a[3] = {1, 2, 3};
     static_assert(next(begin(a)) == begin(a) + 1);
@@ -1640,7 +1651,6 @@ void test_iterator_main_components() {
   }
 
   // common_iter_t
-  // has_common_iter
   {
     static_assert(same_as<common_iter_t<int *, const int *>, const int *>);
     struct t {};
@@ -1649,10 +1659,37 @@ void test_iterator_main_components() {
     static_assert(same_as<common_iter_t<t, tt>, t>);
     static_assert(same_as<common_iter_t<tt, t>, t>);
     static_assert(same_as<common_iter_t<tt, tt>, tt>);
+  }
 
-    static_assert(has_common_iter<int *, const int *>);
-    static_assert(has_common_iter<int *, int *>);
-    static_assert(!has_common_iter<int *, int **>);
+  // common_iterator_category
+  {
+    static_assert(is_same
+                  <common_iterator_category<input_iterator_tag,
+                                            input_iterator_tag,
+                                            input_iterator_tag>,
+                   input_iterator_tag>);
+    static_assert(is_same
+                  <common_iterator_category<contiguous_iterator_tag>,
+                   contiguous_iterator_tag>);
+    static_assert(is_same
+                  <common_iterator_category<contiguous_iterator_tag,
+                                            random_access_iterator_tag,
+                                            bidirectional_iterator_tag,
+                                            forward_iterator_tag,
+                                            input_iterator_tag>,
+                   input_iterator_tag>);
+    static_assert(is_same
+                  <common_iterator_category<input_iterator_tag,
+                                            forward_iterator_tag,
+                                            bidirectional_iterator_tag,
+                                            random_access_iterator_tag,
+                                            contiguous_iterator_tag>,
+                   input_iterator_tag>);
+    static_assert(is_same
+                  <common_iterator_category<bidirectional_iterator_tag,
+                                            random_access_iterator_tag,
+                                            bidirectional_iterator_tag>,
+                   bidirectional_iterator_tag>);
   }
 
   // iter_post_increment_return_type
@@ -1660,12 +1697,12 @@ void test_iterator_main_components() {
   // iter_post_decrement
   {
     using t = iter_post_increment_return_type<int>;
-    static_assert(!is_default_constructible_v<t>);
-    static_assert(!is_copy_constructible_v<t>);
-    static_assert(!is_copy_assignable_v<t>);
-    static_assert(is_move_constructible_v<t>);
-    static_assert(!is_move_assignable_v<t>);
-    static_assert(!is_swappable_v<t>);
+    static_assert(!is_default_constructible<t>);
+    static_assert(!is_copy_constructible<t>);
+    static_assert(!is_copy_assignable<t>);
+    static_assert(is_move_constructible<t>);
+    static_assert(!is_move_assignable<t>);
+    static_assert(!is_swappable<t>);
 
     const int a[] = {1, 2, 3};
     {
@@ -1698,8 +1735,8 @@ void test_range_main_components() {
   // begin
   // end
   {
-    static_assert(is_trivial_empty_v<decltype(begin)>);
-    static_assert(is_trivial_empty_v<decltype(end)>);
+    static_assert(is_empty<decltype(begin)>);
+    static_assert(is_empty<decltype(end)>);
     struct t {
       constexpr int begin() const {return 1;}
       constexpr int begin() {return 2;}
@@ -1738,7 +1775,7 @@ void test_range_main_components() {
   }
   // size
   {
-    static_assert(is_trivial_empty_v<decltype(size)>);
+    static_assert(is_empty<decltype(size)>);
     static_assert(!invocable<decltype(size), int>);
 
     static_assert(size({1}) == 1);
@@ -1804,7 +1841,7 @@ void test_range_main_components() {
   }
   // empty
   {
-    static_assert(is_trivial_empty_v<decltype(empty)>);
+    static_assert(is_empty<decltype(empty)>);
     static_assert(!invocable<decltype(empty), int>);
 
     static_assert(empty({1}) == false);
@@ -1920,7 +1957,7 @@ void test_range_main_components() {
 
     using t = n_value_iterator<const int>;
     static_assert(regular<t>);
-    static_assert(is_nothrow_swappable_v<t>);
+    static_assert(is_nothrow_swappable<t>);
     static_assert(same_as<itr_vt<t>, int>);
     static_assert(same_as<itr_dft<t>, ptrdiff_t>);
     static_assert(same_as<itr_ptr<t>, const int *>);
@@ -1957,12 +1994,12 @@ void test_range_main_components() {
     }
 
     using nref = n_value<int &>;
-    static_assert(!is_swappable_v<nref>);
+    static_assert(!is_swappable<nref>);
     static_assert(!semiregular<nref>);
-    static_assert(is_copy_constructible_v<nref>);
-    static_assert(!is_copy_assignable_v<nref>);
-    static_assert(is_move_constructible_v<nref>);
-    static_assert(!is_move_assignable_v<nref>);
+    static_assert(is_copy_constructible<nref>);
+    static_assert(!is_copy_assignable<nref>);
+    static_assert(is_move_constructible<nref>);
+    static_assert(!is_move_assignable<nref>);
     static_assert(noexcept(declval<nref &>().begin()));
     static_assert(noexcept(declval<nref &>().end()));
     static_assert(noexcept(declval<nref &>().size()));
@@ -1973,7 +2010,7 @@ void test_range_main_components() {
     static_assert(rng_is_n_value<nref>);
 
     using nv = n_value<int>;
-    static_assert(is_swappable_v<nv>);
+    static_assert(is_swappable<nv>);
     static_assert(semiregular<nv>);
     static_assert(noexcept(declval<nv &>().begin()));
     static_assert(noexcept(declval<nv &>().end()));
@@ -3177,16 +3214,16 @@ void test_array() {
       using t2 = array<int, 0>;
       static_assert(regular<t1>);
       static_assert(regular<t2>);
-      static_assert(is_trivially_default_constructible_v<t1>);
-      static_assert(is_trivially_default_constructible_v<t2>);
-      static_assert(is_trivially_copyable_v<t1>);
-      static_assert(is_trivially_copyable_v<t2>);
-      static_assert(is_default_constructible_v<t1>);
-      static_assert(is_default_constructible_v<t2>);
-      static_assert(is_nothrow_copyable_v<t1>);
-      static_assert(is_nothrow_copyable_v<t2>);
-      static_assert(is_nothrow_swappable_v<t1>);
-      static_assert(is_nothrow_swappable_v<t2>);
+      static_assert(is_trivially_default_constructible<t1>);
+      static_assert(is_trivially_default_constructible<t2>);
+      static_assert(is_trivially_copyable<t1>);
+      static_assert(is_trivially_copyable<t2>);
+      static_assert(is_default_constructible<t1>);
+      static_assert(is_default_constructible<t2>);
+      static_assert(is_nothrow_copyable<t1>);
+      static_assert(is_nothrow_copyable<t2>);
+      static_assert(is_nothrow_swappable<t1>);
+      static_assert(is_nothrow_swappable<t2>);
     }
   }
   // special member functions
@@ -3349,13 +3386,13 @@ void test_iter_pair() {
   // is_rng_ref<iter_pair>
   {
     using it = iter_pair<int *>;
-    static_assert(is_convertible_v<it, pair<int *, int *>>);
-    static_assert(same_as<tuple_element_t<0, it>, int *>);
-    static_assert(same_as<tuple_element_t<1, it>, int *>);
-    static_assert(tuple_size_v<it> == 2);
-    static_assert(same_as<tuple_element_t<0, const volatile it>,
+    static_assert(is_convertible<it, pair<int *, int *>>);
+    static_assert(same_as<tuple_element<0, it>, int *>);
+    static_assert(same_as<tuple_element<1, it>, int *>);
+    static_assert(tuple_size<it> == 2);
+    static_assert(same_as<tuple_element<0, const volatile it>,
                   int *const volatile>);
-    static_assert(tuple_size_v<const volatile it> == 2);
+    static_assert(tuple_size<const volatile it> == 2);
 
     static_assert(!is_rng_ref<int>);
     static_assert(is_rng_ref<iter_pair<nullptr_t>>);
@@ -3371,8 +3408,8 @@ void test_iter_pair() {
     static_assert(is_rng_ref<t &>);
     static_assert(is_rng_ref<const t &>);
 
-    static_assert(is_convertible_v<iter_pair<int *>, pair<int *, int *>>);
-    static_assert(is_base_of_v<pair<int *, int *>, iter_pair<int *>>);
+    static_assert(is_convertible<iter_pair<int *>, pair<int *, int *>>);
+    static_assert(is_base_of<pair<int *, int *>, iter_pair<int *>>);
   }
   // smf
   // iter_pair(i, ii)
@@ -3558,8 +3595,8 @@ void test_iterator_wrapper() {
   }
 }
 void test_range_wrapper() {
-  static_assert(!is_default_constructible_v<range_wrapper<ez_vector<int> &>>);
-  static_assert(is_default_constructible_v<range_wrapper<ez_vector<int>>>);
+  static_assert(!is_default_constructible<range_wrapper<ez_vector<int> &>>);
+  static_assert(is_default_constructible<range_wrapper<ez_vector<int>>>);
 
   static_assert(same_as
                 <decltype(wrap_rng(declval<int (&)[2]>())),
@@ -3628,14 +3665,14 @@ void test_range_wrapper() {
 void test_base_range() {
   // default constructible
   {
-    static_assert(!is_default_constructible_v
+    static_assert(!is_default_constructible
                   <base_range<ez_vector<move_iterator<int *>> &>>);
-    static_assert(is_default_constructible_v
+    static_assert(is_default_constructible
                   <base_range<ez_vector<move_iterator<int *>>>>);
 
-    static_assert(!is_default_constructible_v
+    static_assert(!is_default_constructible
                   <inplace_base_range<ez_vector<move_iterator<int *>> &>>);
-    static_assert(is_default_constructible_v
+    static_assert(is_default_constructible
                   <inplace_base_range<ez_vector<move_iterator<int *>>>>);
   }
   // sized or not
@@ -3669,7 +3706,7 @@ void test_base_range() {
     const iter_pair<t> xx(t(x.begin(), 3), t(x.end(), 0));
     const auto r = base_rng(xx);
     static_assert(same_as
-                  <remove_const_t<decltype(r)>,
+                  <remove_const<decltype(r)>,
                    base_range<iter_pair<counted_iterator<const int *>>>>);
     test_rng(r, irng(1, 4));
   }
@@ -3717,8 +3754,8 @@ void test_empty_range() {
   static_assert(is_rng_ref<const empty_range<int> &&>);
 }
 void test_single_range() {
-  static_assert(is_default_constructible_v<single_range<int>>);
-  static_assert(!is_default_constructible_v<single_range<int &>>);
+  static_assert(is_default_constructible<single_range<int>>);
+  static_assert(!is_default_constructible<single_range<int &>>);
 
   int x = 1;
   auto r = single_rng(ref(x));
@@ -3737,8 +3774,8 @@ void test_single_range() {
   assert(!r4.empty() && r4.size() == 1);
 }
 void test_counted_range() {
-  static_assert(is_default_constructible_v<counted_range<ez_vector<int>>>);
-  static_assert(!is_default_constructible_v<counted_range<ez_vector<int> &>>);
+  static_assert(is_default_constructible<counted_range<ez_vector<int>>>);
+  static_assert(!is_default_constructible<counted_range<ez_vector<int> &>>);
   {
     counted_range<ez_vector<int>> r;
     assert(r.empty() && r.size() == 0 && r.begin() == r.end()
@@ -3803,9 +3840,9 @@ void test_counted_range() {
 }
 void test_degraded_range() {
   {
-    static_assert(is_default_constructible_v
+    static_assert(is_default_constructible
                   <degraded_range<ez_vector<int>, input_iterator_tag>>);
-    static_assert(!is_default_constructible_v
+    static_assert(!is_default_constructible
                   <degraded_range<ez_vector<int> &, input_iterator_tag>>);
 
     int a[] = {1, 2, 3};
@@ -3957,8 +3994,8 @@ void test_degraded_range() {
 }
 void test_move_range() {
   {
-    static_assert(is_default_constructible_v<move_range<ez_vector<int>>>);
-    static_assert(!is_default_constructible_v<move_range<ez_vector<int> &>>);
+    static_assert(is_default_constructible<move_range<ez_vector<int>>>);
+    static_assert(!is_default_constructible<move_range<ez_vector<int> &>>);
 
     using rt = move_range<int (&)[2]>;
     static_assert(same_as<rng_itr<rt>, move_iterator<int *>>);
@@ -4081,8 +4118,8 @@ void test_reverse_range() {
     test_rng(y, irng(1, 4));
   }    
   {
-    static_assert(is_default_constructible_v<reverse_range<ez_vector<int>>>);
-    static_assert(!is_default_constructible_v<reverse_range<ez_vector<int> &>>);
+    static_assert(is_default_constructible<reverse_range<ez_vector<int>>>);
+    static_assert(!is_default_constructible<reverse_range<ez_vector<int> &>>);
 
     auto is_12 = [](auto &&r) {
       return *begin(r) == 1 && *next(begin(r)) == 2;
@@ -4391,21 +4428,21 @@ void test_bind_range() {
       int y = 3;
       auto fx = [&y](int &s) {return s + y;};
       auto ii = bind_iterator(addressof(x), fx);
-      static_assert(is_copy_constructible_v<decltype(fx)>);
-      static_assert(is_move_constructible_v<decltype(fx)>);
-      static_assert(is_nothrow_copy_assignable_v<decltype(ii)>);
-      static_assert(is_nothrow_move_assignable_v<decltype(ii)>);
-      static_assert(is_nothrow_swappable_v<decltype(ii)>);
+      static_assert(is_copy_constructible<decltype(fx)>);
+      static_assert(is_move_constructible<decltype(fx)>);
+      static_assert(is_nothrow_copy_assignable<decltype(ii)>);
+      static_assert(is_nothrow_move_assignable<decltype(ii)>);
+      static_assert(is_nothrow_swappable<decltype(ii)>);
     }
     {
       int x{};
       auto fx = [x = ez_vector<int>{}](int &s) {return 0;};
       auto ii = bind_iterator(addressof(x), fx);
-      static_assert(is_copy_constructible_v<decltype(fx)>);
-      static_assert(is_move_constructible_v<decltype(fx)>);
-      static_assert(!is_nothrow_copy_assignable_v<decltype(ii)>);
-      static_assert(is_nothrow_move_assignable_v<decltype(ii)>);
-      static_assert(is_nothrow_swappable_v<decltype(ii)>);
+      static_assert(is_copy_constructible<decltype(fx)>);
+      static_assert(is_move_constructible<decltype(fx)>);
+      static_assert(!is_nothrow_copy_assignable<decltype(ii)>);
+      static_assert(is_nothrow_move_assignable<decltype(ii)>);
+      static_assert(is_nothrow_swappable<decltype(ii)>);
     }
     {
       int x{};
@@ -4417,11 +4454,11 @@ void test_bind_range() {
       };
       auto fx = [x = t{}](int &s) {return 0;};
       auto ii = bind_iterator(addressof(x), fx);
-      static_assert(is_copy_constructible_v<decltype(fx)>);
-      static_assert(is_move_constructible_v<decltype(fx)>);
-      static_assert(!is_nothrow_copy_assignable_v<decltype(ii)>);
-      static_assert(!is_nothrow_move_assignable_v<decltype(ii)>);
-      static_assert(!is_nothrow_swappable_v<decltype(ii)>);
+      static_assert(is_copy_constructible<decltype(fx)>);
+      static_assert(is_move_constructible<decltype(fx)>);
+      static_assert(!is_nothrow_copy_assignable<decltype(ii)>);
+      static_assert(!is_nothrow_move_assignable<decltype(ii)>);
+      static_assert(!is_nothrow_swappable<decltype(ii)>);
     }
   }
   // bind_iterator
@@ -4491,9 +4528,9 @@ void test_bind_range() {
   }
   // bind_range
   {
-    static_assert(is_default_constructible_v
+    static_assert(is_default_constructible
                   <bind_range<ez_vector<int>, int (*)(int)>>);
-    static_assert(!is_default_constructible_v
+    static_assert(!is_default_constructible
                   <bind_range<ez_vector<int> &, int (*)(int)>>);
     {
       bind_range<ez_vector<int>, int (*)(int)> r;
@@ -4553,6 +4590,48 @@ void test_bind_range() {
       adl_swap(x, y);
       test_rng(x, ez_vector{14, 15});
       test_rng(y, ez_vector{101, 102, 103});
+    }
+  }
+}
+void test_cache_latest_range() {
+  // cache_latest_itr
+  {
+    auto r = ez_vector<int>{0, 1, 2, 3, 4};
+    iterator_reference_cache<int *> c;
+    auto it = cache_latest_itr(r.begin(), c);
+    static_assert(is_just_iitr<decltype(it)>);
+    assert(addressof(*it) == begin(r));
+    ++it;
+    assert(c.empty());
+    assert(*it == 1);
+    assert(!c.empty());
+  }
+  // cache_latest_rng
+  {
+    // cache value
+    {
+      auto r = bind_rng(irng(0, 5), [](int x) {return x * x * x;});
+      auto r2 = cache_latest_rng(r);
+      static_assert(is_just_irng<decltype(r2)>);
+      static_assert(!is_rng_ref<decltype(r2)>);
+      assert(!r2.empty());
+      assert(!as_const(r2).empty());
+      assert(r2.size() == 5u);
+      assert(as_const(r2).size() == 5u);
+      test_rng(r2, ez_vector<int>{0, 1, 8, 27, 64});
+    }
+    // cache address
+    {
+      auto r = ez_vector<int>{0, 1, 2, 3, 4};
+      auto r2 = cache_latest_rng(r);
+      static_assert(is_just_irng<decltype(r2)>);
+      static_assert(!is_rng_ref<decltype(r2)>);
+      assert(!r2.empty());
+      assert(!as_const(r2).empty());
+      assert(r2.size() == 5u);
+      assert(as_const(r2).size() == 5u);
+      test_rng(r2, irng(0, 5));
+      assert(addressof(front(r2)) == addressof(front(r)));
     }
   }
 }
@@ -4641,35 +4720,36 @@ void test_range_miscl() {
 void test_range() {
   printf("range: ");
 
-  inner::test::test_iterator_requirements();
-  inner::test::test_iterator_main_components();
-  inner::test::test_range_main_components();
+  test_iterator_requirements();
+  test_iterator_main_components();
+  test_range_main_components();
 
-  inner::test::test_degraded_iterator();
-  inner::test::test_reverse_iterator();
-  inner::test::test_insert_iterator();
-  inner::test::test_move_iterator();
-  inner::test::test_counted_iterator();
+  test_degraded_iterator();
+  test_reverse_iterator();
+  test_insert_iterator();
+  test_move_iterator();
+  test_counted_iterator();
 
-  inner::test::test_array();
-  inner::test::test_iter_pair();
-  inner::test::test_composite_range();
-  inner::test::test_iterator_wrapper();
-  inner::test::test_range_wrapper();
-  inner::test::test_base_range();
-  inner::test::test_empty_range();
-  inner::test::test_single_range();
-  inner::test::test_counted_range();
-  inner::test::test_degraded_range();
-  inner::test::test_move_range();
-  inner::test::test_reverse_range();
-  inner::test::test_rng_for_iterator_n();
-  inner::test::test_rng_for_n_value();
+  test_array();
+  test_iter_pair();
+  test_composite_range();
+  test_iterator_wrapper();
+  test_range_wrapper();
+  test_base_range();
+  test_empty_range();
+  test_single_range();
+  test_counted_range();
+  test_degraded_range();
+  test_move_range();
+  test_reverse_range();
+  test_rng_for_iterator_n();
+  test_rng_for_n_value();
 
-  inner::test::test_iterator_range();
-  inner::test::test_bind_range();
-  inner::test::test_iters();
-  inner::test::test_range_miscl();
+  test_iterator_range();
+  test_bind_range();
+  test_cache_latest_range();
+  test_iters();
+  test_range_miscl();
 
   printf("ok\n");
 }

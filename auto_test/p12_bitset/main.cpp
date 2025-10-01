@@ -182,7 +182,7 @@ void test_bitset_impl() {
     decltype(x)::const_iterator it2 = it;
     *it = false;
     assert(*it2 == false);
-    static_assert(!is_convertible_v
+    static_assert(!is_convertible
                   <decltype(x)::const_iterator, decltype(x)::iterator>);
   }
 }

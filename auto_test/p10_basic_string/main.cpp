@@ -214,7 +214,7 @@ void test_string_briefly() {
       v.reserve(20);
       assert(v.capacity() == 20);
       v.shrink_to_fit();
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 0);
@@ -228,7 +228,7 @@ void test_string_briefly() {
       assert(!v.full());
       v.shrink_to_fit();
       assert(equal(v, seq(1, 2, 3)));
-      if (!is_sso_string<decay_t<decltype(v)>>::value) {
+      if (!is_sso_string<decay<decltype(v)>>::value) {
         assert(v.capacity() == 3);
         assert(v.full());
       }
@@ -241,21 +241,21 @@ void test_string_briefly() {
     {
       V v;
       assert(v.empty());
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 0);
 
       v.reallocate(0);
       assert(v.empty());
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 0);
 
       v.reallocate(2);
       assert(v.empty());
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 2);
@@ -263,20 +263,20 @@ void test_string_briefly() {
       v = {1, 2, 3};
       v.shrink_to_fit();
       assert(equal(v, seq(1, 2, 3)));
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 3);
       v.reallocate(5);
       assert(equal(v, seq(1, 2, 3)));
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 5);
 
       v.reallocate(3);
       assert(equal(v, seq(1, 2, 3)));
-      if (is_sso_string<decay_t<decltype(v)>>::value)
+      if (is_sso_string<decay<decltype(v)>>::value)
         assert(v.capacity() == 15);
       else
         assert(v.capacity() == 3);

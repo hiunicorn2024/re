@@ -31,11 +31,11 @@ void test_duration() {
 
   // common_type
   {
-    static_assert(same_as<common_type_t<microseconds, seconds>, microseconds>);
-    static_assert(same_as<common_type_t<microseconds, years>, microseconds>);
-    static_assert(same_as<common_type_t<nanoseconds, years>, nanoseconds>);
-    static_assert(same_as<common_type_t<days, weeks>, days>);
-    static_assert(same_as<common_type_t<days, days>, days>);
+    static_assert(same_as<common_type<microseconds, seconds>, microseconds>);
+    static_assert(same_as<common_type<microseconds, years>, microseconds>);
+    static_assert(same_as<common_type<nanoseconds, years>, nanoseconds>);
+    static_assert(same_as<common_type<days, weeks>, days>);
+    static_assert(same_as<common_type<days, days>, days>);
   }
 
   // duration_values
@@ -48,7 +48,7 @@ void test_duration() {
   // rep
   // period
   {
-    static_assert(is_same_v<typename seconds::rep, long long>);
+    static_assert(is_same<typename seconds::rep, long long>);
     static_assert(seconds::period == ratio(1));
   }
 
@@ -243,9 +243,9 @@ void test_time_point() {
   // period
   {
     using t = time_point<system_clock, seconds>;
-    static_assert(is_same_v<t::clock, system_clock>);
-    static_assert(is_same_v<t::duration, seconds>);
-    static_assert(is_same_v<t::rep, long long>);
+    static_assert(is_same<t::clock, system_clock>);
+    static_assert(is_same<t::duration, seconds>);
+    static_assert(is_same<t::rep, long long>);
     static_assert(t::period == ratio(1));
   }
   // smf
@@ -259,7 +259,7 @@ void test_time_point() {
   {
     using t = time_point<system_clock, seconds>;
     t x(2_s);
-    static_assert(!is_convertible_v<seconds, t>);
+    static_assert(!is_convertible<seconds, t>);
     assert(x.time_since_epoch() == 2_s);
   }
   // time_point(const time_point<C, D2> &)
@@ -271,7 +271,7 @@ void test_time_point() {
     assert(x.time().count() == 0);
     assert(y.time().count() == 0);
 
-    static_assert(!is_convertible_v
+    static_assert(!is_convertible
                   <time_point<system_clock, milliseconds>,
                    time_point<system_clock, seconds>>);
   }

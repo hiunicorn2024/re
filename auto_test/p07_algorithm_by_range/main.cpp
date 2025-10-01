@@ -44,15 +44,15 @@ void test_combination_iterator() {
       using iter_t = combination_iterator<int *, ez_vector<int>>;
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
-      static_assert(is_trivially_copyable_v<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
+      static_assert(is_trivially_copyable<iter_t>);
     }
     // member types
     {
       using iter_t = combination_iterator<int *, ez_vector<int>>;
       static_assert(same_as
                     <iter_t::value_type,
-                    bind_range<ez_vector<int> &, decay_t<decltype(deref)>>>);
+                     bind_range<ez_vector<int> &, decay<decltype(deref)>>>);
       static_assert(same_as<iter_t::reference, iter_t::value_type>);
       static_assert(same_as<iter_t::pointer, void>);
       static_assert(same_as<iter_t::difference_type, ptrdiff_t>);
@@ -263,18 +263,18 @@ void test_combination_range() {
     // special member functions
     {
       static_assert(semiregular<r_t>);
-      static_assert(!is_trivially_copyable_v<r_t>);
+      static_assert(!is_trivially_copyable<r_t>);
 
       static_assert(!semiregular<r2_t>);
-      static_assert(!is_trivially_copyable_v<r2_t>);
-      static_assert(!is_default_constructible_v<r2_t>);
-      static_assert(is_copy_constructible_v<r2_t>);
-      static_assert(is_move_constructible_v<r2_t>);
-      static_assert(!is_copy_assignable_v<r2_t>);
-      static_assert(!is_move_assignable_v<r2_t>);
+      static_assert(!is_trivially_copyable<r2_t>);
+      static_assert(!is_default_constructible<r2_t>);
+      static_assert(is_copy_constructible<r2_t>);
+      static_assert(is_move_constructible<r2_t>);
+      static_assert(!is_copy_assignable<r2_t>);
+      static_assert(!is_move_assignable<r2_t>);
 
       static_assert(semiregular<r3_t>);
-      static_assert(!is_trivially_copyable_v<r3_t>);
+      static_assert(!is_trivially_copyable<r3_t>);
     }
     // is_rng
     {
@@ -411,8 +411,8 @@ void test_combination_range() {
           int a[4] = {};
           int c = 0;
           for (decltype(auto) x : *p) {
-            static_assert(!is_reference_v<decltype(x)>);
-            static_assert(!is_reference_v<decltype(x)>);
+            static_assert(!is_reference<decltype(x)>);
+            static_assert(!is_reference<decltype(x)>);
             ++c;
             copy(const_rng(x), begin(a));
           }
@@ -499,6 +499,10 @@ void test_combination_range() {
 
   // combination_rng
   {
+    assert(equal(combination_rng(empty_rng<int>(), 0),
+                 empty_rng<empty_range<int>>(),
+                 equal));
+
     assert(equal(combination_rng(ez_vector{1, 2, 3}, 3),
                  single_rng(ez_vector{1, 2, 3}),
                  equal));
@@ -579,10 +583,10 @@ void test_filter_iterator() {
     static_assert(forward_iterator<iter_t>);
     static_assert(cpp17_forward_iterator<iter_t>);
 
-    static_assert(is_convertible_v
+    static_assert(is_convertible
                   <filter_iterator<int *, bool (*)(int)>,
                    filter_iterator<const int *, bool (*)(int)>>);
-    static_assert(!is_convertible_v
+    static_assert(!is_convertible
                   <filter_iterator<const int *, bool (*)(int)>,
                    filter_iterator<int *, bool (*)(int)>>);
     
@@ -651,22 +655,22 @@ void test_filter_range() {
   {
     using r_t = filter_range<ez_list<int>, bool (*)(int)>;
     static_assert(semiregular<r_t>);
-    static_assert(!is_trivially_copyable_v<r_t>);
+    static_assert(!is_trivially_copyable<r_t>);
     static_assert(!is_rng_ref<r_t>);
 
     using r2_t = filter_range<ez_list<int> &, bool (*)(int)>;
     static_assert(!semiregular<r2_t>);
-    static_assert(!is_default_constructible_v<r2_t>);
-    static_assert(is_copy_constructible_v<r2_t>);
-    static_assert(is_move_constructible_v<r2_t>);
-    static_assert(!is_copy_assignable_v<r2_t>);
-    static_assert(!is_move_assignable_v<r2_t>);
-    static_assert(!is_trivially_copyable_v<r2_t>);
+    static_assert(!is_default_constructible<r2_t>);
+    static_assert(is_copy_constructible<r2_t>);
+    static_assert(is_move_constructible<r2_t>);
+    static_assert(!is_copy_assignable<r2_t>);
+    static_assert(!is_move_assignable<r2_t>);
+    static_assert(!is_trivially_copyable<r2_t>);
     static_assert(is_rng_ref<r2_t>);
 
     using r3_t = filter_range<iter_pair<int *>, bool (*)(int)>;
     static_assert(semiregular<r3_t>);
-    static_assert(!is_trivially_copyable_v<r3_t>);
+    static_assert(!is_trivially_copyable<r3_t>);
     static_assert(is_rng_ref<r3_t>);
 
     int tmp{};
@@ -674,7 +678,7 @@ void test_filter_range() {
       <iter_pair<int *>,
        semiregular_function<decltype([tmp](int) {return 0;})>>;
     static_assert(semiregular<r4_t>);
-    static_assert(!is_trivially_copyable_v<r4_t>);
+    static_assert(!is_trivially_copyable<r4_t>);
     static_assert(is_rng_ref<r4_t>);
   }
   // special member functions
@@ -689,16 +693,16 @@ void test_filter_range() {
     {
       using t0 = filter_range<iter_pair<const int *>, decltype(f1)>;
       static_assert(!semiregular<t0>);
-      static_assert(!is_copy_assignable_v<t0>);
-      static_assert(!is_move_assignable_v<t0>);
-      using t1 = filter_range<iter_pair<const int *>, decay_t<decltype(f1)>>;
+      static_assert(!is_copy_assignable<t0>);
+      static_assert(!is_move_assignable<t0>);
+      using t1 = filter_range<iter_pair<const int *>, decay<decltype(f1)>>;
       static_assert(semiregular<t1>);
-      using t2 = filter_range<iter_pair<const int *>, decay_t<decltype(f2)>>;
+      using t2 = filter_range<iter_pair<const int *>, decay<decltype(f2)>>;
       static_assert(!semiregular<t2>);
-      static_assert(!is_default_constructible_v<t2>);
-      using t3 = filter_range<iter_pair<const int *>, decay_t<decltype(f3)>>;
+      static_assert(!is_default_constructible<t2>);
+      using t3 = filter_range<iter_pair<const int *>, decay<decltype(f3)>>;
       static_assert(!semiregular<t3>);
-      static_assert(!is_default_constructible_v<t3>);
+      static_assert(!is_default_constructible<t3>);
 
       test_copy_construct<t0>([&](t0 *p) {new(p) t0(rng(v), f1);},
                               [](const t0 *p) {return equal(*p, irng(1, 4));},
@@ -726,21 +730,21 @@ void test_filter_range() {
     {
       using t0 = filter_range<const ez_vector<int> &, decltype(f1)>;
       static_assert(!semiregular<t0>);
-      using t1 = filter_range<const ez_vector<int> &, decay_t<decltype(f1)>>;
+      using t1 = filter_range<const ez_vector<int> &, decay<decltype(f1)>>;
       static_assert(!semiregular<t1>);
-      static_assert(!is_default_constructible_v<t1>);
-      static_assert(!is_copy_assignable_v<t1>);
-      static_assert(!is_move_assignable_v<t1>);
-      using t2 = filter_range<const ez_vector<int> &, decay_t<decltype(f2)>>;
+      static_assert(!is_default_constructible<t1>);
+      static_assert(!is_copy_assignable<t1>);
+      static_assert(!is_move_assignable<t1>);
+      using t2 = filter_range<const ez_vector<int> &, decay<decltype(f2)>>;
       static_assert(!semiregular<t2>);
-      static_assert(!is_default_constructible_v<t2>);
-      static_assert(!is_copy_assignable_v<t2>);
-      static_assert(!is_move_assignable_v<t2>);
-      using t3 = filter_range<const ez_vector<int> &, decay_t<decltype(f3)>>;
+      static_assert(!is_default_constructible<t2>);
+      static_assert(!is_copy_assignable<t2>);
+      static_assert(!is_move_assignable<t2>);
+      using t3 = filter_range<const ez_vector<int> &, decay<decltype(f3)>>;
       static_assert(!semiregular<t3>);
-      static_assert(!is_default_constructible_v<t2>);
-      static_assert(!is_copy_assignable_v<t2>);
-      static_assert(!is_move_assignable_v<t2>);
+      static_assert(!is_default_constructible<t2>);
+      static_assert(!is_copy_assignable<t2>);
+      static_assert(!is_move_assignable<t2>);
 
       test_copy_construct<t0>([&](t0 *p) {new(p) t0(v, f1);},
                               [](const t0 *p) {return equal(*p, irng(1, 4));},
@@ -762,19 +766,19 @@ void test_filter_range() {
     {
       using t0 = filter_range<ez_vector<int>, decltype(f1)>;
       static_assert(!semiregular<t0>);
-      static_assert(is_default_constructible_v<t0>);
-      static_assert(is_copy_constructible_v<t0>);
-      static_assert(is_move_constructible_v<t0>);
-      static_assert(!is_copy_assignable_v<t0>);
-      static_assert(!is_move_assignable_v<t0>);
-      using t1 = filter_range<ez_vector<int>, decay_t<decltype(f1)>>;
+      static_assert(is_default_constructible<t0>);
+      static_assert(is_copy_constructible<t0>);
+      static_assert(is_move_constructible<t0>);
+      static_assert(!is_copy_assignable<t0>);
+      static_assert(!is_move_assignable<t0>);
+      using t1 = filter_range<ez_vector<int>, decay<decltype(f1)>>;
       static_assert(semiregular<t1>);
-      using t2 = filter_range<ez_vector<int>, decay_t<decltype(f2)>>;
+      using t2 = filter_range<ez_vector<int>, decay<decltype(f2)>>;
       static_assert(!semiregular<t2>);
-      static_assert(!is_default_constructible_v<t2>);
-      using t3 = filter_range<ez_vector<int>, decay_t<decltype(f3)>>;
+      static_assert(!is_default_constructible<t2>);
+      using t3 = filter_range<ez_vector<int>, decay<decltype(f3)>>;
       static_assert(!semiregular<t3>);
-      static_assert(!is_default_constructible_v<t3>);
+      static_assert(!is_default_constructible<t3>);
 
       test_rng(t0{}, empty_rng<int>());
 
@@ -828,13 +832,14 @@ void test_filter_range() {
       const auto f = [](int x) {return x != 0;};
       filter_range<ez_vector<int> &, bool (*)(int)> r(v, f);
       auto r2 = filter_rng(v, f);
-      static_assert(same_as<decltype(r2),
-                    filter_range<ez_vector<int> &,
-                    remove_const_t<decltype(f)>>>);
+      static_assert(same_as
+                    <decltype(r2),
+                     filter_range<ez_vector<int> &,
+                                  remove_const<decltype(f)>>>);
       auto r3 = filter_rng(rng(v), f);
       static_assert(same_as
                     <decltype(r3),
-                     filter_range<iter_pair<int *>, decay_t<decltype(f)>>>);
+                     filter_range<iter_pair<int *>, decay<decltype(f)>>>);
       assert(equal(r, vv));
       assert(equal(r2, vv));
       assert(equal(r3, vv));
@@ -869,7 +874,7 @@ void test_take_iterator() {
       using iter_t = take_iterator<degraded_input_iterator<int *>>;
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
       static_assert(input_iterator<iter_t>);
       static_assert(!forward_iterator<iter_t>);
       static_assert(cpp17_input_iterator<iter_t>);
@@ -883,7 +888,7 @@ void test_take_iterator() {
       using c_iter_t = take_iterator<degraded_input_iterator<const int *>>;
       static_assert(regular<c_iter_t>);
       static_assert(swappable<c_iter_t>);
-      static_assert(is_nothrow_swappable_v<c_iter_t>);
+      static_assert(is_nothrow_swappable<c_iter_t>);
       static_assert(input_iterator<c_iter_t>);
       static_assert(!forward_iterator<c_iter_t>);
       static_assert(cpp17_input_iterator<c_iter_t>);
@@ -1355,21 +1360,21 @@ void test_drop_range() {
   // drop_rng(r, n)
   {
     {
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(drop_rng(ez_vector{1, 2, 3, 4}, 2)),
                      drop_range<ez_vector<int>>>);
       assert(equal(drop_rng(ez_vector{1, 2, 3, 4}, 2), irng(3, 5)));
     }
     {
       ez_vector<int> v = {1, 2, 3, 4};
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(drop_rng(v, 2)),
                      drop_range<ez_vector<int> &>>);
       assert(equal(drop_rng(v, 2), irng(3, 5)));
     }
     {
       ez_vector<int> v = {1, 2, 3, 4};
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(drop_rng(rng(v), 2)),
                      drop_range<iter_pair<int *>>>);
       assert(equal(drop_rng(rng(v), 2), irng(3, 5)));
@@ -1428,14 +1433,14 @@ void test_take_while_iterator() {
                                            bool (*)(const int &)>;
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
       // as forward iterator
       {
         using iter_t = take_while_iterator<int *, bool (*)(const int &)>;
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
       // with non-semiregular function
       {
@@ -1444,7 +1449,7 @@ void test_take_while_iterator() {
         using iter_t = take_while_iterator<int *, decltype(f)>;
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
     }
     // iterator and const_iterator
@@ -1588,12 +1593,12 @@ void test_take_while_range() {
       static_assert(!semiregular<r22_t>);
       static_assert(!semiregular<r33_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(!is_swappable_v<r2_t>);
-      static_assert(is_swappable_v<r3_t>);
-      static_assert(is_nothrow_swappable_v<r11_t>);
-      static_assert(!is_swappable_v<r22_t>);
-      static_assert(is_nothrow_swappable_v<r33_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(!is_swappable<r2_t>);
+      static_assert(is_swappable<r3_t>);
+      static_assert(is_nothrow_swappable<r11_t>);
+      static_assert(!is_swappable<r22_t>);
+      static_assert(is_nothrow_swappable<r33_t>);
     }
     // is_rng
     {
@@ -1731,9 +1736,9 @@ void test_drop_while_range() {
       static_assert(!semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
 
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(!is_swappable_v<r2_t>);
-      static_assert(is_nothrow_swappable_v<r3_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(!is_swappable<r2_t>);
+      static_assert(is_nothrow_swappable<r3_t>);
     }
     // is_rng
     {
@@ -1915,22 +1920,22 @@ void test_join_iterator() {
         using iter_t = join_iterator<int (*)[3]>;
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
 
         using c_iter_t = join_iterator<const int (*)[3]>;
         static_assert(regular<c_iter_t>);
         static_assert(swappable<c_iter_t>);
-        static_assert(is_nothrow_copyable_v<c_iter_t>);
-        static_assert(is_nothrow_swappable_v<c_iter_t>);
+        static_assert(is_nothrow_copyable<c_iter_t>);
+        static_assert(is_nothrow_swappable<c_iter_t>);
       }
       // for container of container
       {
         using iter_t = join_iterator<ez_vector<ez_list<int>>::iterator>;
         static_assert(regular<iter_t>);
         static_assert(swappable<iter_t>);
-        static_assert(is_nothrow_copyable_v<iter_t>);
-        static_assert(is_nothrow_swappable_v<iter_t>);
+        static_assert(is_nothrow_copyable<iter_t>);
+        static_assert(is_nothrow_swappable<iter_t>);
       }
     }
     // iterator concept
@@ -2096,10 +2101,10 @@ void test_join_range() {
       static_assert(!semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
 
-      static_assert(is_nothrow_swappable_v<r0_t>);
-      static_assert(is_nothrow_swappable_v<r1_t>);
-      static_assert(!is_swappable_v<r2_t>);
-      static_assert(is_swappable_v<r3_t>);
+      static_assert(is_nothrow_swappable<r0_t>);
+      static_assert(is_nothrow_swappable<r1_t>);
+      static_assert(!is_swappable<r2_t>);
+      static_assert(is_swappable<r3_t>);
     }
     // is_rng
     {
@@ -2426,6 +2431,18 @@ void test_join_range() {
     assert(equal(join_rng(begin(vv), end(vv)), irng(1, 5)));
     assert(equal(join_rng(begin(vv), 2), irng(1, 5)));
   }
+  // join_range::for_each
+  {
+    ez_vector<ez_vector<int>> v = {{1, 2, 3}, {4}, {5, 6}};
+    ez_vector<int> vv;
+    for (int &x : join_rng(v))
+      vv.insert(vv.end(), x);
+    assert(equal(vv, irng(1, 7)));
+    vv.erase(vv.begin(), vv.end());
+    assert(vv.empty());
+    join_rng(v).for_each([&vv](int &x) {vv.insert(vv.end(), x);});
+    assert(equal(vv, irng(1, 7)));
+  }
 }
 void test_join_with() {
   using v_t = ez_vector<int>;
@@ -2494,9 +2511,9 @@ void test_join_with_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -2683,8 +2700,8 @@ void test_join_with_range() {
       static_assert(!semiregular<r3_t>);
       static_assert(semiregular<r4_t>);
 
-      static_assert(!is_nothrow_copy_assignable_v<r0_t>);
-      static_assert(is_nothrow_copy_assignable_v<r4_t>);
+      static_assert(!is_nothrow_copy_assignable<r0_t>);
+      static_assert(is_nothrow_copy_assignable<r4_t>);
     }
     // is_rng
     {
@@ -2940,9 +2957,9 @@ void test_adjacent_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -3072,15 +3089,15 @@ void test_adjacent_range() {
     // special member functions
     {
       // static_assert(!semiregular<r0_t>);
-      static_assert(copyable<r0_t> && is_default_constructible_v<r0_t>);
+      static_assert(copyable<r0_t> && is_default_constructible<r0_t>);
       static_assert(semiregular<r1_t>);
       static_assert(!semiregular<r2_t>);
       static_assert(semiregular<r3_t>);
 
-      static_assert(is_swappable_v<r0_t>);
-      static_assert(is_swappable_v<r1_t>);
-      static_assert(!is_swappable_v<r2_t>);
-      static_assert(is_swappable_v<r3_t>);
+      static_assert(is_swappable<r0_t>);
+      static_assert(is_swappable<r1_t>);
+      static_assert(!is_swappable<r2_t>);
+      static_assert(is_swappable<r3_t>);
     }
     // is_rng
     {
@@ -3272,9 +3289,9 @@ void test_slide_iterator() {
       static_assert(regular<iter_t>);
       static_assert(swappable<iter_t>);
 
-      static_assert(is_nothrow_default_constructible_v<iter_t>);
-      static_assert(is_nothrow_copyable_v<iter_t>);
-      static_assert(is_nothrow_swappable_v<iter_t>);
+      static_assert(is_nothrow_default_constructible<iter_t>);
+      static_assert(is_nothrow_copyable<iter_t>);
+      static_assert(is_nothrow_swappable<iter_t>);
     }
     // iterator concept
     {
@@ -3395,17 +3412,17 @@ void test_slide_range() {
       static_assert(!semiregular<r3_t>);
       static_assert(!semiregular<r4_t>);
 
-      static_assert(!is_default_constructible_v<r3_t>);
-      static_assert(is_nothrow_copy_constructible_v<r3_t>);
-      static_assert(is_nothrow_move_constructible_v<r3_t>);
-      static_assert(!is_copy_assignable_v<r3_t>);
-      static_assert(!is_move_assignable_v<r3_t>);
+      static_assert(!is_default_constructible<r3_t>);
+      static_assert(is_nothrow_copy_constructible<r3_t>);
+      static_assert(is_nothrow_move_constructible<r3_t>);
+      static_assert(!is_copy_assignable<r3_t>);
+      static_assert(!is_move_assignable<r3_t>);
 
-      static_assert(!is_default_constructible_v<r4_t>);
-      static_assert(is_nothrow_copy_constructible_v<r4_t>);
-      static_assert(is_nothrow_move_constructible_v<r4_t>);
-      static_assert(!is_copy_assignable_v<r4_t>);
-      static_assert(!is_move_assignable_v<r4_t>);
+      static_assert(!is_default_constructible<r4_t>);
+      static_assert(is_nothrow_copy_constructible<r4_t>);
+      static_assert(is_nothrow_move_constructible<r4_t>);
+      static_assert(!is_copy_assignable<r4_t>);
+      static_assert(!is_move_assignable<r4_t>);
     }
     // is_rng
     {

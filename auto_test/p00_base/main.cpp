@@ -16,18 +16,18 @@ struct tt {};
 namespace re {
 
 template <>
-struct common_type<inner::test::test_common_type::t,
-                   inner::test::test_common_type::t> {
+struct template_common_type<inner::test::test_common_type::t,
+                            inner::test::test_common_type::t> {
   using type = void;
 };
 template <>
-struct common_type<inner::test::test_common_type::t,
-                   inner::test::test_common_type::tt> {
+struct template_common_type<inner::test::test_common_type::t,
+                            inner::test::test_common_type::tt> {
   using type = void;
 };
 template <>
-struct common_type<inner::test::test_common_type::tt,
-                   inner::test::test_common_type::t> {
+struct template_common_type<inner::test::test_common_type::tt,
+                            inner::test::test_common_type::t> {
   using type = void;
 };
 
@@ -61,63 +61,63 @@ struct zz {
 namespace re {
 
 template <template <class> class F, template <class> class FF>
-struct basic_common_reference<inner::test::test_common_reference::t,
-                              inner::test::test_common_reference::tt,
-                              F, FF> {
+struct template_basic_common_reference<inner::test::test_common_reference::t,
+                                       inner::test::test_common_reference::tt,
+                                       F, FF> {
   using type = inner::copycvref_t<FF<void *>, F<void *>>;
 };
 template <template <class> class F, template <class> class FF>
-struct basic_common_reference<inner::test::test_common_reference::tt,
-                              inner::test::test_common_reference::t,
-                              F, FF> {
-  using type = inner::copycvref_t<FF<void *>, F<void *>>;
-};
-
-template <template <class> class F, template <class> class FF>
-struct basic_common_reference<inner::test::test_common_reference::s,
-                              inner::test::test_common_reference::ss,
-                              F, FF> {
-  using type = inner::copycvref_t<FF<void *>, F<void *>>;
-};
-template <template <class> class F, template <class> class FF>
-struct basic_common_reference<inner::test::test_common_reference::ss,
-                              inner::test::test_common_reference::s,
-                              F, FF> {
+struct template_basic_common_reference<inner::test::test_common_reference::tt,
+                                       inner::test::test_common_reference::t,
+                                       F, FF> {
   using type = inner::copycvref_t<FF<void *>, F<void *>>;
 };
 
 template <template <class> class F, template <class> class FF>
-struct basic_common_reference<inner::test::test_common_reference::u,
-                              inner::test::test_common_reference::uu,
-                              F, FF> {
+struct template_basic_common_reference<inner::test::test_common_reference::s,
+                                       inner::test::test_common_reference::ss,
+                                       F, FF> {
+  using type = inner::copycvref_t<FF<void *>, F<void *>>;
+};
+template <template <class> class F, template <class> class FF>
+struct template_basic_common_reference<inner::test::test_common_reference::ss,
+                                       inner::test::test_common_reference::s,
+                                       F, FF> {
+  using type = inner::copycvref_t<FF<void *>, F<void *>>;
+};
+
+template <template <class> class F, template <class> class FF>
+struct template_basic_common_reference<inner::test::test_common_reference::u,
+                                       inner::test::test_common_reference::uu,
+                                       F, FF> {
   using type = void;
 };
 template <template <class> class F, template <class> class FF>
-struct basic_common_reference<inner::test::test_common_reference::uu,
-                              inner::test::test_common_reference::u,
-                              F, FF> {
+struct template_basic_common_reference<inner::test::test_common_reference::uu,
+                                       inner::test::test_common_reference::u,
+                                       F, FF> {
   using type = void;
 };
 
 template <>
-struct common_type<inner::test::test_common_reference::v,
-                   inner::test::test_common_reference::vv> {
+struct template_common_type<inner::test::test_common_reference::v,
+                            inner::test::test_common_reference::vv> {
   using type = nullptr_t;
 };
 template <>
-struct common_type<inner::test::test_common_reference::vv,
-                   inner::test::test_common_reference::v> {
+struct template_common_type<inner::test::test_common_reference::vv,
+                            inner::test::test_common_reference::v> {
   using type = nullptr_t;
 };
 
 template <>
-struct common_type<inner::test::test_common_reference::w,
-                   inner::test::test_common_reference::ww> {
+struct template_common_type<inner::test::test_common_reference::w,
+                            inner::test::test_common_reference::ww> {
   using type = nullptr_t;
 };
 template <>
-struct common_type<inner::test::test_common_reference::ww,
-                   inner::test::test_common_reference::w> {
+struct template_common_type<inner::test::test_common_reference::ww,
+                            inner::test::test_common_reference::w> {
   using type = nullptr_t;
 };
 
@@ -127,516 +127,521 @@ namespace re::inner::test::test_common_reference {
 void case12_common_ref_or_user_defined_common_reference() {
   // mark fall-through result
   {
-    static_assert(is_same_v<basic_common_reference
-                            <t, tt, type_identity_t, type_identity_t>::type,
-                            void *>);
-    static_assert(is_same_v<basic_common_reference
-                            <tt, t, type_identity_t, type_identity_t>::type,
-                            void *>);
-    static_assert(is_same_v<basic_common_reference
-                            <s, ss, type_identity_t, type_identity_t>::type,
-                            void *>);
-    static_assert(is_same_v<basic_common_reference
-                            <ss, s, type_identity_t, type_identity_t>::type,
-                            void *>);
-    static_assert(is_void_v<basic_common_reference
-                            <u, uu, type_identity_t, type_identity_t>::type>);
-    static_assert(is_void_v<basic_common_reference
-                            <uu, u, type_identity_t, type_identity_t>::type>);
+    static_assert(is_same<template_basic_common_reference
+                          <t, tt, type_identity, type_identity>::type,
+                          void *>);
+    static_assert(is_same<template_basic_common_reference
+                          <tt, t, type_identity, type_identity>::type,
+                          void *>);
+    static_assert(is_same<template_basic_common_reference
+                          <s, ss, type_identity, type_identity>::type,
+                          void *>);
+    static_assert(is_same<template_basic_common_reference
+                          <ss, s, type_identity, type_identity>::type,
+                          void *>);
+    static_assert(is_void<template_basic_common_reference
+                          <u, uu, type_identity, type_identity>::type>);
+    static_assert(is_void<template_basic_common_reference
+                          <uu, u, type_identity, type_identity>::type>);
   }
   // same non-reference type
   {
-    static_assert(is_same_v<inner::common_ref_t<t, t>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<t, t>, t>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t, t>, inner::disable>);
+    static_assert(is_same<common_reference<t, t>, t>);
+    static_assert(is_same
                   <inner::common_ref_t<const t, const t>, inner::disable>);
-    static_assert(is_same_v<decltype(false ? declval<const t (&)()>()()
-                                     : declval<const t (&)()>()()), const t>);
-    static_assert(is_same_v<common_reference_t<const t, const t>, const t>);
-    static_assert(is_same_v
+    static_assert(is_same<decltype(false ? declval<const t (&)()>()()
+                                   : declval<const t (&)()>()()), const t>);
+    static_assert(is_same<common_reference<const t, const t>, const t>);
+    static_assert(is_same
                   <inner::common_ref_t<const int, const int>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const int, const int>, int>);
+    static_assert(is_same<common_reference<const int, const int>, int>);
   }
   // same type, lvalue reference and lvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<t &, t &>, t &>);
-    static_assert(is_same_v<common_reference_t<t &, t &>, t &>);
-    static_assert(is_same_v<inner::common_ref_t<const t &, t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<const t &, t &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &, const t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &, const t &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t &, t &>, t &>);
+    static_assert(is_same<common_reference<t &, t &>, t &>);
+    static_assert(is_same<inner::common_ref_t<const t &, t &>, const t &>);
+    static_assert(is_same<common_reference<const t &, t &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &, const t &>, const t &>);
+    static_assert(is_same<common_reference<t &, const t &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &, const t &>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &, const t &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const t &, const t &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &, volatile t &>,
                    const volatile t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &, volatile t &>,
+    static_assert(is_same
+                  <common_reference<const t &, volatile t &>,
                    const volatile t &>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::common_ref_t<t &, volatile t &>, volatile t &>);
-    static_assert(is_same_v
-                  <common_reference_t<t &, volatile t &>, volatile t &>);
+    static_assert(is_same
+                  <common_reference<t &, volatile t &>, volatile t &>);
   }
   // same type, rvalue reference and rvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<t &&, t &&>, t &&>);
-    static_assert(is_same_v<common_reference_t<t &&, t &&>, t &&>);
-    static_assert(is_same_v<inner::common_ref_t<const t &&, t &&>, const t &&>);
-    static_assert(is_same_v<common_reference_t<const t &&, t &&>, const t &&>);
-    static_assert(is_same_v<inner::common_ref_t<t &&, const t &&>, const t &&>);
-    static_assert(is_same_v<common_reference_t<t &&, const t &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t &&, t &&>, t &&>);
+    static_assert(is_same<common_reference<t &&, t &&>, t &&>);
+    static_assert(is_same<inner::common_ref_t<const t &&, t &&>, const t &&>);
+    static_assert(is_same<common_reference<const t &&, t &&>, const t &&>);
+    static_assert(is_same<inner::common_ref_t<t &&, const t &&>, const t &&>);
+    static_assert(is_same<common_reference<t &&, const t &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, const t &&>, const t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &&, const t &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const t &&, const t &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, volatile t &&>,
                    const volatile t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &&, volatile t &&>,
+    static_assert(is_same
+                  <common_reference<const t &&, volatile t &&>,
                    const volatile t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::common_ref_t<t &&, volatile t &&>, volatile t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<t &&, volatile t &&>, volatile t &&>);
+    static_assert(is_same
+                  <common_reference<t &&, volatile t &&>, volatile t &&>);
   }
   // same type, differenct references
   {
-    static_assert(is_same_v<inner::common_ref_t<t &, t &&>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &, t &&>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<const t &, t &&>, const t &>);
-    static_assert(is_same_v<common_reference_t<const t &, t &&>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &, const t &&>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &, const t &&>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t &, t &&>, const t &>);
+    static_assert(is_same<common_reference<t &, t &&>, const t &>);
+    static_assert(is_same<inner::common_ref_t<const t &, t &&>, const t &>);
+    static_assert(is_same<common_reference<const t &, t &&>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &, const t &&>, const t &>);
+    static_assert(is_same<common_reference<t &, const t &&>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &, const t &&>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &, const t &&>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &&, t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &&, t &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<const t &&, t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<const t &&, t &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &&, const t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &&, const t &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const t &, const t &&>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &&, t &>, const t &>);
+    static_assert(is_same<common_reference<t &&, t &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<const t &&, t &>, const t &>);
+    static_assert(is_same<common_reference<const t &&, t &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &&, const t &>, const t &>);
+    static_assert(is_same<common_reference<t &&, const t &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, const t &>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &&, const t &>, const t &>);
+    static_assert(is_same
+                  <common_reference<const t &&, const t &>, const t &>);
   }
   // t and tt, non-reference
   {
-    static_assert(is_same_v<inner::common_ref_t<t, tt>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<t, tt>, void *>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t, tt>, inner::disable>);
+    static_assert(is_same<common_reference<t, tt>, void *>);
+    static_assert(is_same
                   <inner::common_ref_t<const t, const tt>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const t, const tt>,
+    static_assert(is_same<common_reference<const t, const tt>,
                             void *const>);
-    static_assert(is_same_v<inner::common_ref_t<tt, t>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<tt, t>, void *>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<tt, t>, inner::disable>);
+    static_assert(is_same<common_reference<tt, t>, void *>);
+    static_assert(is_same
                   <inner::common_ref_t<const tt, const t>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const tt, const t>,
+    static_assert(is_same<common_reference<const tt, const t>,
                             void *const>);
   }
   // t and tt, lvalue reference and lvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<t &, tt &>, t &>);
-    static_assert(is_same_v<common_reference_t<t &, tt &>, t &>);
-    static_assert(is_same_v<inner::common_ref_t<const t &, tt &>, const t &>);
-    static_assert(is_same_v<common_reference_t<const t &, tt &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &, const tt &>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &, const tt &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t &, tt &>, t &>);
+    static_assert(is_same<common_reference<t &, tt &>, t &>);
+    static_assert(is_same<inner::common_ref_t<const t &, tt &>, const t &>);
+    static_assert(is_same<common_reference<const t &, tt &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &, const tt &>, const t &>);
+    static_assert(is_same<common_reference<t &, const tt &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &, const tt &>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &, const tt &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const t &, const tt &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &, volatile tt &>,
                    const volatile t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &, volatile tt &>,
+    static_assert(is_same
+                  <common_reference<const t &, volatile tt &>,
                    const volatile t &>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::common_ref_t<t &, volatile tt &>, volatile t &>);
-    static_assert(is_same_v
-                  <common_reference_t<t &, volatile tt &>, volatile t &>);
+    static_assert(is_same
+                  <common_reference<t &, volatile tt &>, volatile t &>);
 
-    static_assert(is_same_v<inner::common_ref_t<tt &, t &>, t &>);
-    static_assert(is_same_v<common_reference_t<tt &, t &>, t &>);
-    static_assert(is_same_v<inner::common_ref_t<const tt &, t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<const tt &, t &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<tt &, const t &>, const t &>);
-    static_assert(is_same_v<common_reference_t<tt &, const t &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<tt &, t &>, t &>);
+    static_assert(is_same<common_reference<tt &, t &>, t &>);
+    static_assert(is_same<inner::common_ref_t<const tt &, t &>, const t &>);
+    static_assert(is_same<common_reference<const tt &, t &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<tt &, const t &>, const t &>);
+    static_assert(is_same<common_reference<tt &, const t &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const tt &, const t &>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const tt &, const t &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const tt &, const t &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const tt &, volatile t &>,
                    const volatile t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const tt &, volatile t &>,
+    static_assert(is_same
+                  <common_reference<const tt &, volatile t &>,
                    const volatile t &>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::common_ref_t<tt &, volatile t &>, volatile t &>);
-    static_assert(is_same_v
-                  <common_reference_t<tt &, volatile t &>, volatile t &>);
+    static_assert(is_same
+                  <common_reference<tt &, volatile t &>, volatile t &>);
   }
   // t and tt, rvalue reference and rvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<t &&, tt &&>, t &&>);
-    static_assert(is_same_v<common_reference_t<t &&, tt &&>, t &&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t &&, tt &&>, t &&>);
+    static_assert(is_same<common_reference<t &&, tt &&>, t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, tt &&>, const t &&>);
-    static_assert(is_same_v<common_reference_t<const t &&, tt &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const t &&, tt &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<t &&, const tt &&>, const t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<t &&, const tt &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<t &&, const tt &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, const tt &&>, const t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &&, const tt &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const t &&, const tt &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, volatile tt &&>,
                    const volatile t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &&, volatile tt &&>,
+    static_assert(is_same
+                  <common_reference<const t &&, volatile tt &&>,
                    const volatile t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::common_ref_t<t &&, volatile tt &&>, volatile t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<t &&, volatile tt &&>, volatile t &&>);
+    static_assert(is_same
+                  <common_reference<t &&, volatile tt &&>, volatile t &&>);
 
-    static_assert(is_same_v<inner::common_ref_t<tt &&, t &&>, t &&>);
-    static_assert(is_same_v<common_reference_t<tt &&, t &&>, t &&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<tt &&, t &&>, t &&>);
+    static_assert(is_same<common_reference<tt &&, t &&>, t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const tt &&, t &&>, const t &&>);
-    static_assert(is_same_v<common_reference_t<const tt &&, t &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const tt &&, t &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<tt &&, const t &&>, const t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<tt &&, const t &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<tt &&, const t &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const tt &&, const t &&>, const t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<const tt &&, const t &&>, const t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const tt &&, const t &&>, const t &&>);
+    static_assert(is_same
                   <inner::common_ref_t<const tt &&, volatile t &&>,
                    const volatile t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<const tt &&, volatile t &&>,
+    static_assert(is_same
+                  <common_reference<const tt &&, volatile t &&>,
                    const volatile t &&>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <inner::common_ref_t<tt &&, volatile t &&>, volatile t &&>);
-    static_assert(is_same_v
-                  <common_reference_t<tt &&, volatile t &&>, volatile t &&>);
+    static_assert(is_same
+                  <common_reference<tt &&, volatile t &&>, volatile t &&>);
   }
   // t and tt, differenct references
   {
-    static_assert(is_same_v<inner::common_ref_t<t &, tt &&>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &, tt &&>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<const t &, tt &&>, const t &>);
-    static_assert(is_same_v<common_reference_t<const t &, tt &&>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &, const tt &&>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &, const tt &&>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<t &, tt &&>, const t &>);
+    static_assert(is_same<common_reference<t &, tt &&>, const t &>);
+    static_assert(is_same<inner::common_ref_t<const t &, tt &&>, const t &>);
+    static_assert(is_same<common_reference<const t &, tt &&>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &, const tt &&>, const t &>);
+    static_assert(is_same<common_reference<t &, const tt &&>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &, const tt &&>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &, const tt &&>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &&, tt &>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &&, tt &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<const t &&, tt &>, const t &>);
-    static_assert(is_same_v<common_reference_t<const t &&, tt &>, const t &>);
-    static_assert(is_same_v<inner::common_ref_t<t &&, const tt &>, const t &>);
-    static_assert(is_same_v<common_reference_t<t &&, const tt &>, const t &>);
-    static_assert(is_same_v
+    static_assert(is_same
+                  <common_reference<const t &, const tt &&>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &&, tt &>, const t &>);
+    static_assert(is_same<common_reference<t &&, tt &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<const t &&, tt &>, const t &>);
+    static_assert(is_same<common_reference<const t &&, tt &>, const t &>);
+    static_assert(is_same<inner::common_ref_t<t &&, const tt &>, const t &>);
+    static_assert(is_same<common_reference<t &&, const tt &>, const t &>);
+    static_assert(is_same
                   <inner::common_ref_t<const t &&, const tt &>, const t &>);
-    static_assert(is_same_v
-                  <common_reference_t<const t &&, const tt &>, const t &>);
+    static_assert(is_same
+                  <common_reference<const t &&, const tt &>, const t &>);
   }
   // s and ss, non_reference
   {
-    static_assert(is_same_v<inner::common_ref_t<s, ss>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s, ss>, void *>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<s, ss>, inner::disable>);
+    static_assert(is_same<common_reference<s, ss>, void *>);
+    static_assert(is_same
                   <inner::common_ref_t<const s, const ss>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s, const ss>,
-                            void *const>);
+    static_assert(is_same<common_reference<const s, const ss>,
+                          void *const>);
   }
   // s and ss, lvalue reference and lvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<s &, ss &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &, ss &>, void *&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<s &, ss &>, inner::disable>);
+    static_assert(is_same<common_reference<s &, ss &>, void *&>);
+    static_assert(is_same
                   <inner::common_ref_t<const s &, ss &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &, ss &>,
-                            void *const &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const s &, ss &>,
+                          void *const &>);
+    static_assert(is_same
                   <inner::common_ref_t<s &, const ss &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &, const ss &>,
-                            void *&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<s &, const ss &>,
+                          void *&>);
+    static_assert(is_same
                   <inner::common_ref_t<const s &, const ss &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &, const ss &>,
-                            void *const &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const s &, const ss &>,
+                          void *const &>);
+    static_assert(is_same
                   <inner::common_ref_t<const s &, volatile ss &>,
                    inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &, volatile ss &>,
-                            void *const &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const s &, volatile ss &>,
+                          void *const &>);
+    static_assert(is_same
                   <inner::common_ref_t<s &, volatile ss &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &, volatile ss &>,
-                            void *&>);
+    static_assert(is_same<common_reference<s &, volatile ss &>,
+                          void *&>);
 
-    static_assert(is_same_v<inner::common_ref_t<ss &, s &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &, s &>, void *&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<ss &, s &>, inner::disable>);
+    static_assert(is_same<common_reference<ss &, s &>, void *&>);
+    static_assert(is_same
                   <inner::common_ref_t<const ss &, s &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &, s &>,
-                            void *const &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const ss &, s &>,
+                          void *const &>);
+    static_assert(is_same
                   <inner::common_ref_t<ss &, const s &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &, const s &>, void *&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<ss &, const s &>, void *&>);
+    static_assert(is_same
                   <inner::common_ref_t<const ss &, const s &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &, const s &>,
-                            void *const &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const ss &, const s &>,
+                          void *const &>);
+    static_assert(is_same
                   <inner::common_ref_t<const ss &, volatile s &>,
                    inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &, volatile s &>,
-                            void *const &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const ss &, volatile s &>,
+                          void *const &>);
+    static_assert(is_same
                   <inner::common_ref_t<ss &, volatile s &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &, volatile s &>, void *&>);
+    static_assert(is_same<common_reference<ss &, volatile s &>, void *&>);
   }
   // s and ss, rvalue reference and rvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<s &&, ss &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &&, ss &&>, void *&&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<s &&, ss &&>, inner::disable>);
+    static_assert(is_same<common_reference<s &&, ss &&>, void *&&>);
+    static_assert(is_same
                   <inner::common_ref_t<const s &&, ss &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &&, ss &&>,
-                            void *const &&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const s &&, ss &&>,
+                          void *const &&>);
+    static_assert(is_same
                   <inner::common_ref_t<s &&, const ss &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &&, const ss &&>, void *&&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<s &&, const ss &&>, void *&&>);
+    static_assert(is_same
                   <inner::common_ref_t<const s &&, const ss &&>,
                    inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &&, const ss &&>,
-                            void *const &&>);
-    static_assert(is_same_v<inner::common_ref_t<const s &&, volatile ss &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &&, volatile ss &&>,
-                            void *const &&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const s &&, const ss &&>,
+                          void *const &&>);
+    static_assert(is_same<inner::common_ref_t<const s &&, volatile ss &&>,
+                          inner::disable>);
+    static_assert(is_same<common_reference<const s &&, volatile ss &&>,
+                          void *const &&>);
+    static_assert(is_same
                   <inner::common_ref_t<s &&, volatile ss &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &&, volatile ss &&>,
-                            void *&&>);
+    static_assert(is_same<common_reference<s &&, volatile ss &&>,
+                          void *&&>);
 
-    static_assert(is_same_v<inner::common_ref_t<ss &&, s &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &&, s &&>, void *&&>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<ss &&, s &&>, inner::disable>);
+    static_assert(is_same<common_reference<ss &&, s &&>, void *&&>);
+    static_assert(is_same
                   <inner::common_ref_t<const ss &&, s &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &&, s &&>,
-                            void *const &&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const ss &&, s &&>,
+                          void *const &&>);
+    static_assert(is_same
                   <inner::common_ref_t<ss &&, const s &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &&, const s &&>, void *&&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<ss &&, const s &&>, void *&&>);
+    static_assert(is_same
                   <inner::common_ref_t<const ss &&, const s &&>,
                    inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &&, const s &&>,
-                            void *const &&>);
-    static_assert(is_same_v<inner::common_ref_t<const ss &&, volatile s &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &&, volatile s &&>,
-                            void *const &&>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const ss &&, const s &&>,
+                          void *const &&>);
+    static_assert(is_same<inner::common_ref_t<const ss &&, volatile s &&>,
+                          inner::disable>);
+    static_assert(is_same<common_reference<const ss &&, volatile s &&>,
+                          void *const &&>);
+    static_assert(is_same
                   <inner::common_ref_t<ss &&, volatile s &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &&, volatile s &&>,
-                            void *&&>);
+    static_assert(is_same
+                  <common_reference<ss &&, volatile s &&>, void *&&>);
   }
   // s and ss, differenct references
   {
-    static_assert(is_same_v<inner::common_ref_t<s &, ss &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &, ss &&>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const s &, ss &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &, ss &&>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<s &, const ss &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &, const ss &&>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const s &, const ss &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &, const ss &&>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<s &&, ss &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &&, ss &>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const s &&, ss &>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &&, ss &>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<s &&, const ss &>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<s &&, const ss &>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const s &&, const ss &>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const s &&, const ss &>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<ss &, s &&>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &, s &&>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const ss &, s &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &, s &&>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<ss &, const s &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &, const s &&>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const ss &, const s &&>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &, const s &&>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<ss &&, s &>, inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &&, s &>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const ss &&, s &>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &&, s &>,
-                            void *const &>);
-    static_assert(is_same_v<inner::common_ref_t<ss &&, const s &>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<ss &&, const s &>, void *&>);
-    static_assert(is_same_v<inner::common_ref_t<const ss &&, const s &>,
-                            inner::disable>);
-    static_assert(is_same_v<common_reference_t<const ss &&, const s &>,
-                            void *const &>);
+    static_assert(is_same<inner::common_ref_t<s &, ss &&>, inner::disable>);
+    static_assert(is_same<common_reference<s &, ss &&>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const s &, ss &&>, inner::disable>);
+    static_assert(is_same
+                  <common_reference<const s &, ss &&>, void *const &>);
+    static_assert(is_same
+                  <inner::common_ref_t<s &, const ss &&>, inner::disable>);
+    static_assert(is_same<common_reference<s &, const ss &&>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const s &, const ss &&>,
+                   inner::disable>);
+    static_assert(is_same
+                  <common_reference<const s &, const ss &&>, void *const &>);
+    static_assert(is_same<inner::common_ref_t<s &&, ss &>, inner::disable>);
+    static_assert(is_same<common_reference<s &&, ss &>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const s &&, ss &>, inner::disable>);
+    static_assert(is_same
+                  <common_reference<const s &&, ss &>, void *const &>);
+    static_assert(is_same
+                  <inner::common_ref_t<s &&, const ss &>, inner::disable>);
+    static_assert(is_same<common_reference<s &&, const ss &>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const s &&, const ss &>,
+                   inner::disable>);
+    static_assert(is_same
+                  <common_reference<const s &&, const ss &>, void *const &>);
+    static_assert(is_same<inner::common_ref_t<ss &, s &&>, inner::disable>);
+    static_assert(is_same<common_reference<ss &, s &&>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const ss &, s &&>, inner::disable>);
+    static_assert(is_same
+                  <common_reference<const ss &, s &&>, void *const &>);
+    static_assert(is_same
+                  <inner::common_ref_t<ss &, const s &&>, inner::disable>);
+    static_assert(is_same
+                  <common_reference<ss &, const s &&>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const ss &, const s &&>,
+                   inner::disable>);
+    static_assert(is_same
+                  <common_reference<const ss &, const s &&>, void *const &>);
+    static_assert(is_same<inner::common_ref_t<ss &&, s &>, inner::disable>);
+    static_assert(is_same<common_reference<ss &&, s &>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const ss &&, s &>, inner::disable>);
+    static_assert(is_same
+                  <common_reference<const ss &&, s &>, void *const &>);
+    static_assert(is_same
+                  <inner::common_ref_t<ss &&, const s &>, inner::disable>);
+    static_assert(is_same<common_reference<ss &&, const s &>, void *&>);
+    static_assert(is_same
+                  <inner::common_ref_t<const ss &&, const s &>,
+                   inner::disable>);
+    static_assert(is_same
+                  <common_reference<const ss &&, const s &>, void *const &>);
   }
   // u and uu, non_reference
   {
-    static_assert(is_same_v<inner::common_ref_t<u, uu>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<u, uu>>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<u, uu>, inner::disable>);
+    static_assert(is_void<common_reference<u, uu>>);
+    static_assert(is_same
                   <inner::common_ref_t<const u, const uu>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<const u, const uu>>);
+    static_assert(is_void<common_reference<const u, const uu>>);
 
-    static_assert(is_same_v<inner::common_ref_t<uu, u>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<uu, u>>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<uu, u>, inner::disable>);
+    static_assert(is_void<common_reference<uu, u>>);
+    static_assert(is_same
                   <inner::common_ref_t<const uu, const u>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<const uu, const u>>);
+    static_assert(is_void<common_reference<const uu, const u>>);
   }
   // u and uu, lvalue reference and lvalue reference
   {
-    // static_assert(is_same_v<inner::common_ref_t<u &, uu &>, inner::disable>);
-    // static_assert(is_void_v<common_reference_t<u &, uu &>>);
-    static_assert(is_same_v
+    // static_assert(is_same<inner::common_ref_t<u &, uu &>, inner::disable>);
+    // static_assert(is_void<common_reference<u &, uu &>>);
+    static_assert(is_same
                   <inner::common_ref_t<const u &, uu &>, const u &>);
-    static_assert(is_same_v<common_reference_t<const u &, uu &>, const u &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const u &, uu &>, void>);
+    static_assert(is_same
                   <inner::common_ref_t<u &, const uu &>, const u &>);
-    static_assert(is_same_v<common_reference_t<u &, const uu &>, const u &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<u &, const uu &>, void>);
+    static_assert(is_same
                   <inner::common_ref_t<const u &, const uu &>, const u &>);
-    static_assert(is_same_v<common_reference_t<const u &, const uu &>,
-                            const u &>);
-    static_assert(is_same_v
+    static_assert(is_same<common_reference<const u &, const uu &>, void>);
+    static_assert(is_same
                   <inner::common_ref_t<const u &, volatile uu &>,
                    inner::disable>);
-    static_assert(is_void_v<common_reference_t<const u &, volatile uu &>>);
-    static_assert(is_same_v
+    static_assert(is_void<common_reference<const u &, volatile uu &>>);
+    static_assert(is_same
                   <inner::common_ref_t<u &, volatile uu &>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<u &, volatile uu &>>);
+    static_assert(is_void<common_reference<u &, volatile uu &>>);
   }
   // u and uu, rvalue reference and rvalue reference
   {
-    static_assert(is_same_v<inner::common_ref_t<u &&, uu &&>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<u &&, uu &&>>);
-    static_assert(is_same_v
+    static_assert(is_same<inner::common_ref_t<u &&, uu &&>, inner::disable>);
+    static_assert(is_void<common_reference<u &&, uu &&>>);
+    static_assert(is_same
                   <inner::common_ref_t<const u &&, uu &&>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<const u &&, uu &&>>);
-    static_assert(is_same_v
+    static_assert(is_void<common_reference<const u &&, uu &&>>);
+    static_assert(is_same
                   <inner::common_ref_t<u &&, const uu &&>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<u &&, const uu &&>>);
-    static_assert(is_same_v
+    static_assert(is_void<common_reference<u &&, const uu &&>>);
+    static_assert(is_same
                   <inner::common_ref_t<const u &&, const uu &&>,
                    inner::disable>);
-    static_assert(is_void_v<common_reference_t<const u &&, const uu &&>>);
-    static_assert(is_same_v<inner::common_ref_t<const u &&, volatile uu &&>,
+    static_assert(is_void<common_reference<const u &&, const uu &&>>);
+    static_assert(is_same<inner::common_ref_t<const u &&, volatile uu &&>,
                             inner::disable>);
-    static_assert(is_void_v<common_reference_t<const u &&, volatile uu &&>>);
-    static_assert(is_same_v
+    static_assert(is_void<common_reference<const u &&, volatile uu &&>>);
+    static_assert(is_same
                   <inner::common_ref_t<u &&, volatile uu &&>, inner::disable>);
-    static_assert(is_void_v<common_reference_t<u &&, volatile uu &&>>);
+    static_assert(is_void<common_reference<u &&, volatile uu &&>>);
   }
   // u and uu, differenct references
   {
-    static_assert(is_same_v<inner::common_ref_t<u &, uu &&>, const u &>);
-    static_assert(is_same_v<common_reference_t<u &, uu &&>, const u &>);
-    static_assert(is_same_v<inner::common_ref_t<const u &, uu &&>, const u &>);
-    static_assert(is_same_v<common_reference_t<const u &, uu &&>, const u &>);
-    static_assert(is_same_v<inner::common_ref_t<u &, const uu &&>, const u &>);
-    static_assert(is_same_v<common_reference_t<u &, const uu &&>, const u &>);
-    static_assert(is_same_v<inner::common_ref_t<const u &, const uu &&>,
-                            const u &>);
-    static_assert(is_same_v<common_reference_t<const u &, const uu &&>,
-                            const u &>);
-    static_assert(is_same_v<inner::common_ref_t<u &&, uu &>, const u &>);
-    static_assert(is_same_v<common_reference_t<u &&, uu &>, const u &>);
-    static_assert(is_same_v<inner::common_ref_t<const u &&, uu &>, const u &>);
-    static_assert(is_same_v<common_reference_t<const u &&, uu &>, const u &>);
-    static_assert(is_same_v<inner::common_ref_t<u &&, const uu &>, const u &>);
-    static_assert(is_same_v<common_reference_t<u &&, const uu &>, const u &>);
-    static_assert(is_same_v<inner::common_ref_t<const u &&, const uu &>,
-                            const u &>);
-    static_assert(is_same_v<common_reference_t<const u &&, const uu &>,
-                            const u &>);
+    static_assert(is_same<inner::common_ref_t<u &, uu &&>, const u &>);
+    static_assert(is_same<common_reference<u &, uu &&>, void>);
+    static_assert(is_same<inner::common_ref_t<const u &, uu &&>, const u &>);
+    static_assert(is_same<common_reference<const u &, uu &&>, void>);
+    static_assert(is_same<inner::common_ref_t<u &, const uu &&>, const u &>);
+    static_assert(is_same<common_reference<u &, const uu &&>, void>);
+    static_assert(is_same<inner::common_ref_t<const u &, const uu &&>,
+                          const u &>);
+    static_assert(is_same<common_reference<const u &, const uu &&>, void>);
+    static_assert(is_same<inner::common_ref_t<u &&, uu &>, const u &>);
+    static_assert(is_same<common_reference<u &&, uu &>, void>);
+    static_assert(is_same<inner::common_ref_t<const u &&, uu &>, const u &>);
+    static_assert(is_same<common_reference<const u &&, uu &>, void>);
+    static_assert(is_same<inner::common_ref_t<u &&, const uu &>, const u &>);
+    static_assert(is_same<common_reference<u &&, const uu &>, void>);
+    static_assert(is_same
+                  <inner::common_ref_t<const u &&, const uu &>, const u &>);
+    static_assert(is_same<common_reference<const u &&, const uu &>, void>);
   }
 }
 void case34_conditional_result_or_common_type() {
-  static_assert(is_same_v<common_type_t<t, tt>, t>);
-  static_assert(is_same_v<common_type_t<v, vv>, nullptr_t>);
-  static_assert(is_same_v<common_type_t<vv, v>, nullptr_t>);
-  static_assert(is_null_pointer_v
-                <common_reference_t<const vv &, volatile v &>>);
-  static_assert(is_null_pointer_v
-                <common_type_t<const w &, volatile ww &>>);
-  static_assert(is_null_pointer_v
-                <common_type_t<const ww &, volatile w &>>);
-  static_assert(is_same_v<common_reference_t<w, ww &>, w>);
-  static_assert(is_same_v<common_reference_t<ww &, w>, w>);
+  static_assert(is_same<template_common_type<t, tt>::type, t>);
+  static_assert(is_same<common_type<t, tt>, t>);
+  static_assert(is_same<common_type<v, vv>, nullptr_t>);
+  static_assert(is_same<common_type<vv, v>, nullptr_t>);
+  static_assert(is_null_pointer
+                <common_reference<const vv &, volatile v &>>);
+  static_assert(is_null_pointer
+                <common_type<const w &, volatile ww &>>);
+  static_assert(is_null_pointer
+                <common_type<const ww &, volatile w &>>);
+  static_assert(is_same<common_reference<w, ww &>, w>);
+  static_assert(is_same<common_reference<ww &, w>, w>);
 }
 void other_than_two_arguments() {
-  static_assert(!has_member_type_type_v<common_reference<>>);
-  static_assert(is_same_v<common_reference<int>::type, int>);
-  static_assert(is_same_v<common_reference_t<int>, int>);
-  static_assert(is_same_v<common_reference<void>::type, void>);
-  static_assert(is_same_v<common_reference_t<void>, void>);
-  static_assert(is_same_v
-                <common_reference_t
+  static_assert(!has_member_type_type<template_common_reference<>>);
+  static_assert(is_same<template_common_reference<int>::type, int>);
+  static_assert(is_same<common_reference<int>, int>);
+  static_assert(is_same<template_common_reference<void>::type, void>);
+  static_assert(is_same<common_reference<void>, void>);
+  static_assert(is_same
+                <common_reference
                  <w &, const ww &>, w>);
-  static_assert(!has_member_type_type_v
-                <common_reference<w &, const ww &, v, vv>>);
-  static_assert(is_same_v
-                <common_reference_t<z &, const zz &>, z>);
-  static_assert(is_same_v
-                <common_reference_t<z &, const zz &, z &&, const zz &&>, z>);
+  static_assert(!has_member_type_type
+                <template_common_reference<w &, const ww &, v, vv>>);
+  static_assert(is_same
+                <common_reference<z &, const zz &>, z>);
+  static_assert(is_same
+                <common_reference<z &, const zz &, z &&, const zz &&>, z>);
 
   struct type {};
   struct type2 : type {};
   struct type3 : type2 {};
-  static_assert(is_same_v<common_reference_t
-                          <type &, const type2 &, const volatile type3 &>,
-                          const volatile type &>);
-  static_assert(is_same_v<common_reference_t
-                          <type3 &, const type2 &, const volatile type &>,
-                          const volatile type &>);
+  static_assert(is_same
+                <common_reference
+                 <type &, const type2 &, const volatile type3 &>,
+                 const volatile type &>);
+  static_assert(is_same
+                <common_reference
+                 <type3 &, const type2 &, const volatile type &>,
+                 const volatile type &>);
 }
 
 }
@@ -725,38 +730,38 @@ struct tt {
 namespace re {
 
 template <class X>
-struct uses_allocator<inner::test::help_tuple::t, X> : true_type {};
+struct template_uses_allocator<inner::test::help_tuple::t, X> : true_type {};
 template <class X>
-struct uses_allocator<inner::test::help_tuple::tt, X> : true_type {};
+struct template_uses_allocator<inner::test::help_tuple::tt, X> : true_type {};
 
 }
 namespace re::inner::test::help_tuple {
 
 void test_uses_allocator_construction_args() {
-  static_assert(is_trivial_empty_v
+  static_assert(is_empty
                 <decltype(uses_allocator_construction_args<int>)>);
 
-  static_assert(uses_allocator_v<tuple<>, int>);
-  static_assert(uses_allocator_v<tuple<int, int>, int>);
-  static_assert(uses_allocator_v<tuple<int, int, int>, char>);
+  static_assert(uses_allocator<tuple<>, int>);
+  static_assert(uses_allocator<tuple<int, int>, int>);
+  static_assert(uses_allocator<tuple<int, int, int>, char>);
 
-  static_assert(!uses_allocator_v<int, int>);
+  static_assert(!uses_allocator<int, int>);
   using t0 = decltype(uses_allocator_construction_args<int>(1, 2));
-  static_assert(is_same_v<t0, tuple<int &&>>);
+  static_assert(is_same<t0, tuple<int &&>>);
   assert(uses_allocator_construction_args<int>(1, 2).at<0>() == 2);
   static_assert(uses_allocator_construction_args<int>(1, 2).at<0>() == 2);
 
-  static_assert(uses_allocator_v<t, const int &>);
+  static_assert(uses_allocator<t, const int &>);
   using t1 = decltype(uses_allocator_construction_args<t>(1, 2));
-  static_assert(is_same_v<t1, tuple<allocator_arg_t, const int &, int &&>>);
+  static_assert(is_same<t1, tuple<allocator_arg_t, const int &, int &&>>);
   assert(uses_allocator_construction_args<t>(1, 2).at<1>() == 1);
   assert(uses_allocator_construction_args<t>(1, 2).at<2>() == 2);
   static_assert(uses_allocator_construction_args<t>(1, 2).at<1>() == 1);
   static_assert(uses_allocator_construction_args<t>(1, 2).at<2>() == 2);
 
-  static_assert(uses_allocator_v<tt, const int &>);
+  static_assert(uses_allocator<tt, const int &>);
   using t2 = decltype(uses_allocator_construction_args<t>(1, 2, 3));
-  static_assert(is_same_v<t2, tuple<int &&, int &&, const int &>>);
+  static_assert(is_same<t2, tuple<int &&, int &&, const int &>>);
   assert(uses_allocator_construction_args<t>(1, 2, 3).at<0>() == 2);
   assert(uses_allocator_construction_args<t>(1, 2, 3).at<1>() == 3);
   assert(uses_allocator_construction_args<t>(1, 2, 3).at<2>() == 1);
@@ -767,7 +772,7 @@ void test_uses_allocator_construction_args() {
   using ttt = tuple<tuple<int, int>, int>;
   using t3 = decltype(uses_allocator_construction_args<ttt>
                       (1, make_tuple(1, 2), 3));
-  static_assert(tuple_size_v<t3> == 4);
+  static_assert(tuple_size<t3> == 4);
   static_assert(same_as
                 <t3,
                  tuple<allocator_arg_t, const int &,
@@ -843,8 +848,8 @@ namespace check_integral_constant {
 template <class X, class Y, Y y>
 void f() {
   static_assert(X::value == y);
-  static_assert(is_same_v<typename X::value_type, Y>);
-  static_assert(is_same_v<typename X::type, integral_constant<Y, y>>);
+  static_assert(is_same<typename X::value_type, Y>);
+  static_assert(is_same<typename X::type, integral_constant<Y, y>>);
   static_assert(X() == y);
   static_assert(X()() == y);
   constexpr X x;
@@ -864,57 +869,57 @@ struct f<X, Y> {using type = int;};
 void test_basic_tmp_tools() {
   // declval
   {
-    static_assert(is_same_v<decltype(declval<int>()), int &&>);
-    static_assert(is_same_v<decltype(declval<int &&>()), int &&>);
-    static_assert(is_same_v<decltype(declval<int &>()), int &>);
+    static_assert(is_same<decltype(declval<int>()), int &&>);
+    static_assert(is_same<decltype(declval<int &&>()), int &&>);
+    static_assert(is_same<decltype(declval<int &>()), int &>);
 
-    static_assert(is_same_v<decltype(declval<const int>()), const int &&>);
-    static_assert(is_same_v<decltype(declval<const int &>()), const int &>);
-    static_assert(is_same_v<decltype(declval<const int &&>()), const int &&>);
+    static_assert(is_same<decltype(declval<const int>()), const int &&>);
+    static_assert(is_same<decltype(declval<const int &>()), const int &>);
+    static_assert(is_same<decltype(declval<const int &&>()), const int &&>);
 
-    static_assert(is_trivial_empty_v<decltype(declval<int>)>);
+    static_assert(is_empty<decltype(declval<int>)>);
     static_assert(noexcept(declval<int>()));
   }
 
   // integer_sequence
   {
-    static_assert(is_same_v
+    static_assert(is_same
                   <make_integer_sequence<char, 0>, integer_sequence<char>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <make_integer_sequence<char, 3>,
                    integer_sequence<char, 0, 1, 2>>);
 
-    static_assert(is_same_v
+    static_assert(is_same
                   <index_sequence<1, 3, 2>,
                    integer_sequence<size_t, 1, 3, 2>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <make_index_sequence<5>,
                    integer_sequence<size_t, 0, 1, 2, 3, 4>>);
-    static_assert(is_same_v<make_index_sequence<0>, index_sequence<>>);
-    static_assert(is_same_v<make_index_sequence<1>, index_sequence<0>>);
-    static_assert(is_same_v<make_index_sequence<2>, index_sequence<0, 1>>);
+    static_assert(is_same<make_index_sequence<0>, index_sequence<>>);
+    static_assert(is_same<make_index_sequence<1>, index_sequence<0>>);
+    static_assert(is_same<make_index_sequence<2>, index_sequence<0, 1>>);
 
-    static_assert(is_same_v
+    static_assert(is_same
                   <make_index_sequence_by_stride<0, 4>,
                   index_sequence<>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <make_index_sequence_by_stride<1, 4>,
                   index_sequence<0>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <make_index_sequence_by_stride<3, 4>,
                   index_sequence<0, 4, 8>>);
 
-    static_assert(is_same_v<integer_sequence_cat<int>, integer_sequence<int>>);
-    static_assert(is_same_v
+    static_assert(is_same<integer_sequence_cat<int>, integer_sequence<int>>);
+    static_assert(is_same
                   <integer_sequence_cat<int, integer_sequence<int, 1, 2, 3>>,
                    integer_sequence<int, 1, 2, 3>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <integer_sequence_cat
                    <int,
                     integer_sequence<int, 1, 2, 3>,
                     integer_sequence<int, 4, 5>>,
                    integer_sequence<int, 1, 2, 3, 4, 5>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <integer_sequence_cat
                    <int,
                     integer_sequence<int, 1, 2, 3>,
@@ -923,20 +928,20 @@ void test_basic_tmp_tools() {
                     integer_sequence<int, 6>,
                     integer_sequence<int, 7, 8, 9>>,
                    integer_sequence<int, 1, 2, 3, 4, 5, 6, 7, 8, 9>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <index_sequence_cat
                    <index_sequence<1>, index_sequence<2>,
                     index_sequence<3, 4>>,
                    index_sequence<1, 2, 3, 4>>);
 
-    static_assert(is_same_v
+    static_assert(is_same
                   <integer_sequence_offset
                    <int, integer_sequence<int, 0, 1, 2>, 1>,
                    integer_sequence<int, 1, 2, 3>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <index_sequence_offset<index_sequence<>, 1>,
                    index_sequence<>>);
-    static_assert(is_same_v
+    static_assert(is_same
                   <index_sequence_offset<index_sequence<0, 1, 2>, 1>,
                    index_sequence<1, 2, 3>>);
   }
@@ -945,28 +950,28 @@ void test_basic_tmp_tools() {
   {
     using b = integral_constant<bool, true>;
     static_assert(b::value == true);
-    static_assert(is_same_v<b::value_type, bool>);
-    static_assert(is_same_v<b::type, bool_constant<true>>);
+    static_assert(is_same<b::value_type, bool>);
+    static_assert(is_same<b::type, bool_constant<true>>);
     static_assert(b() == true);
     static_assert(b()() == true);
     assert(noexcept(b()()));
 
     using c = integral_constant<size_t, 3>;
     assert(c::value == 3);
-    static_assert(is_same_v<c::value_type, size_t>);
-    static_assert(is_same_v<c::type, integral_constant<size_t, 3>>);
+    static_assert(is_same<c::value_type, size_t>);
+    static_assert(is_same<c::type, integral_constant<size_t, 3>>);
     auto i = integral_constant<size_t, 3>{};
     size_t j = i;
     assert(j == 3);
     static_assert(i() == 3);
     static_assert(noexcept(i()));
 
-    static_assert(is_same_v<false_type, integral_constant<bool, false>>);
-    static_assert(is_same_v<true_type, integral_constant<bool, true>>);
-    static_assert(is_same_v<size_constant<2>, integral_constant<size_t, 2>>);
-    static_assert(is_same_v<int_constant<2>, integral_constant<int, 2>>);
+    static_assert(is_same<false_type, integral_constant<bool, false>>);
+    static_assert(is_same<true_type, integral_constant<bool, true>>);
+    static_assert(is_same<size_constant<2>, integral_constant<size_t, 2>>);
+    static_assert(is_same<int_constant<2>, integral_constant<int, 2>>);
 
-    static_assert(is_trivial_empty_v<integral_constant<int, 0>>);
+    static_assert(is_empty<integral_constant<int, 0>>);
   }
 
   // f_is_well_formed
@@ -983,49 +988,53 @@ void test_basic_tmp_tools() {
       static int f(void *);
     };
 
-    static_assert(f_is_well_formed<check_t, int>::value);
-    static_assert(f_is_well_formed_v<check_t, int>);
-    static_assert(!f_is_well_formed_v<check_t &, int>);
+    static_assert(template_f_is_well_formed<check_t, int>::value);
+    static_assert(f_is_well_formed<check_t, int>);
+    static_assert(f_is_well_formed<check_t, int>);
+    static_assert(!f_is_well_formed<check_t &, int>);
 
-    static_assert(f_is_well_formed_v<check_t, int, float>);
-    static_assert(!f_is_well_formed_v<const check_t &, int, float>);
+    static_assert(f_is_well_formed<check_t, int, float>);
+    static_assert(!f_is_well_formed<const check_t &, int, float>);
 
-    static_assert(!f_is_well_formed_v<check_t>);
-    static_assert(!f_is_well_formed_v<void>);
+    static_assert(!f_is_well_formed<check_t>);
+    static_assert(!f_is_well_formed<void>);
 
-    static_assert(!f_is_well_formed_v<check_t, void>);
-    static_assert(!f_is_well_formed_v<check_t, int &>);
-    static_assert(!f_is_well_formed_v<check_t, float, int>);
+    static_assert(!f_is_well_formed<check_t, void>);
+    static_assert(!f_is_well_formed<check_t, int &>);
+    static_assert(!f_is_well_formed<check_t, float, int>);
 
-    static_assert(!f_is_well_formed_v<check_t, int, int, int, int>);
-    static_assert(f_is_well_formed_v<check_t, int, int, int, int*>);
+    static_assert(!f_is_well_formed<check_t, int, int, int, int>);
+    static_assert(f_is_well_formed<check_t, int, int, int, int*>);
 
-    static_assert(is_same_v
-                  <return_type_of_f_or<check_t, void, int>::type, int>);
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<check_t, void, int>, int>);
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<check_t &, void, int>, void>);
+    static_assert(is_same
+                  <template_return_type_of_f_or<check_t, void, int>::type,
+                   int>);
+    static_assert(is_same
+                  <return_type_of_f_or<check_t, void, int>, int>);
+    static_assert(is_same
+                  <return_type_of_f_or<check_t &, void, int>, void>);
 
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<check_t, void, int &, float>, void>);
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<check_t, void, double>, void>);
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<check_t, void, void *>, void>);
+    static_assert(is_same
+                  <return_type_of_f_or<check_t, void, int &, float>, void>);
+    static_assert(is_same
+                  <return_type_of_f_or<check_t, void, double>, void>);
+    static_assert(is_same
+                  <return_type_of_f_or<check_t, void, void *>, void>);
 
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<float, int>, int>);
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<void, int>, int>);
-    static_assert(is_same_v
-                  <return_type_of_f_or_t<bool, int>, int>);
+    static_assert(is_same
+                  <return_type_of_f_or<float, int>, int>);
+    static_assert(is_same
+                  <return_type_of_f_or<void, int>, int>);
+    static_assert(is_same
+                  <return_type_of_f_or<bool, int>, int>);
 
-    static_assert(is_trivial_empty_v<f_is_well_formed<check_t, int>>);
-    static_assert(is_trivial_empty_v<return_type_of_f_or<void, int>>);
+    static_assert(is_empty<template_f_is_well_formed<check_t, int>>);
+    static_assert(is_empty<template_return_type_of_f_or<void, int>>);
   }
 
   // has_member_type_type
+  // has_member_static_value
+  // member_static_value_type
   {
     struct t0 {
       void type() {}
@@ -1035,131 +1044,143 @@ void test_basic_tmp_tools() {
     };
     struct tt {};
 
-    static_assert(is_trivial_empty_v<has_member_type_type<void>>);
-    static_assert(!has_member_type_type<volatile void>::value);
-    static_assert(!has_member_type_type_v<volatile void>);
-    static_assert(!has_member_type_type_v<int>);
-    static_assert(!has_member_type_type_v<t0>);
-    static_assert(has_member_type_type_v<t>);
-    static_assert(has_member_type_type_v<const t>);
-    static_assert(has_member_type_type_v<volatile t>);
-    static_assert(has_member_type_type_v<const volatile t>);
-    static_assert(!has_member_type_type_v<t &>);
-    static_assert(!has_member_type_type_v<tt>);
+    static_assert(is_empty<template_has_member_type_type<void>>);
+    static_assert(!template_has_member_type_type<void>::value);
+    static_assert(!has_member_type_type<volatile void>);
+    static_assert(!has_member_type_type<int>);
+    static_assert(!has_member_type_type<t0>);
+    static_assert(has_member_type_type<t>);
+    static_assert(has_member_type_type<const t>);
+    static_assert(has_member_type_type<volatile t>);
+    static_assert(has_member_type_type<const volatile t>);
+    static_assert(!has_member_type_type<t &>);
+    static_assert(!has_member_type_type<tt>);
 
-    static_assert(is_trivial_empty_v<has_member_static_value<void>>);
-    static_assert(!has_member_static_value<void>::value);
-    static_assert(!has_member_static_value_v<void>);
-    static_assert(!has_member_static_value_v<const void>);
-    static_assert(!has_member_static_value_v<const volatile void>);
-    static_assert(!has_member_static_value_v<int>);
-    static_assert(has_member_static_value_v<int_constant<3>>);
-    static_assert(has_member_static_value_v<const int_constant<3>>);
-    static_assert(has_member_static_value_v<volatile int_constant<3>>);
-    static_assert(has_member_static_value_v<const volatile int_constant<3>>);
-    static_assert(has_member_static_value_v<bool_constant<true>>);
-    static_assert(!has_member_static_value_v<bool_constant<true> &>);
-    static_assert(!has_member_static_value_v<const bool_constant<true> &>);
-    static_assert(!has_member_static_value_v<volatile bool_constant<true> &>);
-    static_assert(!has_member_static_value_v
+    static_assert(is_empty<template_has_member_static_value<void>>);
+    static_assert(!template_has_member_static_value<void>::value);
+    static_assert(!has_member_static_value<void>);
+    static_assert(!has_member_static_value<const void>);
+    static_assert(!has_member_static_value<const volatile void>);
+    static_assert(!has_member_static_value<int>);
+    static_assert(has_member_static_value<int_constant<3>>);
+    static_assert(has_member_static_value<const int_constant<3>>);
+    static_assert(has_member_static_value<volatile int_constant<3>>);
+    static_assert(has_member_static_value<const volatile int_constant<3>>);
+    static_assert(has_member_static_value<bool_constant<true>>);
+    static_assert(!has_member_static_value<bool_constant<true> &>);
+    static_assert(!has_member_static_value<const bool_constant<true> &>);
+    static_assert(!has_member_static_value<volatile bool_constant<true> &>);
+    static_assert(!has_member_static_value
                   <const volatile bool_constant<true> &&>);
-    static_assert(!has_member_static_value_v<bool_constant<true> &&>);
+    static_assert(!has_member_static_value<bool_constant<true> &&>);
+
+    static_assert(is_void<member_static_value_type<int>>);
+    static_assert(is_same
+                  <member_static_value_type<int_constant<3>>, const int>);
   }
 
   // nth_type
   {
-    static_assert(is_trivial_empty_v<nth_type<0, int>>);
-    static_assert(is_same_v<nth_type_t<0>, void>);
-    static_assert(is_same_v<nth_type_t<1001>, void>);
-    static_assert(is_same_v<nth_type_t<0, int, float>, int>);
-    static_assert(is_same_v<nth_type_t<1, int, float>, float>);
-    static_assert(is_same_v<nth_type_t<2, int, float>, void>);
-    static_assert(is_same_v<nth_type_t<222, int, float>, void>);
-    static_assert(is_same_v<nth_type<1, int, float, double>::type, float>);
-    static_assert(is_same_v<nth_type_t<1, int, float, double>, float>);
-    static_assert(is_same_v<nth_type_t<2, int, float, double>, double>);
-    static_assert(is_same_v<nth_type_t<3, int, float, double>, void>);
-    static_assert(is_same_v<nth_type_t<33, int, float, double>, void>);
-    static_assert(is_same_v<nth_type_t<999, int, float, double>, void>);
+    static_assert(is_empty<template_nth_type<0, int>>);
+    static_assert(is_same<nth_type<0>, void>);
+    static_assert(is_same<nth_type<1001>, void>);
+    static_assert(is_same<nth_type<0, int, float>, int>);
+    static_assert(is_same<nth_type<1, int, float>, float>);
+    static_assert(is_same<nth_type<2, int, float>, void>);
+    static_assert(is_same<nth_type<222, int, float>, void>);
+    static_assert(is_same
+                  <template_nth_type<1, int, float, double>::type, float>);
+    static_assert(is_same<nth_type<1, int, float, double>, float>);
+    static_assert(is_same<nth_type<2, int, float, double>, double>);
+    static_assert(is_same<nth_type<3, int, float, double>, void>);
+    static_assert(is_same<nth_type<33, int, float, double>, void>);
+    static_assert(is_same<nth_type<999, int, float, double>, void>);
   }
 
   // is_one_of_types
   {
-    static_assert(is_trivial_empty_v<is_one_of_types<int, int, float>>);
-    static_assert(is_base_of_v<true_type, is_one_of_types<int, int, float>>);
-    static_assert(is_base_of_v
-                  <false_type, is_one_of_types<double, int, float>>);
-    static_assert(is_one_of_types<int, int, float>::value == true);
-    static_assert(is_one_of_types_v<int, int>);
-    static_assert(!is_one_of_types_v<int>);
-    static_assert(is_one_of_types_v<float, float, int, int>);
-    static_assert(is_one_of_types_v<int, float, int, int>);
-    static_assert(is_one_of_types_v<int, float, int, int, long>);
-    static_assert(!is_one_of_types_v<int, float, long, double, double>);
-    static_assert(is_one_of_types_v<double, float, long, double, double>);
-    static_assert(!is_one_of_types_v<double, float, long, double &>);
-    static_assert(!is_one_of_types_v<double, float, long, const double>);
+    static_assert(is_empty<template_is_one_of_types<int, int, float>>);
+    static_assert(is_base_of
+                  <true_type, template_is_one_of_types<int, int, float>>);
+    static_assert(is_base_of
+                  <false_type, template_is_one_of_types<double, int, float>>);
+    static_assert(template_is_one_of_types<int, int, float>::value == true);
+    static_assert(is_one_of_types<int, int>);
+    static_assert(!is_one_of_types<int>);
+    static_assert(is_one_of_types<float, float, int, int>);
+    static_assert(is_one_of_types<int, float, int, int>);
+    static_assert(is_one_of_types<int, float, int, int, long>);
+    static_assert(!is_one_of_types<int, float, long, double, double>);
+    static_assert(is_one_of_types<double, float, long, double, double>);
+    static_assert(!is_one_of_types<double, float, long, double &>);
+    static_assert(!is_one_of_types<double, float, long, const double>);
   }
 
   // find_type
   {
-    static_assert(is_trivial_empty_v<find_type<char, char, float>>);
-    static_assert(find_type<char, char, float>::value == 0);
-    static_assert(find_type<float, char, float>::value == 1);
-    static_assert(find_type<void, char, float>::value == 2);
-    static_assert(is_base_of_v<size_constant<0>, find_type<int, int>>);
-    static_assert(is_base_of_v<size_constant<0>, find_type<int, int, int>>);
-    static_assert(is_base_of_v<size_constant<1>, find_type<int, float, int>>);
-    static_assert(is_base_of_v
-                  <size_constant<2>, find_type<double, float, int>>);
-    static_assert(find_type_v<int> == 0);
-    static_assert(find_type_v<int, int> == 0);
-    static_assert(find_type_v<double, int> == 1);
-    static_assert(find_type_v<int, int, int, int, int, int> == 0);
-    static_assert(find_type_v<double, int, int, int, int, double> == 4);
-    static_assert(find_type_v<double *, int, int, int, int, double> == 5);
-    static_assert(find_type_v<double ****, int, int, int, int, double> == 5);
+    static_assert(is_empty<template_find_type<char, char, float>>);
+    static_assert(template_find_type<char, char, float>::value == 0);
+    static_assert(find_type<char, char, float> == 0);
+    static_assert(find_type<float, char, float> == 1);
+    static_assert(find_type<void, char, float> == 2);
+    static_assert(is_base_of
+                  <size_constant<0>, template_find_type<int, int>>);
+    static_assert(is_base_of
+                  <size_constant<0>, template_find_type<int, int, int>>);
+    static_assert(is_base_of
+                  <size_constant<1>, template_find_type<int, float, int>>);
+    static_assert(is_base_of
+                  <size_constant<2>, template_find_type<double, float, int>>);
+    static_assert(find_type<int> == 0);
+    static_assert(find_type<int, int> == 0);
+    static_assert(find_type<double, int> == 1);
+    static_assert(find_type<int, int, int, int, int, int> == 0);
+    static_assert(find_type<double, int, int, int, int, double> == 4);
+    static_assert(find_type<double *, int, int, int, int, double> == 5);
+    static_assert(find_type<double ****, int, int, int, int, double> == 5);
   }
 
   // occurs_exactly_once
   {
-    static_assert(is_trivial_empty_v<occurs_exactly_once<int>>);
-    static_assert(occurs_exactly_once<int>::value == false);
-    static_assert(occurs_exactly_once<int, int>::value == true);
-    static_assert(occurs_exactly_once<int, int, int>::value == false);
-    static_assert(occurs_exactly_once<int, int, char, int>::value == false);
-    static_assert(is_base_of_v<false_type, occurs_exactly_once<int>>);
-    static_assert(is_base_of_v<true_type, occurs_exactly_once<float, float>>);
-    static_assert(!occurs_exactly_once_v<int>);
-    static_assert(occurs_exactly_once_v<int, int>);
-    static_assert(!occurs_exactly_once_v<int, int, int>);
-    static_assert(occurs_exactly_once_v<int, int, int &>);
-    static_assert(occurs_exactly_once_v<int, int, const int>);
-    static_assert(occurs_exactly_once_v<int, int, const volatile int>);
-    static_assert(occurs_exactly_once_v<int, int, const volatile int &>);
-    static_assert(!occurs_exactly_once_v<int, int, int, int>);
-    static_assert(occurs_exactly_once_v<int, char, int>);
-    static_assert(occurs_exactly_once_v<int, int, char>);
-    static_assert(occurs_exactly_once_v<int, char, int, long>);
-    static_assert(occurs_exactly_once_v<int, char, long, int>);
-    static_assert(occurs_exactly_once_v<int, int, char, long>);
-    static_assert(occurs_exactly_once_v<int, long, char, int>);
-    static_assert(occurs_exactly_once_v<int, int, long, char>);
-    static_assert(occurs_exactly_once_v<int, long, int, char>);
-    static_assert(!occurs_exactly_once_v<int, long, int, char, int>);
-    static_assert(!occurs_exactly_once_v
+    static_assert(is_empty<template_occurs_exactly_once<int>>);
+    static_assert(template_occurs_exactly_once<int>::value == false);
+    static_assert(template_occurs_exactly_once<int, int>::value == true);
+    static_assert(template_occurs_exactly_once<int, int, int>::value == false);
+    static_assert(template_occurs_exactly_once<int, int, char, int>::value
+                  == false);
+    static_assert(is_base_of<false_type, template_occurs_exactly_once<int>>);
+    static_assert(is_base_of
+                  <true_type, template_occurs_exactly_once<float, float>>);
+    static_assert(!occurs_exactly_once<int>);
+    static_assert(occurs_exactly_once<int, int>);
+    static_assert(!occurs_exactly_once<int, int, int>);
+    static_assert(occurs_exactly_once<int, int, int &>);
+    static_assert(occurs_exactly_once<int, int, const int>);
+    static_assert(occurs_exactly_once<int, int, const volatile int>);
+    static_assert(occurs_exactly_once<int, int, const volatile int &>);
+    static_assert(!occurs_exactly_once<int, int, int, int>);
+    static_assert(occurs_exactly_once<int, char, int>);
+    static_assert(occurs_exactly_once<int, int, char>);
+    static_assert(occurs_exactly_once<int, char, int, long>);
+    static_assert(occurs_exactly_once<int, char, long, int>);
+    static_assert(occurs_exactly_once<int, int, char, long>);
+    static_assert(occurs_exactly_once<int, long, char, int>);
+    static_assert(occurs_exactly_once<int, int, long, char>);
+    static_assert(occurs_exactly_once<int, long, int, char>);
+    static_assert(!occurs_exactly_once<int, long, int, char, int>);
+    static_assert(!occurs_exactly_once
                   <int, long, int, char, int, int, float>);
-    static_assert(occurs_exactly_once_v
+    static_assert(occurs_exactly_once
                   <char, long, int, char, int, int, float>);
-    static_assert(occurs_exactly_once_v
+    static_assert(occurs_exactly_once
                   <long, long, int, char, int, int, float>);
-    static_assert(occurs_exactly_once_v
+    static_assert(occurs_exactly_once
                   <float, long, int, char, int, int, float>);
   }
 
   // compile_time_add
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_add<integral_constant<char, 1>,
                                     integral_constant<char, 2>>>);
     check_integral_constant::f<compile_time_add<integral_constant<char, 1>,
@@ -1198,15 +1219,15 @@ void test_basic_tmp_tools() {
         <integral_constant<char, 1>, integral_constant<char, 2>>;
       constexpr auto v2 = compile_time_add_v
         <integral_constant<int, 1>, integral_constant<char, 2>>;
-      static_assert(is_same_v<decltype(v), const char>);
+      static_assert(is_same<decltype(v), const char>);
       static_assert(v == 3);
-      static_assert(is_same_v<decltype(v2), const int>);
+      static_assert(is_same<decltype(v2), const int>);
       static_assert(v2 == 3);
     }
   }
   // compile_time_sub
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_sub<integral_constant<char, 1>,
                                     integral_constant<char, 2>>>);
     check_integral_constant::f<compile_time_sub<integral_constant<char, 1>,
@@ -1245,15 +1266,15 @@ void test_basic_tmp_tools() {
         <integral_constant<char, 1>, integral_constant<char, 2>>;
       constexpr auto v2 = compile_time_sub_v
         <integral_constant<int, 1>, integral_constant<char, 2>>;
-      static_assert(is_same_v<decltype(v), const char>);
+      static_assert(is_same<decltype(v), const char>);
       static_assert(v == -1);
-      static_assert(is_same_v<decltype(v2), const int>);
+      static_assert(is_same<decltype(v2), const int>);
       static_assert(v2 == -1);
     }
   }
   // compile_time_mul
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_mul<integral_constant<char, 2>,
                                     integral_constant<char, 3>>>);
     check_integral_constant::f<compile_time_mul<integral_constant<char, 2>,
@@ -1292,15 +1313,15 @@ void test_basic_tmp_tools() {
         <integral_constant<char, 3>, integral_constant<char, 2>>;
       constexpr auto v2 = compile_time_mul_v
         <integral_constant<int, 3>, integral_constant<char, 2>>;
-      static_assert(is_same_v<decltype(v), const char>);
+      static_assert(is_same<decltype(v), const char>);
       static_assert(v == 6);
-      static_assert(is_same_v<decltype(v2), const int>);
+      static_assert(is_same<decltype(v2), const int>);
       static_assert(v2 == 6);
     }
   }
   // compile_time_div
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_div<integral_constant<char, 6>,
                                     integral_constant<char, 2>>>);
     check_integral_constant::f<compile_time_div<integral_constant<char, 6>,
@@ -1339,15 +1360,15 @@ void test_basic_tmp_tools() {
         <integral_constant<char, 6>, integral_constant<char, -2>>;
       constexpr auto v2 = compile_time_div_v
         <integral_constant<int, 6>, integral_constant<char, -2>>;
-      static_assert(is_same_v<decltype(v), const char>);
+      static_assert(is_same<decltype(v), const char>);
       static_assert(v == -3);
-      static_assert(is_same_v<decltype(v2), const int>);
+      static_assert(is_same<decltype(v2), const int>);
       static_assert(v2 == -3);
     }
   }
   // compile_time_mod
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_mod<integral_constant<char, 6>,
                                     integral_constant<char, 2>>>);
     check_integral_constant::f<compile_time_mod<integral_constant<char, 6>,
@@ -1387,23 +1408,26 @@ void test_basic_tmp_tools() {
         <integral_constant<char, 7>, integral_constant<char, -2>>;
       constexpr auto v2 = compile_time_mod_v
         <integral_constant<int, 7>, integral_constant<char, -2>>;
-      static_assert(is_same_v<decltype(v), const char>);
+      static_assert(is_same<decltype(v), const char>);
       static_assert(v == 1);
-      static_assert(is_same_v<decltype(v2), const int>);
+      static_assert(is_same<decltype(v2), const int>);
       static_assert(v2 == 1);
     }
-    static_assert(is_same_v<compile_time_mod
-                            <integral_constant<int, 17>,
-                             integral_constant<long long, 4>>::type,
-                            integral_constant<long long, 1>>);
-    static_assert(is_same_v<compile_time_mod
-                            <integral_constant<int, -17>,
-                             integral_constant<long long, 4>>::type,
-                            integral_constant<long long, -1>>);
-    static_assert(is_same_v<compile_time_mod_t
-                            <integral_constant<int, -17>,
-                             integral_constant<long long, 4>>,
-                            integral_constant<long long, -1>>);
+    static_assert(is_same
+                  <compile_time_mod
+                   <integral_constant<int, 17>,
+                    integral_constant<long long, 4>>::type,
+                   integral_constant<long long, 1>>);
+    static_assert(is_same
+                  <compile_time_mod
+                   <integral_constant<int, -17>,
+                    integral_constant<long long, 4>>::type,
+                   integral_constant<long long, -1>>);
+    static_assert(is_same
+                  <compile_time_mod_t
+                   <integral_constant<int, -17>,
+                    integral_constant<long long, 4>>,
+                   integral_constant<long long, -1>>);
     static_assert(compile_time_mod_t
                   <int_constant<7>, int_constant<4>>::value == 3);
     static_assert(compile_time_mod
@@ -1426,26 +1450,26 @@ void test_basic_tmp_tools() {
   }
   // compile_time_neg
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_neg<integral_constant<char, -3>>>);
     check_integral_constant::f<compile_time_neg<integral_constant<char, -3>>,
                                char, 3>();
     check_integral_constant::f<compile_time_neg_t<integral_constant<char, 3>>,
                                char, -3>();
-    static_assert(is_base_of_v<integral_constant<char, -3>,
+    static_assert(is_base_of<integral_constant<char, -3>,
                                compile_time_neg<integral_constant<char, 3>>>);
-    static_assert(is_same_v<compile_time_neg_t
-                            <integral_constant<char, 3>>,
-                            integral_constant<char, -3>>);
-    static_assert(is_same_v<compile_time_neg
-                            <integral_constant<char, 3>>::type,
-                            integral_constant<char, -3>>);
+    static_assert(is_same
+                  <compile_time_neg_t<integral_constant<char, 3>>,
+                   integral_constant<char, -3>>);
+    static_assert(is_same
+                  <compile_time_neg<integral_constant<char, 3>>::type,
+                   integral_constant<char, -3>>);
     static_assert(compile_time_neg<integral_constant<char, 3>>::value == -3);
     static_assert(compile_time_neg<integral_constant<char, 0>>::value == 0);
   }
   // compile_time_abs
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_abs<integral_constant<char, -3>>>);
     check_integral_constant::f<compile_time_abs<integral_constant<char, -3>>,
                                char, 3>();
@@ -1453,44 +1477,47 @@ void test_basic_tmp_tools() {
                                char, 3>();
     check_integral_constant::f<compile_time_abs<int_constant<-666>>,
                                int, 666>();
-    static_assert(is_same_v<compile_time_abs
-                            <integral_constant<char, 0>>::type,
-                            integral_constant<char, 0>>);
-    static_assert(is_same_v<compile_time_abs
-                            <integral_constant<char, 1>>::type,
-                            integral_constant<char, 1>>);
-    static_assert(is_same_v<compile_time_abs_t
-                            <integral_constant<char, -3>>,
-                             integral_constant<char, 3>>);
+    static_assert(is_same
+                  <compile_time_abs<integral_constant<char, 0>>::type,
+                   integral_constant<char, 0>>);
+    static_assert(is_same
+                  <compile_time_abs<integral_constant<char, 1>>::type,
+                   integral_constant<char, 1>>);
+    static_assert(is_same
+                  <compile_time_abs_t<integral_constant<char, -3>>,
+                   integral_constant<char, 3>>);
     static_assert(compile_time_abs<integral_constant<char, 3>>::value == 3);
     static_assert(compile_time_abs_v<integral_constant<char, -3>> == 3);
   }
   // compile_time_gcd
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_gcd<int_constant<569>, int_constant<137>>>);
     check_integral_constant::f<compile_time_gcd
                                <int_constant<569>, int_constant<137>>,
                                int, 1>();
-    static_assert(is_same_v<compile_time_gcd
-                            <integral_constant<int, 8>,
-                             integral_constant<int, 12>>::type,
-                            int_constant<4>>);
-    static_assert(is_same_v<compile_time_gcd_t
-                            <integral_constant<int, 8>,
-                             integral_constant<int, 12>>,
-                            int_constant<4>>);
-    static_assert(is_base_of_v<int_constant<4>,
-                               compile_time_gcd
-                               <integral_constant<int, 8>,
-                                integral_constant<int, 12>>>);
+    static_assert(is_same
+                  <compile_time_gcd
+                   <integral_constant<int, 8>,
+                    integral_constant<int, 12>>::type,
+                   int_constant<4>>);
+    static_assert(is_same
+                  <compile_time_gcd_t
+                   <integral_constant<int, 8>,
+                    integral_constant<int, 12>>,
+                   int_constant<4>>);
+    static_assert(is_base_of<int_constant<4>,
+                             compile_time_gcd
+                             <integral_constant<int, 8>,
+                              integral_constant<int, 12>>>);
     static_assert(compile_time_gcd
                   <integral_constant<char, 8>,
                    integral_constant<short, 12>>::value == 4);
-    static_assert(is_same_v<compile_time_gcd_t
-                            <integral_constant<short, 8>,
-                             integral_constant<short, 12>>,
-                            integral_constant<short, 4>>);
+    static_assert(is_same
+                  <compile_time_gcd_t
+                   <integral_constant<short, 8>,
+                    integral_constant<short, 12>>,
+                   integral_constant<short, 4>>);
     static_assert(compile_time_gcd
                   <integral_constant<int, 8>,
                    integral_constant<int, 12>>::value == 4);
@@ -1527,35 +1554,37 @@ void test_basic_tmp_tools() {
     static_assert(compile_time_gcd_v<size_constant<6>, size_constant<9>> == 3);
     static_assert(compile_time_gcd_v<size_constant<3>, size_constant<0>> == 3);
     static_assert(compile_time_gcd_v<size_constant<0>, size_constant<0>> == 0);
-    static_assert(is_same_v<compile_time_gcd_t
-                            <integral_constant<unsigned char, 250>,
-                             integral_constant<unsigned char, 200>>,
-                            integral_constant<unsigned char, 50>>);
-    static_assert(is_same_v<compile_time_gcd_t
-                            <integral_constant<unsigned char, 250>,
-                             integral_constant<short, 200>>,
-                            integral_constant<int, 50>>);
+    static_assert(is_same
+                  <compile_time_gcd_t
+                   <integral_constant<unsigned char, 250>,
+                    integral_constant<unsigned char, 200>>,
+                   integral_constant<unsigned char, 50>>);
+    static_assert(is_same
+                  <compile_time_gcd_t
+                   <integral_constant<unsigned char, 250>,
+                    integral_constant<short, 200>>,
+                   integral_constant<int, 50>>);
   }
   // compile_time_lcm
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_lcm<int_constant<569>, int_constant<137>>>);
         
     check_integral_constant::f<compile_time_lcm
                                <int_constant<569>, int_constant<137>>,
                                int, 569 * 137>();
-    static_assert(is_same_v<compile_time_lcm
-                            <integral_constant<int, 8>,
-                             integral_constant<int, 12>>::type,
-                            int_constant<24>>);
-    static_assert(is_same_v<compile_time_lcm_t
-                            <integral_constant<int, 8>,
-                             integral_constant<int, 12>>,
-                            int_constant<24>>);
-    static_assert(is_base_of_v<int_constant<24>,
-                               compile_time_lcm
-                               <integral_constant<int, 8>,
-                                integral_constant<int, 12>>>);
+    static_assert(is_same<compile_time_lcm
+                          <integral_constant<int, 8>,
+                           integral_constant<int, 12>>::type,
+                          int_constant<24>>);
+    static_assert(is_same<compile_time_lcm_t
+                          <integral_constant<int, 8>,
+                           integral_constant<int, 12>>,
+                          int_constant<24>>);
+    static_assert(is_base_of<int_constant<24>,
+                             compile_time_lcm
+                             <integral_constant<int, 8>,
+                              integral_constant<int, 12>>>);
     static_assert(compile_time_lcm_v
                   <integral_constant<int, 9>,
                    integral_constant<int, 15>> == 45);
@@ -1565,14 +1594,14 @@ void test_basic_tmp_tools() {
     static_assert(compile_time_lcm_v
                   <integral_constant<int, 0>,
                    integral_constant<int, 0>> == 0);
-    static_assert(is_same_v<compile_time_lcm_t
-                            <integral_constant<unsigned char, 40>,
-                             integral_constant<unsigned char, 50>>,
-                            integral_constant<unsigned char, 200>>);
-    static_assert(is_same_v<compile_time_lcm_t
-                            <integral_constant<unsigned char, 40>,
-                             integral_constant<short, 50>>,
-                            integral_constant<int, 200>>);
+    static_assert(is_same<compile_time_lcm_t
+                          <integral_constant<unsigned char, 40>,
+                           integral_constant<unsigned char, 50>>,
+                          integral_constant<unsigned char, 200>>);
+    static_assert(is_same<compile_time_lcm_t
+                          <integral_constant<unsigned char, 40>,
+                           integral_constant<short, 50>>,
+                          integral_constant<int, 200>>);
     static_assert(compile_time_lcm_v
                   <int_constant<6>, int_constant<-9>> == 18);
     static_assert(compile_time_lcm_v
@@ -1587,12 +1616,13 @@ void test_basic_tmp_tools() {
   // compile_time_max
   // compile_time_min
   {
-    static_assert(is_trivial_empty_v
+    static_assert(is_empty
                   <compile_time_max<integral_constant<char, 55>,
                                     integral_constant<char, 44>>>);
-    static_assert(is_trivial_empty_v<compile_time_min
-                                     <integral_constant<char, 55>,
-                                      integral_constant<char, 44>>>);
+    static_assert(is_empty
+                  <compile_time_min
+                   <integral_constant<char, 55>,
+                    integral_constant<char, 44>>>);
     check_integral_constant::f<compile_time_max
                                <integral_constant<char, 55>,
                                 integral_constant<char, 44>>,
@@ -1630,9 +1660,9 @@ void test_basic_tmp_tools() {
   }
   // compile_time_acc
   {
-    static_assert(is_trivial_empty_v<compile_time_acc
-                                     <type_pack, int, float, void *>>);
-    static_assert(is_same_v
+    static_assert(is_empty<compile_time_acc
+                             <type_pack, int, float, void *>>);
+    static_assert(is_same
                   <compile_time_acc_t<type_pack, int, float, void *>,
                    type_pack<type_pack<int, float>::type, void *>::type>);
     static_assert(compile_time_acc_v<compile_time_mul,
@@ -1654,13 +1684,13 @@ void test_basic_tmp_tools() {
 
     {
       using test_compile_time_acc::f;
-      static_assert(has_member_type_type_v<f<int, int>>);
-      static_assert(!has_member_type_type_v<f<int, float>>);
-      static_assert(is_same_v<compile_time_acc<f, int>::type, int>);
-      static_assert(is_integral_v<compile_time_acc_t<f, int, int>>);
-      static_assert(is_integral_v
+      static_assert(has_member_type_type<f<int, int>>);
+      static_assert(!has_member_type_type<f<int, float>>);
+      static_assert(is_same<compile_time_acc<f, int>::type, int>);
+      static_assert(is_integral<compile_time_acc_t<f, int, int>>);
+      static_assert(is_integral
                     <compile_time_acc_t<f, int, int, long, long, short>>);
-      static_assert(!has_member_type_type_v
+      static_assert(!has_member_type_type
                     <compile_time_acc<f, int, nullptr_t, long, long, short>>);
     }
   }
@@ -1668,8 +1698,8 @@ void test_basic_tmp_tools() {
   // type_tag
   {
     using t = type_tag<int>;
-    static_assert(is_same_v<t::type, int>);
-    static_assert(is_trivial_empty_v<t>);
+    static_assert(is_same<t::type, int>);
+    static_assert(is_empty<t>);
   }
 
   // type_pack
@@ -1678,58 +1708,58 @@ void test_basic_tmp_tools() {
   {
     {
       using P = void;
-      static_assert(is_trivial_empty_v<type_pack_size<P>>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<P> == 1);
-      static_assert(is_same_v<type_pack_element_t<0, P>, void>);
-      static_assert(is_same_v<type_pack_element_t<1, P>, void>);
-      static_assert(is_same_v<type_pack_element_t<100, P>, void>);
+      static_assert(is_empty<template_type_pack_size<P>>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<P> == 1);
+      static_assert(is_same<type_pack_element<0, P>, void>);
+      static_assert(is_same<type_pack_element<1, P>, void>);
+      static_assert(is_same<type_pack_element<100, P>, void>);
     }
     {
       using P = int;
-      static_assert(is_trivial_empty_v<type_pack_size<P>>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<P> == 1);
-      static_assert(is_same_v<type_pack_element_t<0, P>, int>);
-      static_assert(is_same_v<type_pack_element_t<1, P>, void>);
-      static_assert(is_same_v<type_pack_element_t<100, P>, void>);
+      static_assert(is_empty<template_type_pack_size<P>>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<P> == 1);
+      static_assert(is_same<type_pack_element<0, P>, int>);
+      static_assert(is_same<type_pack_element<1, P>, void>);
+      static_assert(is_same<type_pack_element<100, P>, void>);
     }
     {
       using P = type_pack<>;
-      static_assert(is_trivial_empty_v<type_pack_size<P>>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<P> == 0);
-      static_assert(is_same_v<type_pack_element_t<0, P>, void>);
-      static_assert(is_same_v<type_pack_element_t<2222, P>, void>);
+      static_assert(is_empty<template_type_pack_size<P>>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<P> == 0);
+      static_assert(is_same<type_pack_element<0, P>, void>);
+      static_assert(is_same<type_pack_element<2222, P>, void>);
     }
     {
       using P = type_pack<int, float>;
-      static_assert(is_trivial_empty_v<type_pack_size<P>>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<P> == 2);
-      static_assert(is_same_v<type_pack_element_t<0, P>, int>);
-      static_assert(is_same_v<type_pack_element_t<1, P>, float>);
-      static_assert(is_same_v<type_pack_element_t<2, P>, void>);
-      static_assert(is_same_v<type_pack_element_t<2222, P>, void>);
+      static_assert(is_empty<template_type_pack_size<P>>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<P> == 2);
+      static_assert(is_same<type_pack_element<0, P>, int>);
+      static_assert(is_same<type_pack_element<1, P>, float>);
+      static_assert(is_same<type_pack_element<2, P>, void>);
+      static_assert(is_same<type_pack_element<2222, P>, void>);
     }
     {
       using P0 = index_sequence<>;
-      static_assert(is_trivial_empty_v<type_pack_size<P0>>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P0>>);
-      static_assert(type_pack_size_v<P0> == 0);
-      static_assert(is_same_v<type_pack_element_t<0, P0>, void>);
-      static_assert(is_same_v<type_pack_element_t<1, P0>, void>);
-      static_assert(is_same_v<type_pack_element_t<111, P0>, void>);
+      static_assert(is_empty<template_type_pack_size<P0>>);
+      static_assert(is_empty<template_type_pack_element<0, P0>>);
+      static_assert(type_pack_size<P0> == 0);
+      static_assert(is_same<type_pack_element<0, P0>, void>);
+      static_assert(is_same<type_pack_element<1, P0>, void>);
+      static_assert(is_same<type_pack_element<111, P0>, void>);
 
       using P = index_sequence<1, 3, 5>;
-      static_assert(is_trivial_empty_v<type_pack_size<P>>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<P> == 3);
-      static_assert(is_same_v<type_pack_element_t<0, P>, size_constant<1>>);
-      static_assert(is_same_v<type_pack_element_t<1, P>, size_constant<3>>);
-      static_assert(is_same_v<type_pack_element_t<2, P>, size_constant<5>>);
-      static_assert(is_same_v<type_pack_element_t<3, P>, void>);
-      static_assert(is_same_v<type_pack_element_t<2222, P>, void>);
+      static_assert(is_empty<template_type_pack_size<P>>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<P> == 3);
+      static_assert(is_same<type_pack_element<0, P>, size_constant<1>>);
+      static_assert(is_same<type_pack_element<1, P>, size_constant<3>>);
+      static_assert(is_same<type_pack_element<2, P>, size_constant<5>>);
+      static_assert(is_same<type_pack_element<3, P>, void>);
+      static_assert(is_same<type_pack_element<2222, P>, void>);
     }
   }
   // type_pack_for_each
@@ -1737,11 +1767,11 @@ void test_basic_tmp_tools() {
     {
       using P = type_pack<type_pack<int>>;
       type_pack_for_each<P>([](auto x) {
-        static_assert(is_same_v<typename decltype(x)::type, int>);
+        static_assert(is_same<typename decltype(x)::type, int>);
       });
       static_assert(!noexcept(type_pack_for_each<P>([](auto) {})));
       static_assert(!noexcept(type_pack_for_each<P>([](auto) noexcept {})));
-      static_assert(is_trivial_empty_v<decltype(type_pack_for_each<P>)>);
+      static_assert(is_empty<decltype(type_pack_for_each<P>)>);
     }
     {
       using PP = type_pack<int, float, double>;
@@ -1769,24 +1799,24 @@ void test_basic_tmp_tools() {
       type_pack_for_each<P>([&]<typename...S>(S...s) {
         assert(sizeof...(s) == i);
         if constexpr (sizeof...(s) == 2) {
-          static_assert(is_same_v<type_pack<S...>,
-                                  type_pack<type_tag<int>,
-                                            type_tag<float>>>);
+          static_assert(is_same<type_pack<S...>,
+                                type_pack<type_tag<int>,
+                                          type_tag<float>>>);
           goto quit_label;
         }
         if constexpr (sizeof...(s) == 3) {
-          static_assert(is_same_v<type_pack<S...>,
-                                  type_pack<type_tag<int>,
-                                            type_tag<float>,
-                                            type_tag<void *>>>);
+          static_assert(is_same<type_pack<S...>,
+                                type_pack<type_tag<int>,
+                                          type_tag<float>,
+                                          type_tag<void *>>>);
           goto quit_label;
         }
         if constexpr (sizeof...(s) == 4) {
-          static_assert(is_same_v<type_pack<S...>,
-                                  type_pack<type_tag<int>,
-                                            type_tag<float>,
-                                            type_tag<void *>,
-                                            type_tag<void **>>>);
+          static_assert(is_same<type_pack<S...>,
+                                type_pack<type_tag<int>,
+                                          type_tag<float>,
+                                          type_tag<void *>,
+                                          type_tag<void **>>>);
           goto quit_label;
         }
         assert(false);
@@ -1800,7 +1830,7 @@ void test_basic_tmp_tools() {
     int c = 0;
     auto f = [&](auto x) {
       ++c;
-      return !is_pointer_v<typename decltype(x)::type>;
+      return !is_pointer<typename decltype(x)::type>;
     };
     c = 0;
     type_pack_for_each_until_false<type_pack<>>(f);
@@ -1820,41 +1850,43 @@ void test_basic_tmp_tools() {
   }
   // type_pack_apply
   {
-    using T = type_pack_apply<is_same, type_pack_add<int, float>>::type;
-    using T2 = type_pack_apply_t<is_same, type_pack<int, float>>;
-    using T3 = type_pack_apply_t<type_pack, type_pack<>>;
-    static_assert(is_trivial_empty_v<T>);
-    static_assert(is_same_v<T, is_same<int, float>>);
-    static_assert(is_same_v<T, T2>);
-    static_assert(is_same_v<T3, type_pack<>>);
+    using T
+      = template_type_pack_apply<template_is_same,
+                                 type_pack_add<int, float>>::type;
+    using T2 = type_pack_apply<template_is_same, type_pack<int, float>>;
+    using T3 = type_pack_apply<type_pack, type_pack<>>;
+    static_assert(is_empty<T>);
+    static_assert(is_same<T, template_is_same<int, float>>);
+    static_assert(is_same<T, T2>);
+    static_assert(is_same<T3, type_pack<>>);
   }
   // type_pack_add
   {
     {
       using P = compile_time_acc_t<type_pack_add, void *, void **, void ***>;
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<P> == 3);
-      static_assert(is_same_v<type_pack_element_t<0, P>, void *>);
-      static_assert(is_same_v<type_pack_element_t<1, P>, void **>);
-      static_assert(is_same_v<type_pack_element_t<2, P>, void ***>);
-      static_assert(is_same_v<type_pack_element_t<3, P>, void>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<P> == 3);
+      static_assert(is_same<type_pack_element<0, P>, void *>);
+      static_assert(is_same<type_pack_element<1, P>, void **>);
+      static_assert(is_same<type_pack_element<2, P>, void ***>);
+      static_assert(is_same<type_pack_element<3, P>, void>);
     }
     {
       using P = type_pack_add<type_pack<int, int *>, int **>;
       using PP = type_pack<P>;
-      static_assert(is_trivial_empty_v<P>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, P>>);
-      static_assert(type_pack_size_v<PP> == 1);
-      using T = type_pack_element_t<0, PP>;
-      static_assert(type_pack_size_v<T> == 3);
-      static_assert(is_same_v<type_pack_element_t<0, T>, int>);
-      static_assert(is_same_v<type_pack_element_t<1, T>, int *>);
-      static_assert(is_same_v<type_pack_element_t<2, T>, int **>);
-      static_assert(is_same_v<type_pack_element_t<3, T>, void>);
+      static_assert(is_empty<P>);
+      static_assert(is_empty<template_type_pack_element<0, P>>);
+      static_assert(type_pack_size<PP> == 1);
+      using T = type_pack_element<0, PP>;
+      static_assert(type_pack_size<T> == 3);
+      static_assert(is_same<type_pack_element<0, T>, int>);
+      static_assert(is_same<type_pack_element<1, T>, int *>);
+      static_assert(is_same<type_pack_element<2, T>, int **>);
+      static_assert(is_same<type_pack_element<3, T>, void>);
       type_pack_for_each<PP>([](auto x, auto y, auto z) {
-        static_assert(is_same_v<typename decltype(x)::type, int>);
-        static_assert(is_same_v<typename decltype(y)::type, int *>);
-        static_assert(is_same_v<typename decltype(z)::type, int **>);
+        static_assert(is_same<typename decltype(x)::type, int>);
+        static_assert(is_same<typename decltype(y)::type, int *>);
+        static_assert(is_same<typename decltype(z)::type, int **>);
       });
     }
     {
@@ -1863,13 +1895,13 @@ void test_basic_tmp_tools() {
       using P3 = type_pack<int (*)(), void>;
 
       using PP = type_pack_add<P1, P2>;
-      static_assert(is_trivial_empty_v<PP>);
-      static_assert(is_trivial_empty_v<type_pack_element<0, PP>>);
-      static_assert(is_trivial_empty_v<type_pack_element<3, PP>>);
+      static_assert(is_empty<PP>);
+      static_assert(is_empty<template_type_pack_element<0, PP>>);
+      static_assert(is_empty<template_type_pack_element<3, PP>>);
       static_assert(type_pack_eql
-                    <PP, type_pack<int, float, void *, void *, int **>>::value);
+                    <PP, type_pack<int, float, void *, void *, int **>>);
       using PP2 = type_pack_add<P3, PP>;
-      static_assert(type_pack_eql_v
+      static_assert(type_pack_eql
                     <PP2, type_pack
                      <int (*)(), void, int, float, void *, void *, int **>>);
     }
@@ -1882,39 +1914,54 @@ void test_basic_tmp_tools() {
                          char **[4], char **[5]>;
     auto f = [](auto tag) {
       using P = typename decltype(tag)::type;
-      static_assert(type_pack_size_v<P> == 3 * 4 * 5);
+      static_assert(type_pack_size<P> == 3 * 4 * 5);
 
-      using E1 = type_pack_decay_t
-        <type_pack_element_t<2 * 4 * 5 + 3 * 5 + 4, P>>;
-      static_assert(is_same_v
+      using E1 = type_pack_decay
+        <type_pack_element<2 * 4 * 5 + 3 * 5 + 4, P>>;
+      static_assert(is_same
                     <E1, type_pack<char [3], char *[4], char **[5]>>);
 
-      using E2 = type_pack_decay_t
-        <type_pack_element_t<1 * 4 * 5 + 2 * 5 + 3, P>>;
-      static_assert(is_same_v
+      using E2 = type_pack_decay
+        <type_pack_element<1 * 4 * 5 + 2 * 5 + 3, P>>;
+      static_assert(is_same
                     <E2, type_pack<char [2], char *[3], char **[4]>>);
     };
     f(type_tag<compile_time_acc_t<type_pack_mul, P1, P2, P3>>{});
     f(type_tag<type_pack_mul<P1, type_pack_mul<P2, P3>>>{});
-    static_assert(is_trivial_empty_v<type_pack_mul<P1, type_pack_mul<P2, P3>>>);
+    static_assert(is_empty<type_pack_mul<P1, type_pack_mul<P2, P3>>>);
   }
   // type_pack_decay
   // type_pack_eql
   {
     {
-      static_assert(type_pack_eql_v<int, int>);
-      static_assert(!type_pack_eql_v<int, int &>);
-      static_assert(is_trivial_empty_v<type_pack_eql<int, int>>);
+      using p_t = type_pack_mul<type_pack<short, int, long>,
+                                type_pack<short *, int *, long *>>;
+      using p2_t = type_pack<type_pack_add<short, short *>,
+                             type_pack_add<short, int *>,
+                             type_pack_add<short, long *>,
+                             type_pack_add<int, short *>,
+                             type_pack_add<int, int *>,
+                             type_pack_add<int, long *>,
+                             type_pack_add<long, short *>,
+                             type_pack_add<long, int *>,
+                             type_pack_add<long, long *>
+                             >;
+      static_assert(type_pack_eql<p_t, p2_t>);
+    }
+    {
+      static_assert(type_pack_eql<int, int>);
+      static_assert(!type_pack_eql<int, int &>);
+      static_assert(is_empty<template_type_pack_eql<int, int>>);
 
-      static_assert(type_pack_eql_v<int, type_pack<int>>);
-      static_assert(type_pack_eql_v<type_pack<int>, type_pack<int>>);
+      static_assert(type_pack_eql<int, type_pack<int>>);
+      static_assert(type_pack_eql<type_pack<int>, type_pack<int>>);
 
       using P = compile_time_acc_t<type_pack_add, int, float, void *, void **>;
-      using PP = type_pack_decay_t<P>;
-      static_assert(is_trivial_empty_v<PP>);
-      static_assert(!is_same_v<PP, P>);
-      static_assert(is_same_v<PP, type_pack<int, float, void *, void **>>);
-      static_assert(type_pack_eql_v<P, PP>);
+      using PP = type_pack_decay<P>;
+      static_assert(is_empty<PP>);
+      static_assert(!is_same<PP, P>);
+      static_assert(is_same<PP, type_pack<int, float, void *, void **>>);
+      static_assert(type_pack_eql<P, PP>);
     }
     {
       using P1 = type_pack<int *, int **, int ***>;
@@ -1926,70 +1973,71 @@ void test_basic_tmp_tools() {
                             type_pack_add<void *, int **>,
                             type_pack_add<void *, int ***>>;
       using PP = type_pack_mul<P1, P2>;
-      static_assert(!is_same_v<PP, P12>);
-      static_assert(is_same_v<type_pack_decay_t<PP>, P12>);
-      static_assert(type_pack_eql_v<PP, type_pack_decay_t<PP>>);
+      static_assert(!is_same<PP, P12>);
+      static_assert(is_same<type_pack_decay<PP>, P12>);
+      static_assert(type_pack_eql<PP, type_pack_decay<PP>>);
     }
   }
   // type_pack_recursive_decay
   {
     {
-      static_assert(is_same_v<type_pack_recursive_decay_t<int>, int>);
-      static_assert(is_trivial_empty_v<type_pack_recursive_decay<int>>);
-      static_assert(is_same_v
-                    <type_pack_recursive_decay_t<type_pack<>>, type_pack<>>);
+      static_assert(is_same<type_pack_recursive_decay<int>, int>);
+      static_assert(is_empty<template_type_pack_recursive_decay<int>>);
+      static_assert(is_same
+                    <type_pack_recursive_decay<type_pack<>>, type_pack<>>);
 
       using P = type_pack_mul<type_pack<void *, void **>,
                               type_pack<void ***, void ****>>;
-      using PP = type_pack_recursive_decay_t<P>;
+      using PP = type_pack_recursive_decay<P>;
       using PPP = type_pack<type_pack<void *, void ***>,
                             type_pack<void *, void ****>,
                             type_pack<void **, void ***>,
                             type_pack<void **, void ****>>;
-      static_assert(is_same_v<PP, PPP>);
+      static_assert(is_same<PP, PPP>);
     }
     {
       using P = type_pack_mul<type_pack_add<void *, void **>,
                               type_pack_add<void ***,
                                             type_pack_add<void ****,
                                                           void *****>>>;
-      using PP = type_pack_recursive_decay_t<P>;
+      using PP = type_pack_recursive_decay<P>;
       using PPP = type_pack<type_pack<void *, void ***>,
                             type_pack<void *, void ****>,
                             type_pack<void *, void *****>,
                             type_pack<void **, void ***>,
                             type_pack<void **, void ****>,
                             type_pack<void **, void *****>>;
-      static_assert(is_same_v<PP, PPP>);
+      static_assert(is_same<PP, PPP>);
     }
   }
   // type_pack_recursive_eql
   {
     {
-      static_assert(is_trivial_empty_v<type_pack_recursive_eql<int, int>>);
-      static_assert(is_trivial_empty_v
-                    <type_pack_recursive_eql<type_pack<int>, int>>);
-      static_assert(is_trivial_empty_v
-                    <type_pack_recursive_eql<int, type_pack<int>>>);
-      static_assert(is_trivial_empty_v
-                    <type_pack_recursive_eql<type_pack<int>, type_pack<int>>>);
+      static_assert(is_empty<template_type_pack_recursive_eql<int, int>>);
+      static_assert(is_empty
+                    <template_type_pack_recursive_eql<type_pack<int>, int>>);
+      static_assert(is_empty
+                    <template_type_pack_recursive_eql<int, type_pack<int>>>);
+      static_assert(is_empty
+                    <template_type_pack_recursive_eql
+                     <type_pack<int>, type_pack<int>>>);
     }
     {
-      static_assert(type_pack_recursive_eql_v<type_pack<>, index_sequence<>>);
+      static_assert(type_pack_recursive_eql<type_pack<>, index_sequence<>>);
 
-      static_assert(type_pack_recursive_eql_v<int, type_pack<int>>);
-      static_assert(type_pack_recursive_eql_v<type_pack<int>, int>);
-      static_assert(type_pack_recursive_eql_v<type_pack<type_pack<int>>, int>);
-      static_assert(type_pack_recursive_eql_v<int, type_pack<type_pack<int>>>);
+      static_assert(type_pack_recursive_eql<int, type_pack<int>>);
+      static_assert(type_pack_recursive_eql<type_pack<int>, int>);
+      static_assert(type_pack_recursive_eql<type_pack<type_pack<int>>, int>);
+      static_assert(type_pack_recursive_eql<int, type_pack<type_pack<int>>>);
 
-      static_assert(type_pack_recursive_eql_v
+      static_assert(type_pack_recursive_eql
                     <type_pack<int, int>, type_pack_add<int, int>>);
 
-      static_assert(type_pack_recursive_eql_v
+      static_assert(type_pack_recursive_eql
                     <type_pack<int, float>, type_pack<int, float>>);
-      static_assert(type_pack_recursive_eql_v
+      static_assert(type_pack_recursive_eql
                     <type_pack<type_pack<int>, float>, type_pack<int, float>>);
-      static_assert(type_pack_recursive_eql_v
+      static_assert(type_pack_recursive_eql
                     <type_pack<int, type_pack<type_pack<float>>>,
                      type_pack<int, float>>);
     }
@@ -2000,8 +2048,8 @@ void test_basic_tmp_tools() {
                             type_pack<int **, void *>,
                             type_pack<int ***, void *>>;
       using PP = type_pack_mul<P1, P2>;
-      static_assert(type_pack_recursive_eql_v<PP, P12>);
-      static_assert(type_pack_recursive_eql_v<P12, PP>);
+      static_assert(type_pack_recursive_eql<PP, P12>);
+      static_assert(type_pack_recursive_eql<P12, PP>);
     }
   }
   // type_pack_first_part
@@ -2009,37 +2057,37 @@ void test_basic_tmp_tools() {
   {
     {
       using P = int;
-      static_assert(is_trivial_empty_v<type_pack_first_part<0, P>>);
-      static_assert(is_trivial_empty_v<type_pack_second_part<0, P>>);
-      static_assert(type_pack_size_v<type_pack_first_part<0, P>> == 0);
-      static_assert(type_pack_size_v<type_pack_second_part<0, P>> == 1);
-      static_assert(type_pack_size_v<type_pack_first_part<1, P>> == 1);
-      static_assert(type_pack_size_v<type_pack_second_part<1, P>> == 0);
-      static_assert(is_same_v
-                    <type_pack_apply_t<type_pack, type_pack_first_part<1, P>>,
+      static_assert(is_empty<type_pack_first_part<0, P>>);
+      static_assert(is_empty<type_pack_second_part<0, P>>);
+      static_assert(type_pack_size<type_pack_first_part<0, P>> == 0);
+      static_assert(type_pack_size<type_pack_second_part<0, P>> == 1);
+      static_assert(type_pack_size<type_pack_first_part<1, P>> == 1);
+      static_assert(type_pack_size<type_pack_second_part<1, P>> == 0);
+      static_assert(is_same
+                    <type_pack_apply<type_pack, type_pack_first_part<1, P>>,
                      type_pack<int>>);
-      static_assert(is_same_v
-                    <type_pack_apply_t<type_pack, type_pack_second_part<1, P>>,
+      static_assert(is_same
+                    <type_pack_apply<type_pack, type_pack_second_part<1, P>>,
                      type_pack<>>);
     }
     {
       using P = type_pack<int, float, void *, void **, void ***>;
       using P0 = type_pack_first_part<3, P>;
       using P1 = type_pack_second_part<3, P>;
-      static_assert(is_trivial_empty_v<P0>);
-      static_assert(is_trivial_empty_v<P1>);
-      static_assert(type_pack_eql_v<P0, type_pack<int, float, void *>>);
-      static_assert(type_pack_eql_v<P1, type_pack<void **, void ***>>);
+      static_assert(is_empty<P0>);
+      static_assert(is_empty<P1>);
+      static_assert(type_pack_eql<P0, type_pack<int, float, void *>>);
+      static_assert(type_pack_eql<P1, type_pack<void **, void ***>>);
     }
   }
   // n_type_pack
   {
-    static_assert(same_as<n_type_pack_t<0, int>, type_pack<>>);
-    static_assert(same_as<n_type_pack_t<1, int>, type_pack<int>>);
-    static_assert(same_as<n_type_pack_t<2, int>, type_pack<int, int>>);
-    static_assert(same_as<n_type_pack_t<3, int>, type_pack<int, int, int>>);
+    static_assert(same_as<n_type_pack<0, int>, type_pack<>>);
+    static_assert(same_as<n_type_pack<1, int>, type_pack<int>>);
+    static_assert(same_as<n_type_pack<2, int>, type_pack<int, int>>);
+    static_assert(same_as<n_type_pack<3, int>, type_pack<int, int, int>>);
     static_assert(same_as
-                  <n_type_pack_t<6, int>,
+                  <n_type_pack<6, int>,
                    type_pack<int, int, int, int, int, int>>);
   }
 
@@ -2050,13 +2098,13 @@ void test_basic_tmp_tools() {
     using _1 = true_type;
     using _0 = false_type;
 
-    static_assert(is_trivial_empty_v<conjunction<>>);
-    static_assert(is_trivial_empty_v<conjunction<_1>>);
-    static_assert(is_trivial_empty_v<conjunction<_1, _0, _1>>);
-    static_assert(is_trivial_empty_v<disjunction<>>);
-    static_assert(is_trivial_empty_v<disjunction<_1>>);
-    static_assert(is_trivial_empty_v<disjunction<_1, _0, _1>>);
-    static_assert(is_trivial_empty_v<negation<_1>>);
+    static_assert(is_empty<conjunction<>>);
+    static_assert(is_empty<conjunction<_1>>);
+    static_assert(is_empty<conjunction<_1, _0, _1>>);
+    static_assert(is_empty<disjunction<>>);
+    static_assert(is_empty<disjunction<_1>>);
+    static_assert(is_empty<disjunction<_1, _0, _1>>);
+    static_assert(is_empty<negation<_1>>);
 
     static_assert(conjunction<>::value);
     static_assert(conjunction_v<>);
@@ -2092,22 +2140,22 @@ void test_basic_tmp_tools() {
 
   // select_type
   {
-    static_assert(is_trivial_empty_v<select_type<int>>);
-    static_assert(is_trivial_empty_v<select_type<int, const int &, int &&>>);
-    static_assert(select_type<int>::value == 0);
-    static_assert(select_type_v<int> == 0);
-    static_assert(select_type_v<int, const int &, int &&> == 1);
-    static_assert(select_type_v<int &, const int &, int &&> == 0);
-    static_assert(select_type_v<int &&, const int &, int &&> == 1);
-    static_assert(select_type_v<int, int *> == 1);
-    static_assert(select_type_v<int, int *, int **> == 2);
-    static_assert(select_type_v<int, const int &, int *, int **, int ***> == 0);
-    static_assert(select_type_v<nullptr_t, float, int *, int> == 1);
+    static_assert(is_empty<template_select_type<int>>);
+    static_assert(is_empty<template_select_type<int, const int &, int &&>>);
+    static_assert(template_select_type<int>::value == 0);
+    static_assert(select_type<int> == 0);
+    static_assert(select_type<int, const int &, int &&> == 1);
+    static_assert(select_type<int &, const int &, int &&> == 0);
+    static_assert(select_type<int &&, const int &, int &&> == 1);
+    static_assert(select_type<int, int *> == 1);
+    static_assert(select_type<int, int *, int **> == 2);
+    static_assert(select_type<int, const int &, int *, int **, int ***> == 0);
+    static_assert(select_type<nullptr_t, float, int *, int> == 1);
   }
 
   // accumulate_args
   {
-    static_assert(is_trivial_empty_v<decltype(accumulate_args)>);
+    static_assert(is_empty<decltype(accumulate_args)>);
     static_assert(accumulate_args(plus<>{}, 1) == 1);
     static_assert(accumulate_args(plus<>{}, 1, 2, 3) == 6);
     static_assert(accumulate_args(plus<>{}, 1, 2, 3, 4, 5) == 15);
@@ -2119,7 +2167,7 @@ void test_basic_tmp_tools() {
 
   // nth_arg
   {
-    static_assert(is_trivial_empty_v<decltype(nth_arg<0>)>);
+    static_assert(is_empty<decltype(nth_arg<0>)>);
 
     static_assert(nth_arg<0>((short)1, 2.0, 3) == 1);
     static_assert(nth_arg<1>((short)1, 2.0, 3) == 2);
@@ -2219,42 +2267,46 @@ void test_swap() {
 
   // swap-related traits
   {
-    static_assert(is_trivial_empty_v<is_swappable<A>>);
-    static_assert(is_swappable<A>::value);
-    static_assert(is_swappable_v<A>);
-    static_assert(!is_nothrow_swappable_v<A>);
-    static_assert(is_trivial_empty_v<is_nothrow_swappable<A>>);
-    static_assert(is_swappable<B>::value);
-    static_assert(is_nothrow_swappable<B>::value);
-    static_assert(is_swappable_v<C>);
-    static_assert(is_nothrow_swappable_v<C>);
-    static_assert(is_swappable_v<D>);
-    static_assert(!is_nothrow_swappable_v<D>);
-    static_assert(is_swappable_v<E>); // differ from std
-    static_assert(is_nothrow_swappable_v<E>);
+    static_assert(is_empty<template_is_swappable<A>>);
+    static_assert(template_is_swappable<A>::value);
+    static_assert(is_swappable<A>);
+    static_assert(!is_nothrow_swappable<A>);
 
-    static_assert(is_trivial_empty_v<is_swappable_with<int &, int &>>);
-    static_assert(!is_swappable_with_v<int, int>);
-    static_assert(!is_swappable_with_v<int, int &>);
-    static_assert(is_swappable_with_v<int &, int &>);
+    static_assert(is_empty<template_is_nothrow_swappable<A>>);
+    static_assert(template_is_swappable<B>::value);
+    static_assert(template_is_nothrow_swappable<B>::value);
 
-    static_assert(is_trivial_empty_v<is_nothrow_swappable_with<int &, int &>>);
-    static_assert(!is_nothrow_swappable_with_v<int, int>);
-    static_assert(!is_nothrow_swappable_with_v<int, int &>);
-    static_assert(is_nothrow_swappable_with_v<int &, int &>);
+    static_assert(is_swappable<C>);
+    static_assert(is_nothrow_swappable<C>);
 
-    static_assert(!is_swappable_with_v<int (&)[2], int (&)[3]>);
-    static_assert(!is_nothrow_swappable_with_v<int (&)[2], int (&)[3]>);
+    static_assert(is_swappable<D>);
+    static_assert(!is_nothrow_swappable<D>);
 
-    static_assert(!is_swappable_with_v<int (&)[], int (&)[]>);
-    static_assert(!is_nothrow_swappable_with_v<int (&)[], int (&)[]>);
+    static_assert(is_swappable<E>); // differ from std
+    static_assert(is_nothrow_swappable<E>);
 
-    static_assert(is_swappable_with_v<int (&)[2], int (&)[2]>);
-    static_assert(is_nothrow_swappable_with_v<int (&)[2], int (&)[2]>);
+    static_assert(is_empty<template_is_swappable_with<int &, int &>>);
+    static_assert(!is_swappable_with<int, int>);
+    static_assert(!is_swappable_with<int, int &>);
+    static_assert(is_swappable_with<int &, int &>);
 
-    static_assert(is_swappable_with_v
+    static_assert(is_empty<template_is_nothrow_swappable_with<int &, int &>>);
+    static_assert(!is_nothrow_swappable_with<int, int>);
+    static_assert(!is_nothrow_swappable_with<int, int &>);
+    static_assert(is_nothrow_swappable_with<int &, int &>);
+
+    static_assert(!is_swappable_with<int (&)[2], int (&)[3]>);
+    static_assert(!is_nothrow_swappable_with<int (&)[2], int (&)[3]>);
+
+    static_assert(!is_swappable_with<int (&)[], int (&)[]>);
+    static_assert(!is_nothrow_swappable_with<int (&)[], int (&)[]>);
+
+    static_assert(is_swappable_with<int (&)[2], int (&)[2]>);
+    static_assert(is_nothrow_swappable_with<int (&)[2], int (&)[2]>);
+
+    static_assert(is_swappable_with
                   <int (&)[2][2][2][2], int (&)[2][2][2][2]>);
-    static_assert(is_nothrow_swappable_with_v
+    static_assert(is_nothrow_swappable_with
                   <int (&)[2][2][2][2], int (&)[2][2][2][2]>);
 
     {
@@ -2288,14 +2340,14 @@ void test_swap() {
       static_assert(!noexcept
                     (adl_swap(declval<t10 &>(), declval<t10 &>())));
       static_assert(noexcept(adl_swap(declval<t11 &>(), declval<t11 &>())));
-      static_assert(!is_nothrow_swappable_v<t00>);
-      static_assert(!is_nothrow_swappable_v<t01>);
-      static_assert(!is_nothrow_swappable_v<t10>);
-      static_assert(is_nothrow_swappable_v<t11>);
-      static_assert(!is_nothrow_swappable_with_v<t00 &, t00 &>);
-      static_assert(!is_nothrow_swappable_with_v<t01 &, t01 &>);
-      static_assert(!is_nothrow_swappable_with_v<t10 &, t10 &>);
-      static_assert(is_nothrow_swappable_with_v<t11 &, t11 &>);
+      static_assert(!is_nothrow_swappable<t00>);
+      static_assert(!is_nothrow_swappable<t01>);
+      static_assert(!is_nothrow_swappable<t10>);
+      static_assert(is_nothrow_swappable<t11>);
+      static_assert(!is_nothrow_swappable_with<t00 &, t00 &>);
+      static_assert(!is_nothrow_swappable_with<t01 &, t01 &>);
+      static_assert(!is_nothrow_swappable_with<t10 &, t10 &>);
+      static_assert(is_nothrow_swappable_with<t11 &, t11 &>);
     }
   }
   // default_swap
@@ -2304,8 +2356,8 @@ void test_swap() {
     struct t {
       int x;
     };
-    static_assert(is_swappable_v<t>);
-    static_assert(is_nothrow_swappable_v<t>);
+    static_assert(is_swappable<t>);
+    static_assert(is_nothrow_swappable<t>);
     t a = {1}, b = {2};
     adl_swap(a, a);
     adl_swap(b, b);
@@ -2333,8 +2385,21 @@ void test_swap() {
     static_assert(!default_swappable<int (&&)[2]>);
     static_assert(!default_swappable<const int (&&)[2]>);
   }
-  // swap by user defined swap
+  // swap
   {
+    // adl_swap by no user defined swap function
+    {
+      int a[] = {1, 2, 3};
+      int b[] = {4, 5, 6};
+      adl_swap(a, b);
+      assert(a[0] == 4 && a[1] == 5 && a[2] == 6);
+      assert(b[0] == 1 && b[1] == 2 && b[2] == 3);
+
+      int x = 1;
+      int y = 2;
+      adl_swap(x, y);
+      assert(x == 2 && y == 1);
+    }
     // swap_nothing0
     {
       swap_nothing0 x{1}, y{2};
@@ -2351,11 +2416,11 @@ void test_swap() {
       assert(a[0].value == 1 && a[1].value == 2 && a[2].value == 3);
       assert(b[0].value == 4 && b[1].value == 5 && b[2].value == 6);
 
-      static_assert(is_swappable_v<swap_nothing0>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing0>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing0 []>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing0 [3]>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing0 [3][3][3]>);
+      static_assert(is_swappable<swap_nothing0>);
+      static_assert(!is_nothrow_swappable<swap_nothing0>);
+      static_assert(!is_nothrow_swappable<swap_nothing0 []>);
+      static_assert(!is_nothrow_swappable<swap_nothing0 [3]>);
+      static_assert(!is_nothrow_swappable<swap_nothing0 [3][3][3]>);
     }
     // swap_nothing
     {
@@ -2373,13 +2438,13 @@ void test_swap() {
       assert(a[0].value == 1 && a[1].value == 2 && a[2].value == 3);
       assert(b[0].value == 4 && b[1].value == 5 && b[2].value == 6);
 
-      static_assert(is_swappable_v<swap_nothing>);
+      static_assert(is_swappable<swap_nothing>);
       static_assert(!noexcept(adl_swap(declval<swap_nothing &>(),
                                        declval<swap_nothing &>())));
-      static_assert(!is_nothrow_swappable_v<swap_nothing>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing []>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing [3]>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing [3][3][3]>);
+      static_assert(!is_nothrow_swappable<swap_nothing>);
+      static_assert(!is_nothrow_swappable<swap_nothing []>);
+      static_assert(!is_nothrow_swappable<swap_nothing [3]>);
+      static_assert(!is_nothrow_swappable<swap_nothing [3][3][3]>);
     }
     // swap_nothing2
     {
@@ -2397,11 +2462,11 @@ void test_swap() {
       assert(a[0].value == 1 && a[1].value == 2 && a[2].value == 3);
       assert(b[0].value == 4 && b[1].value == 5 && b[2].value == 6);
 
-      static_assert(is_swappable_v<swap_nothing2>);
-      static_assert(is_nothrow_swappable_v<swap_nothing2>);
-      static_assert(!is_nothrow_swappable_v<swap_nothing2 []>);
-      static_assert(is_nothrow_swappable_v<swap_nothing2 [3]>);
-      static_assert(is_nothrow_swappable_v<swap_nothing2 [3][3][3]>);
+      static_assert(is_swappable<swap_nothing2>);
+      static_assert(is_nothrow_swappable<swap_nothing2>);
+      static_assert(!is_nothrow_swappable<swap_nothing2 []>);
+      static_assert(is_nothrow_swappable<swap_nothing2 [3]>);
+      static_assert(is_nothrow_swappable<swap_nothing2 [3][3][3]>);
     }
   }
   // constexpr
@@ -2448,10 +2513,10 @@ void test_swap() {
     static_assert(fff2().value == 1);
 
     using namespace help_test_swap;
-    static_assert(!is_move_constructible_v<t>);
-    static_assert(!is_move_assignable_v<t>);
-    static_assert(is_swappable_v<t>);
-    static_assert(!is_nothrow_swappable_v<t>);
+    static_assert(!is_move_constructible<t>);
+    static_assert(!is_move_assignable<t>);
+    static_assert(is_swappable<t>);
+    static_assert(!is_nothrow_swappable<t>);
     constexpr auto ffff = []() constexpr->int {
       t a(1), b(2);
       adl_swap(a, b);
@@ -2464,211 +2529,211 @@ void test_swap() {
 void test_type_traits() {
   // is_void
   {
-    static_assert(is_trivial_empty_v<is_void<void>>);
-    static_assert(is_trivial_empty_v<is_void<const void>>);
-    static_assert(is_trivial_empty_v<is_void<volatile void>>);
-    static_assert(is_trivial_empty_v<is_void<const volatile void>>);
-    static_assert(is_trivial_empty_v<is_void<int>>);
-    static_assert(is_void<void>::value);
-    static_assert(is_void_v<void>);
-    static_assert(is_void_v<const void>);
-    static_assert(is_void_v<volatile void>);
-    static_assert(is_void_v<const volatile void>);
-    static_assert(!is_void_v<void *>);
-    static_assert(!is_void_v<void *const>);
-    static_assert(!is_void_v<void *volatile>);
-    static_assert(!is_void_v<void *const volatile>);
-    static_assert(!is_void_v<void *&>);
-    static_assert(!is_void_v<void *const &>);
-    static_assert(!is_void_v<void *volatile &>);
-    static_assert(!is_void_v<void *const volatile &>);
-    static_assert(!is_void_v<void *&&>);
-    static_assert(!is_void_v<void *const &&>);
-    static_assert(!is_void_v<void *volatile &&>);
-    static_assert(!is_void_v<void *const volatile &&>);
-    static_assert(!is_void_v<int>);
+    static_assert(is_empty<template_is_void<void>>);
+    static_assert(is_empty<template_is_void<const void>>);
+    static_assert(is_empty<template_is_void<volatile void>>);
+    static_assert(is_empty<template_is_void<const volatile void>>);
+    static_assert(is_empty<template_is_void<int>>);
+    static_assert(template_is_void<void>::value);
+    static_assert(is_void<void>);
+    static_assert(is_void<const void>);
+    static_assert(is_void<volatile void>);
+    static_assert(is_void<const volatile void>);
+    static_assert(!is_void<void *>);
+    static_assert(!is_void<void *const>);
+    static_assert(!is_void<void *volatile>);
+    static_assert(!is_void<void *const volatile>);
+    static_assert(!is_void<void *&>);
+    static_assert(!is_void<void *const &>);
+    static_assert(!is_void<void *volatile &>);
+    static_assert(!is_void<void *const volatile &>);
+    static_assert(!is_void<void *&&>);
+    static_assert(!is_void<void *const &&>);
+    static_assert(!is_void<void *volatile &&>);
+    static_assert(!is_void<void *const volatile &&>);
+    static_assert(!is_void<int>);
   }
   // is_null_pointer
   {
-    static_assert(is_trivial_empty_v<is_null_pointer<nullptr_t>>);
-    static_assert(is_trivial_empty_v<is_null_pointer<const nullptr_t>>);
-    static_assert(is_trivial_empty_v<is_null_pointer<volatile nullptr_t>>);
-    static_assert(is_trivial_empty_v
-                  <is_null_pointer<const volatile nullptr_t>>);
-    static_assert(is_trivial_empty_v<is_null_pointer<int>>);
-    static_assert(is_null_pointer<nullptr_t>::value);
-    static_assert(is_null_pointer_v<nullptr_t>);
-    static_assert(is_null_pointer_v<const nullptr_t>);
-    static_assert(is_null_pointer_v<volatile nullptr_t>);
-    static_assert(is_null_pointer_v<const volatile nullptr_t>);
-    static_assert(!is_null_pointer_v<nullptr_t &>);
-    static_assert(!is_null_pointer_v<const nullptr_t &>);
-    static_assert(!is_null_pointer_v<volatile nullptr_t &>);
-    static_assert(!is_null_pointer_v<const volatile nullptr_t &>);
-    static_assert(!is_null_pointer_v<nullptr_t &&>);
-    static_assert(!is_null_pointer_v<const nullptr_t &&>);
-    static_assert(!is_null_pointer_v<volatile nullptr_t &&>);
-    static_assert(!is_null_pointer_v<const volatile nullptr_t &&>);
-    static_assert(!is_null_pointer_v<int>);
+    static_assert(is_empty<template_is_null_pointer<nullptr_t>>);
+    static_assert(is_empty<template_is_null_pointer<const nullptr_t>>);
+    static_assert(is_empty<template_is_null_pointer<volatile nullptr_t>>);
+    static_assert(is_empty
+                  <template_is_null_pointer<const volatile nullptr_t>>);
+    static_assert(is_empty<template_is_null_pointer<int>>);
+    static_assert(template_is_null_pointer<nullptr_t>::value);
+    static_assert(is_null_pointer<nullptr_t>);
+    static_assert(is_null_pointer<const nullptr_t>);
+    static_assert(is_null_pointer<volatile nullptr_t>);
+    static_assert(is_null_pointer<const volatile nullptr_t>);
+    static_assert(!is_null_pointer<nullptr_t &>);
+    static_assert(!is_null_pointer<const nullptr_t &>);
+    static_assert(!is_null_pointer<volatile nullptr_t &>);
+    static_assert(!is_null_pointer<const volatile nullptr_t &>);
+    static_assert(!is_null_pointer<nullptr_t &&>);
+    static_assert(!is_null_pointer<const nullptr_t &&>);
+    static_assert(!is_null_pointer<volatile nullptr_t &&>);
+    static_assert(!is_null_pointer<const volatile nullptr_t &&>);
+    static_assert(!is_null_pointer<int>);
   }
   // is_integral
   {
-    static_assert(is_trivial_empty_v<is_integral<bool>>);
-    static_assert(is_trivial_empty_v<is_integral<const bool>>);
-    static_assert(is_trivial_empty_v<is_integral<volatile bool>>);
-    static_assert(is_trivial_empty_v<is_integral<const volatile bool>>);
-    static_assert(is_trivial_empty_v<is_integral<int>>);
-    static_assert(is_integral<bool>::value);
-    static_assert(is_integral_v<bool>);
-    static_assert(is_integral_v<const bool>);
-    static_assert(is_integral_v<volatile bool>);
-    static_assert(is_integral_v<const volatile bool>);
-    static_assert(!is_integral_v<bool &>);
-    static_assert(!is_integral_v<const bool &>);
-    static_assert(!is_integral_v<volatile bool &>);
-    static_assert(!is_integral_v<const volatile bool &>);
-    static_assert(!is_integral_v<bool &&>);
-    static_assert(!is_integral_v<const bool &&>);
-    static_assert(!is_integral_v<volatile bool &&>);
-    static_assert(!is_integral_v<const volatile bool &&>);
-    static_assert(!is_integral_v<bool *>);
+    static_assert(is_empty<template_is_integral<bool>>);
+    static_assert(is_empty<template_is_integral<const bool>>);
+    static_assert(is_empty<template_is_integral<volatile bool>>);
+    static_assert(is_empty<template_is_integral<const volatile bool>>);
+    static_assert(is_empty<template_is_integral<int>>);
+    static_assert(template_is_integral<bool>::value);
+    static_assert(is_integral<bool>);
+    static_assert(is_integral<const bool>);
+    static_assert(is_integral<volatile bool>);
+    static_assert(is_integral<const volatile bool>);
+    static_assert(!is_integral<bool &>);
+    static_assert(!is_integral<const bool &>);
+    static_assert(!is_integral<volatile bool &>);
+    static_assert(!is_integral<const volatile bool &>);
+    static_assert(!is_integral<bool &&>);
+    static_assert(!is_integral<const bool &&>);
+    static_assert(!is_integral<volatile bool &&>);
+    static_assert(!is_integral<const volatile bool &&>);
+    static_assert(!is_integral<bool *>);
 
-    static_assert(is_integral_v<char>);
-    static_assert(is_integral_v<unsigned char>);
-    static_assert(is_integral_v<signed char>);
-    static_assert(is_integral_v<char8_t>);
-    static_assert(is_integral_v<char16_t>);
-    static_assert(is_integral_v<char32_t>);
-    static_assert(is_integral_v<wchar_t>);
-    static_assert(is_integral_v<short int>);
-    static_assert(is_integral_v<unsigned short int>);
-    static_assert(is_integral_v<int>);
-    static_assert(is_integral_v<unsigned int>);
-    static_assert(is_integral_v<long int>);
-    static_assert(is_integral_v<unsigned long int>);
-    static_assert(is_integral_v<long long int>);
-    static_assert(is_integral_v<unsigned long long int>);
-    static_assert(is_integral_v<size_t>);
-    static_assert(is_integral_v<ptrdiff_t>);
-    static_assert(is_integral_v<int_least8_t>);
-    static_assert(is_integral_v<uint_least8_t>);
-    static_assert(is_integral_v<int_least16_t>);
-    static_assert(is_integral_v<uint_least16_t>);
-    static_assert(is_integral_v<int_least32_t>);
-    static_assert(is_integral_v<uint_least32_t>);
-    static_assert(is_integral_v<int_least64_t>);
-    static_assert(is_integral_v<uint_least64_t>);
-    static_assert(is_integral_v<int_fast8_t>);
-    static_assert(is_integral_v<uint_fast8_t>);
-    static_assert(is_integral_v<int_fast16_t>);
-    static_assert(is_integral_v<uint_fast16_t>);
-    static_assert(is_integral_v<int_fast32_t>);
-    static_assert(is_integral_v<uint_fast32_t>);
-    static_assert(is_integral_v<int_fast64_t>);
-    static_assert(is_integral_v<uint_fast64_t>);
-    static_assert(is_integral_v<intmax_t>);
-    static_assert(is_integral_v<uintmax_t>);
+    static_assert(is_integral<char>);
+    static_assert(is_integral<unsigned char>);
+    static_assert(is_integral<signed char>);
+    static_assert(is_integral<char8_t>);
+    static_assert(is_integral<char16_t>);
+    static_assert(is_integral<char32_t>);
+    static_assert(is_integral<wchar_t>);
+    static_assert(is_integral<short int>);
+    static_assert(is_integral<unsigned short int>);
+    static_assert(is_integral<int>);
+    static_assert(is_integral<unsigned int>);
+    static_assert(is_integral<long int>);
+    static_assert(is_integral<unsigned long int>);
+    static_assert(is_integral<long long int>);
+    static_assert(is_integral<unsigned long long int>);
+    static_assert(is_integral<size_t>);
+    static_assert(is_integral<ptrdiff_t>);
+    static_assert(is_integral<int_least8_t>);
+    static_assert(is_integral<uint_least8_t>);
+    static_assert(is_integral<int_least16_t>);
+    static_assert(is_integral<uint_least16_t>);
+    static_assert(is_integral<int_least32_t>);
+    static_assert(is_integral<uint_least32_t>);
+    static_assert(is_integral<int_least64_t>);
+    static_assert(is_integral<uint_least64_t>);
+    static_assert(is_integral<int_fast8_t>);
+    static_assert(is_integral<uint_fast8_t>);
+    static_assert(is_integral<int_fast16_t>);
+    static_assert(is_integral<uint_fast16_t>);
+    static_assert(is_integral<int_fast32_t>);
+    static_assert(is_integral<uint_fast32_t>);
+    static_assert(is_integral<int_fast64_t>);
+    static_assert(is_integral<uint_fast64_t>);
+    static_assert(is_integral<intmax_t>);
+    static_assert(is_integral<uintmax_t>);
 
-    static_assert(!is_integral_v<nullptr_t>);
-    static_assert(!is_integral_v<void>);
-    static_assert(!is_integral_v<int &>);
-    static_assert(!is_integral_v<int &&>);
-    static_assert(!is_integral_v<int *>);
-    static_assert(!is_integral_v<int *&>);
-    static_assert(!is_integral_v<int *&&>);
-    static_assert(!is_integral_v<float>);
-    static_assert(!is_integral_v<double>);
-    static_assert(!is_integral_v<void *>);
-    static_assert(!is_integral_v<void ()>);
-    static_assert(!is_integral_v<void (&)()>);
-    static_assert(!is_integral_v<void (*)()>);
+    static_assert(!is_integral<nullptr_t>);
+    static_assert(!is_integral<void>);
+    static_assert(!is_integral<int &>);
+    static_assert(!is_integral<int &&>);
+    static_assert(!is_integral<int *>);
+    static_assert(!is_integral<int *&>);
+    static_assert(!is_integral<int *&&>);
+    static_assert(!is_integral<float>);
+    static_assert(!is_integral<double>);
+    static_assert(!is_integral<void *>);
+    static_assert(!is_integral<void ()>);
+    static_assert(!is_integral<void (&)()>);
+    static_assert(!is_integral<void (*)()>);
   }
   // is_floating_point
   {
-    static_assert(is_trivial_empty_v<is_floating_point<float>>);
-    static_assert(is_trivial_empty_v<is_floating_point<const float>>);
-    static_assert(is_trivial_empty_v<is_floating_point<volatile float>>);
-    static_assert(is_trivial_empty_v<is_floating_point<const volatile float>>);
-    static_assert(is_trivial_empty_v<is_floating_point<double>>);
-    static_assert(is_trivial_empty_v<is_floating_point<long double>>);
-    static_assert(is_trivial_empty_v<is_floating_point<int>>);
-    static_assert(is_floating_point<float>::value);
-    static_assert(is_floating_point_v<float>);
-    static_assert(is_floating_point_v<double>);
-    static_assert(is_floating_point_v<long double>);
-    static_assert(is_floating_point_v<const long double>);
-    static_assert(is_floating_point_v<volatile long double>);
-    static_assert(is_floating_point_v<const volatile long double>);
-    static_assert(!is_floating_point_v<float &>);
-    static_assert(!is_floating_point_v<const float &>);
-    static_assert(!is_floating_point_v<volatile float &>);
-    static_assert(!is_floating_point_v<const volatile float &>);
-    static_assert(!is_floating_point_v<float &&>);
-    static_assert(!is_floating_point_v<const float &&>);
-    static_assert(!is_floating_point_v<volatile float &&>);
-    static_assert(!is_floating_point_v<const volatile float &&>);
-    static_assert(!is_floating_point_v<int>);
+    static_assert(is_empty<template_is_floating_point<float>>);
+    static_assert(is_empty<template_is_floating_point<const float>>);
+    static_assert(is_empty<template_is_floating_point<volatile float>>);
+    static_assert(is_empty<template_is_floating_point<const volatile float>>);
+    static_assert(is_empty<template_is_floating_point<double>>);
+    static_assert(is_empty<template_is_floating_point<long double>>);
+    static_assert(is_empty<template_is_floating_point<int>>);
+    static_assert(template_is_floating_point<float>::value);
+    static_assert(is_floating_point<float>);
+    static_assert(is_floating_point<double>);
+    static_assert(is_floating_point<long double>);
+    static_assert(is_floating_point<const long double>);
+    static_assert(is_floating_point<volatile long double>);
+    static_assert(is_floating_point<const volatile long double>);
+    static_assert(!is_floating_point<float &>);
+    static_assert(!is_floating_point<const float &>);
+    static_assert(!is_floating_point<volatile float &>);
+    static_assert(!is_floating_point<const volatile float &>);
+    static_assert(!is_floating_point<float &&>);
+    static_assert(!is_floating_point<const float &&>);
+    static_assert(!is_floating_point<volatile float &&>);
+    static_assert(!is_floating_point<const volatile float &&>);
+    static_assert(!is_floating_point<int>);
   }
   // is_array
   {
-    static_assert(is_trivial_empty_v<is_array<int []>>);
-    static_assert(is_trivial_empty_v<is_array<int [1]>>);
-    static_assert(is_trivial_empty_v<is_array<const int [1]>>);
-    static_assert(is_trivial_empty_v<is_array<volatile int [1]>>);
-    static_assert(is_trivial_empty_v<is_array<const volatile int [1]>>);
-    static_assert(is_trivial_empty_v<is_array<int>>);
-    static_assert(is_array<int []>::value);
-    static_assert(is_array_v<int []>);
-    static_assert(is_array_v<int [3]>);
-    static_assert(is_array_v<const int *[100]>);
-    static_assert(is_array_v<volatile int *[100]>);
-    static_assert(is_array_v<const volatile int *[100]>);
-    static_assert(!is_array_v<const volatile int *(&&)[100]>);
-    static_assert(!is_array_v<int>);
+    static_assert(is_empty<template_is_array<int []>>);
+    static_assert(is_empty<template_is_array<int [1]>>);
+    static_assert(is_empty<template_is_array<const int [1]>>);
+    static_assert(is_empty<template_is_array<volatile int [1]>>);
+    static_assert(is_empty<template_is_array<const volatile int [1]>>);
+    static_assert(is_empty<template_is_array<int>>);
+    static_assert(template_is_array<int []>::value);
+    static_assert(is_array<int []>);
+    static_assert(is_array<int [3]>);
+    static_assert(is_array<const int *[100]>);
+    static_assert(is_array<volatile int *[100]>);
+    static_assert(is_array<const volatile int *[100]>);
+    static_assert(!is_array<const volatile int *(&&)[100]>);
+    static_assert(!is_array<int>);
   }
   // is_pointer
   {
-    static_assert(is_trivial_empty_v<is_pointer<int *>>);
-    static_assert(is_trivial_empty_v<is_pointer<int *const>>);
-    static_assert(is_trivial_empty_v<is_pointer<int *volatile>>);
-    static_assert(is_trivial_empty_v<is_pointer<int *const volatile>>);
-    static_assert(is_trivial_empty_v<is_pointer<int>>);
-    static_assert(is_pointer<int *>::value);
-    static_assert(is_pointer_v<int *>);
-    static_assert(is_pointer_v<volatile int *>);
-    static_assert(is_pointer_v<int *const *>);
-    static_assert(is_pointer_v<int ****const>);
-    static_assert(is_pointer_v<int ****volatile>);
-    static_assert(is_pointer_v<int (****volatile const)[100]>);
-    static_assert(is_pointer_v<int (****volatile const)()>);
-    static_assert(!is_pointer_v<int>);
-    static_assert(!is_pointer_v<int *&>);
+    static_assert(is_empty<template_is_pointer<int *>>);
+    static_assert(is_empty<template_is_pointer<int *const>>);
+    static_assert(is_empty<template_is_pointer<int *volatile>>);
+    static_assert(is_empty<template_is_pointer<int *const volatile>>);
+    static_assert(is_empty<template_is_pointer<int>>);
+    static_assert(template_is_pointer<int *>::value);
+    static_assert(is_pointer<int *>);
+    static_assert(is_pointer<volatile int *>);
+    static_assert(is_pointer<int *const *>);
+    static_assert(is_pointer<int ****const>);
+    static_assert(is_pointer<int ****volatile>);
+    static_assert(is_pointer<int (****volatile const)[100]>);
+    static_assert(is_pointer<int (****volatile const)()>);
+    static_assert(!is_pointer<int>);
+    static_assert(!is_pointer<int *&>);
   }
   // is_lvalue_reference
   // is_rvalue_reference
   {
-    static_assert(is_trivial_empty_v<is_lvalue_reference<int &>>);
-    static_assert(is_trivial_empty_v<is_lvalue_reference<int>>);
-    static_assert(is_lvalue_reference<int &>::value);
-    static_assert(is_lvalue_reference_v<int &>);
-    static_assert(is_lvalue_reference_v<const int &>);
-    static_assert(is_lvalue_reference_v<const volatile int &>);
-    static_assert(is_lvalue_reference_v<void (&)()>);
-    static_assert(is_lvalue_reference_v<int (&)[]>);
-    static_assert(is_lvalue_reference_v<const int (&)[3]>);
-    static_assert(!is_lvalue_reference_v<int &&>);
-    static_assert(!is_lvalue_reference_v<void (&&)()>);
+    static_assert(is_empty<template_is_lvalue_reference<int &>>);
+    static_assert(is_empty<template_is_lvalue_reference<int>>);
+    static_assert(template_is_lvalue_reference<int &>::value);
+    static_assert(is_lvalue_reference<int &>);
+    static_assert(is_lvalue_reference<const int &>);
+    static_assert(is_lvalue_reference<const volatile int &>);
+    static_assert(is_lvalue_reference<void (&)()>);
+    static_assert(is_lvalue_reference<int (&)[]>);
+    static_assert(is_lvalue_reference<const int (&)[3]>);
+    static_assert(!is_lvalue_reference<int &&>);
+    static_assert(!is_lvalue_reference<void (&&)()>);
 
-    static_assert(is_trivial_empty_v<is_rvalue_reference<int &&>>);
-    static_assert(is_trivial_empty_v<is_rvalue_reference<int>>);
-    static_assert(is_rvalue_reference<int &&>::value);
-    static_assert(is_rvalue_reference_v<int &&>);
-    static_assert(is_rvalue_reference_v<const int &&>);
-    static_assert(is_rvalue_reference_v<const volatile int &&>);
-    static_assert(is_rvalue_reference_v<void (&&)()>);
-    static_assert(!is_rvalue_reference_v<void (&)()>);
-    static_assert(!is_rvalue_reference_v<int &>);
-    static_assert(!is_rvalue_reference_v<const int>);
+    static_assert(is_empty<template_is_rvalue_reference<int &&>>);
+    static_assert(is_empty<template_is_rvalue_reference<int>>);
+    static_assert(template_is_rvalue_reference<int &&>::value);
+    static_assert(is_rvalue_reference<int &&>);
+    static_assert(is_rvalue_reference<const int &&>);
+    static_assert(is_rvalue_reference<const volatile int &&>);
+    static_assert(is_rvalue_reference<void (&&)()>);
+    static_assert(!is_rvalue_reference<void (&)()>);
+    static_assert(!is_rvalue_reference<int &>);
+    static_assert(!is_rvalue_reference<const int>);
   }
   // is_member_object_pointer
   // is_member_function_pointer
@@ -2677,375 +2742,382 @@ void test_type_traits() {
       int i;
     };
     int t::*const p = &t::i;
-    static_assert(is_trivial_empty_v<is_member_object_pointer<decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_object_pointer<const decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_object_pointer<volatile decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_object_pointer<const volatile decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_object_pointer<int>>);
-    static_assert(is_member_object_pointer<decltype(p)>::value);
-    static_assert(is_member_object_pointer_v<decltype(p)>);
-    static_assert(is_member_object_pointer<int t::*>::value);
-    static_assert(is_member_object_pointer_v<int t::*>);
-    static_assert(is_member_object_pointer_v<int t::*const>);
-    static_assert(is_member_object_pointer_v<int t::*volatile>);
-    static_assert(is_member_object_pointer_v<int t::*const volatile>);
-    static_assert(!is_member_object_pointer_v<int (t::*)()>);
-    static_assert(!is_member_object_pointer_v<int (t::*)() const>);
-    static_assert(!is_member_object_pointer_v<int (t::*)() volatile>);
-    static_assert(!is_member_object_pointer_v<int (t::*)() const volatile>);
-    static_assert(!is_member_object_pointer_v<int (t::*)(int, float)>);
-    static_assert(!is_member_object_pointer_v<int (t::*)(int, float) const>);
-    static_assert(!is_member_object_pointer_v<int (t::*)(int, float) volatile>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(is_empty<template_is_member_object_pointer<decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_object_pointer<const decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_object_pointer<volatile decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_object_pointer
+                   <const volatile decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_object_pointer<int>>);
+    static_assert(template_is_member_object_pointer<decltype(p)>::value);
+    static_assert(is_member_object_pointer<decltype(p)>);
+    static_assert(template_is_member_object_pointer<int t::*>::value);
+    static_assert(is_member_object_pointer<int t::*>);
+    static_assert(is_member_object_pointer<int t::*const>);
+    static_assert(is_member_object_pointer<int t::*volatile>);
+    static_assert(is_member_object_pointer<int t::*const volatile>);
+    static_assert(!is_member_object_pointer<int (t::*)()>);
+    static_assert(!is_member_object_pointer<int (t::*)() const>);
+    static_assert(!is_member_object_pointer<int (t::*)() volatile>);
+    static_assert(!is_member_object_pointer<int (t::*)() const volatile>);
+    static_assert(!is_member_object_pointer<int (t::*)(int, float)>);
+    static_assert(!is_member_object_pointer<int (t::*)(int, float) const>);
+    static_assert(!is_member_object_pointer<int (t::*)(int, float) volatile>);
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) const volatile>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) &>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) const &>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) volatile &>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) const volatile &>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) &&>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) const &&>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) volatile &&>);
-    static_assert(!is_member_object_pointer_v
+    static_assert(!is_member_object_pointer
                   <int (t::*)(int, float) const volatile &&>);
-    static_assert(!is_member_object_pointer_v<int>);
-    static_assert(!is_member_object_pointer_v<int ()>);
-    static_assert(!is_member_object_pointer_v<int (int, int *)>);
-    static_assert(!is_member_object_pointer_v<int (int, int *, ...)>);
+    static_assert(!is_member_object_pointer<int>);
+    static_assert(!is_member_object_pointer<int ()>);
+    static_assert(!is_member_object_pointer<int (int, int *)>);
+    static_assert(!is_member_object_pointer<int (int, int *, ...)>);
 
-    static_assert(is_trivial_empty_v<is_member_function_pointer<decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_function_pointer<const decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_function_pointer<volatile decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_function_pointer<const volatile decltype(p)>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_function_pointer<int>>);
-    static_assert(!is_member_function_pointer<decltype(p)>::value);
-    static_assert(!is_member_function_pointer_v<decltype(p)>);
-    static_assert(!is_member_function_pointer<int t::*>::value);
-    static_assert(!is_member_function_pointer_v<int t::*>);
-    static_assert(!is_member_function_pointer_v<int t::*const>);
-    static_assert(!is_member_function_pointer_v<int t::*volatile>);
-    static_assert(!is_member_function_pointer_v<int t::*const volatile>);
-    static_assert(is_member_function_pointer_v<int (t::*)()>);
-    static_assert(is_member_function_pointer_v<int (t::*)() const>);
-    static_assert(is_member_function_pointer_v<int (t::*)() volatile>);
-    static_assert(is_member_function_pointer_v<int (t::*)() const volatile>);
-    static_assert(is_member_function_pointer_v<int (t::*)(int, float)>);
-    static_assert(is_member_function_pointer_v<int (t::*)(int, float) const>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_empty<template_is_member_function_pointer<decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_function_pointer<const decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_function_pointer<volatile decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_function_pointer
+                   <const volatile decltype(p)>>);
+    static_assert(is_empty
+                  <template_is_member_function_pointer<int>>);
+    static_assert(!template_is_member_function_pointer<decltype(p)>::value);
+    static_assert(!is_member_function_pointer<decltype(p)>);
+    static_assert(!template_is_member_function_pointer<int t::*>::value);
+    static_assert(!is_member_function_pointer<int t::*>);
+    static_assert(!is_member_function_pointer<int t::*const>);
+    static_assert(!is_member_function_pointer<int t::*volatile>);
+    static_assert(!is_member_function_pointer<int t::*const volatile>);
+    static_assert(is_member_function_pointer<int (t::*)()>);
+    static_assert(is_member_function_pointer<int (t::*)() const>);
+    static_assert(is_member_function_pointer<int (t::*)() volatile>);
+    static_assert(is_member_function_pointer<int (t::*)() const volatile>);
+    static_assert(is_member_function_pointer<int (t::*)(int, float)>);
+    static_assert(is_member_function_pointer<int (t::*)(int, float) const>);
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) volatile>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) const volatile>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) &>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) const &>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) volatile &>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) const volatile &>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) &&>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) const &&>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) volatile &&>);
-    static_assert(is_member_function_pointer_v
+    static_assert(is_member_function_pointer
                   <int (t::*)(int, float) const volatile &&>);
-    static_assert(!is_member_function_pointer_v<int>);
-    static_assert(!is_member_function_pointer_v<int ()>);
-    static_assert(!is_member_function_pointer_v<int (int, int *)>);
-    static_assert(!is_member_function_pointer_v<int (int, int *, ...)>);
+    static_assert(!is_member_function_pointer<int>);
+    static_assert(!is_member_function_pointer<int ()>);
+    static_assert(!is_member_function_pointer<int (int, int *)>);
+    static_assert(!is_member_function_pointer<int (int, int *, ...)>);
   }
   // is_enum
   {
     enum t {a, b, c};
     enum struct tt {aa, bb, cc};
-    static_assert(is_trivial_empty_v<is_enum<t>>);
-    static_assert(is_trivial_empty_v<is_enum<const t>>);
-    static_assert(is_trivial_empty_v<is_enum<volatile t>>);
-    static_assert(is_trivial_empty_v<is_enum<const volatile t>>);
-    static_assert(is_trivial_empty_v<is_enum<tt>>);
-    static_assert(is_trivial_empty_v<is_enum<int>>);
-    static_assert(is_enum<t>::value);
-    static_assert(is_enum_v<t>);
-    static_assert(is_enum_v<const t>);
-    static_assert(is_enum_v<volatile t>);
-    static_assert(is_enum_v<const volatile t>);
-    static_assert(is_enum_v<decltype(a)>);
-    static_assert(is_enum_v<tt>);
-    static_assert(is_enum_v<const tt>);
-    static_assert(is_enum_v<volatile tt>);
-    static_assert(is_enum_v<const volatile tt>);
-    static_assert(is_enum_v<decltype(tt::aa)>);
-    static_assert(!is_enum_v<int>);
+    static_assert(is_empty<template_is_enum<t>>);
+    static_assert(is_empty<template_is_enum<const t>>);
+    static_assert(is_empty<template_is_enum<volatile t>>);
+    static_assert(is_empty<template_is_enum<const volatile t>>);
+    static_assert(is_empty<template_is_enum<tt>>);
+    static_assert(is_empty<template_is_enum<int>>);
+    static_assert(template_is_enum<t>::value);
+    static_assert(is_enum<t>);
+    static_assert(is_enum<const t>);
+    static_assert(is_enum<volatile t>);
+    static_assert(is_enum<const volatile t>);
+    static_assert(is_enum<decltype(a)>);
+    static_assert(is_enum<tt>);
+    static_assert(is_enum<const tt>);
+    static_assert(is_enum<volatile tt>);
+    static_assert(is_enum<const volatile tt>);
+    static_assert(is_enum<decltype(tt::aa)>);
+    static_assert(!is_enum<int>);
   }
   // is_union
   {
     union t {};
-    static_assert(is_trivial_empty_v<is_union<t>>);
-    static_assert(is_trivial_empty_v<is_union<const t>>);
-    static_assert(is_trivial_empty_v<is_union<volatile t>>);
-    static_assert(is_trivial_empty_v<is_union<const volatile t>>);
-    static_assert(is_trivial_empty_v<is_union<int>>);
-    static_assert(is_union<t>::value);
-    static_assert(is_union_v<t>);
-    static_assert(is_union_v<const t>);
-    static_assert(is_union_v<volatile t>);
-    static_assert(is_union_v<const volatile t>);
-    static_assert(!is_union_v<t &>);
-    static_assert(!is_union_v<int>);
+    static_assert(is_empty<template_is_union<t>>);
+    static_assert(is_empty<template_is_union<const t>>);
+    static_assert(is_empty<template_is_union<volatile t>>);
+    static_assert(is_empty<template_is_union<const volatile t>>);
+    static_assert(is_empty<template_is_union<int>>);
+    static_assert(template_is_union<t>::value);
+    static_assert(is_union<t>);
+    static_assert(is_union<const t>);
+    static_assert(is_union<volatile t>);
+    static_assert(is_union<const volatile t>);
+    static_assert(!is_union<t &>);
+    static_assert(!is_union<int>);
   }
   // is_class
   {
     struct t {};
-    static_assert(is_trivial_empty_v<is_class<t>>);
-    static_assert(is_trivial_empty_v<is_class<const t>>);
-    static_assert(is_trivial_empty_v<is_class<volatile t>>);
-    static_assert(is_trivial_empty_v<is_class<const volatile t>>);
-    static_assert(is_trivial_empty_v<is_class<int>>);
-    static_assert(is_class<t>::value);
-    static_assert(is_class_v<t>);
-    static_assert(is_class_v<const t>);
-    static_assert(is_class_v<volatile t>);
-    static_assert(is_class_v<const volatile t>);
-    static_assert(!is_class_v<int>);
+    static_assert(is_empty<template_is_class<t>>);
+    static_assert(is_empty<template_is_class<const t>>);
+    static_assert(is_empty<template_is_class<volatile t>>);
+    static_assert(is_empty<template_is_class<const volatile t>>);
+    static_assert(is_empty<template_is_class<int>>);
+    static_assert(template_is_class<t>::value);
+    static_assert(is_class<t>);
+    static_assert(is_class<const t>);
+    static_assert(is_class<volatile t>);
+    static_assert(is_class<const volatile t>);
+    static_assert(!is_class<int>);
   }
   // is_function
   {
-    static_assert(is_trivial_empty_v<is_function<void ()>>);
-    static_assert(is_trivial_empty_v<is_function<void () const>>);
-    static_assert(is_trivial_empty_v<is_function<void () volatile>>);
-    static_assert(is_trivial_empty_v<is_function<void () const volatile>>);
-    static_assert(is_trivial_empty_v<is_function<void () &>>);
-    static_assert(is_trivial_empty_v<is_function<void () const &>>);
-    static_assert(is_trivial_empty_v<is_function<void () volatile &>>);
-    static_assert(is_trivial_empty_v<is_function<void () const volatile &>>);
-    static_assert(is_trivial_empty_v<is_function<void () &&>>);
-    static_assert(is_trivial_empty_v<is_function<void () const &&>>);
-    static_assert(is_trivial_empty_v<is_function<void () volatile &&>>);
-    static_assert(is_trivial_empty_v<is_function<void () const volatile &&>>);
-    static_assert(is_trivial_empty_v<is_function<void () noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () const noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () volatile noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void () const volatile noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () & noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () const & noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () volatile & noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void () const volatile & noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () && noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void () const && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void () volatile && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void () const volatile && noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (...)>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) volatile>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const volatile>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) &>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const &>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) volatile &>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const volatile &>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) &&>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const &&>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) volatile &&>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) const volatile &&>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) volatile noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) const volatile noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) & noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) const & noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) volatile & noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) const volatile & noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (...) && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) const && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) volatile && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (...) const volatile && noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...)>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) const>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) volatile>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) &>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) const &>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) volatile &>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile &>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) &&>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) const &&>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) volatile &&>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile &&>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) volatile noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) & noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const & noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) volatile & noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile & noexcept>>);
-    static_assert(is_trivial_empty_v<is_function<void (int, ...) && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) volatile && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile && noexcept>>);
-    static_assert(is_trivial_empty_v
-                  <is_function<void (int, ...) const volatile && noexcept>>);
+    static_assert(is_empty<template_is_function<void ()>>);
+    static_assert(is_empty<template_is_function<void () const>>);
+    static_assert(is_empty<template_is_function<void () volatile>>);
+    static_assert(is_empty<template_is_function<void () const volatile>>);
+    static_assert(is_empty<template_is_function<void () &>>);
+    static_assert(is_empty<template_is_function<void () const &>>);
+    static_assert(is_empty<template_is_function<void () volatile &>>);
+    static_assert(is_empty<template_is_function<void () const volatile &>>);
+    static_assert(is_empty<template_is_function<void () &&>>);
+    static_assert(is_empty<template_is_function<void () const &&>>);
+    static_assert(is_empty<template_is_function<void () volatile &&>>);
+    static_assert(is_empty<template_is_function<void () const volatile &&>>);
+    static_assert(is_empty<template_is_function<void () noexcept>>);
+    static_assert(is_empty<template_is_function<void () const noexcept>>);
+    static_assert(is_empty<template_is_function<void () volatile noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void () const volatile noexcept>>);
+    static_assert(is_empty<template_is_function<void () & noexcept>>);
+    static_assert(is_empty<template_is_function<void () const & noexcept>>);
+    static_assert(is_empty<template_is_function<void () volatile & noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void () const volatile & noexcept>>);
+    static_assert(is_empty<template_is_function<void () && noexcept>>);
+    static_assert(is_empty<template_is_function<void () const && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void () volatile && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void () const volatile && noexcept>>);
+    static_assert(is_empty<template_is_function<void (...)>>);
+    static_assert(is_empty<template_is_function<void (...) const>>);
+    static_assert(is_empty<template_is_function<void (...) volatile>>);
+    static_assert(is_empty<template_is_function<void (...) const volatile>>);
+    static_assert(is_empty<template_is_function<void (...) &>>);
+    static_assert(is_empty<template_is_function<void (...) const &>>);
+    static_assert(is_empty<template_is_function<void (...) volatile &>>);
+    static_assert(is_empty<template_is_function<void (...) const volatile &>>);
+    static_assert(is_empty<template_is_function<void (...) &&>>);
+    static_assert(is_empty<template_is_function<void (...) const &&>>);
+    static_assert(is_empty<template_is_function<void (...) volatile &&>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) const volatile &&>>);
+    static_assert(is_empty<template_is_function<void (...) noexcept>>);
+    static_assert(is_empty<template_is_function<void (...) const noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) volatile noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) const volatile noexcept>>);
+    static_assert(is_empty<template_is_function<void (...) & noexcept>>);
+    static_assert(is_empty<template_is_function<void (...) const & noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) volatile & noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) const volatile & noexcept>>);
+    static_assert(is_empty<template_is_function<void (...) && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) const && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) volatile && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (...) const volatile && noexcept>
+                   >);
+    static_assert(is_empty<template_is_function<void (int, ...)>>);
+    static_assert(is_empty<template_is_function<void (int, ...) const>>);
+    static_assert(is_empty<template_is_function<void (int, ...) volatile>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) const volatile>>);
+    static_assert(is_empty<template_is_function<void (int, ...) &>>);
+    static_assert(is_empty<template_is_function<void (int, ...) const &>>);
+    static_assert(is_empty<template_is_function<void (int, ...) volatile &>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) const volatile &>>);
+    static_assert(is_empty<template_is_function<void (int, ...) &&>>);
+    static_assert(is_empty<template_is_function<void (int, ...) const &&>>);
+    static_assert(is_empty<template_is_function<void (int, ...) volatile &&>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) const volatile &&>>);
+    static_assert(is_empty<template_is_function<void (int, ...) noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) const noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) volatile noexcept>>);
+    static_assert(is_empty
+                  <template_is_function
+                   <void (int, ...) const volatile noexcept>>);
+    static_assert(is_empty<template_is_function<void (int, ...) & noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) const & noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) volatile & noexcept>>);
+    static_assert(is_empty
+                  <template_is_function
+                   <void (int, ...) const volatile & noexcept>>);
+    static_assert(is_empty<template_is_function<void (int, ...) && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) const && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function<void (int, ...) volatile && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function
+                   <void (int, ...) const volatile && noexcept>>);
+    static_assert(is_empty
+                  <template_is_function
+                   <void (int, ...) const volatile && noexcept>>);
 
-    static_assert(is_function<void ()>::value);
-    static_assert(is_function_v<void ()>);
-    static_assert(is_function_v<void () const>);
-    static_assert(is_function_v<void () volatile>);
-    static_assert(is_function_v<void () const volatile>);
-    static_assert(is_function_v<void () &>);
-    static_assert(is_function_v<void () const &>);
-    static_assert(is_function_v<void () volatile &>);
-    static_assert(is_function_v<void () const volatile &>);
-    static_assert(is_function_v<void () &&>);
-    static_assert(is_function_v<void () const &&>);
-    static_assert(is_function_v<void () volatile &&>);
-    static_assert(is_function_v<void () const volatile &&>);
-    static_assert(is_function_v<void () noexcept>);
-    static_assert(is_function_v<void () const noexcept>);
-    static_assert(is_function_v<void () volatile noexcept>);
-    static_assert(is_function_v<void () const volatile noexcept>);
-    static_assert(is_function_v<void () & noexcept>);
-    static_assert(is_function_v<void () const & noexcept>);
-    static_assert(is_function_v<void () volatile & noexcept>);
-    static_assert(is_function_v<void () const volatile & noexcept>);
-    static_assert(is_function_v<void () && noexcept>);
-    static_assert(is_function_v<void () const && noexcept>);
-    static_assert(is_function_v<void () volatile && noexcept>);
-    static_assert(is_function_v<void () const volatile && noexcept>);
-    static_assert(is_function_v<void (...)>);
-    static_assert(is_function_v<void (...) const>);
-    static_assert(is_function_v<void (...) volatile>);
-    static_assert(is_function_v<void (...) const volatile>);
-    static_assert(is_function_v<void (...) &>);
-    static_assert(is_function_v<void (...) const &>);
-    static_assert(is_function_v<void (...) volatile &>);
-    static_assert(is_function_v<void (...) const volatile &>);
-    static_assert(is_function_v<void (...) &&>);
-    static_assert(is_function_v<void (...) const &&>);
-    static_assert(is_function_v<void (...) volatile &&>);
-    static_assert(is_function_v<void (...) const volatile &&>);
-    static_assert(is_function_v<void (...) noexcept>);
-    static_assert(is_function_v<void (...) const noexcept>);
-    static_assert(is_function_v<void (...) volatile noexcept>);
-    static_assert(is_function_v<void (...) const volatile noexcept>);
-    static_assert(is_function_v<void (...) & noexcept>);
-    static_assert(is_function_v<void (...) const & noexcept>);
-    static_assert(is_function_v<void (...) volatile & noexcept>);
-    static_assert(is_function_v<void (...) const volatile & noexcept>);
-    static_assert(is_function_v<void (...) && noexcept>);
-    static_assert(is_function_v<void (...) const && noexcept>);
-    static_assert(is_function_v<void (...) volatile && noexcept>);
-    static_assert(is_function_v<void (...) const volatile && noexcept>);
-    static_assert(is_function_v<void (int, ...)>);
-    static_assert(is_function_v<void (int, ...) const>);
-    static_assert(is_function_v<void (int, ...) volatile>);
-    static_assert(is_function_v<void (int, ...) const volatile>);
-    static_assert(is_function_v<void (int, ...) &>);
-    static_assert(is_function_v<void (int, ...) const &>);
-    static_assert(is_function_v<void (int, ...) volatile &>);
-    static_assert(is_function_v<void (int, ...) const volatile &>);
-    static_assert(is_function_v<void (int, ...) &&>);
-    static_assert(is_function_v<void (int, ...) const &&>);
-    static_assert(is_function_v<void (int, ...) volatile &&>);
-    static_assert(is_function_v<void (int, ...) const volatile &&>);
-    static_assert(is_function_v<void (int, ...) noexcept>);
-    static_assert(is_function_v<void (int, ...) const noexcept>);
-    static_assert(is_function_v<void (int, ...) volatile noexcept>);
-    static_assert(is_function_v<void (int, ...) const volatile noexcept>);
-    static_assert(is_function_v<void (int, ...) & noexcept>);
-    static_assert(is_function_v<void (int, ...) const & noexcept>);
-    static_assert(is_function_v<void (int, ...) volatile & noexcept>);
-    static_assert(is_function_v<void (int, ...) const volatile & noexcept>);
-    static_assert(is_function_v<void (int, ...) && noexcept>);
-    static_assert(is_function_v<void (int, ...) const && noexcept>);
-    static_assert(is_function_v<void (int, ...) volatile && noexcept>);
-    static_assert(is_function_v<void (int, ...) const volatile && noexcept>);
+    static_assert(template_is_function<void ()>::value);
+    static_assert(is_function<void ()>);
+    static_assert(is_function<void () const>);
+    static_assert(is_function<void () volatile>);
+    static_assert(is_function<void () const volatile>);
+    static_assert(is_function<void () &>);
+    static_assert(is_function<void () const &>);
+    static_assert(is_function<void () volatile &>);
+    static_assert(is_function<void () const volatile &>);
+    static_assert(is_function<void () &&>);
+    static_assert(is_function<void () const &&>);
+    static_assert(is_function<void () volatile &&>);
+    static_assert(is_function<void () const volatile &&>);
+    static_assert(is_function<void () noexcept>);
+    static_assert(is_function<void () const noexcept>);
+    static_assert(is_function<void () volatile noexcept>);
+    static_assert(is_function<void () const volatile noexcept>);
+    static_assert(is_function<void () & noexcept>);
+    static_assert(is_function<void () const & noexcept>);
+    static_assert(is_function<void () volatile & noexcept>);
+    static_assert(is_function<void () const volatile & noexcept>);
+    static_assert(is_function<void () && noexcept>);
+    static_assert(is_function<void () const && noexcept>);
+    static_assert(is_function<void () volatile && noexcept>);
+    static_assert(is_function<void () const volatile && noexcept>);
+    static_assert(is_function<void (...)>);
+    static_assert(is_function<void (...) const>);
+    static_assert(is_function<void (...) volatile>);
+    static_assert(is_function<void (...) const volatile>);
+    static_assert(is_function<void (...) &>);
+    static_assert(is_function<void (...) const &>);
+    static_assert(is_function<void (...) volatile &>);
+    static_assert(is_function<void (...) const volatile &>);
+    static_assert(is_function<void (...) &&>);
+    static_assert(is_function<void (...) const &&>);
+    static_assert(is_function<void (...) volatile &&>);
+    static_assert(is_function<void (...) const volatile &&>);
+    static_assert(is_function<void (...) noexcept>);
+    static_assert(is_function<void (...) const noexcept>);
+    static_assert(is_function<void (...) volatile noexcept>);
+    static_assert(is_function<void (...) const volatile noexcept>);
+    static_assert(is_function<void (...) & noexcept>);
+    static_assert(is_function<void (...) const & noexcept>);
+    static_assert(is_function<void (...) volatile & noexcept>);
+    static_assert(is_function<void (...) const volatile & noexcept>);
+    static_assert(is_function<void (...) && noexcept>);
+    static_assert(is_function<void (...) const && noexcept>);
+    static_assert(is_function<void (...) volatile && noexcept>);
+    static_assert(is_function<void (...) const volatile && noexcept>);
+    static_assert(is_function<void (int, ...)>);
+    static_assert(is_function<void (int, ...) const>);
+    static_assert(is_function<void (int, ...) volatile>);
+    static_assert(is_function<void (int, ...) const volatile>);
+    static_assert(is_function<void (int, ...) &>);
+    static_assert(is_function<void (int, ...) const &>);
+    static_assert(is_function<void (int, ...) volatile &>);
+    static_assert(is_function<void (int, ...) const volatile &>);
+    static_assert(is_function<void (int, ...) &&>);
+    static_assert(is_function<void (int, ...) const &&>);
+    static_assert(is_function<void (int, ...) volatile &&>);
+    static_assert(is_function<void (int, ...) const volatile &&>);
+    static_assert(is_function<void (int, ...) noexcept>);
+    static_assert(is_function<void (int, ...) const noexcept>);
+    static_assert(is_function<void (int, ...) volatile noexcept>);
+    static_assert(is_function<void (int, ...) const volatile noexcept>);
+    static_assert(is_function<void (int, ...) & noexcept>);
+    static_assert(is_function<void (int, ...) const & noexcept>);
+    static_assert(is_function<void (int, ...) volatile & noexcept>);
+    static_assert(is_function<void (int, ...) const volatile & noexcept>);
+    static_assert(is_function<void (int, ...) && noexcept>);
+    static_assert(is_function<void (int, ...) const && noexcept>);
+    static_assert(is_function<void (int, ...) volatile && noexcept>);
+    static_assert(is_function<void (int, ...) const volatile && noexcept>);
   }
 
   // is_reference
   {
-    static_assert(is_trivial_empty_v<is_reference<int &>>);
-    static_assert(is_trivial_empty_v<is_reference<int &&>>);
-    static_assert(is_trivial_empty_v<is_reference<int>>);
-    static_assert(is_reference<int &>::value);
-    static_assert(is_reference_v<int &>);
-    static_assert(is_reference_v<const int &>);
-    static_assert(is_reference_v<volatile int &>);
-    static_assert(is_reference_v<const volatile int &>);
-    static_assert(is_reference_v<int &&>);
-    static_assert(is_reference_v<const int &&>);
-    static_assert(is_reference_v<volatile int &&>);
-    static_assert(is_reference_v<const volatile int &&>);
-    static_assert(!is_reference_v<int>);
+    static_assert(is_empty<template_is_reference<int &>>);
+    static_assert(is_empty<template_is_reference<int &&>>);
+    static_assert(is_empty<template_is_reference<int>>);
+    static_assert(template_is_reference<int &>::value);
+    static_assert(is_reference<int &>);
+    static_assert(is_reference<const int &>);
+    static_assert(is_reference<volatile int &>);
+    static_assert(is_reference<const volatile int &>);
+    static_assert(is_reference<int &&>);
+    static_assert(is_reference<const int &&>);
+    static_assert(is_reference<volatile int &&>);
+    static_assert(is_reference<const volatile int &&>);
+    static_assert(!is_reference<int>);
   }
   // is_arithmetic
   {
-    static_assert(is_trivial_empty_v<is_arithmetic<char>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<const char>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<volatile char>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<const volatile char>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<unsigned char>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<short>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<unsigned short>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<int>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<unsigned int>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<long>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<unsigned long>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<long long>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<unsigned long long>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<float>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<double>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<long double>>);
-    static_assert(is_trivial_empty_v<is_arithmetic<void *>>);
-    static_assert(is_arithmetic<char>::value);
-    static_assert(is_arithmetic_v<char>);
-    static_assert(is_arithmetic_v<int>);
-    static_assert(is_arithmetic_v<const int>);
-    static_assert(is_arithmetic_v<volatile int>);
-    static_assert(is_arithmetic_v<const volatile int>);
-    static_assert(is_arithmetic_v<float>);
-    static_assert(!is_arithmetic_v<void>);
-    static_assert(!is_arithmetic_v<void *>);
-    static_assert(!is_arithmetic_v<void ()>);
-    static_assert(!is_arithmetic_v<void (*)()>);
+    static_assert(is_empty<template_is_arithmetic<char>>);
+    static_assert(is_empty<template_is_arithmetic<const char>>);
+    static_assert(is_empty<template_is_arithmetic<volatile char>>);
+    static_assert(is_empty<template_is_arithmetic<const volatile char>>);
+    static_assert(is_empty<template_is_arithmetic<unsigned char>>);
+    static_assert(is_empty<template_is_arithmetic<short>>);
+    static_assert(is_empty<template_is_arithmetic<unsigned short>>);
+    static_assert(is_empty<template_is_arithmetic<int>>);
+    static_assert(is_empty<template_is_arithmetic<unsigned int>>);
+    static_assert(is_empty<template_is_arithmetic<long>>);
+    static_assert(is_empty<template_is_arithmetic<unsigned long>>);
+    static_assert(is_empty<template_is_arithmetic<long long>>);
+    static_assert(is_empty<template_is_arithmetic<unsigned long long>>);
+    static_assert(is_empty<template_is_arithmetic<float>>);
+    static_assert(is_empty<template_is_arithmetic<double>>);
+    static_assert(is_empty<template_is_arithmetic<long double>>);
+    static_assert(is_empty<template_is_arithmetic<void *>>);
+    static_assert(template_is_arithmetic<char>::value);
+    static_assert(is_arithmetic<char>);
+    static_assert(is_arithmetic<int>);
+    static_assert(is_arithmetic<const int>);
+    static_assert(is_arithmetic<volatile int>);
+    static_assert(is_arithmetic<const volatile int>);
+    static_assert(is_arithmetic<float>);
+    static_assert(!is_arithmetic<void>);
+    static_assert(!is_arithmetic<void *>);
+    static_assert(!is_arithmetic<void ()>);
+    static_assert(!is_arithmetic<void (*)()>);
   }
   // is_fundamental
   // is_object
@@ -3069,157 +3141,156 @@ void test_type_traits() {
     using member_object_pointer_t = int class_t::*;
     using member_function_pointer_t = void (class_t::*)();
 
-    static_assert(is_trivial_empty_v<is_fundamental<integral_t>>);
-    static_assert(is_trivial_empty_v<is_fundamental<int []>>);
-    static_assert(is_fundamental<integral_t>::value);
-    static_assert(is_fundamental_v<integral_t>);
-    static_assert(is_fundamental_v<const integral_t>);
-    static_assert(is_fundamental_v<volatile integral_t>);
-    static_assert(is_fundamental_v<const volatile integral_t>);
-    static_assert(is_fundamental_v<float_t>);
-    static_assert(is_fundamental_v<void_t>);
-    static_assert(is_fundamental_v<nullptr_t>);
-    static_assert(!is_fundamental_v<array_t>);
-    static_assert(!is_fundamental_v<pointer_t>);
-    static_assert(!is_fundamental_v<reference_t>);
-    static_assert(!is_fundamental_v<function_t>);
-    static_assert(!is_fundamental_v<enum_t>);
-    static_assert(!is_fundamental_v<union_t>);
-    static_assert(!is_fundamental_v<class_t>);
-    static_assert(!is_fundamental_v<member_object_pointer_t>);
-    static_assert(!is_fundamental_v<member_function_pointer_t>);
+    static_assert(is_empty<template_is_fundamental<integral_t>>);
+    static_assert(is_empty<template_is_fundamental<int []>>);
+    static_assert(template_is_fundamental<integral_t>::value);
+    static_assert(is_fundamental<integral_t>);
+    static_assert(is_fundamental<const integral_t>);
+    static_assert(is_fundamental<volatile integral_t>);
+    static_assert(is_fundamental<const volatile integral_t>);
+    static_assert(is_fundamental<float_t>);
+    static_assert(is_fundamental<void_t>);
+    static_assert(is_fundamental<nullptr_t>);
+    static_assert(!is_fundamental<array_t>);
+    static_assert(!is_fundamental<pointer_t>);
+    static_assert(!is_fundamental<reference_t>);
+    static_assert(!is_fundamental<function_t>);
+    static_assert(!is_fundamental<enum_t>);
+    static_assert(!is_fundamental<union_t>);
+    static_assert(!is_fundamental<class_t>);
+    static_assert(!is_fundamental<member_object_pointer_t>);
+    static_assert(!is_fundamental<member_function_pointer_t>);
 
-    static_assert(is_trivial_empty_v<is_compound<integral_t>>);
-    static_assert(is_trivial_empty_v<is_compound<void>>);
-    static_assert(!is_compound<integral_t>::value);
-    static_assert(!is_compound_v<integral_t>);
-    static_assert(!is_compound_v<const integral_t>);
-    static_assert(!is_compound_v<volatile integral_t>);
-    static_assert(!is_compound_v<const volatile integral_t>);
-    static_assert(!is_compound_v<float_t>);
-    static_assert(!is_compound_v<void_t>);
-    static_assert(!is_compound_v<nullptr_t>);
-    static_assert(is_compound_v<array_t>);
-    static_assert(is_compound_v<pointer_t>);
-    static_assert(is_compound_v<reference_t>);
-    static_assert(is_compound_v<function_t>);
-    static_assert(is_compound_v<enum_t>);
-    static_assert(is_compound_v<union_t>);
-    static_assert(is_compound_v<class_t>);
-    static_assert(is_compound_v<member_object_pointer_t>);
-    static_assert(is_compound_v<member_function_pointer_t>);
+    static_assert(is_empty<template_is_compound<integral_t>>);
+    static_assert(is_empty<template_is_compound<void>>);
+    static_assert(!template_is_compound<integral_t>::value);
+    static_assert(!is_compound<integral_t>);
+    static_assert(!is_compound<const integral_t>);
+    static_assert(!is_compound<volatile integral_t>);
+    static_assert(!is_compound<const volatile integral_t>);
+    static_assert(!is_compound<float_t>);
+    static_assert(!is_compound<void_t>);
+    static_assert(!is_compound<nullptr_t>);
+    static_assert(is_compound<array_t>);
+    static_assert(is_compound<pointer_t>);
+    static_assert(is_compound<reference_t>);
+    static_assert(is_compound<function_t>);
+    static_assert(is_compound<enum_t>);
+    static_assert(is_compound<union_t>);
+    static_assert(is_compound<class_t>);
+    static_assert(is_compound<member_object_pointer_t>);
+    static_assert(is_compound<member_function_pointer_t>);
 
-    static_assert(is_trivial_empty_v<is_object<integral_t>>);
-    static_assert(is_trivial_empty_v<is_object<void>>);
-    static_assert(is_object<integral_t>::value);
-    static_assert(is_object_v<integral_t>);
-    static_assert(is_object_v<const integral_t>);
-    static_assert(is_object_v<volatile integral_t>);
-    static_assert(is_object_v<const volatile integral_t>);
-    static_assert(is_object_v<float_t>);
-    static_assert(!is_object_v<void_t>);
-    static_assert(is_object_v<nullptr_t>);
-    static_assert(is_object_v<array_t>);
-    static_assert(is_object_v<pointer_t>);
-    static_assert(!is_object_v<reference_t>);
-    static_assert(!is_object_v<function_t>);
-    static_assert(is_object_v<enum_t>);
-    static_assert(is_object_v<union_t>);
-    static_assert(is_object_v<class_t>);
-    static_assert(is_object_v<member_object_pointer_t>);
-    static_assert(is_object_v<member_function_pointer_t>);
+    static_assert(is_empty<template_is_object<integral_t>>);
+    static_assert(is_empty<template_is_object<void>>);
+    static_assert(template_is_object<integral_t>::value);
+    static_assert(is_object<integral_t>);
+    static_assert(is_object<const integral_t>);
+    static_assert(is_object<volatile integral_t>);
+    static_assert(is_object<const volatile integral_t>);
+    static_assert(is_object<float_t>);
+    static_assert(!is_object<void_t>);
+    static_assert(is_object<nullptr_t>);
+    static_assert(is_object<array_t>);
+    static_assert(is_object<pointer_t>);
+    static_assert(!is_object<reference_t>);
+    static_assert(!is_object<function_t>);
+    static_assert(is_object<enum_t>);
+    static_assert(is_object<union_t>);
+    static_assert(is_object<class_t>);
+    static_assert(is_object<member_object_pointer_t>);
+    static_assert(is_object<member_function_pointer_t>);
 
-    static_assert(is_trivial_empty_v<is_scalar<integral_t>>);
-    static_assert(is_trivial_empty_v<is_scalar<void>>);
-    static_assert(is_scalar<integral_t>::value);
-    static_assert(is_scalar_v<integral_t>);
-    static_assert(is_scalar_v<const integral_t>);
-    static_assert(is_scalar_v<volatile integral_t>);
-    static_assert(is_scalar_v<const volatile integral_t>);
-    static_assert(is_scalar_v<float_t>);
-    static_assert(!is_scalar_v<void_t>);
-    static_assert(is_scalar_v<nullptr_t>);
-    static_assert(!is_scalar_v<array_t>);
-    static_assert(is_scalar_v<pointer_t>);
-    static_assert(!is_scalar_v<reference_t>);
-    static_assert(!is_scalar_v<function_t>);
-    static_assert(is_scalar_v<enum_t>);
-    static_assert(!is_scalar_v<union_t>);
-    static_assert(!is_scalar_v<class_t>);
-    static_assert(is_scalar_v<member_object_pointer_t>);
-    static_assert(is_scalar_v<member_function_pointer_t>);
+    static_assert(is_empty<template_is_scalar<integral_t>>);
+    static_assert(is_empty<template_is_scalar<void>>);
+    static_assert(template_is_scalar<integral_t>::value);
+    static_assert(is_scalar<integral_t>);
+    static_assert(is_scalar<const integral_t>);
+    static_assert(is_scalar<volatile integral_t>);
+    static_assert(is_scalar<const volatile integral_t>);
+    static_assert(is_scalar<float_t>);
+    static_assert(!is_scalar<void_t>);
+    static_assert(is_scalar<nullptr_t>);
+    static_assert(!is_scalar<array_t>);
+    static_assert(is_scalar<pointer_t>);
+    static_assert(!is_scalar<reference_t>);
+    static_assert(!is_scalar<function_t>);
+    static_assert(is_scalar<enum_t>);
+    static_assert(!is_scalar<union_t>);
+    static_assert(!is_scalar<class_t>);
+    static_assert(is_scalar<member_object_pointer_t>);
+    static_assert(is_scalar<member_function_pointer_t>);
 
-    static_assert(is_trivial_empty_v<is_referenceable<integral_t>>);
-    static_assert(is_trivial_empty_v<is_referenceable<void>>);
-    static_assert(is_referenceable<integral_t>::value);
-    static_assert(is_referenceable_v<integral_t>);
-    static_assert(is_referenceable_v<const integral_t>);
-    static_assert(is_referenceable_v<volatile integral_t>);
-    static_assert(is_referenceable_v<const volatile integral_t>);
-    static_assert(is_referenceable_v<float_t>);
-    static_assert(!is_referenceable_v<void_t>);
-    static_assert(is_referenceable_v<nullptr_t>);
-    static_assert(is_referenceable_v<array_t>);
-    static_assert(is_referenceable_v<pointer_t>);
-    static_assert(is_referenceable_v<reference_t>);
-    static_assert(is_referenceable_v<function_t>);
-    static_assert(is_referenceable_v<enum_t>);
-    static_assert(is_referenceable_v<union_t>);
-    static_assert(is_referenceable_v<class_t>);
-    static_assert(is_referenceable_v<member_object_pointer_t>);
-    static_assert(is_referenceable_v<member_function_pointer_t>);
-    static_assert(is_referenceable_v<void ()>);
-    static_assert(!is_referenceable_v<void () &>);
-    static_assert(!is_referenceable_v<void () &&>);
-    static_assert(!is_referenceable_v<void () const>);
-    static_assert(!is_referenceable_v<void () const &>);
-    static_assert(!is_referenceable_v<void () const &&>);
+    static_assert(is_empty<template_is_referenceable<integral_t>>);
+    static_assert(is_empty<template_is_referenceable<void>>);
+    static_assert(template_is_referenceable<integral_t>::value);
+    static_assert(is_referenceable<integral_t>);
+    static_assert(is_referenceable<const integral_t>);
+    static_assert(is_referenceable<volatile integral_t>);
+    static_assert(is_referenceable<const volatile integral_t>);
+    static_assert(is_referenceable<float_t>);
+    static_assert(!is_referenceable<void_t>);
+    static_assert(is_referenceable<nullptr_t>);
+    static_assert(is_referenceable<array_t>);
+    static_assert(is_referenceable<pointer_t>);
+    static_assert(is_referenceable<reference_t>);
+    static_assert(is_referenceable<function_t>);
+    static_assert(is_referenceable<enum_t>);
+    static_assert(is_referenceable<union_t>);
+    static_assert(is_referenceable<class_t>);
+    static_assert(is_referenceable<member_object_pointer_t>);
+    static_assert(is_referenceable<member_function_pointer_t>);
+    static_assert(is_referenceable<void ()>);
+    static_assert(!is_referenceable<void () &>);
+    static_assert(!is_referenceable<void () &&>);
+    static_assert(!is_referenceable<void () const>);
+    static_assert(!is_referenceable<void () const &>);
+    static_assert(!is_referenceable<void () const &&>);
   }
   // is_member_pointer
   {
     struct t {};
-    static_assert(is_trivial_empty_v<is_member_pointer<int t::*>>);
-    static_assert(is_trivial_empty_v<is_member_pointer<int t::*const>>);
-    static_assert(is_trivial_empty_v<is_member_pointer<int t::*volatile>>);
-    static_assert(is_trivial_empty_v
-                  <is_member_pointer<int t::*const volatile>>);
-    static_assert(is_trivial_empty_v<is_member_pointer<int>>);
-    static_assert(is_member_pointer<int t::*>::value);
-    static_assert(is_member_pointer_v<int t::*>);
-    static_assert(is_member_pointer_v<int t::* const>);
-    static_assert(is_member_pointer_v<int t::* volatile>);
-    static_assert(is_member_pointer_v<int t::* const volatile>);
-    static_assert(is_member_pointer_v<int (t::* const volatile)() &>);
-    static_assert(!is_member_pointer_v<int>);
+    static_assert(is_empty<template_is_member_pointer<int t::*>>);
+    static_assert(is_empty<template_is_member_pointer<int t::*const>>);
+    static_assert(is_empty<template_is_member_pointer<int t::*volatile>>);
+    static_assert(is_empty
+                  <template_is_member_pointer<int t::*const volatile>>);
+    static_assert(is_empty<template_is_member_pointer<int>>);
+    static_assert(template_is_member_pointer<int t::*>::value);
+    static_assert(is_member_pointer<int t::*>);
+    static_assert(is_member_pointer<int t::* const>);
+    static_assert(is_member_pointer<int t::* volatile>);
+    static_assert(is_member_pointer<int t::* const volatile>);
+    static_assert(is_member_pointer<int (t::* const volatile)() &>);
+    static_assert(!is_member_pointer<int>);
   }
 
   // is_const
   {
-    static_assert(is_trivial_empty_v<is_const<int>>);
-    static_assert(is_trivial_empty_v<is_const<const int>>);
-    static_assert(is_trivial_empty_v<is_const<volatile int>>);
-    static_assert(is_trivial_empty_v<is_const<const volatile int>>);
-    static_assert(is_const<const int>::value);
-    static_assert(is_const_v<const int>);
-    static_assert(is_const_v<const volatile int>);
-    static_assert(!is_const_v<int>);
-    static_assert(!is_const_v<const int &>);
-    static_assert(!is_const_v<const int *>);
-    static_assert(is_const_v<int *const>);
+    static_assert(is_empty<template_is_const<int>>);
+    static_assert(is_empty<template_is_const<const int>>);
+    static_assert(is_empty<template_is_const<volatile int>>);
+    static_assert(is_empty<template_is_const<const volatile int>>);
+    static_assert(template_is_const<const int>::value);
+    static_assert(is_const<const int>);
+    static_assert(is_const<const volatile int>);
+    static_assert(!is_const<int>);
+    static_assert(!is_const<const int &>);
+    static_assert(!is_const<const int *>);
+    static_assert(is_const<int *const>);
   }
   // is_volatile
   {
-    static_assert(is_trivial_empty_v<is_volatile<volatile int>>);
-    static_assert(is_trivial_empty_v<is_volatile<int>>);
-    static_assert(is_volatile<volatile int>::value);
-    static_assert(is_volatile_v<volatile int>);
-    static_assert(is_volatile_v<const volatile int>);
-    static_assert(!is_volatile_v<int>);
-    static_assert(!is_volatile_v<volatile int &>);
-    static_assert(!is_volatile_v<volatile int *>);
-    static_assert(is_volatile_v<int *volatile>);
+    static_assert(is_empty<template_is_volatile<volatile int>>);
+    static_assert(is_empty<template_is_volatile<int>>);
+    static_assert(template_is_volatile<volatile int>::value);
+    static_assert(is_volatile<volatile int>);
+    static_assert(is_volatile<const volatile int>);
+    static_assert(!is_volatile<int>);
+    static_assert(!is_volatile<volatile int &>);
+    static_assert(!is_volatile<volatile int *>);
+    static_assert(is_volatile<int *volatile>);
   }
-  // is_trivial
   // is_trivially_copyable
   {
     struct t1 {
@@ -3234,28 +3305,12 @@ void test_type_traits() {
       t2(const t2 &) = default;
       t2 &operator =(const t2 &) = default;
     };
-    static_assert(is_trivial_empty_v<is_trivial<t1>>);
-    static_assert(is_trivial_empty_v<is_trivial<t2>>);
-    static_assert(!is_trivial<t1>::value);
-    static_assert(!is_trivial_v<t1>);
-    static_assert(is_trivial_v<t2>);
-    static_assert(is_trivial_v<const t2>);
-    static_assert(is_trivial_v<volatile t2>);
-    static_assert(is_trivial_v<const volatile t2>);
-    static_assert(is_trivial_v<int>);
-    static_assert(is_trivial_v<const float>);
-    static_assert(is_trivial_v<int [2]>);
-    static_assert(!is_trivial_v<int &>);
-    static_assert(!is_trivial_v<int ()>);
-    static_assert(is_trivial_v<int (*)()>);
+    static_assert(!template_is_trivially_copyable<t1>::value);
+    static_assert(is_trivially_copyable<t2>);
 
-    static_assert(is_trivial_empty_v<is_trivially_copyable<t1>>);
-    static_assert(is_trivial_empty_v<is_trivially_copyable<t2>>);
-    static_assert(!is_trivially_copyable<t1>::value);
-    static_assert(is_trivially_copyable_v<t2>);
-    static_assert(!is_trivially_copyable_v<int [2]>);
-    static_assert(!is_trivially_copyable_v<int &>);
-    static_assert(!is_trivially_copyable_v<int ()>);
+    static_assert(!is_trivially_copyable<int [2]>);
+    static_assert(!is_trivially_copyable<int &>);
+    static_assert(!is_trivially_copyable<int ()>);
   }
   // is_standard_layout
   {
@@ -3280,21 +3335,17 @@ void test_type_traits() {
     public:
       int y;
     };
-    static_assert(is_trivial_empty_v<is_standard_layout<t0>>);
-    static_assert(is_trivial_empty_v<is_standard_layout<int &>>);
-    static_assert(is_standard_layout<t0>::value);
-    static_assert(is_standard_layout_v<t0>);
-    static_assert(is_standard_layout_v<const t0>);
-    static_assert(is_standard_layout_v<volatile t0>);
-    static_assert(is_standard_layout_v<const volatile t0>);
-    static_assert(is_standard_layout_v<tt>);
-    static_assert(!is_trivial_v<tt>);
-    static_assert(is_standard_layout_v<ttt>);
-    static_assert(!is_trivial_v<ttt>);
-    static_assert(is_standard_layout_v<tttt>);
-    static_assert(!is_trivial_v<tttt>);
-    static_assert(!is_standard_layout_v<ttttt>);
-    static_assert(is_trivial_v<ttttt>);
+    static_assert(is_empty<template_is_standard_layout<t0>>);
+    static_assert(is_empty<template_is_standard_layout<int &>>);
+    static_assert(template_is_standard_layout<t0>::value);
+    static_assert(is_standard_layout<t0>);
+    static_assert(is_standard_layout<const t0>);
+    static_assert(is_standard_layout<volatile t0>);
+    static_assert(is_standard_layout<const volatile t0>);
+    static_assert(is_standard_layout<tt>);
+    static_assert(is_standard_layout<ttt>);
+    static_assert(is_standard_layout<tttt>);
+    static_assert(!is_standard_layout<ttttt>);
   }
   // is_empty
   {
@@ -3302,17 +3353,17 @@ void test_type_traits() {
     struct tt {};
     struct ttt : t, tt {};
 
-    static_assert(is_trivial_empty_v<is_empty<t>>);
-    static_assert(is_trivial_empty_v<is_empty<int>>);
-    static_assert(is_empty<t>::value);
-    static_assert(is_empty_v<t>);
-    static_assert(is_empty_v<tt>);
-    static_assert(is_empty_v<const tt>);
-    static_assert(is_empty_v<volatile tt>);
-    static_assert(is_empty_v<const volatile tt>);
-    static_assert(is_empty_v<ttt>);
-    static_assert(is_empty_v<integral_constant<int, 0>>);
-    static_assert(!is_empty_v<int>);
+    static_assert(is_empty<template_is_empty<t>>);
+    static_assert(is_empty<template_is_empty<int>>);
+    static_assert(template_is_empty<t>::value);
+    static_assert(is_empty<t>);
+    static_assert(is_empty<tt>);
+    static_assert(is_empty<const tt>);
+    static_assert(is_empty<volatile tt>);
+    static_assert(is_empty<const volatile tt>);
+    static_assert(is_empty<ttt>);
+    static_assert(is_empty<integral_constant<int, 0>>);
+    static_assert(!is_empty<int>);
   }
   // is_polymorphic
   // is_abstract
@@ -3325,40 +3376,40 @@ void test_type_traits() {
     };
     struct ttt {};
 
-    static_assert(is_trivial_empty_v<is_polymorphic<t>>);
-    static_assert(is_trivial_empty_v<is_polymorphic<int>>);
-    static_assert(is_polymorphic<t>::value);
-    static_assert(is_polymorphic_v<t>);
-    static_assert(is_polymorphic_v<const t>);
-    static_assert(is_polymorphic_v<volatile t>);
-    static_assert(is_polymorphic_v<const volatile t>);
-    static_assert(is_polymorphic_v<tt>);
-    static_assert(!is_polymorphic_v<ttt>);
-    static_assert(!is_polymorphic_v<int>);
+    static_assert(is_empty<template_is_polymorphic<t>>);
+    static_assert(is_empty<template_is_polymorphic<int>>);
+    static_assert(template_is_polymorphic<t>::value);
+    static_assert(is_polymorphic<t>);
+    static_assert(is_polymorphic<const t>);
+    static_assert(is_polymorphic<volatile t>);
+    static_assert(is_polymorphic<const volatile t>);
+    static_assert(is_polymorphic<tt>);
+    static_assert(!is_polymorphic<ttt>);
+    static_assert(!is_polymorphic<int>);
 
-    static_assert(is_trivial_empty_v<is_abstract<t>>);
-    static_assert(is_trivial_empty_v<is_abstract<int>>);
-    static_assert(is_abstract<t>::value);
-    static_assert(is_abstract_v<t>);
-    static_assert(is_abstract_v<const t>);
-    static_assert(is_abstract_v<volatile t>);
-    static_assert(is_abstract_v<const volatile t>);
-    static_assert(!is_abstract_v<tt>);
-    static_assert(!is_abstract_v<ttt>);
-    static_assert(!is_abstract_v<int>);
+    static_assert(is_empty<template_is_abstract<t>>);
+    static_assert(is_empty<template_is_abstract<int>>);
+    static_assert(template_is_abstract<t>::value);
+    static_assert(is_abstract<t>);
+    static_assert(is_abstract<const t>);
+    static_assert(is_abstract<volatile t>);
+    static_assert(is_abstract<const volatile t>);
+    static_assert(!is_abstract<tt>);
+    static_assert(!is_abstract<ttt>);
+    static_assert(!is_abstract<int>);
   }
   // is_final
   {
     struct t final {};
 
-    static_assert(is_trivial_empty_v<is_final<t>>);
-    static_assert(is_trivial_empty_v<is_final<int>>);
-    static_assert(is_final<t>::value);
-    static_assert(is_final_v<t>);
-    static_assert(is_final_v<const t>);
-    static_assert(is_final_v<volatile t>);
-    static_assert(is_final_v<const volatile t>);
-    static_assert(!is_final_v<int>);
+    static_assert(is_empty<template_is_final<t>>);
+    static_assert(is_empty<template_is_final<int>>);
+    static_assert(template_is_final<t>::value);
+    static_assert(is_final<t>);
+    static_assert(is_final<const t>);
+    static_assert(is_final<volatile t>);
+    static_assert(is_final<const volatile t>);
+    static_assert(!is_final<int>);
   }
   // is_aggregate
   {
@@ -3375,193 +3426,192 @@ void test_type_traits() {
     struct ttt : t {
       double z;
     };
-    static_assert(is_aggregate<t>::value);
-    static_assert(is_aggregate_v<t>);
-    static_assert(!is_aggregate<tt>::value);
-    static_assert(!is_aggregate_v<tt>);
-    static_assert(is_aggregate_v<ttt>);
+    static_assert(template_is_aggregate<t>::value);
+    static_assert(is_aggregate<t>);
+    static_assert(!is_aggregate<tt>);
+    static_assert(is_aggregate<ttt>);
   }
   // is_signed
   // is_unsigned
   {
-    static_assert(is_trivial_empty_v<is_signed<bool>>);
-    static_assert(is_trivial_empty_v<is_signed<const bool>>);
-    static_assert(is_trivial_empty_v<is_signed<volatile bool>>);
-    static_assert(is_trivial_empty_v<is_signed<const volatile bool>>);
-    static_assert(is_trivial_empty_v<is_signed<void>>);
-    static_assert(is_trivial_empty_v<is_unsigned<bool>>);
-    static_assert(is_trivial_empty_v<is_unsigned<const bool>>);
-    static_assert(is_trivial_empty_v<is_unsigned<volatile bool>>);
-    static_assert(is_trivial_empty_v<is_unsigned<const volatile bool>>);
-    static_assert(is_trivial_empty_v<is_unsigned<void>>);
+    static_assert(is_empty<template_is_signed<bool>>);
+    static_assert(is_empty<template_is_signed<const bool>>);
+    static_assert(is_empty<template_is_signed<volatile bool>>);
+    static_assert(is_empty<template_is_signed<const volatile bool>>);
+    static_assert(is_empty<template_is_signed<void>>);
+    static_assert(is_empty<template_is_unsigned<bool>>);
+    static_assert(is_empty<template_is_unsigned<const bool>>);
+    static_assert(is_empty<template_is_unsigned<volatile bool>>);
+    static_assert(is_empty<template_is_unsigned<const volatile bool>>);
+    static_assert(is_empty<template_is_unsigned<void>>);
 
-    static_assert(!is_signed<bool>::value);
-    static_assert(is_unsigned<bool>::value);
-    static_assert(!is_signed_v<bool>);
-    static_assert(!is_signed_v<const bool>);
-    static_assert(!is_signed_v<volatile bool>);
-    static_assert(!is_signed_v<const volatile bool>);
-    static_assert(is_unsigned_v<bool>);
-    static_assert(is_unsigned_v<const bool>);
-    static_assert(is_unsigned_v<volatile bool>);
-    static_assert(is_unsigned_v<const volatile bool>);
+    static_assert(!template_is_signed<bool>::value);
+    static_assert(template_is_unsigned<bool>::value);
+    static_assert(!is_signed<bool>);
+    static_assert(!is_signed<const bool>);
+    static_assert(!is_signed<volatile bool>);
+    static_assert(!is_signed<const volatile bool>);
+    static_assert(is_unsigned<bool>);
+    static_assert(is_unsigned<const bool>);
+    static_assert(is_unsigned<volatile bool>);
+    static_assert(is_unsigned<const volatile bool>);
 
-    static_assert((is_signed_v<char> && !is_unsigned_v<char>)
-                  || (!is_signed_v<char> && is_unsigned_v<char>));
+    static_assert((is_signed<char> && !is_unsigned<char>)
+                  || (!is_signed<char> && is_unsigned<char>));
 
-    static_assert(is_signed_v<signed char>);
-    static_assert(!is_unsigned_v<signed char>);
+    static_assert(is_signed<signed char>);
+    static_assert(!is_unsigned<signed char>);
 
-    static_assert(!is_signed_v<unsigned char>);
-    static_assert(is_unsigned_v<unsigned char>);
+    static_assert(!is_signed<unsigned char>);
+    static_assert(is_unsigned<unsigned char>);
 
-    static_assert(is_unsigned_v<char8_t> && !is_signed_v<char8_t>);
-    static_assert(is_unsigned_v<char16_t> && !is_signed_v<char16_t>);
-    static_assert(is_unsigned_v<char32_t> && !is_signed_v<char32_t>);
-    static_assert((is_signed_v<wchar_t> && !is_unsigned_v<wchar_t>)
-                  || (!is_signed_v<wchar_t> && is_unsigned_v<wchar_t>));
+    static_assert(is_unsigned<char8_t> && !is_signed<char8_t>);
+    static_assert(is_unsigned<char16_t> && !is_signed<char16_t>);
+    static_assert(is_unsigned<char32_t> && !is_signed<char32_t>);
+    static_assert((is_signed<wchar_t> && !is_unsigned<wchar_t>)
+                  || (!is_signed<wchar_t> && is_unsigned<wchar_t>));
 
-    static_assert(is_signed_v<short int>);
-    static_assert(!is_unsigned_v<short int>);
+    static_assert(is_signed<short int>);
+    static_assert(!is_unsigned<short int>);
 
-    static_assert(!is_signed_v<unsigned short int>);
-    static_assert(is_unsigned_v<unsigned short int>);
+    static_assert(!is_signed<unsigned short int>);
+    static_assert(is_unsigned<unsigned short int>);
 
-    static_assert(is_signed_v<int>);
-    static_assert(!is_unsigned_v<int>);
+    static_assert(is_signed<int>);
+    static_assert(!is_unsigned<int>);
 
-    static_assert(!is_signed_v<unsigned int>);
-    static_assert(is_unsigned_v<unsigned int>);
+    static_assert(!is_signed<unsigned int>);
+    static_assert(is_unsigned<unsigned int>);
 
-    static_assert(is_signed_v<long int>);
-    static_assert(!is_unsigned_v<long int>);
+    static_assert(is_signed<long int>);
+    static_assert(!is_unsigned<long int>);
 
-    static_assert(!is_signed_v<unsigned long int>);
-    static_assert(is_unsigned_v<unsigned long int>);
+    static_assert(!is_signed<unsigned long int>);
+    static_assert(is_unsigned<unsigned long int>);
 
-    static_assert(is_signed_v<long long int>);
-    static_assert(!is_unsigned_v<long long int>);
+    static_assert(is_signed<long long int>);
+    static_assert(!is_unsigned<long long int>);
 
-    static_assert(!is_signed_v<unsigned long long int>);
-    static_assert(is_unsigned_v<unsigned long long int>);
+    static_assert(!is_signed<unsigned long long int>);
+    static_assert(is_unsigned<unsigned long long int>);
 
-    static_assert(!is_signed_v<size_t>);
-    static_assert(is_unsigned_v<size_t>);
+    static_assert(!is_signed<size_t>);
+    static_assert(is_unsigned<size_t>);
 
-    static_assert(is_signed_v<ptrdiff_t>);
-    static_assert(!is_unsigned_v<ptrdiff_t>);
+    static_assert(is_signed<ptrdiff_t>);
+    static_assert(!is_unsigned<ptrdiff_t>);
 
-    static_assert(is_signed_v<int_least8_t>);
-    static_assert(!is_unsigned_v<int_least8_t>);
+    static_assert(is_signed<int_least8_t>);
+    static_assert(!is_unsigned<int_least8_t>);
 
-    static_assert(!is_signed_v<uint_least8_t>);
-    static_assert(is_unsigned_v<uint_least8_t>);
+    static_assert(!is_signed<uint_least8_t>);
+    static_assert(is_unsigned<uint_least8_t>);
 
-    static_assert(is_signed_v<int_least16_t>);
-    static_assert(!is_unsigned_v<int_least16_t>);
+    static_assert(is_signed<int_least16_t>);
+    static_assert(!is_unsigned<int_least16_t>);
 
-    static_assert(!is_signed_v<uint_least16_t>);
-    static_assert(is_unsigned_v<uint_least16_t>);
+    static_assert(!is_signed<uint_least16_t>);
+    static_assert(is_unsigned<uint_least16_t>);
 
-    static_assert(is_signed_v<int_least32_t>);
-    static_assert(!is_unsigned_v<int_least32_t>);
+    static_assert(is_signed<int_least32_t>);
+    static_assert(!is_unsigned<int_least32_t>);
 
-    static_assert(!is_signed_v<uint_least32_t>);
-    static_assert(is_unsigned_v<uint_least32_t>);
+    static_assert(!is_signed<uint_least32_t>);
+    static_assert(is_unsigned<uint_least32_t>);
 
-    static_assert(is_signed_v<int_least64_t>);
-    static_assert(!is_unsigned_v<int_least64_t>);
+    static_assert(is_signed<int_least64_t>);
+    static_assert(!is_unsigned<int_least64_t>);
 
-    static_assert(!is_signed_v<uint_least64_t>);
-    static_assert(is_unsigned_v<uint_least64_t>);
+    static_assert(!is_signed<uint_least64_t>);
+    static_assert(is_unsigned<uint_least64_t>);
 
-    static_assert(is_signed_v<intmax_t>);
-    static_assert(!is_unsigned_v<intmax_t>);
+    static_assert(is_signed<intmax_t>);
+    static_assert(!is_unsigned<intmax_t>);
 
-    static_assert(!is_signed_v<uintmax_t>);
-    static_assert(is_unsigned_v<uintmax_t>);
+    static_assert(!is_signed<uintmax_t>);
+    static_assert(is_unsigned<uintmax_t>);
 
-    static_assert(!is_signed_v<nullptr_t>);
-    static_assert(!is_unsigned_v<nullptr_t>);
+    static_assert(!is_signed<nullptr_t>);
+    static_assert(!is_unsigned<nullptr_t>);
 
-    static_assert(!is_signed_v<void>);
-    static_assert(!is_unsigned_v<void>);
+    static_assert(!is_signed<void>);
+    static_assert(!is_unsigned<void>);
 
-    static_assert(!is_signed_v<int &>);
-    static_assert(!is_unsigned_v<int &>);
+    static_assert(!is_signed<int &>);
+    static_assert(!is_unsigned<int &>);
 
-    static_assert(is_signed_v<float>);
-    static_assert(!is_unsigned_v<float>);
+    static_assert(is_signed<float>);
+    static_assert(!is_unsigned<float>);
 
-    static_assert(is_signed_v<double>);
-    static_assert(!is_unsigned_v<double>);
+    static_assert(is_signed<double>);
+    static_assert(!is_unsigned<double>);
 
-    static_assert(!is_signed_v<void *>);
-    static_assert(!is_unsigned_v<void *>);
+    static_assert(!is_signed<void *>);
+    static_assert(!is_unsigned<void *>);
 
-    static_assert(!is_signed_v<void ()>);
-    static_assert(!is_unsigned_v<void ()>);
+    static_assert(!is_signed<void ()>);
+    static_assert(!is_unsigned<void ()>);
 
-    static_assert(!is_signed_v<void (&)()>);
-    static_assert(!is_unsigned_v<void (&)()>);
+    static_assert(!is_signed<void (&)()>);
+    static_assert(!is_unsigned<void (&)()>);
 
-    static_assert(!is_signed_v<void (*)()>);
-    static_assert(!is_unsigned_v<void (*)()>);
+    static_assert(!is_signed<void (*)()>);
+    static_assert(!is_unsigned<void (*)()>);
   }
-  // is_bounded_array(_v)<T>
-  // is_unbounded_array(_v)<T>
+  // is_bounded_array
+  // is_unbounded_array
   {
-    static_assert(is_trivial_empty_v<is_bounded_array<int [1]>>);
-    static_assert(is_trivial_empty_v<is_bounded_array<int []>>);
-    static_assert(is_trivial_empty_v<is_bounded_array<int>>);
-    static_assert(is_trivial_empty_v<is_unbounded_array<int [1]>>);
-    static_assert(is_trivial_empty_v<is_unbounded_array<int []>>);
-    static_assert(is_trivial_empty_v<is_unbounded_array<int>>);
+    static_assert(is_empty<template_is_bounded_array<int [1]>>);
+    static_assert(is_empty<template_is_bounded_array<int []>>);
+    static_assert(is_empty<template_is_bounded_array<int>>);
+    static_assert(is_empty<template_is_unbounded_array<int [1]>>);
+    static_assert(is_empty<template_is_unbounded_array<int []>>);
+    static_assert(is_empty<template_is_unbounded_array<int>>);
 
-    static_assert(is_bounded_array<const volatile int [1]>::value);
-    static_assert(is_bounded_array_v<const volatile int [1]>);
-    static_assert(!is_unbounded_array_v<const volatile int [1]>);
-    static_assert(is_unbounded_array<const volatile int []>::value);
-    static_assert(is_unbounded_array_v<const volatile int []>);
-    static_assert(!is_bounded_array_v<const volatile int []>);
-    static_assert(!is_unbounded_array<int [0]>::value);
-    static_assert(!is_unbounded_array_v<int [0]>);
-    static_assert(!is_bounded_array<int [0]>::value);
-    static_assert(!is_bounded_array_v<int [0]>);
-    static_assert(!is_bounded_array_v<int>);
-    static_assert(!is_unbounded_array_v<int>);
+    static_assert(template_is_bounded_array<int [1]>::value);
+    static_assert(is_bounded_array<const volatile int [1]>);
+    static_assert(!is_unbounded_array<const volatile int [1]>);
+    static_assert(template_is_unbounded_array<const volatile int []>::value);
+    static_assert(is_unbounded_array<const volatile int []>);
+    static_assert(!is_bounded_array<const volatile int []>);
+    static_assert(!template_is_unbounded_array<int [0]>::value);
+    static_assert(!is_unbounded_array<int [0]>);
+    static_assert(!template_is_bounded_array<int [0]>::value);
+    static_assert(!is_bounded_array<int [0]>);
+    static_assert(!is_bounded_array<int>);
+    static_assert(!is_unbounded_array<int>);
   }
   // is_constructible
   // is_default_constructible
   {
-    static_assert(is_trivial_empty_v<is_constructible<int>>);
-    static_assert(is_trivial_empty_v<is_constructible<int &>>);
-    static_assert(is_trivial_empty_v<is_default_constructible<int>>);
-    static_assert(is_trivial_empty_v<is_default_constructible<int &>>);
+    static_assert(is_empty<template_is_constructible<int>>);
+    static_assert(is_empty<template_is_constructible<int &>>);
+    static_assert(is_empty<template_is_default_constructible<int>>);
+    static_assert(is_empty<template_is_default_constructible<int &>>);
 
-    static_assert(is_constructible<int>::value);
-    static_assert(is_constructible_v<int>);
-    static_assert(is_constructible_v<const int>);
-    static_assert(is_constructible_v<volatile int>);
-    static_assert(is_constructible_v<const volatile int>);
+    static_assert(template_is_constructible<int>::value);
+    static_assert(is_constructible<int>);
+    static_assert(is_constructible<const int>);
+    static_assert(is_constructible<volatile int>);
+    static_assert(is_constructible<const volatile int>);
 
-    static_assert(is_default_constructible<int>::value);
-    static_assert(is_default_constructible_v<int>);
+    static_assert(template_is_default_constructible<int>::value);
+    static_assert(is_default_constructible<int>);
 
-    static_assert(!is_constructible_v<int ()>);
-    static_assert(!is_default_constructible_v<int ()>);
+    static_assert(!is_constructible<int ()>);
+    static_assert(!is_default_constructible<int ()>);
 
-    static_assert(is_constructible_v<int (*)(), int (*)() noexcept>);
-    static_assert(is_default_constructible_v<int (*)()>);
+    static_assert(is_constructible<int (*)(), int (*)() noexcept>);
+    static_assert(is_default_constructible<int (*)()>);
 
-    static_assert(!is_constructible_v<int &, int>);
-    static_assert(is_constructible_v<const int &, int &>);
-    static_assert(!is_default_constructible_v<int &>);
+    static_assert(!is_constructible<int &, int>);
+    static_assert(is_constructible<const int &, int &>);
+    static_assert(!is_default_constructible<int &>);
   }
   // is_copy_constructible
   {
-    static_assert(is_trivial_empty_v<is_copy_constructible<int>>);
-    static_assert(is_trivial_empty_v<is_copy_constructible<void>>);
+    static_assert(is_empty<template_is_copy_constructible<int>>);
+    static_assert(is_empty<template_is_copy_constructible<void>>);
 
     struct t {
       t(const t &) = delete;
@@ -3569,19 +3619,19 @@ void test_type_traits() {
     struct tt {
       tt(const tt &) {}
     };
-    static_assert(is_copy_constructible<int>::value);
-    static_assert(is_copy_constructible_v<int>);
-    static_assert(is_copy_constructible_v<const int>);
-    static_assert(is_copy_constructible_v<volatile int>);
-    static_assert(is_copy_constructible_v<const volatile int>);
-    static_assert(!is_copy_constructible_v<t>);
-    static_assert(!is_copy_constructible_v<void>);
-    static_assert(is_copy_constructible_v<tt>);
+    static_assert(template_is_copy_constructible<int>::value);
+    static_assert(is_copy_constructible<int>);
+    static_assert(is_copy_constructible<const int>);
+    static_assert(is_copy_constructible<volatile int>);
+    static_assert(is_copy_constructible<const volatile int>);
+    static_assert(!is_copy_constructible<t>);
+    static_assert(!is_copy_constructible<void>);
+    static_assert(is_copy_constructible<tt>);
   }
   // is_move_constructible
   {
-    static_assert(is_trivial_empty_v<is_move_constructible<int>>);
-    static_assert(is_trivial_empty_v<is_move_constructible<void>>);
+    static_assert(is_empty<template_is_move_constructible<int>>);
+    static_assert(is_empty<template_is_move_constructible<void>>);
 
     struct t {
       t(t &&) = delete;
@@ -3589,32 +3639,32 @@ void test_type_traits() {
     struct tt {
       tt(tt &&) {}
     };
-    static_assert(is_move_constructible<int>::value);
-    static_assert(is_move_constructible_v<int>);
-    static_assert(is_move_constructible_v<const int>);
-    static_assert(is_move_constructible_v<volatile int>);
-    static_assert(is_move_constructible_v<const volatile int>);
-    static_assert(!is_move_constructible_v<t>);
-    static_assert(is_move_constructible_v<tt>);
+    static_assert(template_is_move_constructible<int>::value);
+    static_assert(is_move_constructible<int>);
+    static_assert(is_move_constructible<const int>);
+    static_assert(is_move_constructible<volatile int>);
+    static_assert(is_move_constructible<const volatile int>);
+    static_assert(!is_move_constructible<t>);
+    static_assert(is_move_constructible<tt>);
   }
   // is_assignable
   {
-    static_assert(is_trivial_empty_v<is_assignable<int, int>>);
-    static_assert(is_trivial_empty_v<is_assignable<void, void>>);
+    static_assert(is_empty<template_is_assignable<int, int>>);
+    static_assert(is_empty<template_is_assignable<void, void>>);
 
     struct t {};
     struct tt {
       void operator =(t &) {}
     };
-    static_assert(is_assignable<tt &, t &>::value);
-    static_assert(is_assignable_v<tt &, t &>);
-    static_assert(!is_assignable_v<tt &, const t &>);
-    static_assert(!is_assignable_v<int &, void *>);
+    static_assert(template_is_assignable<tt &, t &>::value);
+    static_assert(is_assignable<tt &, t &>);
+    static_assert(!is_assignable<tt &, const t &>);
+    static_assert(!is_assignable<int &, void *>);
   }
   // is_copy_assignable
   {
-    static_assert(is_trivial_empty_v<is_copy_assignable<int>>);
-    static_assert(is_trivial_empty_v<is_copy_assignable<void>>);
+    static_assert(is_empty<template_is_copy_assignable<int>>);
+    static_assert(is_empty<template_is_copy_assignable<void>>);
 
     struct t {
       void operator =(const t &) {}
@@ -3622,20 +3672,20 @@ void test_type_traits() {
     struct tt {
       void operator =(const tt &) = delete;
     };
-    static_assert(is_copy_assignable<t>::value);
-    static_assert(is_copy_assignable_v<t>);
-    static_assert(is_copy_assignable_v<t &>);
-    static_assert(!is_copy_assignable_v<tt>);
-    static_assert(!is_copy_assignable_v<tt &>);
-    static_assert(is_copy_assignable_v<int>);
-    static_assert(is_copy_assignable_v<int &>);
-    static_assert(!is_copy_assignable_v<void>);
-    static_assert(!is_copy_assignable_v<int []>);
+    static_assert(template_is_copy_assignable<t>::value);
+    static_assert(is_copy_assignable<t>);
+    static_assert(is_copy_assignable<t &>);
+    static_assert(!is_copy_assignable<tt>);
+    static_assert(!is_copy_assignable<tt &>);
+    static_assert(is_copy_assignable<int>);
+    static_assert(is_copy_assignable<int &>);
+    static_assert(!is_copy_assignable<void>);
+    static_assert(!is_copy_assignable<int []>);
   }
   // is_move_assignable
   {
-    static_assert(is_trivial_empty_v<is_move_assignable<int>>);
-    static_assert(is_trivial_empty_v<is_move_assignable<void>>);
+    static_assert(is_empty<template_is_move_assignable<int>>);
+    static_assert(is_empty<template_is_move_assignable<void>>);
 
     struct t {
       void operator =(const t &) {}
@@ -3643,15 +3693,15 @@ void test_type_traits() {
     struct tt {
       void operator =(tt &&) = delete;
     };
-    static_assert(is_move_assignable<t>::value);
-    static_assert(is_move_assignable_v<t>);
-    static_assert(is_move_assignable_v<t &>);
-    static_assert(!is_move_assignable_v<tt>);
-    static_assert(!is_move_assignable_v<tt &>);
-    static_assert(is_move_assignable_v<int>);
-    static_assert(is_move_assignable_v<int &>);
-    static_assert(!is_move_assignable_v<void>);
-    static_assert(!is_move_assignable_v<int []>);
+    static_assert(template_is_move_assignable<t>::value);
+    static_assert(is_move_assignable<t>);
+    static_assert(is_move_assignable<t &>);
+    static_assert(!is_move_assignable<tt>);
+    static_assert(!is_move_assignable<tt &>);
+    static_assert(is_move_assignable<int>);
+    static_assert(is_move_assignable<int &>);
+    static_assert(!is_move_assignable<void>);
+    static_assert(!is_move_assignable<int []>);
   }
   // is_destructible
   {
@@ -3659,23 +3709,23 @@ void test_type_traits() {
       ~t() = delete;
     };
     struct tt {};
-    static_assert(is_trivial_empty_v<is_destructible<int>>);
-    static_assert(is_trivial_empty_v<is_destructible<t>>);
-    static_assert(!is_destructible<void>::value);
-    static_assert(!is_destructible_v<void>);
-    static_assert(!is_destructible_v<int []>);
-    static_assert(is_destructible_v<int [3]>);
-    static_assert(is_destructible_v<int [3][3][3][3][3]>);
-    static_assert(!is_destructible_v<int [][3][3][3][3]>);
-    static_assert(is_destructible_v<int &>);
-    static_assert(is_destructible_v<const int *********&>);
-    static_assert(!is_destructible_v<t>);
-    static_assert(is_destructible_v<t &>);
-    static_assert(is_destructible_v<t &&>);
-    static_assert(is_destructible_v<tt>);
-    static_assert(is_destructible_v<const tt>);
-    static_assert(is_destructible_v<volatile tt>);
-    static_assert(is_destructible_v<const volatile tt>);
+    static_assert(is_empty<template_is_destructible<int>>);
+    static_assert(is_empty<template_is_destructible<t>>);
+    static_assert(!template_is_destructible<void>::value);
+    static_assert(!is_destructible<void>);
+    static_assert(!is_destructible<int []>);
+    static_assert(is_destructible<int [3]>);
+    static_assert(is_destructible<int [3][3][3][3][3]>);
+    static_assert(!is_destructible<int [][3][3][3][3]>);
+    static_assert(is_destructible<int &>);
+    static_assert(is_destructible<const int *********&>);
+    static_assert(!is_destructible<t>);
+    static_assert(is_destructible<t &>);
+    static_assert(is_destructible<t &&>);
+    static_assert(is_destructible<tt>);
+    static_assert(is_destructible<const tt>);
+    static_assert(is_destructible<volatile tt>);
+    static_assert(is_destructible<const volatile tt>);
   }
   // is_trivially_constructible
   // is_trivially_default_constructible
@@ -3686,231 +3736,231 @@ void test_type_traits() {
   // is_trivially_move_assignable
   // is_trivially_destructible
   {
-    static_assert(is_trivial_empty_v
-                  <is_trivially_constructible<int, int &>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_constructible<int, void>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_default_constructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_default_constructible<reference_wrapper<int>>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_copy_constructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_copy_constructible<void>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_move_constructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_move_constructible<void>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_assignable<int &, const int &>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_assignable<int &, void>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_copy_assignable<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_copy_assignable<void>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_move_assignable<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_move_assignable<void>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_destructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_trivially_destructible<void>>);
+    static_assert(is_empty
+                  <template_is_trivially_constructible<int, int &>>);
+    static_assert(is_empty
+                  <template_is_trivially_constructible<int, void>>);
+    static_assert(is_empty
+                  <template_is_trivially_default_constructible<int>>);
+    static_assert(is_empty
+                  <template_is_trivially_default_constructible
+                   <reference_wrapper<int>>>);
+    static_assert(is_empty
+                  <template_is_trivially_copy_constructible<int>>);
+    static_assert(is_empty
+                  <template_is_trivially_copy_constructible<void>>);
+    static_assert(is_empty
+                  <template_is_trivially_move_constructible<int>>);
+    static_assert(is_empty
+                  <template_is_trivially_move_constructible<void>>);
+    static_assert(is_empty
+                  <template_is_trivially_assignable<int &, const int &>>);
+    static_assert(is_empty
+                  <template_is_trivially_assignable<int &, void>>);
+    static_assert(is_empty
+                  <template_is_trivially_copy_assignable<int>>);
+    static_assert(is_empty
+                  <template_is_trivially_copy_assignable<void>>);
+    static_assert(is_empty
+                  <template_is_trivially_move_assignable<int>>);
+    static_assert(is_empty
+                  <template_is_trivially_move_assignable<void>>);
+    static_assert(is_empty
+                  <template_is_trivially_destructible<int>>);
+    static_assert(is_empty
+                  <template_is_trivially_destructible<void>>);
 
     struct t {
       int &x;
 
       t(int &i) : x(i) {}
     };
-    static_assert(!is_trivially_constructible<t, int &>::value);
-    static_assert(!is_trivially_default_constructible<t>::value);
-    static_assert(is_trivially_copy_constructible<t>::value);
-    static_assert(is_trivially_move_constructible<t>::value);
-    static_assert(!is_trivially_assignable<t &, t &>::value);
-    static_assert(!is_trivially_copy_assignable<t>::value);
-    static_assert(!is_trivially_move_assignable<t>::value);
-    static_assert(is_trivially_destructible<t>::value);
+    static_assert(!template_is_trivially_constructible<t, int &>::value);
+    static_assert(!template_is_trivially_default_constructible<t>::value);
+    static_assert(template_is_trivially_copy_constructible<t>::value);
+    static_assert(template_is_trivially_move_constructible<t>::value);
+    static_assert(!template_is_trivially_assignable<t &, t &>::value);
+    static_assert(!template_is_trivially_copy_assignable<t>::value);
+    static_assert(!template_is_trivially_move_assignable<t>::value);
+    static_assert(template_is_trivially_destructible<t>::value);
 
-    static_assert(!is_trivially_constructible_v<t, int &>);
-    static_assert(!is_trivially_default_constructible_v<t>);
-    static_assert(is_trivially_copy_constructible_v<t>);
-    static_assert(is_trivially_move_constructible_v<t>);
-    static_assert(!is_trivially_assignable_v<t &, t &>);
-    static_assert(!is_trivially_copy_assignable_v<t>);
-    static_assert(!is_trivially_move_assignable_v<t>);
-    static_assert(is_trivially_destructible_v<t>);
+    static_assert(!is_trivially_constructible<t, int &>);
+    static_assert(!is_trivially_default_constructible<t>);
+    static_assert(is_trivially_copy_constructible<t>);
+    static_assert(is_trivially_move_constructible<t>);
+    static_assert(!is_trivially_assignable<t &, t &>);
+    static_assert(!is_trivially_copy_assignable<t>);
+    static_assert(!is_trivially_move_assignable<t>);
+    static_assert(is_trivially_destructible<t>);
 
-    static_assert(!is_trivial_v<t>);
-    static_assert(!is_trivial_v<int &>);
-    static_assert(!is_trivially_default_constructible_v<int &>);
-    static_assert(is_trivially_copy_constructible_v<int &>);
-    static_assert(is_trivially_move_constructible_v<int &>);
-    static_assert(is_trivially_assignable_v<int &, int &>);
-    static_assert(is_trivially_copy_assignable_v<int &>);
-    static_assert(is_trivially_move_assignable_v<int &>);
+    static_assert(!is_trivially_default_constructible<int &>);
+    static_assert(is_trivially_copy_constructible<int &>);
+    static_assert(is_trivially_move_constructible<int &>);
+    static_assert(is_trivially_assignable<int &, int &>);
+    static_assert(is_trivially_copy_assignable<int &>);
+    static_assert(is_trivially_move_assignable<int &>);
 
-    static_assert(is_trivially_constructible_v<int, int>);
-    static_assert(is_trivially_default_constructible_v<int>);
-    static_assert(is_trivially_copy_constructible_v<int>);
-    static_assert(is_trivially_move_constructible_v<int>);
-    static_assert(is_trivially_assignable_v<int &, int &>);
-    static_assert(is_trivially_copy_assignable_v<int>);
-    static_assert(is_trivially_move_assignable_v<int>);
+    static_assert(is_trivially_constructible<int, int>);
+    static_assert(is_trivially_default_constructible<int>);
+    static_assert(is_trivially_copy_constructible<int>);
+    static_assert(is_trivially_move_constructible<int>);
+    static_assert(is_trivially_assignable<int &, int &>);
+    static_assert(is_trivially_copy_assignable<int>);
+    static_assert(is_trivially_move_assignable<int>);
 
     struct tt {
       int x;
     };
-    static_assert(is_trivially_constructible_v<tt>);
-    static_assert(is_trivially_default_constructible_v<tt>);
-    static_assert(is_trivially_copy_constructible_v<tt>);
-    static_assert(is_trivially_move_constructible_v<tt>);
-    static_assert(is_trivially_copy_assignable_v<tt>);
-    static_assert(is_trivially_move_assignable_v<tt>);
-    static_assert(is_trivially_destructible_v<tt>);
+    static_assert(is_trivially_constructible<tt>);
+    static_assert(is_trivially_default_constructible<tt>);
+    static_assert(is_trivially_copy_constructible<tt>);
+    static_assert(is_trivially_move_constructible<tt>);
+    static_assert(is_trivially_copy_assignable<tt>);
+    static_assert(is_trivially_move_assignable<tt>);
+    static_assert(is_trivially_destructible<tt>);
 
-    static_assert(is_trivially_constructible_v<int, int>);
-    static_assert(is_trivially_assignable_v<int &, int>);
-    static_assert(is_trivially_constructible_v<int>);
-    static_assert(is_trivially_default_constructible_v<int>);
-    static_assert(is_trivially_copy_constructible_v<int>);
-    static_assert(is_trivially_move_constructible_v<int>);
-    static_assert(is_trivially_copy_assignable_v<int>);
-    static_assert(is_trivially_move_assignable_v<int>);
-    static_assert(is_trivially_destructible_v<int>);
+    static_assert(is_trivially_constructible<int, int>);
+    static_assert(is_trivially_assignable<int &, int>);
+    static_assert(is_trivially_constructible<int>);
+    static_assert(is_trivially_default_constructible<int>);
+    static_assert(is_trivially_copy_constructible<int>);
+    static_assert(is_trivially_move_constructible<int>);
+    static_assert(is_trivially_copy_assignable<int>);
+    static_assert(is_trivially_move_assignable<int>);
+    static_assert(is_trivially_destructible<int>);
   }
   // is_nothrow_constructible
   // is_nothrow_default_constructible
   // is_nothrow_copy_constructible
   // is_nothrow_move_constructible
   {
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_constructible<int, int &>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_constructible<int, void>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_default_constructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_default_constructible<reference_wrapper<int>>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_copy_constructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_copy_constructible<void>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_move_constructible<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_move_constructible<void>>);
+    static_assert(is_empty
+                  <template_is_nothrow_constructible<int, int &>>);
+    static_assert(is_empty
+                  <template_is_nothrow_constructible<int, void>>);
+    static_assert(is_empty
+                  <template_is_nothrow_default_constructible<int>>);
+    static_assert(is_empty
+                  <template_is_nothrow_default_constructible
+                   <reference_wrapper<int>>>);
+    static_assert(is_empty
+                  <template_is_nothrow_copy_constructible<int>>);
+    static_assert(is_empty
+                  <template_is_nothrow_copy_constructible<void>>);
+    static_assert(is_empty
+                  <template_is_nothrow_move_constructible<int>>);
+    static_assert(is_empty
+                  <template_is_nothrow_move_constructible<void>>);
 
-    static_assert(is_nothrow_constructible<int>::value);
-    static_assert(is_nothrow_default_constructible<int>::value);
-    static_assert(is_nothrow_copy_constructible<int>::value);
-    static_assert(is_nothrow_move_constructible<int>::value);
+    static_assert(template_is_nothrow_constructible<int>::value);
+    static_assert(template_is_nothrow_default_constructible<int>::value);
+    static_assert(template_is_nothrow_copy_constructible<int>::value);
+    static_assert(template_is_nothrow_move_constructible<int>::value);
 
-    static_assert(is_nothrow_constructible_v<int>);
-    static_assert(is_nothrow_default_constructible_v<int>);
-    static_assert(is_nothrow_copy_constructible_v<int>);
-    static_assert(is_nothrow_move_constructible_v<int>);
+    static_assert(is_nothrow_constructible<int>);
+    static_assert(is_nothrow_default_constructible<int>);
+    static_assert(is_nothrow_copy_constructible<int>);
+    static_assert(is_nothrow_move_constructible<int>);
 
-    static_assert(!is_nothrow_constructible_v<int []>);
-    static_assert(!is_nothrow_default_constructible_v<int []>);
-    static_assert(is_nothrow_constructible_v<int [1]>);
-    static_assert(is_nothrow_default_constructible_v<int [1]>);
-    static_assert(!is_nothrow_copy_constructible_v<int [1]>);
-    static_assert(!is_nothrow_move_constructible_v<int [1]>);
+    static_assert(!is_nothrow_constructible<int []>);
+    static_assert(!is_nothrow_default_constructible<int []>);
+    static_assert(is_nothrow_constructible<int [1]>);
+    static_assert(is_nothrow_default_constructible<int [1]>);
+    static_assert(!is_nothrow_copy_constructible<int [1]>);
+    static_assert(!is_nothrow_move_constructible<int [1]>);
 
-    static_assert(!is_nothrow_constructible_v<void>);
-    static_assert(!is_nothrow_copy_constructible_v<void>);
-    static_assert(!is_nothrow_move_constructible_v<void>);
+    static_assert(!is_nothrow_constructible<void>);
+    static_assert(!is_nothrow_copy_constructible<void>);
+    static_assert(!is_nothrow_move_constructible<void>);
 
     struct t {
       int x;
     };
-    static_assert(is_nothrow_constructible_v<t>);
-    static_assert(is_nothrow_default_constructible_v<t>);
-    static_assert(is_nothrow_copy_constructible_v<t>);
-    static_assert(is_nothrow_move_constructible_v<t>);
+    static_assert(is_nothrow_constructible<t>);
+    static_assert(is_nothrow_default_constructible<t>);
+    static_assert(is_nothrow_copy_constructible<t>);
+    static_assert(is_nothrow_move_constructible<t>);
 
     struct tt {
       tt(const tt &) {}
     };
-    static_assert(!is_nothrow_copy_constructible_v<tt>);
-    static_assert(!is_nothrow_move_constructible_v<tt>);
+    static_assert(!is_nothrow_copy_constructible<tt>);
+    static_assert(!is_nothrow_move_constructible<tt>);
 
     struct ttt {
       ttt(const ttt &) = default;
     };
-    static_assert(is_nothrow_copy_constructible_v<ttt>);
-    static_assert(is_nothrow_move_constructible_v<ttt>);
+    static_assert(is_nothrow_copy_constructible<ttt>);
+    static_assert(is_nothrow_move_constructible<ttt>);
 
     struct t2 {
       t2(const t2 &) noexcept;
     };
-    static_assert(is_nothrow_copy_constructible_v<t2>);
-    static_assert(is_nothrow_move_constructible_v<t2>);
+    static_assert(is_nothrow_copy_constructible<t2>);
+    static_assert(is_nothrow_move_constructible<t2>);
   }
   // is_nothrow_assignable
   // is_nothrow_copy_assignable
   // is_nothrow_move_assignable
   {
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_assignable<int &, const int &>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_assignable<int &, void>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_copy_assignable<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_copy_assignable<void>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_move_assignable<int>>);
-    static_assert(is_trivial_empty_v
-                  <is_nothrow_move_assignable<void>>);
+    static_assert(is_empty
+                  <template_is_nothrow_assignable<int &, const int &>>);
+    static_assert(is_empty
+                  <template_is_nothrow_assignable<int &, void>>);
+    static_assert(is_empty
+                  <template_is_nothrow_copy_assignable<int>>);
+    static_assert(is_empty
+                  <template_is_nothrow_copy_assignable<void>>);
+    static_assert(is_empty
+                  <template_is_nothrow_move_assignable<int>>);
+    static_assert(is_empty
+                  <template_is_nothrow_move_assignable<void>>);
 
-    static_assert(is_nothrow_assignable<int &, int &>::value);
-    static_assert(is_nothrow_copy_assignable<int>::value);
-    static_assert(is_nothrow_move_assignable<int>::value);
+    static_assert(template_is_nothrow_assignable<int &, int &>::value);
+    static_assert(template_is_nothrow_copy_assignable<int>::value);
+    static_assert(template_is_nothrow_move_assignable<int>::value);
 
-    static_assert(is_nothrow_assignable_v<int &, int &>);
-    static_assert(is_nothrow_copy_assignable_v<int>);
-    static_assert(is_nothrow_move_assignable_v<int>);
+    static_assert(is_nothrow_assignable<int &, int &>);
+    static_assert(is_nothrow_copy_assignable<int>);
+    static_assert(is_nothrow_move_assignable<int>);
 
-    static_assert(!is_nothrow_assignable_v<int (&)[1], int (&)[1]>);
-    static_assert(!is_nothrow_copy_assignable_v<int [1]>);
-    static_assert(!is_nothrow_move_assignable_v<int [1]>);
+    static_assert(!is_nothrow_assignable<int (&)[1], int (&)[1]>);
+    static_assert(!is_nothrow_copy_assignable<int [1]>);
+    static_assert(!is_nothrow_move_assignable<int [1]>);
 
-    static_assert(!is_nothrow_assignable_v<void, void>);
-    static_assert(!is_nothrow_copy_assignable_v<void>);
-    static_assert(!is_nothrow_move_assignable_v<void>);
+    static_assert(!is_nothrow_assignable<void, void>);
+    static_assert(!is_nothrow_copy_assignable<void>);
+    static_assert(!is_nothrow_move_assignable<void>);
 
     struct t {
       int x;
     };
-    static_assert(is_nothrow_assignable_v<t &, t &>);
-    static_assert(is_nothrow_copy_assignable_v<t>);
-    static_assert(is_nothrow_move_assignable_v<t>);
+    static_assert(is_nothrow_assignable<t &, t &>);
+    static_assert(is_nothrow_copy_assignable<t>);
+    static_assert(is_nothrow_move_assignable<t>);
 
     struct tt {
       tt &operator =(const tt &);
     };
-    static_assert(!is_nothrow_copy_assignable_v<tt>);
-    static_assert(!is_nothrow_move_assignable_v<tt>);
+    static_assert(!is_nothrow_copy_assignable<tt>);
+    static_assert(!is_nothrow_move_assignable<tt>);
 
     struct ttt {
       ttt &operator =(const ttt &) = default;
     };
-    static_assert(is_nothrow_copy_assignable_v<ttt>);
-    static_assert(is_nothrow_move_assignable_v<ttt>);
+    static_assert(is_nothrow_copy_assignable<ttt>);
+    static_assert(is_nothrow_move_assignable<ttt>);
 
     struct t2 {
       t2 &operator =(const t2 &) noexcept;
     };
-    static_assert(is_nothrow_copy_assignable_v<t2>);
-    static_assert(is_nothrow_move_assignable_v<t2>);
+    static_assert(is_nothrow_copy_assignable<t2>);
+    static_assert(is_nothrow_move_assignable<t2>);
   }
   // is_nothrow_destructible
   {
-    static_assert(is_trivial_empty_v<is_nothrow_destructible<int>>);
-    static_assert(is_trivial_empty_v<is_nothrow_destructible<void>>);
+    static_assert(is_empty<template_is_nothrow_destructible<int>>);
+    static_assert(is_empty<template_is_nothrow_destructible<void>>);
 
     struct t {
       ~t();
@@ -3918,96 +3968,97 @@ void test_type_traits() {
     struct tt {
       ~tt() = delete;
     };
-    static_assert(is_nothrow_destructible<int>::value);
-    static_assert(is_nothrow_destructible_v<int>);
-    static_assert(is_nothrow_destructible_v<t>);
-    static_assert(!is_nothrow_destructible_v<tt>);
+    static_assert(template_is_nothrow_destructible<int>::value);
+    static_assert(is_nothrow_destructible<int>);
+    static_assert(is_nothrow_destructible<t>);
+    static_assert(!is_nothrow_destructible<tt>);
   }
   // has_virtual_destructor
   {
     struct t {
       virtual ~t() {}
     };
-    static_assert(is_trivial_empty_v<has_virtual_destructor<t>>);
-    static_assert(is_trivial_empty_v<has_virtual_destructor<int>>);
-    static_assert(has_virtual_destructor<t>::value);
-    static_assert(has_virtual_destructor_v<t>);
-    static_assert(!has_virtual_destructor_v<int>);
+    static_assert(is_empty<template_has_virtual_destructor<t>>);
+    static_assert(is_empty<template_has_virtual_destructor<int>>);
+    static_assert(template_has_virtual_destructor<t>::value);
+    static_assert(has_virtual_destructor<t>);
+    static_assert(!has_virtual_destructor<int>);
   }
-  // has_unique_object_representations(_v)<T>
+  // has_unique_object_representations
   {
-    static_assert(is_trivial_empty_v
-                  <has_unique_object_representations<char>>);
-    static_assert(is_trivial_empty_v
-                  <has_unique_object_representations<void>>);
-    static_assert(has_unique_object_representations_v<char>);
-    static_assert(!has_unique_object_representations_v<void>);
+    static_assert(is_empty
+                  <template_has_unique_object_representations<char>>);
+    static_assert(is_empty
+                  <template_has_unique_object_representations<void>>);
+    static_assert(template_has_unique_object_representations<char>::value);
+    static_assert(has_unique_object_representations<char>);
+    static_assert(!has_unique_object_representations<void>);
   }
 
   // alignment_of
   {
-    static_assert(is_trivial_empty_v<alignment_of<char>>);
-    static_assert(alignment_of<char>::value == alignof(char));
-    static_assert(alignment_of_v<char> == alignof(char));
-    static_assert(alignment_of_v<const char> == alignof(char));
-    static_assert(alignment_of_v<volatile char> == alignof(char));
-    static_assert(alignment_of_v<const volatile char> == alignof(char));
-    static_assert(alignment_of_v<const volatile char &> == alignof(char));
+    static_assert(is_empty<template_alignment_of<char>>);
+    static_assert(template_alignment_of<char>::value == alignof(char));
+    static_assert(alignment_of<char> == alignof(char));
+    static_assert(alignment_of<const char> == alignof(char));
+    static_assert(alignment_of<volatile char> == alignof(char));
+    static_assert(alignment_of<const volatile char> == alignof(char));
+    static_assert(alignment_of<const volatile char &> == alignof(char));
   }
   // rank
   {
-    static_assert(is_trivial_empty_v<rank<int>>);
-    static_assert(is_trivial_empty_v<rank<int []>>);
-    static_assert(is_trivial_empty_v<rank<int [1]>>);
-    static_assert(is_trivial_empty_v<rank<int [2][3]>>);
-    static_assert(is_trivial_empty_v<rank<int [2][3][4]>>);
+    static_assert(is_empty<template_rank<int>>);
+    static_assert(is_empty<template_rank<int []>>);
+    static_assert(is_empty<template_rank<int [1]>>);
+    static_assert(is_empty<template_rank<int [2][3]>>);
+    static_assert(is_empty<template_rank<int [2][3][4]>>);
 
-    static_assert(rank<void>::value == 0);
-    static_assert(rank_v<void> == 0);
-    static_assert(rank_v<int> == 0);
-    static_assert(rank_v<int &> == 0);
-    static_assert(rank_v<int []> == 1);
-    static_assert(rank_v<int [][3]> == 2);
-    static_assert(rank_v<int [][3][4]> == 3);
-    static_assert(rank_v<int [][3][4][5]> == 4);
-    static_assert(rank_v<int [1][2][3][4][5]> == 5);
-    static_assert(rank_v<const int [1][2][3][4][5]> == 5);
-    static_assert(rank_v<volatile int [1][2][3][4][5]> == 5);
-    static_assert(rank_v<const volatile int [1][2][3][4][5]> == 5);
-    static_assert(rank_v<const volatile int (&)[1][2][3][4][5]> == 0);
+    static_assert(template_rank<void>::value == 0);
+    static_assert(rank<void> == 0);
+    static_assert(rank<int> == 0);
+    static_assert(rank<int &> == 0);
+    static_assert(rank<int []> == 1);
+    static_assert(rank<int [][3]> == 2);
+    static_assert(rank<int [][3][4]> == 3);
+    static_assert(rank<int [][3][4][5]> == 4);
+    static_assert(rank<int [1][2][3][4][5]> == 5);
+    static_assert(rank<const int [1][2][3][4][5]> == 5);
+    static_assert(rank<volatile int [1][2][3][4][5]> == 5);
+    static_assert(rank<const volatile int [1][2][3][4][5]> == 5);
+    static_assert(rank<const volatile int (&)[1][2][3][4][5]> == 0);
   }
   // extent
   {
-    static_assert(is_trivial_empty_v<extent<int, 0>>);
-    static_assert(is_trivial_empty_v<extent<int [1], 0>>);
-    static_assert(is_trivial_empty_v<extent<int [1][2][3], 0>>);
-    static_assert(is_trivial_empty_v<extent<int [1][2][3], 1>>);
-    static_assert(is_trivial_empty_v<extent<int [1][2][3][4], 3>>);
+    static_assert(is_empty<template_extent<int, 0>>);
+    static_assert(is_empty<template_extent<int [1], 0>>);
+    static_assert(is_empty<template_extent<int [1][2][3], 0>>);
+    static_assert(is_empty<template_extent<int [1][2][3], 1>>);
+    static_assert(is_empty<template_extent<int [1][2][3][4], 3>>);
 
-    static_assert(extent<int>::value == 0);
-    static_assert(extent_v<int> == 0);
-    static_assert(extent_v<int []> == 0);
-    static_assert(extent_v<int [3]> == 3);
-    static_assert(extent_v<int [3][4]> == 3);
-    static_assert(extent_v<int [3][4][5], 2> == 5);
-    static_assert(extent_v<int [3][4][5], 1> == 4);
-    static_assert(extent_v<int [3][4][5], 0> == 3);
-    static_assert(extent_v<int [][4][5], 0> == 0);
-    static_assert(extent_v<int (&)[][4][5], 1> == 0);
-    static_assert(extent_v<int, 100> == 0);
+    static_assert(template_extent<int>::value == 0);
+    static_assert(extent<int> == 0);
+    static_assert(extent<int []> == 0);
+    static_assert(extent<int [3]> == 3);
+    static_assert(extent<int [3][4]> == 3);
+    static_assert(extent<int [3][4][5], 2> == 5);
+    static_assert(extent<int [3][4][5], 1> == 4);
+    static_assert(extent<int [3][4][5], 0> == 3);
+    static_assert(extent<int [][4][5], 0> == 0);
+    static_assert(extent<int (&)[][4][5], 1> == 0);
+    static_assert(extent<int, 100> == 0);
   }
 
   // is_same
   {
-    static_assert(is_trivial_empty_v<is_same<void, void>>);
-    static_assert(is_trivial_empty_v<is_same<void, void *>>);
-    static_assert(is_same<void, void>::value);
-    static_assert(is_same_v<void, void>);
-    static_assert(is_same_v<int, int>);
-    static_assert(!is_same_v<int, int &>);
-    static_assert(!is_same_v<int &, int>);
-    static_assert(!is_same_v<int, const int>);
-    static_assert(!is_same_v<int, int[]>);
+    static_assert(is_empty<template_is_same<void, void>>);
+    static_assert(is_empty<template_is_same<void, void *>>);
+    static_assert(template_is_same<void, void>::value);
+    static_assert(is_same<void, void>);
+    static_assert(is_same<int, int>);
+    static_assert(!is_same<int, int &>);
+    static_assert(!is_same<int &, int>);
+    static_assert(!is_same<int, const int>);
+    static_assert(!is_same<int, int[]>);
   }
   // is_base_of
   {
@@ -4016,49 +4067,52 @@ void test_type_traits() {
     struct C {};
     struct D : private C {};
 
-    static_assert(is_trivial_empty_v<is_base_of<A, B>>);
-    static_assert(is_trivial_empty_v<is_base_of<B, A>>);
+    static_assert(is_empty<template_is_base_of<A, B>>);
+    static_assert(is_empty<template_is_base_of<B, A>>);
 
-    static_assert(is_base_of<A, B>::value);
-    static_assert(is_base_of_v<A, B>);
-    static_assert(is_base_of_v<C, D>);
-    static_assert(!is_base_of_v<C, B>);
-    static_assert(is_base_of_v<C, D>);
+    static_assert(!template_is_base_of<void, void>::value);
+    static_assert(!is_base_of<int, int>);
+    static_assert(is_base_of<A, A>);
+    static_assert(is_base_of<A, B>);
+    static_assert(is_base_of<C, D>);
+    static_assert(!is_base_of<C, B>);
+    static_assert(is_base_of<C, D>);
 
-    static_assert(is_base_of_v<C, const volatile D>);
-    static_assert(is_base_of_v<const C, const volatile D>);
-    static_assert(is_base_of_v<volatile C, const volatile D>);
-    static_assert(is_base_of_v<const volatile C, const volatile D>);
-    static_assert(is_base_of_v<C, volatile D>);
-    static_assert(is_base_of_v<const C, volatile D>);
-    static_assert(is_base_of_v<volatile C, volatile D>);
-    static_assert(is_base_of_v<const volatile C, volatile D>);
-    static_assert(is_base_of_v<C, const D>);
-    static_assert(is_base_of_v<const C, const D>);
-    static_assert(is_base_of_v<volatile C, const D>);
-    static_assert(is_base_of_v<const volatile C, const D>);
-    static_assert(is_base_of_v<C, D>);
-    static_assert(is_base_of_v<const C, D>);
-    static_assert(is_base_of_v<volatile C, D>);
-    static_assert(is_base_of_v<const volatile C, D>);
+    static_assert(is_base_of<C, const volatile D>);
+    static_assert(is_base_of<const C, const volatile D>);
+    static_assert(is_base_of<volatile C, const volatile D>);
+    static_assert(is_base_of<const volatile C, const volatile D>);
+    static_assert(is_base_of<C, volatile D>);
+    static_assert(is_base_of<const C, volatile D>);
+    static_assert(is_base_of<volatile C, volatile D>);
+    static_assert(is_base_of<const volatile C, volatile D>);
+    static_assert(is_base_of<C, const D>);
+    static_assert(is_base_of<const C, const D>);
+    static_assert(is_base_of<volatile C, const D>);
+    static_assert(is_base_of<const volatile C, const D>);
+    static_assert(is_base_of<C, D>);
+    static_assert(is_base_of<const C, D>);
+    static_assert(is_base_of<volatile C, D>);
+    static_assert(is_base_of<const volatile C, D>);
 
-    static_assert(!is_base_of_v<int, int>);
-    static_assert(is_base_of_v<A, A>);
-    static_assert(is_base_of_v<const A, A>);
-    static_assert(is_base_of_v<volatile A, A>);
-    static_assert(is_base_of_v<const volatile A, A>);
-    static_assert(is_base_of_v<A, const A>);
-    static_assert(is_base_of_v<A, volatile A>);
-    static_assert(is_base_of_v<A, const volatile A>);
+    static_assert(!is_base_of<int, int>);
+    static_assert(is_base_of<A, A>);
+    static_assert(is_base_of<const A, A>);
+    static_assert(is_base_of<volatile A, A>);
+    static_assert(is_base_of<const volatile A, A>);
+    static_assert(is_base_of<A, const A>);
+    static_assert(is_base_of<A, volatile A>);
+    static_assert(is_base_of<A, const volatile A>);
   }
   // is_convertible
   {
-    static_assert(is_trivial_empty_v<is_convertible<int, void>>);
-    static_assert(is_trivial_empty_v<is_convertible<int, int>>);
+    static_assert(is_empty<template_is_convertible<int, void>>);
+    static_assert(is_empty<template_is_convertible<int, int>>);
 
-    static_assert(!is_convertible_v<int, void>);
-    static_assert(!is_convertible_v<const int &, int *>);
-    static_assert(is_convertible_v<double, int>);
+    static_assert(!template_is_convertible<int, void>::value);
+    static_assert(!is_convertible<int, void>);
+    static_assert(!is_convertible<const int &, int *>);
+    static_assert(is_convertible<double, int>);
 
     struct t {};
     struct tt {
@@ -4070,102 +4124,102 @@ void test_type_traits() {
     struct tttt {
       operator t() {return {};}
     };
-    static_assert(!is_convertible_v<t, tt>);
-    static_assert(is_convertible_v<t, ttt>);
-    static_assert(is_convertible_v<tttt, t>);
-    static_assert(!is_convertible_v<const tttt, t>);
+    static_assert(!is_convertible<t, tt>);
+    static_assert(is_convertible<t, ttt>);
+    static_assert(is_convertible<tttt, t>);
+    static_assert(!is_convertible<const tttt, t>);
 
     // convert between int lvalue references
     // convert between int rvalue references
     {
-      static_assert(is_convertible_v<int &, int &>);
-      static_assert(is_convertible_v<int &, const int &>);
-      static_assert(is_convertible_v<int &, volatile int &>);
-      static_assert(is_convertible_v<int &, const volatile int &>);
-      static_assert(!is_convertible_v<const int &, int &>);
-      static_assert(is_convertible_v<const int &, const int &>);
-      static_assert(!is_convertible_v<const int &, volatile int &>);
-      static_assert(is_convertible_v<const int &, const volatile int &>);
-      static_assert(!is_convertible_v<volatile int &, int &>);
-      static_assert(!is_convertible_v<volatile int &, const int &>);
-      static_assert(is_convertible_v<volatile int &, volatile int &>);
-      static_assert(is_convertible_v<volatile int &, const volatile int &>);
-      static_assert(!is_convertible_v<const volatile int &, int &>);
-      static_assert(!is_convertible_v<const volatile int &, const int &>);
-      static_assert(!is_convertible_v<const volatile int &, volatile int &>);
-      static_assert(is_convertible_v
+      static_assert(is_convertible<int &, int &>);
+      static_assert(is_convertible<int &, const int &>);
+      static_assert(is_convertible<int &, volatile int &>);
+      static_assert(is_convertible<int &, const volatile int &>);
+      static_assert(!is_convertible<const int &, int &>);
+      static_assert(is_convertible<const int &, const int &>);
+      static_assert(!is_convertible<const int &, volatile int &>);
+      static_assert(is_convertible<const int &, const volatile int &>);
+      static_assert(!is_convertible<volatile int &, int &>);
+      static_assert(!is_convertible<volatile int &, const int &>);
+      static_assert(is_convertible<volatile int &, volatile int &>);
+      static_assert(is_convertible<volatile int &, const volatile int &>);
+      static_assert(!is_convertible<const volatile int &, int &>);
+      static_assert(!is_convertible<const volatile int &, const int &>);
+      static_assert(!is_convertible<const volatile int &, volatile int &>);
+      static_assert(is_convertible
                     <const volatile int &, const volatile int &>);
 
-      static_assert(is_convertible_v<int &&, int &&>);
-      static_assert(is_convertible_v<int &&, const int &&>);
-      static_assert(is_convertible_v<int &&, volatile int &&>);
-      static_assert(is_convertible_v<int &&, const volatile int &&>);
-      static_assert(!is_convertible_v<const int &&, int &&>);
-      static_assert(is_convertible_v<const int &&, const int &&>);
-      static_assert(!is_convertible_v<const int &&, volatile int &&>);
-      static_assert(is_convertible_v<const int &&, const volatile int &&>);
-      static_assert(!is_convertible_v<volatile int &&, int &&>);
-      static_assert(!is_convertible_v<volatile int &&, const int &&>);
-      static_assert(is_convertible_v<volatile int &&, volatile int &&>);
-      static_assert(is_convertible_v<volatile int &&, const volatile int &&>);
-      static_assert(!is_convertible_v<const volatile int &&, int &&>);
-      static_assert(!is_convertible_v<const volatile int &&, const int &&>);
-      static_assert(!is_convertible_v<const volatile int &&, volatile int &&>);
-      static_assert(is_convertible_v
+      static_assert(is_convertible<int &&, int &&>);
+      static_assert(is_convertible<int &&, const int &&>);
+      static_assert(is_convertible<int &&, volatile int &&>);
+      static_assert(is_convertible<int &&, const volatile int &&>);
+      static_assert(!is_convertible<const int &&, int &&>);
+      static_assert(is_convertible<const int &&, const int &&>);
+      static_assert(!is_convertible<const int &&, volatile int &&>);
+      static_assert(is_convertible<const int &&, const volatile int &&>);
+      static_assert(!is_convertible<volatile int &&, int &&>);
+      static_assert(!is_convertible<volatile int &&, const int &&>);
+      static_assert(is_convertible<volatile int &&, volatile int &&>);
+      static_assert(is_convertible<volatile int &&, const volatile int &&>);
+      static_assert(!is_convertible<const volatile int &&, int &&>);
+      static_assert(!is_convertible<const volatile int &&, const int &&>);
+      static_assert(!is_convertible<const volatile int &&, volatile int &&>);
+      static_assert(is_convertible
                     <const volatile int &&, const volatile int &&>);
     }
     // convert between int lvalue reference and rvalue reference
     {
-      static_assert(!is_convertible_v<int &, int &&>);
-      static_assert(!is_convertible_v<int &, const int &&>);
-      static_assert(!is_convertible_v<int &, volatile int &&>);
-      static_assert(!is_convertible_v<int &, const volatile int &&>);
-      static_assert(!is_convertible_v<const int &, int &&>);
-      static_assert(!is_convertible_v<const int &, const int &&>);
-      static_assert(!is_convertible_v<const int &, volatile int &&>);
-      static_assert(!is_convertible_v<const int &, const volatile int &&>);
-      static_assert(!is_convertible_v<volatile int &, int &&>);
-      static_assert(!is_convertible_v<volatile int &, const int &&>);
-      static_assert(!is_convertible_v<volatile int &, volatile int &&>);
-      static_assert(!is_convertible_v<volatile int &, const volatile int &&>);
-      static_assert(!is_convertible_v<const volatile int &, int &&>);
-      static_assert(!is_convertible_v<const volatile int &, const int &&>);
-      static_assert(!is_convertible_v<const volatile int &, volatile int &&>);
-      static_assert(!is_convertible_v
+      static_assert(!is_convertible<int &, int &&>);
+      static_assert(!is_convertible<int &, const int &&>);
+      static_assert(!is_convertible<int &, volatile int &&>);
+      static_assert(!is_convertible<int &, const volatile int &&>);
+      static_assert(!is_convertible<const int &, int &&>);
+      static_assert(!is_convertible<const int &, const int &&>);
+      static_assert(!is_convertible<const int &, volatile int &&>);
+      static_assert(!is_convertible<const int &, const volatile int &&>);
+      static_assert(!is_convertible<volatile int &, int &&>);
+      static_assert(!is_convertible<volatile int &, const int &&>);
+      static_assert(!is_convertible<volatile int &, volatile int &&>);
+      static_assert(!is_convertible<volatile int &, const volatile int &&>);
+      static_assert(!is_convertible<const volatile int &, int &&>);
+      static_assert(!is_convertible<const volatile int &, const int &&>);
+      static_assert(!is_convertible<const volatile int &, volatile int &&>);
+      static_assert(!is_convertible
                     <const volatile int &, const volatile int &&>);
 
-      static_assert(!is_convertible_v<int &&, int &>);
-      static_assert(is_convertible_v<int &&, const int &>);
-      static_assert(!is_convertible_v<int &&, volatile int &>);
-      static_assert(!is_convertible_v<int &&, const volatile int &>);
-      static_assert(!is_convertible_v<const int &&, int &>);
-      static_assert(is_convertible_v<const int &&, const int &>);
-      static_assert(!is_convertible_v<const int &&, volatile int &>);
-      static_assert(!is_convertible_v<const int &&, const volatile int &>);
-      static_assert(!is_convertible_v<volatile int &&, int &>);
-      static_assert(!is_convertible_v<volatile int &&, const int &>);
-      static_assert(!is_convertible_v<volatile int &&, volatile int &>);
-      static_assert(!is_convertible_v<volatile int &&, const volatile int &>);
-      static_assert(!is_convertible_v<const volatile int &&, int &>);
-      static_assert(!is_convertible_v<const volatile int &&, const int &>);
-      static_assert(!is_convertible_v<const volatile int &&, volatile int &>);
-      static_assert(!is_convertible_v
+      static_assert(!is_convertible<int &&, int &>);
+      static_assert(is_convertible<int &&, const int &>);
+      static_assert(!is_convertible<int &&, volatile int &>);
+      static_assert(!is_convertible<int &&, const volatile int &>);
+      static_assert(!is_convertible<const int &&, int &>);
+      static_assert(is_convertible<const int &&, const int &>);
+      static_assert(!is_convertible<const int &&, volatile int &>);
+      static_assert(!is_convertible<const int &&, const volatile int &>);
+      static_assert(!is_convertible<volatile int &&, int &>);
+      static_assert(!is_convertible<volatile int &&, const int &>);
+      static_assert(!is_convertible<volatile int &&, volatile int &>);
+      static_assert(!is_convertible<volatile int &&, const volatile int &>);
+      static_assert(!is_convertible<const volatile int &&, int &>);
+      static_assert(!is_convertible<const volatile int &&, const int &>);
+      static_assert(!is_convertible<const volatile int &&, volatile int &>);
+      static_assert(!is_convertible
                     <const volatile int &&, const volatile int &>);
     }
   }
   // is_nothrow_convertible
   {
-    static_assert(is_trivial_empty_v<is_nothrow_convertible<int, void>>);
-    static_assert(is_trivial_empty_v<is_nothrow_convertible<int, int>>);
+    static_assert(is_empty<template_is_nothrow_convertible<int, void>>);
+    static_assert(is_empty<template_is_nothrow_convertible<int, int>>);
 
     struct t {};
     struct tt {explicit tt(const t &) {}};
     struct ttt {ttt(const t &) {}};
     struct tttt {tttt(const t &) noexcept {}};
-    static_assert(is_nothrow_convertible_v<int *, void *>);
-    static_assert(is_nothrow_convertible_v<t, tttt>);
-    static_assert(!is_nothrow_convertible_v<t, ttt>);
-    static_assert(!is_nothrow_convertible_v<t, tt>);
+    static_assert(is_nothrow_convertible<int *, void *>);
+    static_assert(is_nothrow_convertible<t, tttt>);
+    static_assert(!is_nothrow_convertible<t, ttt>);
+    static_assert(!is_nothrow_convertible<t, tt>);
   }
 
   // remove_const
@@ -4175,24 +4229,24 @@ void test_type_traits() {
   // add_volatile
   // add_cv
   {
-    static_assert(is_trivial_empty_v<remove_const<int>>);
-    static_assert(is_trivial_empty_v<remove_const<const int>>);
-    static_assert(is_trivial_empty_v<remove_const<const volatile int>>);
-    static_assert(is_trivial_empty_v<remove_volatile<int>>);
-    static_assert(is_trivial_empty_v<remove_volatile<const int>>);
-    static_assert(is_trivial_empty_v<remove_volatile<const volatile int>>);
-    static_assert(is_trivial_empty_v<remove_cv<int>>);
-    static_assert(is_trivial_empty_v<remove_cv<const int>>);
-    static_assert(is_trivial_empty_v<remove_cv<const volatile int>>);
-    static_assert(is_trivial_empty_v<add_const<int>>);
-    static_assert(is_trivial_empty_v<add_const<const int>>);
-    static_assert(is_trivial_empty_v<add_const<const volatile int>>);
-    static_assert(is_trivial_empty_v<add_volatile<int>>);
-    static_assert(is_trivial_empty_v<add_volatile<const int>>);
-    static_assert(is_trivial_empty_v<add_volatile<const volatile int>>);
-    static_assert(is_trivial_empty_v<add_cv<int>>);
-    static_assert(is_trivial_empty_v<add_cv<const int>>);
-    static_assert(is_trivial_empty_v<add_cv<const volatile int>>);
+    static_assert(is_empty<template_remove_const<int>>);
+    static_assert(is_empty<template_remove_const<const int>>);
+    static_assert(is_empty<template_remove_const<const volatile int>>);
+    static_assert(is_empty<template_remove_volatile<int>>);
+    static_assert(is_empty<template_remove_volatile<const int>>);
+    static_assert(is_empty<template_remove_volatile<const volatile int>>);
+    static_assert(is_empty<template_remove_cv<int>>);
+    static_assert(is_empty<template_remove_cv<const int>>);
+    static_assert(is_empty<template_remove_cv<const volatile int>>);
+    static_assert(is_empty<template_add_const<int>>);
+    static_assert(is_empty<template_add_const<const int>>);
+    static_assert(is_empty<template_add_const<const volatile int>>);
+    static_assert(is_empty<template_add_volatile<int>>);
+    static_assert(is_empty<template_add_volatile<const int>>);
+    static_assert(is_empty<template_add_volatile<const volatile int>>);
+    static_assert(is_empty<template_add_cv<int>>);
+    static_assert(is_empty<template_add_cv<const int>>);
+    static_assert(is_empty<template_add_cv<const volatile int>>);
 
     using integral_t = int;
     using float_t = float;
@@ -4210,476 +4264,479 @@ void test_type_traits() {
     using member_object_pointer_t = int class_t::*;
     using member_function_pointer_t = void (class_t::*)();
 
-    static_assert(is_same_v<add_const<integral_t>::type, const integral_t>);
-    static_assert(is_same_v<add_const_t<integral_t>, const integral_t>);
-    static_assert(is_same_v<add_const_t<float_t>, const float_t>);
-    static_assert(is_same_v<add_const_t<void_t>, const void_t>);
-    static_assert(is_same_v<add_const_t<nullptr_t>, const nullptr_t>);
-    static_assert(is_same_v<add_const_t<array_t>, const array_t>);
-    static_assert(is_same_v<add_const_t<pointer_t>, const pointer_t>);
-    static_assert(is_same_v<add_const_t<reference_t>, reference_t>);
-    static_assert(is_same_v<add_const_t<function_t>, function_t>);
-    static_assert(is_same_v<add_const_t<enum_t>, const enum_t>);
-    static_assert(is_same_v<add_const_t<union_t>, const union_t>);
-    static_assert(is_same_v<add_const_t<class_t>, const class_t>);
-    static_assert(is_same_v
-                  <add_const_t<member_object_pointer_t>,
+    static_assert(is_same
+                  <template_add_const<integral_t>::type, const integral_t>);
+    static_assert(is_same<add_const<integral_t>, const integral_t>);
+    static_assert(is_same<add_const<float_t>, const float_t>);
+    static_assert(is_same<add_const<void_t>, const void_t>);
+    static_assert(is_same<add_const<nullptr_t>, const nullptr_t>);
+    static_assert(is_same<add_const<array_t>, const array_t>);
+    static_assert(is_same<add_const<pointer_t>, const pointer_t>);
+    static_assert(is_same<add_const<reference_t>, reference_t>);
+    static_assert(is_same<add_const<function_t>, function_t>);
+    static_assert(is_same<add_const<enum_t>, const enum_t>);
+    static_assert(is_same<add_const<union_t>, const union_t>);
+    static_assert(is_same<add_const<class_t>, const class_t>);
+    static_assert(is_same
+                  <add_const<member_object_pointer_t>,
                    const member_object_pointer_t>);
-    static_assert(is_same_v
-                  <add_const_t<member_function_pointer_t>,
+    static_assert(is_same
+                  <add_const<member_function_pointer_t>,
                    const member_function_pointer_t>);
 
-    static_assert(is_same_v<remove_const<int>::type, int>);
-    static_assert(is_same_v<remove_const_t<int>, int>);
-    static_assert(is_same_v<remove_const_t<const int>, int>);
-    static_assert(is_same_v
-                  <remove_const_t<const volatile int>, volatile int>);
+    static_assert(is_same<template_remove_const<int>::type, int>);
+    static_assert(is_same<remove_const<int>, int>);
+    static_assert(is_same<remove_const<const int>, int>);
+    static_assert(is_same
+                  <remove_const<const volatile int>, volatile int>);
 
-    static_assert(is_same_v
-                  <add_volatile<integral_t>::type, volatile integral_t>);
-    static_assert(is_same_v<add_volatile_t<integral_t>, volatile integral_t>);
-    static_assert(is_same_v<add_volatile_t<float_t>, volatile float_t>);
-    static_assert(is_same_v<add_volatile_t<void_t>, volatile void_t>);
-    static_assert(is_same_v<add_volatile_t<nullptr_t>, volatile nullptr_t>);
-    static_assert(is_same_v<add_volatile_t<array_t>, volatile array_t>);
-    static_assert(is_same_v<add_volatile_t<pointer_t>, volatile pointer_t>);
-    static_assert(is_same_v<add_volatile_t<reference_t>, reference_t>);
-    static_assert(is_same_v<add_volatile_t<function_t>, function_t>);
-    static_assert(is_same_v<add_volatile_t<enum_t>, volatile enum_t>);
-    static_assert(is_same_v<add_volatile_t<union_t>, volatile union_t>);
-    static_assert(is_same_v<add_volatile_t<class_t>, volatile class_t>);
-    static_assert(is_same_v
-                  <add_volatile_t<member_object_pointer_t>,
+    static_assert(is_same
+                  <template_add_volatile<integral_t>::type,
+                   volatile integral_t>);
+    static_assert(is_same<add_volatile<integral_t>, volatile integral_t>);
+    static_assert(is_same<add_volatile<float_t>, volatile float_t>);
+    static_assert(is_same<add_volatile<void_t>, volatile void_t>);
+    static_assert(is_same<add_volatile<nullptr_t>, volatile nullptr_t>);
+    static_assert(is_same<add_volatile<array_t>, volatile array_t>);
+    static_assert(is_same<add_volatile<pointer_t>, volatile pointer_t>);
+    static_assert(is_same<add_volatile<reference_t>, reference_t>);
+    static_assert(is_same<add_volatile<function_t>, function_t>);
+    static_assert(is_same<add_volatile<enum_t>, volatile enum_t>);
+    static_assert(is_same<add_volatile<union_t>, volatile union_t>);
+    static_assert(is_same<add_volatile<class_t>, volatile class_t>);
+    static_assert(is_same
+                  <add_volatile<member_object_pointer_t>,
                    volatile member_object_pointer_t>);
-    static_assert(is_same_v
-                  <add_volatile_t<member_function_pointer_t>,
+    static_assert(is_same
+                  <add_volatile<member_function_pointer_t>,
                    volatile member_function_pointer_t>);
 
-    static_assert(is_same_v<remove_volatile<int>::type, int>);
-    static_assert(is_same_v<remove_volatile_t<int>, int>);
-    static_assert(is_same_v<remove_volatile_t<volatile int>, int>);
-    static_assert(is_same_v
-                  <remove_volatile_t<const volatile int>, const int>);
+    static_assert(is_same<template_remove_volatile<int>::type, int>);
+    static_assert(is_same<remove_volatile<int>, int>);
+    static_assert(is_same<remove_volatile<volatile int>, int>);
+    static_assert(is_same<remove_volatile<const volatile int>, const int>);
 
-    static_assert(is_same_v
-                  <add_cv<integral_t>::type, const volatile integral_t>);
-    static_assert(is_same_v<add_cv_t<integral_t>, const volatile integral_t>);
-    static_assert(is_same_v<add_cv_t<float_t>, const volatile float_t>);
-    static_assert(is_same_v<add_cv_t<void_t>, const volatile void_t>);
-    static_assert(is_same_v<add_cv_t<nullptr_t>, const volatile nullptr_t>);
-    static_assert(is_same_v<add_cv_t<array_t>, const volatile array_t>);
-    static_assert(is_same_v<add_cv_t<pointer_t>, const volatile pointer_t>);
-    static_assert(is_same_v<add_cv_t<reference_t>, reference_t>);
-    static_assert(is_same_v<add_cv_t<function_t>, function_t>);
-    static_assert(is_same_v<add_cv_t<enum_t>, const volatile enum_t>);
-    static_assert(is_same_v<add_cv_t<union_t>, const volatile union_t>);
-    static_assert(is_same_v<add_cv_t<class_t>, const volatile class_t>);
-    static_assert(is_same_v
-                  <add_cv_t<member_object_pointer_t>,
+    static_assert(is_same
+                  <template_add_cv<integral_t>::type,
+                   const volatile integral_t>);
+    static_assert(is_same<add_cv<integral_t>, const volatile integral_t>);
+    static_assert(is_same<add_cv<float_t>, const volatile float_t>);
+    static_assert(is_same<add_cv<void_t>, const volatile void_t>);
+    static_assert(is_same<add_cv<nullptr_t>, const volatile nullptr_t>);
+    static_assert(is_same<add_cv<array_t>, const volatile array_t>);
+    static_assert(is_same<add_cv<pointer_t>, const volatile pointer_t>);
+    static_assert(is_same<add_cv<reference_t>, reference_t>);
+    static_assert(is_same<add_cv<function_t>, function_t>);
+    static_assert(is_same<add_cv<enum_t>, const volatile enum_t>);
+    static_assert(is_same<add_cv<union_t>, const volatile union_t>);
+    static_assert(is_same<add_cv<class_t>, const volatile class_t>);
+    static_assert(is_same
+                  <add_cv<member_object_pointer_t>,
                    const volatile member_object_pointer_t>);
-    static_assert(is_same_v
-                  <add_cv_t<member_function_pointer_t>,
+    static_assert(is_same
+                  <add_cv<member_function_pointer_t>,
                    const volatile member_function_pointer_t>);
 
-    static_assert(is_same_v<remove_cv<int>::type, int>);
-    static_assert(is_same_v<remove_cv_t<int>, int>);
-    static_assert(is_same_v<remove_cv_t<const int>, int>);
-    static_assert(is_same_v<remove_cv_t<volatile int>, int>);
-    static_assert(is_same_v<remove_cv_t<const volatile int>, int>);
+    static_assert(is_same<template_remove_cv<int>::type, int>);
+    static_assert(is_same<remove_cv<int>, int>);
+    static_assert(is_same<remove_cv<const int>, int>);
+    static_assert(is_same<remove_cv<volatile int>, int>);
+    static_assert(is_same<remove_cv<const volatile int>, int>);
   }
 
   // remove_reference
   // add_lvalue_reference
   // add_rvalue_reference
   {
-    static_assert(is_trivial_empty_v<remove_reference<int &>>);
-    static_assert(is_trivial_empty_v<remove_reference<int &&>>);
-    static_assert(is_trivial_empty_v<remove_reference<const int &>>);
-    static_assert(is_trivial_empty_v<remove_reference<const int &&>>);
-    static_assert(is_trivial_empty_v<add_lvalue_reference<int>>);
-    static_assert(is_trivial_empty_v<add_lvalue_reference<int &>>);
-    static_assert(is_trivial_empty_v<add_lvalue_reference<int &&>>);
-    static_assert(is_trivial_empty_v<add_lvalue_reference<const int &>>);
-    static_assert(is_trivial_empty_v<add_lvalue_reference<const int &&>>);
-    static_assert(is_trivial_empty_v<add_rvalue_reference<int>>);
-    static_assert(is_trivial_empty_v<add_rvalue_reference<int &>>);
-    static_assert(is_trivial_empty_v<add_rvalue_reference<int &&>>);
-    static_assert(is_trivial_empty_v<add_rvalue_reference<const int &>>);
-    static_assert(is_trivial_empty_v<add_rvalue_reference<const int &&>>);
+    static_assert(is_empty<template_remove_reference<int &>>);
+    static_assert(is_empty<template_remove_reference<int &&>>);
+    static_assert(is_empty<template_remove_reference<const int &>>);
+    static_assert(is_empty<template_remove_reference<const int &&>>);
+    static_assert(is_empty<template_add_lvalue_reference<int>>);
+    static_assert(is_empty<template_add_lvalue_reference<int &>>);
+    static_assert(is_empty<template_add_lvalue_reference<int &&>>);
+    static_assert(is_empty<template_add_lvalue_reference<const int &>>);
+    static_assert(is_empty<template_add_lvalue_reference<const int &&>>);
+    static_assert(is_empty<template_add_rvalue_reference<int>>);
+    static_assert(is_empty<template_add_rvalue_reference<int &>>);
+    static_assert(is_empty<template_add_rvalue_reference<int &&>>);
+    static_assert(is_empty<template_add_rvalue_reference<const int &>>);
+    static_assert(is_empty<template_add_rvalue_reference<const int &&>>);
 
-    static_assert(is_same_v<remove_reference<int>::type, int>);
-    static_assert(is_same_v<remove_reference_t<int>, int>);
-    static_assert(is_same_v<remove_reference_t<const int &>, const int>);
-    static_assert(is_same_v<remove_reference_t<int &>, int>);
-    static_assert(is_same_v<remove_reference_t<int &&>, int>);
+    static_assert(is_same<template_remove_reference<int>::type, int>);
+    static_assert(is_same<remove_reference<int>, int>);
+    static_assert(is_same<remove_reference<const int &>, const int>);
+    static_assert(is_same<remove_reference<int &>, int>);
+    static_assert(is_same<remove_reference<int &&>, int>);
 
-    static_assert(is_same_v<add_lvalue_reference<int>::type, int &>);
-    static_assert(is_same_v<add_lvalue_reference_t<int>, int &>);
-    static_assert(is_same_v<add_lvalue_reference_t<int &>, int &>);
-    static_assert(is_same_v<add_lvalue_reference_t<int &&>, int &>);
+    static_assert(is_same<template_add_lvalue_reference<int>::type, int &>);
+    static_assert(is_same<add_lvalue_reference<int>, int &>);
+    static_assert(is_same<add_lvalue_reference<int &>, int &>);
+    static_assert(is_same<add_lvalue_reference<int &&>, int &>);
 
-    static_assert(is_same_v<add_rvalue_reference<int>::type, int &&>);
-    static_assert(is_same_v<add_rvalue_reference_t<int>, int &&>);
-    static_assert(is_same_v<add_rvalue_reference_t<int &>, int &>);
-    static_assert(is_same_v<add_rvalue_reference_t<int &&>, int &&>);
+    static_assert(is_same<template_add_rvalue_reference<int>::type, int &&>);
+    static_assert(is_same<add_rvalue_reference<int>, int &&>);
+    static_assert(is_same<add_rvalue_reference<int &>, int &>);
+    static_assert(is_same<add_rvalue_reference<int &&>, int &&>);
   }
 
   // make_signed
   {
-    static_assert(is_trivial_empty_v<make_signed<int>>);
-    static_assert(is_trivial_empty_v<make_signed<unsigned>>);
-    static_assert(is_trivial_empty_v<make_signed<const unsigned>>);
-    static_assert(is_trivial_empty_v<make_signed<volatile unsigned>>);
-    static_assert(is_trivial_empty_v<make_signed<const volatile unsigned>>);
+    static_assert(is_empty<template_make_signed<int>>);
+    static_assert(is_empty<template_make_signed<unsigned>>);
+    static_assert(is_empty<template_make_signed<const unsigned>>);
+    static_assert(is_empty<template_make_signed<volatile unsigned>>);
+    static_assert(is_empty<template_make_signed<const volatile unsigned>>);
 
-    static_assert(is_same_v<make_signed<unsigned>::type, int>);
-    static_assert(is_same_v<make_signed_t<const unsigned>, const int>);
-    static_assert(is_same_v<make_signed_t<volatile unsigned>, volatile int>);
-    static_assert(is_same_v
-                  <make_signed_t<const volatile unsigned>, const volatile int>);
+    static_assert(is_same<template_make_signed<unsigned>::type, int>);
+    static_assert(is_same<make_signed<const unsigned>, const int>);
+    static_assert(is_same<make_signed<volatile unsigned>, volatile int>);
+    static_assert(is_same
+                  <make_signed<const volatile unsigned>, const volatile int>);
 
-    static_assert(is_same_v<make_signed_t<bool>, bool>);
-    static_assert(is_same_v<make_signed_t<char>, signed char>);
-    static_assert(is_same_v<make_signed_t<unsigned char>, signed char>);
-    static_assert(is_same_v<make_signed_t<signed char>, signed char>);
-    static_assert(is_same_v<make_signed_t<char8_t>, signed char>);
-    static_assert(is_same_v<make_signed_t<char16_t>, int_least16_t>);
-    static_assert(is_same_v<make_signed_t<char32_t>, int_least32_t>);
-    static_assert(is_same_v<make_signed_t<short>, short>);
-    static_assert(is_same_v<make_signed_t<unsigned short>, short>);
-    static_assert(is_same_v<make_signed_t<int>, int>);
-    static_assert(is_same_v<make_signed_t<unsigned int>, int>);
-    static_assert(is_same_v<make_signed_t<long>, long>);
-    static_assert(is_same_v<make_signed_t<unsigned long>, long>);
-    static_assert(is_same_v<make_signed_t<long long>, long long>);
-    static_assert(is_same_v<make_signed_t<unsigned long long>, long long>);
-    static_assert(is_same_v<make_signed_t<int_least8_t>, int_least8_t>);
-    static_assert(is_same_v<make_signed_t<uint_least8_t>, int_least8_t>);
-    static_assert(is_same_v<make_signed_t<int_least16_t>, int_least16_t>);
-    static_assert(is_same_v<make_signed_t<uint_least16_t>, int_least16_t>);
-    static_assert(is_same_v<make_signed_t<int_least32_t>, int_least32_t>);
-    static_assert(is_same_v<make_signed_t<uint_least32_t>, int_least32_t>);
-    static_assert(is_same_v<make_signed_t<int_least64_t>, int_least64_t>);
-    static_assert(is_same_v<make_signed_t<uint_least64_t>, int_least64_t>);
-    static_assert(is_same_v<make_signed_t<int_fast8_t>, int_fast8_t>);
-    static_assert(is_same_v<make_signed_t<uint_fast8_t>, int_fast8_t>);
-    static_assert(is_same_v<make_signed_t<int_fast16_t>, int_fast16_t>);
-    static_assert(is_same_v<make_signed_t<uint_fast16_t>, int_fast16_t>);
-    static_assert(is_same_v<make_signed_t<int_fast32_t>, int_fast32_t>);
-    static_assert(is_same_v<make_signed_t<uint_fast32_t>, int_fast32_t>);
-    static_assert(is_same_v<make_signed_t<int_fast64_t>, int_fast64_t>);
-    static_assert(is_same_v<make_signed_t<uint_fast64_t>, int_fast64_t>);
-    static_assert(is_same_v<make_signed_t<uintmax_t>, intmax_t>);
-    static_assert(is_same_v<make_signed_t<intmax_t>, intmax_t>);
-    static_assert(is_same_v<make_signed_t<int8_t>, int8_t>);
-    static_assert(is_same_v<make_signed_t<uint8_t>, int8_t>);
-    static_assert(is_same_v<make_signed_t<int16_t>, int16_t>);
-    static_assert(is_same_v<make_signed_t<uint16_t>, int16_t>);
-    static_assert(is_same_v<make_signed_t<int32_t>, int32_t>);
-    static_assert(is_same_v<make_signed_t<uint32_t>, int32_t>);
-    static_assert(is_same_v<make_signed_t<int64_t>, int64_t>);
-    static_assert(is_same_v<make_signed_t<uint64_t>, int64_t>);
+    static_assert(is_same<make_signed<bool>, bool>);
+    static_assert(is_same<make_signed<char>, signed char>);
+    static_assert(is_same<make_signed<unsigned char>, signed char>);
+    static_assert(is_same<make_signed<signed char>, signed char>);
+    static_assert(is_same<make_signed<char8_t>, signed char>);
+    static_assert(is_same<make_signed<char16_t>, int_least16_t>);
+    static_assert(is_same<make_signed<char32_t>, int_least32_t>);
+    static_assert(is_same<make_signed<short>, short>);
+    static_assert(is_same<make_signed<unsigned short>, short>);
+    static_assert(is_same<make_signed<int>, int>);
+    static_assert(is_same<make_signed<unsigned int>, int>);
+    static_assert(is_same<make_signed<long>, long>);
+    static_assert(is_same<make_signed<unsigned long>, long>);
+    static_assert(is_same<make_signed<long long>, long long>);
+    static_assert(is_same<make_signed<unsigned long long>, long long>);
+    static_assert(is_same<make_signed<int_least8_t>, int_least8_t>);
+    static_assert(is_same<make_signed<uint_least8_t>, int_least8_t>);
+    static_assert(is_same<make_signed<int_least16_t>, int_least16_t>);
+    static_assert(is_same<make_signed<uint_least16_t>, int_least16_t>);
+    static_assert(is_same<make_signed<int_least32_t>, int_least32_t>);
+    static_assert(is_same<make_signed<uint_least32_t>, int_least32_t>);
+    static_assert(is_same<make_signed<int_least64_t>, int_least64_t>);
+    static_assert(is_same<make_signed<uint_least64_t>, int_least64_t>);
+    static_assert(is_same<make_signed<int_fast8_t>, int_fast8_t>);
+    static_assert(is_same<make_signed<uint_fast8_t>, int_fast8_t>);
+    static_assert(is_same<make_signed<int_fast16_t>, int_fast16_t>);
+    static_assert(is_same<make_signed<uint_fast16_t>, int_fast16_t>);
+    static_assert(is_same<make_signed<int_fast32_t>, int_fast32_t>);
+    static_assert(is_same<make_signed<uint_fast32_t>, int_fast32_t>);
+    static_assert(is_same<make_signed<int_fast64_t>, int_fast64_t>);
+    static_assert(is_same<make_signed<uint_fast64_t>, int_fast64_t>);
+    static_assert(is_same<make_signed<uintmax_t>, intmax_t>);
+    static_assert(is_same<make_signed<intmax_t>, intmax_t>);
+    static_assert(is_same<make_signed<int8_t>, int8_t>);
+    static_assert(is_same<make_signed<uint8_t>, int8_t>);
+    static_assert(is_same<make_signed<int16_t>, int16_t>);
+    static_assert(is_same<make_signed<uint16_t>, int16_t>);
+    static_assert(is_same<make_signed<int32_t>, int32_t>);
+    static_assert(is_same<make_signed<uint32_t>, int32_t>);
+    static_assert(is_same<make_signed<int64_t>, int64_t>);
+    static_assert(is_same<make_signed<uint64_t>, int64_t>);
 
-    static_assert(is_signed_v<make_signed_t<wchar_t>>);
-    static_assert(sizeof(make_signed_t<wchar_t>) == sizeof(wchar_t));
-    static_assert(is_integral_v<make_signed_t<wchar_t>>);
+    static_assert(is_signed<make_signed<wchar_t>>);
+    static_assert(sizeof(make_signed<wchar_t>) == sizeof(wchar_t));
+    static_assert(is_integral<make_signed<wchar_t>>);
 
-    static_assert(is_signed_v<make_signed_t<ptrdiff_t>>);
-    static_assert(is_integral_v<make_signed_t<ptrdiff_t>>);
-    static_assert(sizeof(make_signed_t<ptrdiff_t>) == sizeof(ptrdiff_t));
+    static_assert(is_signed<make_signed<ptrdiff_t>>);
+    static_assert(is_integral<make_signed<ptrdiff_t>>);
+    static_assert(sizeof(make_signed<ptrdiff_t>) == sizeof(ptrdiff_t));
 
-    static_assert(is_signed_v<make_signed_t<size_t>>);
-    static_assert(is_integral_v<make_signed_t<size_t>>);
-    static_assert(sizeof(make_signed_t<size_t>) == sizeof(size_t));
+    static_assert(is_signed<make_signed<size_t>>);
+    static_assert(is_integral<make_signed<size_t>>);
+    static_assert(sizeof(make_signed<size_t>) == sizeof(size_t));
 
-    static_assert(is_same_v<make_signed_t<float>, float>);
-    static_assert(is_same_v<make_signed_t<double>, double>);
-    static_assert(is_same_v<make_signed_t<long double>, long double>);
+    static_assert(is_same<make_signed<float>, float>);
+    static_assert(is_same<make_signed<double>, double>);
+    static_assert(is_same<make_signed<long double>, long double>);
   }
   // make_unsigned
   {
-    static_assert(is_trivial_empty_v<make_unsigned<unsigned>>);
-    static_assert(is_trivial_empty_v<make_unsigned<int>>);
-    static_assert(is_trivial_empty_v<make_unsigned<const int>>);
-    static_assert(is_trivial_empty_v<make_unsigned<volatile int>>);
-    static_assert(is_trivial_empty_v<make_unsigned<const volatile int>>);
+    static_assert(is_empty<template_make_unsigned<unsigned>>);
+    static_assert(is_empty<template_make_unsigned<int>>);
+    static_assert(is_empty<template_make_unsigned<const int>>);
+    static_assert(is_empty<template_make_unsigned<volatile int>>);
+    static_assert(is_empty<template_make_unsigned<const volatile int>>);
 
-    static_assert(is_same_v<make_unsigned<int>::type, unsigned>);
-    static_assert(is_same_v<make_unsigned_t<const int>, const unsigned>);
-    static_assert(is_same_v<make_unsigned_t<volatile int>, volatile unsigned>);
-    static_assert(is_same_v
-                  <make_unsigned_t<const volatile int>,
+    static_assert(is_same<template_make_unsigned<int>::type, unsigned>);
+    static_assert(is_same<make_unsigned<const int>, const unsigned>);
+    static_assert(is_same<make_unsigned<volatile int>, volatile unsigned>);
+    static_assert(is_same
+                  <make_unsigned<const volatile int>,
                    const volatile unsigned>);
 
-    static_assert(is_same_v<make_unsigned_t<bool>, bool>);
-    static_assert(is_same_v<make_unsigned_t<char>, unsigned char>);
-    static_assert(is_same_v<make_unsigned_t<unsigned char>, unsigned char>);
-    static_assert(is_same_v<make_unsigned_t<signed char>, unsigned char>);
-    static_assert(is_same_v<make_unsigned_t<char8_t>, unsigned char>);
-    static_assert(is_same_v<make_unsigned_t<char16_t>, uint_least16_t>);
-    static_assert(is_same_v<make_unsigned_t<char32_t>, uint_least32_t>);
-    static_assert(is_same_v<make_unsigned_t<short>, unsigned short>);
-    static_assert(is_same_v<make_unsigned_t<unsigned short>, unsigned short>);
-    static_assert(is_same_v<make_unsigned_t<int>, unsigned>);
-    static_assert(is_same_v<make_unsigned_t<unsigned int>, unsigned>);
-    static_assert(is_same_v<make_unsigned_t<long>, unsigned long>);
-    static_assert(is_same_v<make_unsigned_t<unsigned long>, unsigned long>);
-    static_assert(is_same_v<make_unsigned_t<long long>, unsigned long long>);
-    static_assert(is_same_v
-                  <make_unsigned_t<unsigned long long>, unsigned long long>);
-    static_assert(is_same_v<make_unsigned_t<int_least8_t>, uint_least8_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_least8_t>, uint_least8_t>);
-    static_assert(is_same_v<make_unsigned_t<int_least16_t>, uint_least16_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_least16_t>, uint_least16_t>);
-    static_assert(is_same_v<make_unsigned_t<int_least32_t>, uint_least32_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_least32_t>, uint_least32_t>);
-    static_assert(is_same_v<make_unsigned_t<int_least64_t>, uint_least64_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_least64_t>, uint_least64_t>);
-    static_assert(is_same_v<make_unsigned_t<int_fast8_t>, uint_fast8_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_fast8_t>, uint_fast8_t>);
-    static_assert(is_same_v<make_unsigned_t<int_fast16_t>, uint_fast16_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_fast16_t>, uint_fast16_t>);
-    static_assert(is_same_v<make_unsigned_t<int_fast32_t>, uint_fast32_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_fast32_t>, uint_fast32_t>);
-    static_assert(is_same_v<make_unsigned_t<int_fast64_t>, uint_fast64_t>);
-    static_assert(is_same_v<make_unsigned_t<uint_fast64_t>, uint_fast64_t>);
-    static_assert(is_same_v<make_unsigned_t<uintmax_t>, uintmax_t>);
-    static_assert(is_same_v<make_unsigned_t<intmax_t>, uintmax_t>);
+    static_assert(is_same<make_unsigned<bool>, bool>);
+    static_assert(is_same<make_unsigned<char>, unsigned char>);
+    static_assert(is_same<make_unsigned<unsigned char>, unsigned char>);
+    static_assert(is_same<make_unsigned<signed char>, unsigned char>);
+    static_assert(is_same<make_unsigned<char8_t>, unsigned char>);
+    static_assert(is_same<make_unsigned<char16_t>, uint_least16_t>);
+    static_assert(is_same<make_unsigned<char32_t>, uint_least32_t>);
+    static_assert(is_same<make_unsigned<short>, unsigned short>);
+    static_assert(is_same<make_unsigned<unsigned short>, unsigned short>);
+    static_assert(is_same<make_unsigned<int>, unsigned>);
+    static_assert(is_same<make_unsigned<unsigned int>, unsigned>);
+    static_assert(is_same<make_unsigned<long>, unsigned long>);
+    static_assert(is_same<make_unsigned<unsigned long>, unsigned long>);
+    static_assert(is_same<make_unsigned<long long>, unsigned long long>);
+    static_assert(is_same
+                  <make_unsigned<unsigned long long>, unsigned long long>);
+    static_assert(is_same<make_unsigned<int_least8_t>, uint_least8_t>);
+    static_assert(is_same<make_unsigned<uint_least8_t>, uint_least8_t>);
+    static_assert(is_same<make_unsigned<int_least16_t>, uint_least16_t>);
+    static_assert(is_same<make_unsigned<uint_least16_t>, uint_least16_t>);
+    static_assert(is_same<make_unsigned<int_least32_t>, uint_least32_t>);
+    static_assert(is_same<make_unsigned<uint_least32_t>, uint_least32_t>);
+    static_assert(is_same<make_unsigned<int_least64_t>, uint_least64_t>);
+    static_assert(is_same<make_unsigned<uint_least64_t>, uint_least64_t>);
+    static_assert(is_same<make_unsigned<int_fast8_t>, uint_fast8_t>);
+    static_assert(is_same<make_unsigned<uint_fast8_t>, uint_fast8_t>);
+    static_assert(is_same<make_unsigned<int_fast16_t>, uint_fast16_t>);
+    static_assert(is_same<make_unsigned<uint_fast16_t>, uint_fast16_t>);
+    static_assert(is_same<make_unsigned<int_fast32_t>, uint_fast32_t>);
+    static_assert(is_same<make_unsigned<uint_fast32_t>, uint_fast32_t>);
+    static_assert(is_same<make_unsigned<int_fast64_t>, uint_fast64_t>);
+    static_assert(is_same<make_unsigned<uint_fast64_t>, uint_fast64_t>);
+    static_assert(is_same<make_unsigned<uintmax_t>, uintmax_t>);
+    static_assert(is_same<make_unsigned<intmax_t>, uintmax_t>);
 
-    static_assert(is_same_v<make_unsigned_t<int8_t>, uint8_t>);
-    static_assert(is_same_v<make_unsigned_t<uint8_t>, uint8_t>);
-    static_assert(is_same_v<make_unsigned_t<int16_t>, uint16_t>);
-    static_assert(is_same_v<make_unsigned_t<uint16_t>, uint16_t>);
-    static_assert(is_same_v<make_unsigned_t<int32_t>, uint32_t>);
-    static_assert(is_same_v<make_unsigned_t<uint32_t>, uint32_t>);
-    static_assert(is_same_v<make_unsigned_t<int64_t>, uint64_t>);
-    static_assert(is_same_v<make_unsigned_t<uint64_t>, uint64_t>);
+    static_assert(is_same<make_unsigned<int8_t>, uint8_t>);
+    static_assert(is_same<make_unsigned<uint8_t>, uint8_t>);
+    static_assert(is_same<make_unsigned<int16_t>, uint16_t>);
+    static_assert(is_same<make_unsigned<uint16_t>, uint16_t>);
+    static_assert(is_same<make_unsigned<int32_t>, uint32_t>);
+    static_assert(is_same<make_unsigned<uint32_t>, uint32_t>);
+    static_assert(is_same<make_unsigned<int64_t>, uint64_t>);
+    static_assert(is_same<make_unsigned<uint64_t>, uint64_t>);
 
-    static_assert(is_unsigned_v<make_unsigned_t<wchar_t>>);
-    static_assert(sizeof(make_unsigned_t<wchar_t>) == sizeof(wchar_t));
-    static_assert(is_integral_v<make_unsigned_t<wchar_t>>);
+    static_assert(is_unsigned<make_unsigned<wchar_t>>);
+    static_assert(sizeof(make_unsigned<wchar_t>) == sizeof(wchar_t));
+    static_assert(is_integral<make_unsigned<wchar_t>>);
 
-    static_assert(is_unsigned_v<make_unsigned_t<ptrdiff_t>>);
-    static_assert(is_integral_v<make_unsigned_t<ptrdiff_t>>);
-    static_assert(sizeof(make_unsigned_t<ptrdiff_t>) == sizeof(ptrdiff_t));
+    static_assert(is_unsigned<make_unsigned<ptrdiff_t>>);
+    static_assert(is_integral<make_unsigned<ptrdiff_t>>);
+    static_assert(sizeof(make_unsigned<ptrdiff_t>) == sizeof(ptrdiff_t));
 
-    static_assert(is_unsigned_v<make_unsigned_t<size_t>>);
-    static_assert(is_integral_v<make_unsigned_t<size_t>>);
-    static_assert(sizeof(make_unsigned_t<size_t>) == sizeof(size_t));
+    static_assert(is_unsigned<make_unsigned<size_t>>);
+    static_assert(is_integral<make_unsigned<size_t>>);
+    static_assert(sizeof(make_unsigned<size_t>) == sizeof(size_t));
 
-    static_assert(is_same_v<make_unsigned_t<float>, float>);
-    static_assert(is_same_v<make_unsigned_t<double>, double>);
-    static_assert(is_same_v<make_unsigned_t<long double>, long double>);
+    static_assert(is_same<make_unsigned<float>, float>);
+    static_assert(is_same<make_unsigned<double>, double>);
+    static_assert(is_same<make_unsigned<long double>, long double>);
   }
 
   // remove_extent
   // remove_all_extents
   {
-    static_assert(is_trivial_empty_v<remove_extent<int>>);
-    static_assert(is_trivial_empty_v<remove_extent<int []>>);
-    static_assert(is_trivial_empty_v<remove_extent<int [3]>>);
-    static_assert(is_trivial_empty_v<remove_all_extents<int>>);
-    static_assert(is_trivial_empty_v<remove_all_extents<int []>>);
-    static_assert(is_trivial_empty_v<remove_all_extents<int [3]>>);
-    static_assert(is_trivial_empty_v<remove_all_extents<int [3][4]>>);
-    static_assert(is_trivial_empty_v<remove_all_extents<int [3][4][5][6]>>);
+    static_assert(is_empty<template_remove_extent<int>>);
+    static_assert(is_empty<template_remove_extent<int []>>);
+    static_assert(is_empty<template_remove_extent<int [3]>>);
+    static_assert(is_empty<template_remove_all_extents<int>>);
+    static_assert(is_empty<template_remove_all_extents<int []>>);
+    static_assert(is_empty<template_remove_all_extents<int [3]>>);
+    static_assert(is_empty<template_remove_all_extents<int [3][4]>>);
+    static_assert(is_empty<template_remove_all_extents<int [3][4][5][6]>>);
 
-    static_assert(is_same_v<remove_extent<int>::type, int>);
-    static_assert(is_same_v<remove_extent_t<int>, int>);
-    static_assert(is_same_v<remove_extent_t<const int>, const int>);
-    static_assert(is_same_v<remove_extent_t<volatile int>, volatile int>);
-    static_assert(is_same_v
-                  <remove_extent_t<const volatile int>, const volatile int>);
-    static_assert(is_same_v<remove_extent_t<int []>, int>);
-    static_assert(is_same_v<remove_extent_t<const int []>, const int>);
-    static_assert(is_same_v<remove_extent_t<int [][3]>, int [3]>);
-    static_assert(is_same_v<remove_extent_t<int [2][3]>, int [3]>);
-    static_assert(is_same_v
-                  <remove_extent_t<volatile int [2][3]>, volatile int [3]>);
-    static_assert(is_same_v<remove_extent_t<int [2][3][4]>, int [3][4]>);
+    static_assert(is_same<template_remove_extent<int>::type, int>);
+    static_assert(is_same<remove_extent<int>, int>);
+    static_assert(is_same<remove_extent<const int>, const int>);
+    static_assert(is_same<remove_extent<volatile int>, volatile int>);
+    static_assert(is_same
+                  <remove_extent<const volatile int>, const volatile int>);
+    static_assert(is_same<remove_extent<int []>, int>);
+    static_assert(is_same<remove_extent<const int []>, const int>);
+    static_assert(is_same<remove_extent<int [][3]>, int [3]>);
+    static_assert(is_same<remove_extent<int [2][3]>, int [3]>);
+    static_assert(is_same
+                  <remove_extent<volatile int [2][3]>, volatile int [3]>);
+    static_assert(is_same<remove_extent<int [2][3][4]>, int [3][4]>);
 
-    static_assert(is_same_v<remove_all_extents_t<int>, int>);
-    static_assert(is_same_v<remove_all_extents_t<const int>, const int>);
-    static_assert(is_same_v<remove_all_extents<int [][3]>::type, int>);
-    static_assert(is_same_v<remove_all_extents_t<int [][3]>, int>);
-    static_assert(is_same_v
-                  <remove_all_extents_t<int [2][3][4]>, int>);
-    static_assert(is_same_v
-                  <remove_all_extents_t<const int [2][3][4]>, const int>);
-    static_assert(is_same_v
-                  <remove_all_extents_t<volatile int [2][3][4]>, volatile int>);
-    static_assert(is_same_v
-                  <remove_all_extents_t<const volatile int [2][3][4]>,
+    static_assert(is_same<remove_all_extents<int>, int>);
+    static_assert(is_same<remove_all_extents<const int>, const int>);
+    static_assert(is_same<template_remove_all_extents<int [][3]>::type, int>);
+    static_assert(is_same<remove_all_extents<int [][3]>, int>);
+    static_assert(is_same
+                  <remove_all_extents<int [2][3][4]>, int>);
+    static_assert(is_same
+                  <remove_all_extents<const int [2][3][4]>, const int>);
+    static_assert(is_same
+                  <remove_all_extents<volatile int [2][3][4]>, volatile int>);
+    static_assert(is_same
+                  <remove_all_extents<const volatile int [2][3][4]>,
                    const volatile int>);
-    static_assert(is_same_v
-                  <remove_all_extents_t<const volatile int [2][3][4]>,
+    static_assert(is_same
+                  <remove_all_extents<const volatile int [2][3][4]>,
                    const volatile int>);
   }
 
   // remove_pointer
   // add_pointer
   {
-    static_assert(is_trivial_empty_v<remove_pointer<int>>);
-    static_assert(is_trivial_empty_v<remove_pointer<int *>>);
-    static_assert(is_trivial_empty_v<remove_pointer<int &>>);
-    static_assert(is_trivial_empty_v<add_pointer<int>>);
-    static_assert(is_trivial_empty_v<add_pointer<int *>>);
-    static_assert(is_trivial_empty_v<add_pointer<int &>>);
+    static_assert(is_empty<template_remove_pointer<int>>);
+    static_assert(is_empty<template_remove_pointer<int *>>);
+    static_assert(is_empty<template_remove_pointer<int &>>);
+    static_assert(is_empty<template_add_pointer<int>>);
+    static_assert(is_empty<template_add_pointer<int *>>);
+    static_assert(is_empty<template_add_pointer<int &>>);
 
-    static_assert(is_same_v<remove_pointer<int>::type, int>);
-    static_assert(is_same_v<remove_pointer_t<int>, int>);
-    static_assert(is_same_v<remove_pointer_t<const int *>, const int>);
-    static_assert(is_same_v<remove_pointer_t<const int *const>, const int>);
-    static_assert(is_same_v<remove_pointer_t<const int *volatile>, const int>);
-    static_assert(is_same_v
-                  <remove_pointer_t<const int *const volatile>, const int>);
-    static_assert(is_same_v<remove_pointer_t<int ***>, int **>);
+    static_assert(is_same<template_remove_pointer<int>::type, int>);
+    static_assert(is_same<remove_pointer<int>, int>);
+    static_assert(is_same<remove_pointer<const int *>, const int>);
+    static_assert(is_same<remove_pointer<const int *const>, const int>);
+    static_assert(is_same<remove_pointer<const int *volatile>, const int>);
+    static_assert(is_same
+                  <remove_pointer<const int *const volatile>, const int>);
+    static_assert(is_same<remove_pointer<int ***>, int **>);
 
-    static_assert(is_same_v<add_pointer_t<void>, void *>);
-    static_assert(is_same_v<add_pointer_t<const void>, const void *>);
-    static_assert(is_same_v<add_pointer_t<int>, int *>);
-    static_assert(is_same_v<add_pointer_t<void () &&>, void () &&>);
-    static_assert(is_same_v<add_pointer_t<void (...)>, void (*)(...)>);
-    static_assert(is_same_v
-                  <add_pointer_t<void (int, ...)>, void (*)(int, ...)>);
-    static_assert(is_same_v<add_pointer_t<void ()>, void (*)()>);
-    static_assert(is_same_v<add_pointer_t<int &>, int *>);
-    static_assert(is_same_v<add_pointer_t<int ***>, int ****>);
+    static_assert(is_same<template_add_pointer<void>::type, void *>);
+    static_assert(is_same<add_pointer<void>, void *>);
+    static_assert(is_same<add_pointer<const void>, const void *>);
+    static_assert(is_same<add_pointer<int>, int *>);
+    static_assert(is_same<add_pointer<void () &&>, void () &&>);
+    static_assert(is_same<add_pointer<void (...)>, void (*)(...)>);
+    static_assert(is_same<add_pointer<void (int, ...)>, void (*)(int, ...)>);
+    static_assert(is_same<add_pointer<void ()>, void (*)()>);
+    static_assert(is_same<add_pointer<int &>, int *>);
+    static_assert(is_same<add_pointer<int ***>, int ****>);
   }
 
   // type_identity
   {
-    static_assert(is_trivial_empty_v<type_identity<int>>); 
+    static_assert(is_empty<template_type_identity<int>>); 
 
-    static_assert(is_same_v<type_identity<int>::type, int>);
-    static_assert(is_same_v<type_identity_t<int>, int>);
+    static_assert(is_same<template_type_identity<int>::type, int>);
+    static_assert(is_same<type_identity<int>, int>);
   }
   // remove_cvref
   {
-    static_assert(is_trivial_empty_v<remove_cvref<const int>>);
-    static_assert(is_trivial_empty_v<remove_cvref<const volatile int>>);
-    static_assert(is_trivial_empty_v<remove_cvref<const volatile int &>>);
+    static_assert(is_empty<template_remove_cvref<const int>>);
+    static_assert(is_empty<template_remove_cvref<const volatile int>>);
+    static_assert(is_empty<template_remove_cvref<const volatile int &>>);
 
-    static_assert(is_same_v<remove_cvref_t<const volatile int &&>, int>);
-    static_assert(is_same_v<remove_cvref_t<volatile int &&>, int>);
-    static_assert(is_same_v<remove_cvref_t<const int &&>, int>);
-    static_assert(is_same_v<remove_cvref_t<int &&>, int>);
-    static_assert(is_same_v<remove_cvref_t<const volatile int>, int>);
-    static_assert(is_same_v<remove_cvref_t<volatile int>, int>);
-    static_assert(is_same_v<remove_cvref_t<const int>, int>);
-    static_assert(is_same_v<remove_cvref_t<int>, int>);
-    static_assert(is_same_v<remove_cvref_t<void>, void>);
-    static_assert(is_same_v<remove_cvref_t<int (&)()>, int ()>);
-    static_assert(is_same_v<remove_cvref_t<int (&&)()>, int ()>);
+    static_assert(is_same<remove_cvref<const volatile int &&>, int>);
+    static_assert(is_same<remove_cvref<volatile int &&>, int>);
+    static_assert(is_same<remove_cvref<const int &&>, int>);
+    static_assert(is_same<remove_cvref<int &&>, int>);
+    static_assert(is_same<remove_cvref<const volatile int>, int>);
+    static_assert(is_same<remove_cvref<volatile int>, int>);
+    static_assert(is_same<remove_cvref<const int>, int>);
+    static_assert(is_same<remove_cvref<int>, int>);
+    static_assert(is_same<remove_cvref<void>, void>);
+    static_assert(is_same<remove_cvref<int (&)()>, int ()>);
+    static_assert(is_same<remove_cvref<int (&&)()>, int ()>);
   }
   // decay
   {
-    static_assert(is_trivial_empty_v<decay<const int &>>);
-    static_assert(is_trivial_empty_v<decay<int [3]>>);
-    static_assert(is_trivial_empty_v<decay<int (&)()>>);
+    static_assert(is_empty<template_decay<const int &>>);
+    static_assert(is_empty<template_decay<int [3]>>);
+    static_assert(is_empty<template_decay<int (&)()>>);
 
-    static_assert(is_same_v<decay_t<int>, int>);
-    static_assert(is_same_v<decay_t<const int>, int>);
-    static_assert(is_same_v<decay_t<volatile int>, int>);
-    static_assert(is_same_v<decay_t<const volatile int>, int>);
-    static_assert(is_same_v<decay_t<const int &>, int>);
-    static_assert(is_same_v<decay_t<void (&)()>, void (*)()>);
-    static_assert(is_same_v<decay_t<void () &>, void () &>);
-    static_assert(is_same_v<decay_t<int []>, int *>);
-    static_assert(is_same_v<decay_t<int [2][3][4]>, int (*)[3][4]>);
-    static_assert(is_same_v<decay_t<int (&)[2][3][4]>, int (*)[3][4]>);
-    static_assert(is_same_v
-                  <decay_t<const int (&)[2][3][4]>, const int (*)[3][4]>);
+    static_assert(is_same<template_decay<int>::type, int>);
+    static_assert(is_same<decay<int>, int>);
+    static_assert(is_same<decay<const int>, int>);
+    static_assert(is_same<decay<volatile int>, int>);
+    static_assert(is_same<decay<const volatile int>, int>);
+    static_assert(is_same<decay<const int &>, int>);
+    static_assert(is_same<decay<void (&)()>, void (*)()>);
+    static_assert(is_same<decay<void () &>, void () &>);
+    static_assert(is_same<decay<int []>, int *>);
+    static_assert(is_same<decay<int [2][3][4]>, int (*)[3][4]>);
+    static_assert(is_same<decay<int (&)[2][3][4]>, int (*)[3][4]>);
+    static_assert(is_same
+                  <decay<const int (&)[2][3][4]>, const int (*)[3][4]>);
   }
   // enable_if
   {
-    static_assert(is_trivial_empty_v<enable_if<true>>);
-    static_assert(is_trivial_empty_v<enable_if<true, int>>);
-    static_assert(is_trivial_empty_v<enable_if<false, int>>);
+    static_assert(is_empty<template_enable_if<true>>);
+    static_assert(is_empty<template_enable_if<true, int>>);
+    static_assert(is_empty<template_enable_if<false, int>>);
 
-    static_assert(has_member_type_type_v<enable_if<true>>);
-    static_assert(is_same_v<enable_if<true, int>::type, int>);
-    static_assert(is_same_v<enable_if_t<true, int>, int>);
-    static_assert(is_same_v<enable_if_t<true>, void>);
-    static_assert(!has_member_type_type_v<enable_if<false>>);
+    static_assert(has_member_type_type<template_enable_if<true>>);
+    static_assert(is_same<template_enable_if<true, int>::type, int>);
+    static_assert(is_same<enable_if<true, int>, int>);
+    static_assert(is_same<enable_if<true>, void>);
+    static_assert(!has_member_type_type<template_enable_if<false>>);
   }
   // conditional
   {
-    static_assert(is_trivial_empty_v<conditional<true, int, float>>);
-    static_assert(is_trivial_empty_v<conditional<false, int, float>>);
+    static_assert(is_empty<template_conditional<true, int, float>>);
+    static_assert(is_empty<template_conditional<false, int, float>>);
 
-    static_assert(is_same_v<conditional<true, int, float>::type, int>);
-    static_assert(is_same_v<conditional_t<true, int, float>, int>);
-    static_assert(is_same_v<conditional_t<false, int, float>, float>);
+    static_assert(is_same<template_conditional<true, int, float>::type, int>);
+    static_assert(is_same<conditional<true, int, float>, int>);
+    static_assert(is_same<conditional<false, int, float>, float>);
   }
   // common_type
   {
-    static_assert(is_trivial_empty_v<common_type<>>);
-    static_assert(is_trivial_empty_v<common_type<int, int>>);
-    static_assert(is_trivial_empty_v<common_type<int &, int &>>);
-    static_assert(is_trivial_empty_v<common_type<int, int, int>>);
-    static_assert(is_trivial_empty_v<common_type<int, int &, int>>);
-    static_assert(is_trivial_empty_v<common_type<int &, int &, int &>>);
+    static_assert(is_empty<template_common_type<>>);
+    static_assert(is_empty<template_common_type<int, int>>);
+    static_assert(is_empty<template_common_type<int &, int &>>);
+    static_assert(is_empty<template_common_type<int, int, int>>);
+    static_assert(is_empty<template_common_type<int, int &, int>>);
+    static_assert(is_empty<template_common_type<int &, int &, int &>>);
 
-    static_assert(!has_member_type_type_v<common_type<>>);
+    static_assert(!has_member_type_type<template_common_type<>>);
 
-    static_assert(is_same_v<common_type<char, char>::type, char>);
-    static_assert(is_same_v<common_type_t<char, char>, char>);
-    static_assert(is_same_v<common_type_t<short, char>, int>);
-    static_assert(is_same_v<common_type_t<char, unsigned>, unsigned>);
-    static_assert(is_same_v<common_type_t<float, double>, double>);
-    static_assert(is_same_v<common_type_t<float, int>, float>);
-    static_assert(is_same_v<common_type_t<int, float>, float>);
-    static_assert(is_same_v<common_type_t<int &, float>, float>);
-    static_assert(is_same_v<common_type_t<int &, const float &>, float>);
-    static_assert(is_same_v<common_type_t<int &, int &>, int>);
-    static_assert(is_same_v<common_type_t<void *, int *>, void *>);
+    static_assert(is_same<template_common_type<char, char>::type, char>);
+    static_assert(is_same<common_type<char, char>, char>);
+    static_assert(is_same<common_type<short, char>, int>);
+    static_assert(is_same<common_type<char, unsigned>, unsigned>);
+    static_assert(is_same<common_type<float, double>, double>);
+    static_assert(is_same<common_type<float, int>, float>);
+    static_assert(is_same<common_type<int, float>, float>);
+    static_assert(is_same<common_type<int &, float>, float>);
+    static_assert(is_same<common_type<int &, const float &>, float>);
+    static_assert(is_same<common_type<int &, int &>, int>);
+    static_assert(is_same<common_type<void *, int *>, void *>);
 
-    static_assert(!has_member_type_type_v<common_type<void *, int>>);
-    static_assert(!has_member_type_type_v<common_type<void *, char>>);
-    static_assert(is_same_v<common_type_t<void *, void **>, void *>);
+    static_assert(!has_member_type_type<template_common_type<void *, int>>);
+    static_assert(!has_member_type_type<template_common_type<void *, char>>);
+    static_assert(is_same<common_type<void *, void **>, void *>);
 
-    static_assert(is_same_v<common_type_t<void, void>, void>);
-    static_assert(is_same_v<common_type_t<const void, volatile void>, void>);
+    static_assert(is_same<common_type<void, void>, void>);
+    static_assert(is_same<common_type<const void, volatile void>, void>);
 
-    static_assert(is_same_v<common_type_t<char, short, long>, long>);
-    static_assert(is_same_v
-                  <common_type_t<const char, short &, volatile long &&>, long>);
-    static_assert(is_same_v<common_type_t<char, short, unsigned short>, int>);
-    static_assert(is_same_v<common_type_t<float, char, short>, float>);
-    static_assert(is_same_v<common_type_t<float, char, double, short>, double>);
-    static_assert(is_same_v<common_type_t<bool, bool, bool>, bool>);
-    static_assert(is_same_v<common_type_t<bool, bool, bool, bool>, bool>);
-    static_assert(is_same_v<common_type_t<bool, bool, bool, bool, bool>, bool>);
-    static_assert(!has_member_type_type_v
-                  <common_type_t<bool, bool, bool, bool, bool>>);
+    static_assert(is_same<common_type<char, short, long>, long>);
+    static_assert(is_same
+                  <common_type<const char, short &, volatile long &&>, long>);
+    static_assert(is_same<common_type<char, short, unsigned short>, int>);
+    static_assert(is_same<common_type<float, char, short>, float>);
+    static_assert(is_same<common_type<float, char, double, short>, double>);
+    static_assert(is_same<common_type<bool, bool, bool>, bool>);
+    static_assert(is_same<common_type<bool, bool, bool, bool>, bool>);
+    static_assert(is_same<common_type<bool, bool, bool, bool, bool>, bool>);
+    static_assert(!has_member_type_type
+                  <common_type<bool, bool, bool, bool, bool>>);
 
     {
-      static_assert(is_void_v
-                    <common_type_t<test_common_type::t, test_common_type::t>>);
-      static_assert(is_void_v
-                    <common_type_t<test_common_type::t, test_common_type::tt>>);
-      static_assert(is_void_v
-                    <common_type_t<const volatile test_common_type::t,
+      static_assert(is_void
+                    <common_type<test_common_type::t, test_common_type::t>>);
+      static_assert(is_void
+                    <common_type<test_common_type::t, test_common_type::tt>>);
+      static_assert(is_void
+                    <common_type<const volatile test_common_type::t,
                      test_common_type::tt>>);
-      static_assert(is_void_v
-                    <common_type_t<test_common_type::t,
+      static_assert(is_void
+                    <common_type<test_common_type::t,
                      const volatile test_common_type::tt>>);
-      static_assert(is_void_v
-                    <common_type_t<test_common_type::tt, test_common_type::t>>);
+      static_assert(is_void
+                    <common_type<test_common_type::tt, test_common_type::t>>);
     }
 
     {
       struct t {};
       struct tt : t {};
       struct ttt : tt {};
-      static_assert(is_same_v<common_type_t<t, tt>, t>);
-      static_assert(is_same_v<common_type_t<t, tt, ttt>, t>);
-      static_assert(is_same_v<common_type_t<t, ttt>, t>);
-      static_assert(is_same_v<common_type_t<t *, const tt *>, const t *>);
-      static_assert(is_same_v<common_type_t<volatile t *, const tt *>,
-                              const volatile t *>);
-      static_assert(is_same_v<common_type_t<volatile t, const tt>, t>);
+      static_assert(is_same<common_type<t, tt>, t>);
+      static_assert(is_same<common_type<t, tt, ttt>, t>);
+      static_assert(is_same<common_type<t, ttt>, t>);
+      static_assert(is_same<common_type<t *, const tt *>, const t *>);
+      static_assert(is_same<common_type<volatile t *, const tt *>,
+                            const volatile t *>);
+      static_assert(is_same<common_type<volatile t, const tt>, t>);
     }
   }
   // basic_common_reference
@@ -4687,121 +4744,123 @@ void test_type_traits() {
   {
     // inner::cref_t<X>
     {
-      static_assert(is_same_v<inner::cref_t<int>, const int &>);
-      static_assert(is_same_v
+      static_assert(is_same<inner::cref_t<int>, const int &>);
+      static_assert(is_same
                     <inner::cref_t<volatile int>, const volatile int &>);
-      static_assert(is_same_v
+      static_assert(is_same
                     <inner::cref_t<const volatile int>, const volatile int &>);
-      static_assert(is_same_v<inner::cref_t<const volatile int &&>,
-                              const volatile int &>);
+      static_assert(is_same
+                    <inner::cref_t<const volatile int &&>,
+                     const volatile int &>);
     }
 
     // inner::xref<X>
     {
-      static_assert(is_same_v<inner::xref<const volatile int &&>::tmpl<float>,
-                              const volatile float &&>);
-      static_assert(is_same_v<inner::xref<const volatile int &>::tmpl<float>,
-                              const volatile float &>);
-      static_assert(is_same_v<inner::xref<const volatile int>::tmpl<float>,
-                              const volatile float>);
-      static_assert(is_same_v<inner::xref<volatile int>::tmpl<float>,
-                              volatile float>);
-      static_assert(is_same_v<inner::xref<const int>::tmpl<float>,
-                              const float>);
-      static_assert(is_same_v<inner::xref<int>::tmpl<float>, float>);
+      static_assert(is_same<inner::xref<const volatile int &&>::tmpl<float>,
+                            const volatile float &&>);
+      static_assert(is_same<inner::xref<const volatile int &>::tmpl<float>,
+                            const volatile float &>);
+      static_assert(is_same<inner::xref<const volatile int>::tmpl<float>,
+                            const volatile float>);
+      static_assert(is_same<inner::xref<volatile int>::tmpl<float>,
+                            volatile float>);
+      static_assert(is_same<inner::xref<const int>::tmpl<float>,
+                            const float>);
+      static_assert(is_same<inner::xref<int>::tmpl<float>, float>);
     }
 
     // inner::copycv
     {
-      static_assert(is_same_v<inner::copycv_t<const volatile int &&, float>,
-                              float>);
-      static_assert(is_same_v<inner::copycv_t<const volatile int &, float>,
-                              float>);
+      static_assert(is_same<inner::copycv_t<const volatile int &&, float>,
+                            float>);
+      static_assert(is_same<inner::copycv_t<const volatile int &, float>,
+                            float>);
 
-      static_assert(is_same_v<inner::copycv_t<const volatile int, float>,
-                              const volatile float>);
-      static_assert(is_same_v<inner::copycv_t<volatile int, float>,
-                              volatile float>);
-      static_assert(is_same_v<inner::copycv_t<const int, float>,
-                              const float>);
+      static_assert(is_same<inner::copycv_t<const volatile int, float>,
+                            const volatile float>);
+      static_assert(is_same<inner::copycv_t<volatile int, float>,
+                            volatile float>);
+      static_assert(is_same<inner::copycv_t<const int, float>,
+                            const float>);
 
-      static_assert(is_same_v<inner::copycv_t<const volatile int, const float>,
-                              const volatile float>);
-      static_assert(is_same_v<inner::copycv_t<volatile int, const float>,
-                              const volatile float>);
-      static_assert(is_same_v<inner::copycv_t<const int, const float>,
-                              const float>);
+      static_assert(is_same<inner::copycv_t<const volatile int, const float>,
+                            const volatile float>);
+      static_assert(is_same<inner::copycv_t<volatile int, const float>,
+                            const volatile float>);
+      static_assert(is_same<inner::copycv_t<const int, const float>,
+                            const float>);
 
-      static_assert(is_same_v
+      static_assert(is_same
                     <inner::copycv_t<const volatile int, volatile float>,
                      const volatile float>);
-      static_assert(is_same_v<inner::copycv_t<volatile int, volatile float>,
-                              volatile float>);
-      static_assert(is_same_v<inner::copycv_t<const int, volatile float>,
-                              const volatile float>);
+      static_assert(is_same<inner::copycv_t<volatile int, volatile float>,
+                            volatile float>);
+      static_assert(is_same<inner::copycv_t<const int, volatile float>,
+                            const volatile float>);
 
-      static_assert(is_same_v<inner::copycv_t<const int, volatile float &>,
-                              volatile float &>);
+      static_assert(is_same<inner::copycv_t<const int, volatile float &>,
+                            volatile float &>);
     }
 
     // inner::copycvref
     {
-      static_assert(is_same_v
+      static_assert(is_same
                     <inner::copycvref_t<const volatile int &&, float &>,
                      float &>);
-      static_assert(is_same_v
+      static_assert(is_same
                     <inner::copycvref_t<const volatile int &&, float &&>,
                      float &&>);
-      static_assert(is_same_v<inner::copycvref_t<const int &&, volatile float>,
-                              const volatile float &&>);
+      static_assert(is_same<inner::copycvref_t<const int &&, volatile float>,
+                            const volatile float &&>);
 
-      static_assert(is_same_v<inner::copycvref_t<const volatile int &&, float>,
-                              const volatile float &&>);
-      static_assert(is_same_v<inner::copycvref_t<volatile int &&, float>,
-                              volatile float &&>);
-      static_assert(is_same_v<inner::copycvref_t<const int &&, float>,
-                              const float &&>);
-      static_assert(is_same_v<inner::copycvref_t<int &&, float>,
-                              float &&>);
+      static_assert(is_same<inner::copycvref_t<const volatile int &&, float>,
+                            const volatile float &&>);
+      static_assert(is_same<inner::copycvref_t<volatile int &&, float>,
+                            volatile float &&>);
+      static_assert(is_same<inner::copycvref_t<const int &&, float>,
+                            const float &&>);
+      static_assert(is_same<inner::copycvref_t<int &&, float>,
+                            float &&>);
 
-      static_assert(is_same_v<inner::copycvref_t<const volatile int &, float>,
-                              const volatile float &>);
-      static_assert(is_same_v<inner::copycvref_t<volatile int &, float>,
-                              volatile float &>);
-      static_assert(is_same_v<inner::copycvref_t<const int &, float>,
-                              const float &>);
-      static_assert(is_same_v<inner::copycvref_t<int &, float>,
-                              float &>);
+      static_assert(is_same<inner::copycvref_t<const volatile int &, float>,
+                            const volatile float &>);
+      static_assert(is_same<inner::copycvref_t<volatile int &, float>,
+                            volatile float &>);
+      static_assert(is_same<inner::copycvref_t<const int &, float>,
+                            const float &>);
+      static_assert(is_same<inner::copycvref_t<int &, float>,
+                            float &>);
 
-      static_assert(is_same_v<inner::copycvref_t<const volatile int, float>,
-                              const volatile float>);
-      static_assert(is_same_v<inner::copycvref_t<volatile int, float>,
-                              volatile float>);
-      static_assert(is_same_v<inner::copycvref_t<const int, float>,
-                              const float>);
-      static_assert(is_same_v<inner::copycvref_t<int, float>, float>);
+      static_assert(is_same<inner::copycvref_t<const volatile int, float>,
+                            const volatile float>);
+      static_assert(is_same<inner::copycvref_t<volatile int, float>,
+                            volatile float>);
+      static_assert(is_same<inner::copycvref_t<const int, float>,
+                            const float>);
+      static_assert(is_same<inner::copycvref_t<int, float>, float>);
     }
 
     // inner::common_ref
     // common_reference
     {
-      static_assert(is_trivial_empty_v
-                    <basic_common_reference
-                     <int, int, type_identity_t, type_identity_t>>);
-      static_assert(is_trivial_empty_v<common_reference<>>);
-      static_assert(is_trivial_empty_v<common_reference<int>>);
-      static_assert(is_trivial_empty_v<common_reference<int, int>>);
-      static_assert(is_trivial_empty_v<common_reference<int, int>>);
-      static_assert(is_trivial_empty_v<common_reference<int, int &>>);
-      static_assert(is_trivial_empty_v<common_reference<int &, int>>);
-      static_assert(is_trivial_empty_v<common_reference<int &, int &&>>);
-      static_assert(is_trivial_empty_v<common_reference<int &&, int &>>);
-      static_assert(is_trivial_empty_v<common_reference<int &, int &>>);
-      static_assert(is_trivial_empty_v<common_reference<int &&, int &&>>);
-      static_assert(is_trivial_empty_v
-                    <common_reference<tuple<int, int>, tuple<int &, int &>>>);
-      static_assert(is_trivial_empty_v
-                    <common_reference
+      static_assert(is_empty
+                    <template_basic_common_reference
+                     <int, int, type_identity, type_identity>>);
+      static_assert(is_empty<template_common_reference<>>);
+      static_assert(is_empty<template_common_reference<int>>);
+      static_assert(is_empty<template_common_reference<int, int>>);
+      static_assert(is_empty<template_common_reference<int, int>>);
+      static_assert(is_empty<template_common_reference<int, int &>>);
+      static_assert(is_empty<template_common_reference<int &, int>>);
+      static_assert(is_empty<template_common_reference<int &, int &&>>);
+      static_assert(is_empty<template_common_reference<int &&, int &>>);
+      static_assert(is_empty<template_common_reference<int &, int &>>);
+      static_assert(is_empty<template_common_reference<int &&, int &&>>);
+      static_assert(is_empty
+                    <template_common_reference<tuple<int, int>,
+                     tuple<int &, int &>>>);
+      static_assert(is_empty
+                    <template_common_reference
                      <tuple<int, int> &, tuple<int &, int &> &,
                       tuple<int &, int &> &>>);
 
@@ -4816,26 +4875,26 @@ void test_type_traits() {
     enum t {a, b, c};
     enum class tt {a, b, c};
 
-    static_assert(is_trivial_empty_v<underlying_type<void>>);
-    static_assert(is_trivial_empty_v<underlying_type<t>>);
-    static_assert(is_trivial_empty_v<underlying_type<const t>>);
-    static_assert(is_trivial_empty_v<underlying_type<volatile t>>);
-    static_assert(is_trivial_empty_v<underlying_type<const volatile t>>);
-    static_assert(is_trivial_empty_v<underlying_type<tt>>);
+    static_assert(is_empty<template_underlying_type<void>>);
+    static_assert(is_empty<template_underlying_type<t>>);
+    static_assert(is_empty<template_underlying_type<const t>>);
+    static_assert(is_empty<template_underlying_type<volatile t>>);
+    static_assert(is_empty<template_underlying_type<const volatile t>>);
+    static_assert(is_empty<template_underlying_type<tt>>);
 
-    static_assert(is_integral_v<underlying_type<t>::type>);
-    static_assert(is_integral_v<underlying_type_t<t>>);
-    static_assert(is_integral_v<underlying_type_t<const t>>);
-    static_assert(is_integral_v<underlying_type_t<volatile t>>);
-    static_assert(is_integral_v<underlying_type_t<const volatile t>>);
-    static_assert(is_integral_v<underlying_type_t<tt>>);
-    static_assert(!has_member_type_type_v<underlying_type<void>>);
-    static_assert(!has_member_type_type_v<underlying_type<int>>);
+    static_assert(is_integral<template_underlying_type<t>::type>);
+    static_assert(is_integral<underlying_type<t>>);
+    static_assert(is_integral<underlying_type<const t>>);
+    static_assert(is_integral<underlying_type<volatile t>>);
+    static_assert(is_integral<underlying_type<const volatile t>>);
+    static_assert(is_integral<underlying_type<tt>>);
+    static_assert(!has_member_type_type<template_underlying_type<void>>);
+    static_assert(!has_member_type_type<template_underlying_type<int>>);
   }
   // void_t
   {
-    static_assert(is_void_v<void_t<>>);
-    static_assert(is_void_v<void_t<int, float, void *>>);
+    static_assert(is_void<void_t<>>);
+    static_assert(is_void<void_t<int, float, void *>>);
   }
 
   // uses_allocator
@@ -4845,73 +4904,73 @@ void test_type_traits() {
     };
     struct B {};
 
-    static_assert(is_trivial_empty_v<uses_allocator<A, int>>);
-    static_assert(is_trivial_empty_v<uses_allocator<int, int>>);
+    static_assert(is_empty<template_uses_allocator<A, int>>);
+    static_assert(is_empty<template_uses_allocator<int, int>>);
 
-    static_assert(uses_allocator<A, int>::value);
-    static_assert(uses_allocator_v<A, int>);
-    static_assert(uses_allocator_v<A, float>);
-    static_assert(!uses_allocator_v<A, int *>);
-    static_assert(!uses_allocator_v<B, int>);
-    static_assert(!uses_allocator_v<void, void>);
+    static_assert(template_uses_allocator<A, int>::value);
+    static_assert(uses_allocator<A, int>);
+    static_assert(uses_allocator<A, float>);
+    static_assert(!uses_allocator<A, int *>);
+    static_assert(!uses_allocator<B, int>);
+    static_assert(!uses_allocator<void, void>);
   }
 
   // max_align_of_types
   // max_size_of_types
   {
     {
-      static_assert(is_trivial_empty_v<max_align_of_types<>>);
-      static_assert(is_trivial_empty_v<max_align_of_types<int, float, double>>);
+      static_assert(is_empty<template_max_align_of_types<>>);
+      static_assert(is_empty<template_max_align_of_types<int, float, double>>);
 
-      static_assert(max_align_of_types<>::value == 1);
-      static_assert(max_align_of_types_v<> == 1);
+      static_assert(template_max_align_of_types<>::value == 1);
+      static_assert(max_align_of_types<> == 1);
 
-      static_assert(max_align_of_types_v<char> == 1);
+      static_assert(max_align_of_types<char> == 1);
 
-      static_assert(max_align_of_types_v<char, int, long double>
+      static_assert(max_align_of_types<char, int, long double>
                     == alignof(long double));
-      static_assert(max_align_of_types_v<char, long double, int>
+      static_assert(max_align_of_types<char, long double, int>
                     == alignof(long double));
-      static_assert(max_align_of_types_v<int, long double, char>
+      static_assert(max_align_of_types<int, long double, char>
                     == alignof(long double));
-      static_assert(max_align_of_types_v<int, char, long double>
+      static_assert(max_align_of_types<int, char, long double>
                     == alignof(long double));
-      static_assert(max_align_of_types_v<long double, char, int>
+      static_assert(max_align_of_types<long double, char, int>
                     == alignof(long double));
-      static_assert(max_align_of_types_v<long double, int, char>
+      static_assert(max_align_of_types<long double, int, char>
                     == alignof(long double));
     }
     {
-      static_assert(is_trivial_empty_v<max_size_of_types<>>);
-      static_assert(is_trivial_empty_v<max_size_of_types<int, float, double>>);
+      static_assert(is_empty<template_max_size_of_types<>>);
+      static_assert(is_empty<template_max_size_of_types<int, float, double>>);
 
-      static_assert(max_size_of_types<>::value == 0);
-      static_assert(max_size_of_types_v<> == 0);
+      static_assert(template_max_size_of_types<>::value == 0);
+      static_assert(max_size_of_types<> == 0);
 
-      static_assert(max_size_of_types_v<char> == 1);
+      static_assert(max_size_of_types<char> == 1);
 
-      static_assert(max_size_of_types_v<char, int, long double>
+      static_assert(max_size_of_types<char, int, long double>
                     == sizeof(long double));
-      static_assert(max_size_of_types_v<char, long double, int>
+      static_assert(max_size_of_types<char, long double, int>
                     == sizeof(long double));
-      static_assert(max_size_of_types_v<int, long double, char>
+      static_assert(max_size_of_types<int, long double, char>
                     == sizeof(long double));
-      static_assert(max_size_of_types_v<int, char, long double>
+      static_assert(max_size_of_types<int, char, long double>
                     == sizeof(long double));
-      static_assert(max_size_of_types_v<long double, char, int>
+      static_assert(max_size_of_types<long double, char, int>
                     == sizeof(long double));
-      static_assert(max_size_of_types_v<long double, int, char>
+      static_assert(max_size_of_types<long double, int, char>
                     == sizeof(long double));
     }
   }
   // type_t
   {
-    static_assert(is_void_v<type_t<void>>);
-    static_assert(is_void_v<type_t<void, void *>>);
-    static_assert(is_void_v<type_t<void, int, float, void *>>);
-    static_assert(is_same_v<type_t<int>, int>);
-    static_assert(is_same_v<type_t<int, float>, int>);
-    static_assert(is_same_v<type_t<int, int, float, void *>, int>);
+    static_assert(is_void<type_t<void>>);
+    static_assert(is_void<type_t<void, void *>>);
+    static_assert(is_void<type_t<void, int, float, void *>>);
+    static_assert(is_same<type_t<int>, int>);
+    static_assert(is_same<type_t<int, float>, int>);
+    static_assert(is_same<type_t<int, int, float, void *>, int>);
   }
   // is_implicitly_constructible
   // is_implicitly_default_constructible
@@ -4922,21 +4981,21 @@ void test_type_traits() {
     struct B {
       B() {}
     };
-    static_assert(is_trivial_empty_v<is_implicitly_constructible<A>>);
-    static_assert(is_trivial_empty_v<is_implicitly_constructible<B>>);
-    static_assert(!is_implicitly_constructible<A>::value);
-    static_assert(!is_implicitly_constructible_v<A>);
-    static_assert(is_implicitly_constructible<B>::value);
-    static_assert(is_implicitly_constructible_v<B>);
-    static_assert(!is_implicitly_constructible_v<tuple<A>>);
-    static_assert(!is_implicitly_constructible_v<tuple<A, A>>);
-    static_assert(!is_implicitly_constructible_v<tuple<B, A>>);
-    static_assert(!is_implicitly_constructible_v<tuple<A, B>>);
-    static_assert(is_implicitly_constructible_v<tuple<B, B>>);
-    static_assert(!is_implicitly_constructible_v<tuple<A, A, A>>);
-    static_assert(!is_implicitly_constructible_v<tuple<A, B, A>>);
-    static_assert(!is_implicitly_constructible_v<tuple<B, B, A>>);
-    static_assert(is_implicitly_constructible_v<tuple<B, B, B>>);
+    static_assert(is_empty<template_is_implicitly_constructible<A>>);
+    static_assert(is_empty<template_is_implicitly_constructible<B>>);
+    static_assert(!template_is_implicitly_constructible<A>::value);
+    static_assert(!is_implicitly_constructible<A>);
+    static_assert(template_is_implicitly_constructible<B>::value);
+    static_assert(is_implicitly_constructible<B>);
+    static_assert(!is_implicitly_constructible<tuple<A>>);
+    static_assert(!is_implicitly_constructible<tuple<A, A>>);
+    static_assert(!is_implicitly_constructible<tuple<B, A>>);
+    static_assert(!is_implicitly_constructible<tuple<A, B>>);
+    static_assert(is_implicitly_constructible<tuple<B, B>>);
+    static_assert(!is_implicitly_constructible<tuple<A, A, A>>);
+    static_assert(!is_implicitly_constructible<tuple<A, B, A>>);
+    static_assert(!is_implicitly_constructible<tuple<B, B, A>>);
+    static_assert(is_implicitly_constructible<tuple<B, B, B>>);
 
     struct t {
       t(int, int) {}
@@ -4944,37 +5003,8 @@ void test_type_traits() {
     struct tt {
       explicit tt(int, int) {}
     };
-    static_assert(is_implicitly_constructible_v<t, int, int>);
-    static_assert(!is_implicitly_constructible_v<tt, int, int>);
-  }
-  // is_trivial_empty
-  {
-    struct t {};
-    static_assert(is_trivial_v<is_trivial_empty<t>>);
-    static_assert(is_empty_v<is_trivial_empty<t>>);
-    static_assert(is_trivial_empty_v<t>);
-
-    struct tt {
-      int x;
-    };
-    static_assert(is_trivial_v<tt>);
-    static_assert(!is_empty_v<tt>);
-    static_assert(!is_trivial_empty_v<tt>);
-
-    struct ttt {
-      ttt() {}
-    };
-    static_assert(!is_trivial_v<ttt>);
-    static_assert(is_empty_v<ttt>);
-    static_assert(!is_trivial_empty_v<ttt>);
-
-    struct tttt {
-      int x;
-      tttt() {}
-    };
-    static_assert(!is_trivial_v<tttt>);
-    static_assert(!is_empty_v<tttt>);
-    static_assert(!is_trivial_empty_v<tttt>);
+    static_assert(is_implicitly_constructible<t, int, int>);
+    static_assert(!is_implicitly_constructible<tt, int, int>);
   }
 
   // copy_const
@@ -4985,91 +5015,104 @@ void test_type_traits() {
   // copy_cv
   // copy_cvref
   {
-    static_assert(same_as<copy_const_t<const char, int>, const int>);
-    static_assert(same_as<copy_const_t<const char, int *>, int *const>);
-    static_assert(same_as<copy_const_t<const char, int &>, int &>);
+    static_assert(same_as
+                  <template_copy_const<const char, int>::type,
+                   const int>);
+    static_assert(same_as<copy_const<const char, int>, const int>);
+    static_assert(same_as<copy_const<const char, int *>, int *const>);
+    static_assert(same_as<copy_const<const char, int &>, int &>);
 
-    static_assert(same_as<copy_volatile_t<volatile char, int>, volatile int>);
-    static_assert(same_as<copy_volatile_t<volatile char, int *>,
+    static_assert(same_as
+                  <template_copy_volatile<volatile char, int>::type,
+                   volatile int>);
+    static_assert(same_as<copy_volatile<volatile char, int>, volatile int>);
+    static_assert(same_as<copy_volatile<volatile char, int *>,
                           int *volatile>);
-    static_assert(same_as<copy_volatile_t<volatile char, int &>, int &>);
+    static_assert(same_as<copy_volatile<volatile char, int &>, int &>);
 
-    static_assert(same_as<copy_cv_t<char, int>, int>);
-    static_assert(same_as<copy_cv_t<const char, int>, const int>);
-    static_assert(same_as<copy_cv_t<volatile char, int>, volatile int>);
-    static_assert(same_as<copy_cv_t<const volatile char, int>,
+    static_assert(same_as<template_copy_cv<char, int>::type, int>);
+    static_assert(same_as<copy_cv<char, int>, int>);
+    static_assert(same_as<copy_cv<const char, int>, const int>);
+    static_assert(same_as<copy_cv<volatile char, int>, volatile int>);
+    static_assert(same_as<copy_cv<const volatile char, int>,
                           const volatile int>);
-    static_assert(same_as<copy_cv_t<char *, int>, int>);
-    static_assert(same_as<copy_cv_t<const char *, int>, int>);
-    static_assert(same_as<copy_cv_t<volatile char *, int>, int>);
-    static_assert(same_as<copy_cv_t<const volatile char *, int>, int>);
-    static_assert(same_as<copy_cv_t<char &, int>, int>);
-    static_assert(same_as<copy_cv_t<const char &, int>, int>);
-    static_assert(same_as<copy_cv_t<volatile char &, int>, int>);
-    static_assert(same_as<copy_cv_t<const volatile char &, int>, int>);
+    static_assert(same_as<copy_cv<char *, int>, int>);
+    static_assert(same_as<copy_cv<const char *, int>, int>);
+    static_assert(same_as<copy_cv<volatile char *, int>, int>);
+    static_assert(same_as<copy_cv<const volatile char *, int>, int>);
+    static_assert(same_as<copy_cv<char &, int>, int>);
+    static_assert(same_as<copy_cv<const char &, int>, int>);
+    static_assert(same_as<copy_cv<volatile char &, int>, int>);
+    static_assert(same_as<copy_cv<const volatile char &, int>, int>);
 
-    static_assert(same_as<copy_lvalue_reference_t<char, int>, int>);
-    static_assert(same_as<copy_lvalue_reference_t<char, int *>, int *>);
-    static_assert(same_as<copy_lvalue_reference_t<char, int &>, int &>);
-    static_assert(same_as<copy_lvalue_reference_t<char, int &&>, int &&>);
-    static_assert(same_as<copy_lvalue_reference_t<char &, int>, int &>);
-    static_assert(same_as<copy_lvalue_reference_t<char &, int *>, int *&>);
-    static_assert(same_as<copy_lvalue_reference_t<char &, int &>, int &>);
-    static_assert(same_as<copy_lvalue_reference_t<char &, int &&>, int &>);
-    static_assert(same_as<copy_lvalue_reference_t<char &&, int>, int>);
-    static_assert(same_as<copy_lvalue_reference_t<char &&, int *>, int *>);
-    static_assert(same_as<copy_lvalue_reference_t<char &&, int &>, int &>);
-    static_assert(same_as<copy_lvalue_reference_t<char &&, int &&>, int &&>);
+    static_assert(same_as
+                  <template_copy_lvalue_reference<char, int>::type, int>);
+    static_assert(same_as<copy_lvalue_reference<char, int>, int>);
+    static_assert(same_as<copy_lvalue_reference<char, int *>, int *>);
+    static_assert(same_as<copy_lvalue_reference<char, int &>, int &>);
+    static_assert(same_as<copy_lvalue_reference<char, int &&>, int &&>);
+    static_assert(same_as<copy_lvalue_reference<char &, int>, int &>);
+    static_assert(same_as<copy_lvalue_reference<char &, int *>, int *&>);
+    static_assert(same_as<copy_lvalue_reference<char &, int &>, int &>);
+    static_assert(same_as<copy_lvalue_reference<char &, int &&>, int &>);
+    static_assert(same_as<copy_lvalue_reference<char &&, int>, int>);
+    static_assert(same_as<copy_lvalue_reference<char &&, int *>, int *>);
+    static_assert(same_as<copy_lvalue_reference<char &&, int &>, int &>);
+    static_assert(same_as<copy_lvalue_reference<char &&, int &&>, int &&>);
 
-    static_assert(same_as<copy_rvalue_reference_t<char, int>, int>);
-    static_assert(same_as<copy_rvalue_reference_t<char, int *>, int *>);
-    static_assert(same_as<copy_rvalue_reference_t<char, int &>, int &>);
-    static_assert(same_as<copy_rvalue_reference_t<char, int &&>, int &&>);
-    static_assert(same_as<copy_rvalue_reference_t<char &, int>, int>);
-    static_assert(same_as<copy_rvalue_reference_t<char &, int *>, int *>);
-    static_assert(same_as<copy_rvalue_reference_t<char &, int &>, int &>);
-    static_assert(same_as<copy_rvalue_reference_t<char &, int &&>, int &&>);
-    static_assert(same_as<copy_rvalue_reference_t<char &&, int>, int &&>);
-    static_assert(same_as<copy_rvalue_reference_t<char &&, int *>, int *&&>);
-    static_assert(same_as<copy_rvalue_reference_t<char &&, int &>, int &>);
-    static_assert(same_as<copy_rvalue_reference_t<char &&, int &&>, int &&>);
+    static_assert(same_as
+                  <template_copy_rvalue_reference<char, int>::type, int>);
+    static_assert(same_as<copy_rvalue_reference<char, int>, int>);
+    static_assert(same_as<copy_rvalue_reference<char, int *>, int *>);
+    static_assert(same_as<copy_rvalue_reference<char, int &>, int &>);
+    static_assert(same_as<copy_rvalue_reference<char, int &&>, int &&>);
+    static_assert(same_as<copy_rvalue_reference<char &, int>, int>);
+    static_assert(same_as<copy_rvalue_reference<char &, int *>, int *>);
+    static_assert(same_as<copy_rvalue_reference<char &, int &>, int &>);
+    static_assert(same_as<copy_rvalue_reference<char &, int &&>, int &&>);
+    static_assert(same_as<copy_rvalue_reference<char &&, int>, int &&>);
+    static_assert(same_as<copy_rvalue_reference<char &&, int *>, int *&&>);
+    static_assert(same_as<copy_rvalue_reference<char &&, int &>, int &>);
+    static_assert(same_as<copy_rvalue_reference<char &&, int &&>, int &&>);
 
-    static_assert(same_as<copy_reference_t<char, int>, int>);
-    static_assert(same_as<copy_reference_t<char, int *>, int *>);
-    static_assert(same_as<copy_reference_t<char, int &>, int &>);
-    static_assert(same_as<copy_reference_t<char, int &&>, int &&>);
-    static_assert(same_as<copy_reference_t<char &, int>, int &>);
-    static_assert(same_as<copy_reference_t<char &, int *>, int *&>);
-    static_assert(same_as<copy_reference_t<char &, int &>, int &>);
-    static_assert(same_as<copy_reference_t<char &, int &&>, int &>);
-    static_assert(same_as<copy_reference_t<char &&, int>, int &&>);
-    static_assert(same_as<copy_reference_t<char &&, int *>, int *&&>);
-    static_assert(same_as<copy_reference_t<char &&, int &>, int &>);
-    static_assert(same_as<copy_reference_t<char &&, int &&>, int &&>);
+    static_assert(same_as<template_copy_reference<char, int>::type, int>);
+    static_assert(same_as<copy_reference<char, int>, int>);
+    static_assert(same_as<copy_reference<char, int *>, int *>);
+    static_assert(same_as<copy_reference<char, int &>, int &>);
+    static_assert(same_as<copy_reference<char, int &&>, int &&>);
+    static_assert(same_as<copy_reference<char &, int>, int &>);
+    static_assert(same_as<copy_reference<char &, int *>, int *&>);
+    static_assert(same_as<copy_reference<char &, int &>, int &>);
+    static_assert(same_as<copy_reference<char &, int &&>, int &>);
+    static_assert(same_as<copy_reference<char &&, int>, int &&>);
+    static_assert(same_as<copy_reference<char &&, int *>, int *&&>);
+    static_assert(same_as<copy_reference<char &&, int &>, int &>);
+    static_assert(same_as<copy_reference<char &&, int &&>, int &&>);
 
-    static_assert(same_as<copy_cvref_t<char, int>, int>);
-    static_assert(same_as<copy_cvref_t<const char, int>, const int>);
-    static_assert(same_as<copy_cvref_t<volatile char, int>, volatile int>);
-    static_assert(same_as<copy_cvref_t<const volatile char, int>,
+    static_assert(same_as<template_copy_cvref<char, int>::type, int>);
+    static_assert(same_as<copy_cvref<char, int>, int>);
+    static_assert(same_as<copy_cvref<const char, int>, const int>);
+    static_assert(same_as<copy_cvref<volatile char, int>, volatile int>);
+    static_assert(same_as<copy_cvref<const volatile char, int>,
                           const volatile int>);
-    static_assert(same_as<copy_cvref_t<char &, int>, int &>);
-    static_assert(same_as<copy_cvref_t<const char &, int>, const int &>);
-    static_assert(same_as<copy_cvref_t<volatile char &, int>, volatile int &>);
-    static_assert(same_as<copy_cvref_t<const volatile char &, int>,
+    static_assert(same_as<copy_cvref<char &, int>, int &>);
+    static_assert(same_as<copy_cvref<const char &, int>, const int &>);
+    static_assert(same_as<copy_cvref<volatile char &, int>, volatile int &>);
+    static_assert(same_as<copy_cvref<const volatile char &, int>,
                           const volatile int &>);
-    static_assert(same_as<copy_cvref_t<char &&, int>, int &&>);
-    static_assert(same_as<copy_cvref_t<const char &&, int>, const int &&>);
-    static_assert(same_as<copy_cvref_t<volatile char &&, int>,
+    static_assert(same_as<copy_cvref<char &&, int>, int &&>);
+    static_assert(same_as<copy_cvref<const char &&, int>, const int &&>);
+    static_assert(same_as<copy_cvref<volatile char &&, int>,
                           volatile int &&>);
-    static_assert(same_as<copy_cvref_t<const volatile char &&, int>,
+    static_assert(same_as<copy_cvref<const volatile char &&, int>,
                           const volatile int &&>);
   }
 
   // is_nothrow_movable
   // is_nothrow_copyable
   {
-    static_assert(is_nothrow_movable_v<int>);
-    static_assert(is_nothrow_copyable_v<int>);
+    static_assert(is_nothrow_movable<int>);
+    static_assert(is_nothrow_copyable<int>);
     {
       struct t {
         t() = default;
@@ -5079,8 +5122,8 @@ void test_type_traits() {
         t(const t &) = delete;
         t &operator =(const t &) = delete;
       };
-      static_assert(!is_nothrow_movable_v<t>);
-      static_assert(!is_nothrow_copyable_v<t>);
+      static_assert(!is_nothrow_movable<t>);
+      static_assert(!is_nothrow_copyable<t>);
     }
     {
       struct t {
@@ -5091,13 +5134,13 @@ void test_type_traits() {
         t(const t &) = delete;
         t &operator =(const t &) = delete;
       };
-      static_assert(!is_nothrow_movable_v<t>);
-      static_assert(!is_nothrow_copyable_v<t>);
+      static_assert(!is_nothrow_movable<t>);
+      static_assert(!is_nothrow_copyable<t>);
     }
     {
       struct t {};
-      static_assert(is_nothrow_movable_v<t>);
-      static_assert(is_nothrow_copyable_v<t>);
+      static_assert(is_nothrow_movable<t>);
+      static_assert(is_nothrow_copyable<t>);
     }
   }
 
@@ -5106,27 +5149,28 @@ void test_type_traits() {
     struct t {};
     struct tt : t {};
 
-    static_assert(is_compatible_pointer_with_v<t *, t *>);
-    static_assert(is_compatible_pointer_with_v<t *, const t *>);
-    static_assert(is_compatible_pointer_with_v<t *, volatile t *>);
-    static_assert(is_compatible_pointer_with_v<t *, const volatile t *>);
-    static_assert(is_compatible_pointer_with_v<tt *, t *>);
+    static_assert(template_is_compatible_pointer_with<void *, void *>::value);
+    static_assert(is_compatible_pointer_with<t *, t *>);
+    static_assert(is_compatible_pointer_with<t *, const t *>);
+    static_assert(is_compatible_pointer_with<t *, volatile t *>);
+    static_assert(is_compatible_pointer_with<t *, const volatile t *>);
+    static_assert(is_compatible_pointer_with<tt *, t *>);
 
-    static_assert(is_compatible_pointer_with_v<t (*)[], t (*)[]>);
-    static_assert(is_compatible_pointer_with_v<t (*)[], const t (*)[]>);
-    static_assert(is_compatible_pointer_with_v<t (*)[], volatile t (*)[]>);
-    static_assert(is_compatible_pointer_with_v
+    static_assert(is_compatible_pointer_with<t (*)[], t (*)[]>);
+    static_assert(is_compatible_pointer_with<t (*)[], const t (*)[]>);
+    static_assert(is_compatible_pointer_with<t (*)[], volatile t (*)[]>);
+    static_assert(is_compatible_pointer_with
                   <t (*)[], const volatile t (*)[]>);
 
-    static_assert(is_compatible_pointer_with_v
+    static_assert(is_compatible_pointer_with
                   <t (*)[3], const volatile t (*)[3]>);
-    static_assert(is_compatible_pointer_with_v
+    static_assert(is_compatible_pointer_with
                   <t (*)[3], t (*)[]>);
-    static_assert(is_compatible_pointer_with_v
+    static_assert(is_compatible_pointer_with
                   <t (*)[3], const t (*)[]>);
-    static_assert(is_compatible_pointer_with_v
+    static_assert(is_compatible_pointer_with
                   <t (*)[3], volatile t (*)[]>);
-    static_assert(is_compatible_pointer_with_v
+    static_assert(is_compatible_pointer_with
                   <t (*)[3], const volatile t (*)[]>);
   }
 }
@@ -5164,9 +5208,9 @@ void test_utility_functions() {
   // move
   // move_if_noexcept
   {
-    static_assert(is_trivial_empty_v<decltype(forward<int>)>);
-    static_assert(is_trivial_empty_v<decltype(move)>);
-    static_assert(is_trivial_empty_v<decltype(move_if_noexcept)>);
+    static_assert(is_empty<decltype(forward<int>)>);
+    static_assert(is_empty<decltype(move)>);
+    static_assert(is_empty<decltype(move_if_noexcept)>);
 
     struct fn_t {
       int operator ()(const int &) const {return 1;}
@@ -5306,7 +5350,7 @@ void test_utility_functions() {
   }
   // exchange
   {
-    static_assert(is_trivial_empty_v<decltype(exchange)>);
+    static_assert(is_empty<decltype(exchange)>);
 
     int a = 1, b = 2, c = 3;
     a = exchange(b, c);
@@ -5336,7 +5380,7 @@ void test_utility_functions() {
   }
   // as_const
   {
-    static_assert(is_trivial_empty_v<decltype(as_const)>);
+    static_assert(is_empty<decltype(as_const)>);
 
     struct t {
       void f() const {}
@@ -5365,13 +5409,13 @@ void test_utility_functions() {
   // cmp_greater(_equal)
   // in_range
   {
-    static_assert(is_trivial_empty_v<decltype(cmp_equal)>);
-    static_assert(is_trivial_empty_v<decltype(cmp_not_equal)>);
-    static_assert(is_trivial_empty_v<decltype(cmp_less)>);
-    static_assert(is_trivial_empty_v<decltype(cmp_less_equal)>);
-    static_assert(is_trivial_empty_v<decltype(cmp_greater)>);
-    static_assert(is_trivial_empty_v<decltype(cmp_greater_equal)>);
-    static_assert(is_trivial_empty_v<decltype(in_range<int>)>);
+    static_assert(is_empty<decltype(cmp_equal)>);
+    static_assert(is_empty<decltype(cmp_not_equal)>);
+    static_assert(is_empty<decltype(cmp_less)>);
+    static_assert(is_empty<decltype(cmp_less_equal)>);
+    static_assert(is_empty<decltype(cmp_greater)>);
+    static_assert(is_empty<decltype(cmp_greater_equal)>);
+    static_assert(is_empty<decltype(in_range<int>)>);
 
     static_assert(noexcept(cmp_equal(1, 1)));
     static_assert(noexcept(cmp_not_equal(1, 1)));
@@ -5431,16 +5475,16 @@ void test_utility_functions() {
   }
   // to_underlying(enum)
   {
-    static_assert(is_trivial_empty_v<decltype(to_underlying)>);
+    static_assert(is_empty<decltype(to_underlying)>);
 
     enum class t : char {x, y, z};
-    static_assert(is_same_v<decltype(to_underlying(t::x)), char>);
+    static_assert(is_same<decltype(to_underlying(t::x)), char>);
     assert(to_underlying(t::x) == 0);
     static_assert(noexcept(to_underlying(t::x)));
   }
   // addressof
   {
-    static_assert(is_trivial_empty_v<decltype(addressof)>);
+    static_assert(is_empty<decltype(addressof)>);
 
     int a{};
     const volatile int b{};
@@ -5577,20 +5621,20 @@ void test_utility_functions() {
 }
 
 void test_pointer_traits() {
-  static_assert(is_same_v
+  static_assert(is_same
                 <pointer_traits<test_pointer_1<int>>::element_type, void>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <pointer_traits<test_pointer_2<int>>::element_type, int>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <pointer_traits<test_pointer_3<int>>::difference_type,
                  ptrdiff_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <pointer_traits<test_pointer_4<int>>::difference_type,
                  void>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <pointer_traits<test_pointer_2<int>>::rebind<void>,
                  test_pointer_2<void>>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <pointer_traits<test_pointer_5<int>>::rebind<int>, int>);
 
   int i = 0;
@@ -5601,22 +5645,22 @@ void test_pointer_traits() {
   assert(i == 1);
 
   assert(pointer_traits<int *>::pointer_to(i) == &i);
-  static_assert(is_same_v<pointer_traits<int *>::element_type, int>);
-  static_assert(is_same_v<pointer_traits<const int *>::element_type,
-                          const int>);
-  static_assert(is_same_v<pointer_traits<int *>::difference_type,
-                          ptrdiff_t>);
-  static_assert(is_same_v<pointer_traits<int *>::pointer, int *>);
-  static_assert(is_same_v<pointer_traits<int *>::rebind<char>, char *>);
+  static_assert(is_same<pointer_traits<int *>::element_type, int>);
+  static_assert(is_same<pointer_traits<const int *>::element_type,
+                        const int>);
+  static_assert(is_same<pointer_traits<int *>::difference_type,
+                        ptrdiff_t>);
+  static_assert(is_same<pointer_traits<int *>::pointer, int *>);
+  static_assert(is_same<pointer_traits<int *>::rebind<char>, char *>);
 
-  // pointer_element_t
-  // pointer_difference_t
-  // pointer_rebind_t
+  // ptr_element
+  // ptr_dft
+  // ptr_rebind
   {
-    static_assert(same_as<pointer_element_t<int *>, int>);
-    static_assert(same_as<pointer_element_t<const int *>, const int>);
-    static_assert(same_as<pointer_difference_t<int *>, ptrdiff_t>);
-    static_assert(same_as<pointer_rebind_t<int *, const long>, const long *>);
+    static_assert(same_as<ptr_element<int *>, int>);
+    static_assert(same_as<ptr_element<const int *>, const int>);
+    static_assert(same_as<ptr_dft<int *>, ptrdiff_t>);
+    static_assert(same_as<ptr_rebind<int *, const long>, const long *>);
   }
 
   // pointer_to
@@ -5631,7 +5675,7 @@ void test_pointer_traits() {
 
   // to_address
   {
-    static_assert(is_trivial_empty_v<decltype(to_address)>);
+    static_assert(is_empty<decltype(to_address)>);
 
     struct x {
       int *operator ->() const {return nullptr;}
@@ -5695,77 +5739,77 @@ void test_reference_wrapper_and_invoke() {
     // is_reference_wrapper
     {
       using ref_t = reference_wrapper<int>;
-      static_assert(is_reference_wrapper<ref_t>::value);
-      static_assert(is_reference_wrapper_v<reference_wrapper<int>>);
-      static_assert(is_reference_wrapper_v<const reference_wrapper<int>>);
-      static_assert(is_reference_wrapper_v<volatile reference_wrapper<int>>);
-      static_assert(is_reference_wrapper_v
+      static_assert(template_is_reference_wrapper<ref_t>::value);
+      static_assert(is_reference_wrapper<reference_wrapper<int>>);
+      static_assert(is_reference_wrapper<const reference_wrapper<int>>);
+      static_assert(is_reference_wrapper<volatile reference_wrapper<int>>);
+      static_assert(is_reference_wrapper
                     <const volatile reference_wrapper<int>>);
     }
 
     // unwrap_reference
     {
-      using t = unwrap_reference_t<reference_wrapper<int>>;
-      using tt = unwrap_reference_t<const reference_wrapper<int>>;
-      using ttt = unwrap_reference_t<reference_wrapper<int> &>;
-      using tttt = unwrap_reference_t<const volatile int>;
-      static_assert(is_same_v<t, int &>);
-      static_assert(is_same_v<tt, const reference_wrapper<int>>);
-      static_assert(is_same_v<ttt, reference_wrapper<int> &>);
-      static_assert(is_same_v<tttt, const volatile int>);
+      using t = unwrap_reference<reference_wrapper<int>>;
+      using tt = unwrap_reference<const reference_wrapper<int>>;
+      using ttt = unwrap_reference<reference_wrapper<int> &>;
+      using tttt = unwrap_reference<const volatile int>;
+      static_assert(is_same<t, int &>);
+      static_assert(is_same<tt, const reference_wrapper<int>>);
+      static_assert(is_same<ttt, reference_wrapper<int> &>);
+      static_assert(is_same<tttt, const volatile int>);
     }
     // unwrap_ref_decay
     {
-      using t = unwrap_ref_decay_t<const volatile reference_wrapper<int [3]> &>;
-      using t2 = unwrap_ref_decay_t<const reference_wrapper<int [3]> &>;
-      using t3 = unwrap_ref_decay_t<volatile reference_wrapper<int [3]> &>;
-      using t4 = unwrap_ref_decay_t<const volatile reference_wrapper<int [3]>>;
-      using t5 = unwrap_ref_decay_t<reference_wrapper<int [3]>>;
-      static_assert(is_same_v<t, int (&)[3]>);
-      static_assert(is_same_v<t2, int (&)[3]>);
-      static_assert(is_same_v<t3, int (&)[3]>);
-      static_assert(is_same_v<t4, int (&)[3]>);
-      static_assert(is_same_v<t5, int (&)[3]>);
+      using t = unwrap_ref_decay<const volatile reference_wrapper<int [3]> &>;
+      using t2 = unwrap_ref_decay<const reference_wrapper<int [3]> &>;
+      using t3 = unwrap_ref_decay<volatile reference_wrapper<int [3]> &>;
+      using t4 = unwrap_ref_decay<const volatile reference_wrapper<int [3]>>;
+      using t5 = unwrap_ref_decay<reference_wrapper<int [3]>>;
+      static_assert(is_same<t, int (&)[3]>);
+      static_assert(is_same<t2, int (&)[3]>);
+      static_assert(is_same<t3, int (&)[3]>);
+      static_assert(is_same<t4, int (&)[3]>);
+      static_assert(is_same<t5, int (&)[3]>);
     }
 
     // special member functions
     {
       using ref_t = reference_wrapper<int>;
-      static_assert(!is_default_constructible_v<ref_t>);
-      static_assert(is_nothrow_destructible_v<ref_t>);
-      static_assert(is_nothrow_copy_constructible_v<ref_t>);
-      static_assert(is_nothrow_copy_assignable_v<ref_t>);
-      static_assert(is_nothrow_move_constructible_v<ref_t>);
-      static_assert(is_nothrow_move_assignable_v<ref_t>);
-      static_assert(is_nothrow_swappable_v<ref_t>);
+      static_assert(!is_default_constructible<ref_t>);
+      static_assert(is_nothrow_destructible<ref_t>);
+      static_assert(is_nothrow_copy_constructible<ref_t>);
+      static_assert(is_nothrow_copy_assignable<ref_t>);
+      static_assert(is_nothrow_move_constructible<ref_t>);
+      static_assert(is_nothrow_move_assignable<ref_t>);
+      static_assert(is_nothrow_swappable<ref_t>);
     }
     // construct from marched reference
     {
-      static_assert(f_is_well_formed_v<inner::refw_check_u<int>, int &>);
-      static_assert(!f_is_well_formed_v<inner::refw_check_u<int>, const int &>);
-      static_assert(!f_is_well_formed_v<inner::refw_check_u<int>, int &&>);
-      static_assert(!f_is_well_formed_v
+      static_assert(f_is_well_formed<inner::refw_check_u<int>, int &>);
+      static_assert(!f_is_well_formed<inner::refw_check_u<int>, const int &>);
+      static_assert(!f_is_well_formed<inner::refw_check_u<int>, int &&>);
+      static_assert(!f_is_well_formed
                     <inner::refw_check_u<int>, const int &&>);
-      static_assert(f_is_well_formed_v<inner::refw_check_u<const int>, int &>);
-      static_assert(f_is_well_formed_v
+      static_assert(f_is_well_formed<inner::refw_check_u<const int>, int &>);
+      static_assert(f_is_well_formed
                     <inner::refw_check_u<const int>, const int &>);
-      static_assert(!f_is_well_formed_v
+      static_assert(!f_is_well_formed
                     <inner::refw_check_u<const int>, int &&>);
-      static_assert(!f_is_well_formed_v
+      static_assert(!f_is_well_formed
                     <inner::refw_check_u<const int>, const int &&>);
-      static_assert(!is_convertible_v<int &&, reference_wrapper<int>>);
-      static_assert(!is_convertible_v<const int &&, reference_wrapper<int>>);
-      static_assert(!is_convertible_v<const int &, reference_wrapper<int>>);
-      static_assert(is_convertible_v<int &, reference_wrapper<int>>);
-      static_assert(is_nothrow_convertible_v<int &, reference_wrapper<int>>);
-      static_assert(!is_convertible_v<int &&, reference_wrapper<const int>>);
-      static_assert(!is_convertible_v
+      static_assert(!is_convertible<int &&, reference_wrapper<int>>);
+      static_assert(!is_convertible<const int &&, reference_wrapper<int>>);
+      static_assert(!is_convertible<const int &, reference_wrapper<int>>);
+      static_assert(is_convertible<int &, reference_wrapper<int>>);
+      static_assert(is_nothrow_convertible<int &, reference_wrapper<int>>);
+      static_assert(!is_convertible<int &&, reference_wrapper<const int>>);
+      static_assert(!is_convertible
                     <const int &&, reference_wrapper<const int>>);
-      static_assert(is_convertible_v
+      static_assert(is_convertible
                     <const int &, reference_wrapper<const int>>);
-      static_assert(is_nothrow_convertible_v
+      static_assert(is_nothrow_convertible
                     <const int &, reference_wrapper<const int>>);
-      static_assert(is_convertible_v<int &, reference_wrapper<const int>>);
+      static_assert(is_convertible<int &, reference_wrapper<const int>>);
     }
     // operator T &
     // get
@@ -5800,7 +5844,7 @@ void test_reference_wrapper_and_invoke() {
 
       static_assert(noexcept(static_cast<int &>
                              (declval<reference_wrapper<int>>())));
-      static_assert(is_nothrow_convertible_v<reference_wrapper<int>, int &>);
+      static_assert(is_nothrow_convertible<reference_wrapper<int>, int &>);
       static_assert(same_as
                     <decltype(declval<reference_wrapper<int>>().get()), int &>);
       static_assert(noexcept(declval<reference_wrapper<int>>().get()));
@@ -5823,8 +5867,8 @@ void test_reference_wrapper_and_invoke() {
         int x = 1;
         auto r = ref(x);
         auto rr = ref(r);
-        static_assert(is_same_v<decltype(r), reference_wrapper<int>>);
-        static_assert(is_same_v<decltype(rr), decltype(r)>);
+        static_assert(is_same<decltype(r), reference_wrapper<int>>);
+        static_assert(is_same<decltype(rr), decltype(r)>);
         return rr.get();
       };
       static_assert(f() == 1);
@@ -5834,8 +5878,8 @@ void test_reference_wrapper_and_invoke() {
         const int y = 2;
         auto r = cref(x);
         auto rr = cref(y);
-        static_assert(is_same_v<decltype(r), reference_wrapper<const int>>);
-        static_assert(is_same_v<decltype(rr), reference_wrapper<const int>>);
+        static_assert(is_same<decltype(r), reference_wrapper<const int>>);
+        static_assert(is_same<decltype(rr), reference_wrapper<const int>>);
         return r.get() * 10 + rr.get();
       };
       static_assert(ff() == 12);
@@ -5874,14 +5918,14 @@ void test_reference_wrapper_and_invoke() {
   {
     {
       const auto f = []() {};
-      static_assert(is_trivial_empty_v<is_invocable<decltype(f)>>);
-      static_assert(is_trivial_empty_v<is_nothrow_invocable<decltype(f)>>);
-      static_assert(is_trivial_empty_v<invoke_result<decltype(f)>>);
-      static_assert(is_trivial_empty_v<decltype(invoke)>);
-      static_assert(is_trivial_empty_v<is_invocable_r<void, decltype(f)>>);
-      static_assert(is_trivial_empty_v
-                    <is_nothrow_invocable_r<void, decltype(f)>>);
-      static_assert(is_trivial_empty_v<decltype(invoke_r<int>)>);
+      static_assert(is_empty<template_is_invocable<decltype(f)>>);
+      static_assert(is_empty<template_is_nothrow_invocable<decltype(f)>>);
+      static_assert(is_empty<template_invoke_result<decltype(f)>>);
+      static_assert(is_empty<decltype(invoke)>);
+      static_assert(is_empty<template_is_invocable_r<void, decltype(f)>>);
+      static_assert(is_empty
+                    <template_is_nothrow_invocable_r<void, decltype(f)>>);
+      static_assert(is_empty<decltype(invoke_r<int>)>);
     }
 
     // invoke(f, x, s...)
@@ -5900,7 +5944,7 @@ void test_reference_wrapper_and_invoke() {
         using type = int (t::*)();
         operator type() const {return &t::f;}
       };
-      static_assert(!is_invocable_v<fp, t &>);
+      static_assert(!is_invocable<fp, t &>);
 
       struct xt {
         int x;
@@ -5919,161 +5963,161 @@ void test_reference_wrapper_and_invoke() {
 
       // is_invocable
       {
-        static_assert(is_invocable_v<decltype(&t::f), t &>);
-        static_assert(is_invocable_v<decltype(&t::f), t &&>);
-        static_assert(!is_invocable_v<decltype(&t::f), const t &>);
-        static_assert(is_invocable_v<decltype(&t::f), reference_wrapper<t> &>);
-        static_assert(is_invocable_v<decltype(&t::f), reference_wrapper<t> &&>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable<decltype(&t::f), t &>);
+        static_assert(is_invocable<decltype(&t::f), t &&>);
+        static_assert(!is_invocable<decltype(&t::f), const t &>);
+        static_assert(is_invocable<decltype(&t::f), reference_wrapper<t> &>);
+        static_assert(is_invocable<decltype(&t::f), reference_wrapper<t> &&>);
+        static_assert(is_invocable
                       <decltype(&t::f), const reference_wrapper<t> &>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(is_invocable_v<decltype(&t::f), t *>);
-        static_assert(!is_invocable_v<decltype(&t::f), const t *>);
+        static_assert(is_invocable<decltype(&t::f), t *>);
+        static_assert(!is_invocable<decltype(&t::f), const t *>);
 
-        static_assert(is_invocable_v<decltype(&t::f), tt &>);
-        static_assert(is_invocable_v<decltype(&t::f), tt &&>);
-        static_assert(!is_invocable_v<decltype(&t::f), const tt &>);
-        static_assert(is_invocable_v<decltype(&t::f), reference_wrapper<tt> &>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable<decltype(&t::f), tt &>);
+        static_assert(is_invocable<decltype(&t::f), tt &&>);
+        static_assert(!is_invocable<decltype(&t::f), const tt &>);
+        static_assert(is_invocable<decltype(&t::f), reference_wrapper<tt> &>);
+        static_assert(is_invocable
                       <decltype(&t::f), reference_wrapper<tt> &&>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable
                       <decltype(&t::f), const reference_wrapper<tt> &>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<const tt>>);
-        static_assert(is_invocable_v<decltype(&t::f), tt *>);
-        static_assert(!is_invocable_v<decltype(&t::f), const tt *>);
+        static_assert(is_invocable<decltype(&t::f), tt *>);
+        static_assert(!is_invocable<decltype(&t::f), const tt *>);
 
-        static_assert(!is_invocable_v<decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_v<decltype(&t::f), ttt &&>);
-        static_assert(!is_invocable_v<decltype(&t::f), const ttt &>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable<decltype(&t::f), ttt &>);
+        static_assert(!is_invocable<decltype(&t::f), ttt &&>);
+        static_assert(!is_invocable<decltype(&t::f), const ttt &>);
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<ttt> &>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<ttt> &&>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<const ttt>>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), const reference_wrapper<ttt> &>);
-        static_assert(!is_invocable_v<decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_v<decltype(&t::f), const ttt *>);
+        static_assert(!is_invocable<decltype(&t::f), ttt *>);
+        static_assert(!is_invocable<decltype(&t::f), const ttt *>);
       }
       // is_invocable_r
       {
-        static_assert(is_invocable_r_v<void, decltype(&t::f), t &>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), t &>);
-        static_assert(is_invocable_r_v<xt, decltype(&t::f), t &>);
-        static_assert(!is_invocable_r_v<void *, decltype(&t::f), t &>);
-        static_assert(is_invocable_r_v<void, decltype(&t::f), tt &>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), tt &>);
-        static_assert(is_invocable_r_v<xt, decltype(&t::f), tt &>);
-        static_assert(!is_invocable_r_v<void *, decltype(&t::f), tt &>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_r_v<xt, decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_r_v<void *, decltype(&t::f), ttt &>);
+        static_assert(is_invocable_r<void, decltype(&t::f), t &>);
+        static_assert(is_invocable_r<float, decltype(&t::f), t &>);
+        static_assert(is_invocable_r<xt, decltype(&t::f), t &>);
+        static_assert(!is_invocable_r<void *, decltype(&t::f), t &>);
+        static_assert(is_invocable_r<void, decltype(&t::f), tt &>);
+        static_assert(is_invocable_r<float, decltype(&t::f), tt &>);
+        static_assert(is_invocable_r<xt, decltype(&t::f), tt &>);
+        static_assert(!is_invocable_r<void *, decltype(&t::f), tt &>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), ttt &>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), ttt &>);
+        static_assert(!is_invocable_r<xt, decltype(&t::f), ttt &>);
+        static_assert(!is_invocable_r<void *, decltype(&t::f), ttt &>);
 
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <xt, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <xt, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <xt, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<ttt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<ttt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <xt, decltype(&t::f), reference_wrapper<ttt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<ttt>>);
 
-        static_assert(is_invocable_r_v<void, decltype(&t::f), t *>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), const t *>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), t *>);
-        static_assert(is_invocable_r_v<xt, decltype(&t::f), t *>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), const t *>);
-        static_assert(!is_invocable_r_v<xt, decltype(&t::f), const t *>);
-        static_assert(is_invocable_r_v<void, decltype(&t::f), tt *>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), const tt *>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), tt *>);
-        static_assert(is_invocable_r_v<xt, decltype(&t::f), tt *>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), const tt *>);
-        static_assert(!is_invocable_r_v<xt, decltype(&t::f), const tt *>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), const ttt *>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_r_v<xt, decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), const ttt *>);
-        static_assert(!is_invocable_r_v<xt, decltype(&t::f), const ttt *>);
+        static_assert(is_invocable_r<void, decltype(&t::f), t *>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), const t *>);
+        static_assert(is_invocable_r<float, decltype(&t::f), t *>);
+        static_assert(is_invocable_r<xt, decltype(&t::f), t *>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), const t *>);
+        static_assert(!is_invocable_r<xt, decltype(&t::f), const t *>);
+        static_assert(is_invocable_r<void, decltype(&t::f), tt *>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), const tt *>);
+        static_assert(is_invocable_r<float, decltype(&t::f), tt *>);
+        static_assert(is_invocable_r<xt, decltype(&t::f), tt *>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), const tt *>);
+        static_assert(!is_invocable_r<xt, decltype(&t::f), const tt *>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), ttt *>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), const ttt *>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), ttt *>);
+        static_assert(!is_invocable_r<xt, decltype(&t::f), ttt *>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), const ttt *>);
+        static_assert(!is_invocable_r<xt, decltype(&t::f), const ttt *>);
       }
       // is_nothrow_invocable
       {
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), t &>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), const t &>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), t &&>);
-        static_assert(!is_nothrow_invocable_v
+        static_assert(!is_nothrow_invocable<decltype(&t::f), t &>);
+        static_assert(!is_nothrow_invocable<decltype(&t::f), const t &>);
+        static_assert(!is_nothrow_invocable<decltype(&t::f), t &&>);
+        static_assert(!is_nothrow_invocable
                       <decltype(&t::f), reference_wrapper<t>>);
-        static_assert(!is_nothrow_invocable_v
+        static_assert(!is_nothrow_invocable
                       <decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), t *>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), tt *>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), ttt *>);
+        static_assert(!is_nothrow_invocable<decltype(&t::f), t *>);
+        static_assert(!is_nothrow_invocable<decltype(&t::f), tt *>);
+        static_assert(!is_nothrow_invocable<decltype(&t::f), ttt *>);
 
-        static_assert(is_nothrow_invocable_v<decltype(&t::ff), t &>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::ff), tt &>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::ff), ttt &>);
-        static_assert(is_nothrow_invocable_v
+        static_assert(is_nothrow_invocable<decltype(&t::ff), t &>);
+        static_assert(is_nothrow_invocable<decltype(&t::ff), tt &>);
+        static_assert(!is_nothrow_invocable<decltype(&t::ff), ttt &>);
+        static_assert(is_nothrow_invocable
                       <decltype(&t::ff), reference_wrapper<t>>);
-        static_assert(is_nothrow_invocable_v
+        static_assert(is_nothrow_invocable
                       <decltype(&t::ff), reference_wrapper<tt>>);
-        static_assert(!is_nothrow_invocable_v
+        static_assert(!is_nothrow_invocable
                       <decltype(&t::ff), reference_wrapper<ttt>>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::ff), t *>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::ff), tt *>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::ff), ttt *>);
+        static_assert(is_nothrow_invocable<decltype(&t::ff), t *>);
+        static_assert(is_nothrow_invocable<decltype(&t::ff), tt *>);
+        static_assert(!is_nothrow_invocable<decltype(&t::ff), ttt *>);
       }
       // is_nothrow_invocable_r
       {
-        static_assert(is_nothrow_invocable_r_v
+        static_assert(is_nothrow_invocable_r
                       <void, decltype(&t::ff), const t &>);
-        static_assert(is_nothrow_invocable_r_v<void, decltype(&t::ff), t &>);
-        static_assert(is_nothrow_invocable_r_v<float, decltype(&t::ff), t &>);
-        static_assert(!is_nothrow_invocable_r_v<xt, decltype(&t::ff), t &>);
-        static_assert(!is_nothrow_invocable_r_v<void, decltype(&t::f), t &>);
-        static_assert(!is_nothrow_invocable_r_v<float, decltype(&t::f), t &>);
-        static_assert(!is_nothrow_invocable_r_v<xt, decltype(&t::f), t &>);
+        static_assert(is_nothrow_invocable_r<void, decltype(&t::ff), t &>);
+        static_assert(is_nothrow_invocable_r<float, decltype(&t::ff), t &>);
+        static_assert(!is_nothrow_invocable_r<xt, decltype(&t::ff), t &>);
+        static_assert(!is_nothrow_invocable_r<void, decltype(&t::f), t &>);
+        static_assert(!is_nothrow_invocable_r<float, decltype(&t::f), t &>);
+        static_assert(!is_nothrow_invocable_r<xt, decltype(&t::f), t &>);
 
-        static_assert(is_nothrow_invocable_r_v
+        static_assert(is_nothrow_invocable_r
                       <void, decltype(&t::ff), reference_wrapper<tt>>);
-        static_assert(is_nothrow_invocable_r_v
+        static_assert(is_nothrow_invocable_r
                       <float, decltype(&t::ff), reference_wrapper<tt>>);
-        static_assert(!is_nothrow_invocable_r_v
+        static_assert(!is_nothrow_invocable_r
                       <xt, decltype(&t::ff), reference_wrapper<tt>>);
-        static_assert(!is_nothrow_invocable_r_v
+        static_assert(!is_nothrow_invocable_r
                       <void, decltype(&t::ff), reference_wrapper<ttt>>);
 
-        static_assert(is_nothrow_invocable_r_v<void, decltype(&t::ff), t *>);
-        static_assert(is_nothrow_invocable_r_v<float, decltype(&t::ff), t *>);
-        static_assert(!is_nothrow_invocable_r_v<void, decltype(&t::ff), ttt *>);
+        static_assert(is_nothrow_invocable_r<void, decltype(&t::ff), t *>);
+        static_assert(is_nothrow_invocable_r<float, decltype(&t::ff), t *>);
+        static_assert(!is_nothrow_invocable_r<void, decltype(&t::ff), ttt *>);
       }
 
       t xx{};
@@ -6085,30 +6129,30 @@ void test_reference_wrapper_and_invoke() {
       assert(invoke_r<float>(&t::f, move(xx)) == 1);
       assert(invoke_r<float>(&t::f, ref(xx)) == 1);
       assert(invoke_r<float>(&t::f, addressof(xx)) == 1);
-      static_assert(is_same_v<decltype(invoke_r<float>(&t::f, xx)), float>);
-      static_assert(is_same_v
+      static_assert(is_same<decltype(invoke_r<float>(&t::f, xx)), float>);
+      static_assert(is_same
                     <decltype(invoke_r<float>(&t::f, move(xx))), float>);
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(invoke_r<float>(&t::f, ref(xx))), float>);
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(invoke_r<float>(&t::f, addressof(xx))), float>);
       assert(invoke_r<xt>(&t::f, xx) == 2);
       assert(invoke_r<xt>(&t::f, move(xx)) == 2);
       assert(invoke_r<xt>(&t::f, ref(xx)) == 2);
       assert(invoke_r<xt>(&t::f, addressof(xx)) == 2);
-      static_assert(is_same_v<decltype(invoke_r<xt>(&t::f, xx)), xt>);
-      static_assert(is_same_v<decltype(invoke_r<xt>(&t::f, move(xx))), xt>);
-      static_assert(is_same_v<decltype(invoke_r<xt>(&t::f, ref(xx))), xt>);
-      static_assert(is_same_v
+      static_assert(is_same<decltype(invoke_r<xt>(&t::f, xx)), xt>);
+      static_assert(is_same<decltype(invoke_r<xt>(&t::f, move(xx))), xt>);
+      static_assert(is_same<decltype(invoke_r<xt>(&t::f, ref(xx))), xt>);
+      static_assert(is_same
                     <decltype(invoke_r<xt>(&t::f, addressof(xx))), xt>);
       invoke_r<void>(&t::f, xx);
       invoke_r<void>(&t::f, move(xx));
       invoke_r<void>(&t::f, ref(xx));
       invoke_r<void>(&t::f, addressof(xx));
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, xx))>);
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, move(xx)))>);
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, ref(xx)))>);
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, addressof(xx)))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, xx))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, move(xx)))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, ref(xx)))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, addressof(xx)))>);
       static_assert(invoke(&t::f, t{}) == 1);
       constexpr auto cf = []() constexpr->int {
         t x{};
@@ -6154,7 +6198,7 @@ void test_reference_wrapper_and_invoke() {
       struct fp {
         operator int t::*() const {return &t::f;}
       };
-      static_assert(!is_invocable_v<fp, t &>);
+      static_assert(!is_invocable<fp, t &>);
 
       struct xt {
         int x;
@@ -6173,126 +6217,126 @@ void test_reference_wrapper_and_invoke() {
 
       // is_invocable
       {
-        static_assert(is_invocable_v<decltype(&t::f), t &>);
-        static_assert(is_invocable_v<decltype(&t::f), t &&>);
-        static_assert(is_invocable_v<decltype(&t::f), const t &>);
-        static_assert(is_invocable_v<decltype(&t::f), reference_wrapper<t> &>);
-        static_assert(is_invocable_v<decltype(&t::f), reference_wrapper<t> &&>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable<decltype(&t::f), t &>);
+        static_assert(is_invocable<decltype(&t::f), t &&>);
+        static_assert(is_invocable<decltype(&t::f), const t &>);
+        static_assert(is_invocable<decltype(&t::f), reference_wrapper<t> &>);
+        static_assert(is_invocable<decltype(&t::f), reference_wrapper<t> &&>);
+        static_assert(is_invocable
                       <decltype(&t::f), const reference_wrapper<t> &>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable
                       <decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(is_invocable_v<decltype(&t::f), t *>);
-        static_assert(is_invocable_v<decltype(&t::f), const t *>);
+        static_assert(is_invocable<decltype(&t::f), t *>);
+        static_assert(is_invocable<decltype(&t::f), const t *>);
 
-        static_assert(is_invocable_v<decltype(&t::f), tt &>);
-        static_assert(is_invocable_v<decltype(&t::f), tt &&>);
-        static_assert(is_invocable_v<decltype(&t::f), const tt &>);
-        static_assert(is_invocable_v<decltype(&t::f), reference_wrapper<tt> &>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable<decltype(&t::f), tt &>);
+        static_assert(is_invocable<decltype(&t::f), tt &&>);
+        static_assert(is_invocable<decltype(&t::f), const tt &>);
+        static_assert(is_invocable<decltype(&t::f), reference_wrapper<tt> &>);
+        static_assert(is_invocable
                       <decltype(&t::f), reference_wrapper<tt> &&>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable
                       <decltype(&t::f), const reference_wrapper<tt> &>);
-        static_assert(is_invocable_v
+        static_assert(is_invocable
                       <decltype(&t::f), reference_wrapper<const tt>>);
-        static_assert(is_invocable_v<decltype(&t::f), tt *>);
-        static_assert(is_invocable_v<decltype(&t::f), const tt *>);
+        static_assert(is_invocable<decltype(&t::f), tt *>);
+        static_assert(is_invocable<decltype(&t::f), const tt *>);
 
-        static_assert(!is_invocable_v<decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_v<decltype(&t::f), ttt &&>);
-        static_assert(!is_invocable_v<decltype(&t::f), const ttt &>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable<decltype(&t::f), ttt &>);
+        static_assert(!is_invocable<decltype(&t::f), ttt &&>);
+        static_assert(!is_invocable<decltype(&t::f), const ttt &>);
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<ttt> &>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<ttt> &&>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), reference_wrapper<const ttt>>);
-        static_assert(!is_invocable_v
+        static_assert(!is_invocable
                       <decltype(&t::f), const reference_wrapper<ttt> &>);
-        static_assert(!is_invocable_v<decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_v<decltype(&t::f), const ttt *>);
+        static_assert(!is_invocable<decltype(&t::f), ttt *>);
+        static_assert(!is_invocable<decltype(&t::f), const ttt *>);
       }
       // is_invocable_r
       {
-        static_assert(is_invocable_r_v<void, decltype(&t::f), t &>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), t &>);
-        static_assert(!is_invocable_r_v<void *, decltype(&t::f), t &>);
-        static_assert(is_invocable_r_v<void, decltype(&t::f), tt &>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), tt &>);
-        static_assert(!is_invocable_r_v<void *, decltype(&t::f), tt &>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), ttt &>);
-        static_assert(!is_invocable_r_v<void *, decltype(&t::f), ttt &>);
+        static_assert(is_invocable_r<void, decltype(&t::f), t &>);
+        static_assert(is_invocable_r<float, decltype(&t::f), t &>);
+        static_assert(!is_invocable_r<void *, decltype(&t::f), t &>);
+        static_assert(is_invocable_r<void, decltype(&t::f), tt &>);
+        static_assert(is_invocable_r<float, decltype(&t::f), tt &>);
+        static_assert(!is_invocable_r<void *, decltype(&t::f), tt &>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), ttt &>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), ttt &>);
+        static_assert(!is_invocable_r<void *, decltype(&t::f), ttt &>);
 
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(is_invocable_r_v
+        static_assert(is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void, decltype(&t::f), reference_wrapper<ttt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <float, decltype(&t::f), reference_wrapper<ttt>>);
-        static_assert(!is_invocable_r_v
+        static_assert(!is_invocable_r
                       <void *, decltype(&t::f), reference_wrapper<ttt>>);
 
-        static_assert(is_invocable_r_v<void, decltype(&t::f), t *>);
-        static_assert(is_invocable_r_v<void, decltype(&t::f), const t *>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), t *>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), const t *>);
-        static_assert(is_invocable_r_v<void, decltype(&t::f), tt *>);
-        static_assert(is_invocable_r_v<void, decltype(&t::f), const tt *>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), tt *>);
-        static_assert(is_invocable_r_v<float, decltype(&t::f), const tt *>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_r_v<void, decltype(&t::f), const ttt *>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), ttt *>);
-        static_assert(!is_invocable_r_v<float, decltype(&t::f), const ttt *>);
+        static_assert(is_invocable_r<void, decltype(&t::f), t *>);
+        static_assert(is_invocable_r<void, decltype(&t::f), const t *>);
+        static_assert(is_invocable_r<float, decltype(&t::f), t *>);
+        static_assert(is_invocable_r<float, decltype(&t::f), const t *>);
+        static_assert(is_invocable_r<void, decltype(&t::f), tt *>);
+        static_assert(is_invocable_r<void, decltype(&t::f), const tt *>);
+        static_assert(is_invocable_r<float, decltype(&t::f), tt *>);
+        static_assert(is_invocable_r<float, decltype(&t::f), const tt *>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), ttt *>);
+        static_assert(!is_invocable_r<void, decltype(&t::f), const ttt *>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), ttt *>);
+        static_assert(!is_invocable_r<float, decltype(&t::f), const ttt *>);
       }
       // is_nothrow_invocable
       {
-        static_assert(is_nothrow_invocable_v<decltype(&t::f), t &>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::f), const t &>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::f), t &&>);
-        static_assert(is_nothrow_invocable_v
+        static_assert(is_nothrow_invocable<decltype(&t::f), t &>);
+        static_assert(is_nothrow_invocable<decltype(&t::f), const t &>);
+        static_assert(is_nothrow_invocable<decltype(&t::f), t &&>);
+        static_assert(is_nothrow_invocable
                       <decltype(&t::f), reference_wrapper<t>>);
-        static_assert(is_nothrow_invocable_v
+        static_assert(is_nothrow_invocable
                       <decltype(&t::f), reference_wrapper<const t>>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::f), t *>);
-        static_assert(is_nothrow_invocable_v<decltype(&t::f), tt *>);
-        static_assert(!is_nothrow_invocable_v<decltype(&t::f), ttt *>);
+        static_assert(is_nothrow_invocable<decltype(&t::f), t *>);
+        static_assert(is_nothrow_invocable<decltype(&t::f), tt *>);
+        static_assert(!is_nothrow_invocable<decltype(&t::f), ttt *>);
       }
       // is_nothrow_invocable_r
       {
-        static_assert(is_nothrow_invocable_r_v
+        static_assert(is_nothrow_invocable_r
                       <void, decltype(&t::f), const t &>);
-        static_assert(is_nothrow_invocable_r_v<void, decltype(&t::f), t &>);
-        static_assert(is_nothrow_invocable_r_v<float, decltype(&t::f), t &>);
-        static_assert(!is_nothrow_invocable_r_v<void *, decltype(&t::f), t &>);
+        static_assert(is_nothrow_invocable_r<void, decltype(&t::f), t &>);
+        static_assert(is_nothrow_invocable_r<float, decltype(&t::f), t &>);
+        static_assert(!is_nothrow_invocable_r<void *, decltype(&t::f), t &>);
 
-        static_assert(is_nothrow_invocable_r_v
+        static_assert(is_nothrow_invocable_r
                       <void, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(is_nothrow_invocable_r_v
+        static_assert(is_nothrow_invocable_r
                       <float, decltype(&t::f), reference_wrapper<tt>>);
-        static_assert(!is_nothrow_invocable_r_v
+        static_assert(!is_nothrow_invocable_r
                       <void, decltype(&t::f), reference_wrapper<ttt>>);
 
-        static_assert(is_nothrow_invocable_r_v<void, decltype(&t::f), t *>);
-        static_assert(is_nothrow_invocable_r_v<float, decltype(&t::f), t *>);
-        static_assert(!is_nothrow_invocable_r_v<void, decltype(&t::f), ttt *>);
+        static_assert(is_nothrow_invocable_r<void, decltype(&t::f), t *>);
+        static_assert(is_nothrow_invocable_r<float, decltype(&t::f), t *>);
+        static_assert(!is_nothrow_invocable_r<void, decltype(&t::f), ttt *>);
       }
 
       t xx{};
@@ -6304,30 +6348,30 @@ void test_reference_wrapper_and_invoke() {
       assert(invoke_r<float>(&t::f, move(xx)) == 1);
       assert(invoke_r<float>(&t::f, ref(xx)) == 1);
       assert(invoke_r<float>(&t::f, addressof(xx)) == 1);
-      static_assert(is_same_v<decltype(invoke_r<float>(&t::f, xx)), float>);
-      static_assert(is_same_v
+      static_assert(is_same<decltype(invoke_r<float>(&t::f, xx)), float>);
+      static_assert(is_same
                     <decltype(invoke_r<float>(&t::f, move(xx))), float>);
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(invoke_r<float>(&t::f, ref(xx))), float>);
-      static_assert(is_same_v
+      static_assert(is_same
                     <decltype(invoke_r<float>(&t::f, addressof(xx))), float>);
       assert(invoke_r<xt>(&t::f, xx) == 2);
       assert(invoke_r<xt>(&t::f, move(xx)) == 2);
       assert(invoke_r<xt>(&t::f, ref(xx)) == 2);
       assert(invoke_r<xt>(&t::f, addressof(xx)) == 2);
-      static_assert(is_same_v<decltype(invoke_r<xt>(&t::f, xx)), xt>);
-      static_assert(is_same_v<decltype(invoke_r<xt>(&t::f, move(xx))), xt>);
-      static_assert(is_same_v<decltype(invoke_r<xt>(&t::f, ref(xx))), xt>);
-      static_assert(is_same_v
+      static_assert(is_same<decltype(invoke_r<xt>(&t::f, xx)), xt>);
+      static_assert(is_same<decltype(invoke_r<xt>(&t::f, move(xx))), xt>);
+      static_assert(is_same<decltype(invoke_r<xt>(&t::f, ref(xx))), xt>);
+      static_assert(is_same
                     <decltype(invoke_r<xt>(&t::f, addressof(xx))), xt>);
       invoke_r<void>(&t::f, xx);
       invoke_r<void>(&t::f, move(xx));
       invoke_r<void>(&t::f, ref(xx));
       invoke_r<void>(&t::f, addressof(xx));
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, xx))>);
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, move(xx)))>);
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, ref(xx)))>);
-      static_assert(is_void_v<decltype(invoke_r<void>(&t::f, addressof(xx)))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, xx))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, move(xx)))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, ref(xx)))>);
+      static_assert(is_void<decltype(invoke_r<void>(&t::f, addressof(xx)))>);
       static_assert(invoke(&t::f, t{}) == 1);
       constexpr auto cf = []() constexpr->int {
         t x{};
@@ -6379,34 +6423,35 @@ void test_reference_wrapper_and_invoke() {
       const auto f = []() {return 1;};
       assert(f() == 1);
       assert(invoke(f) == 1);
-      static_assert(is_invocable_v<decltype(f)>);
-      static_assert(!is_nothrow_invocable_v<decltype(f)>);
-      static_assert(same_as<invoke_result_t<decltype(f)>, int>);
+      static_assert(is_invocable<decltype(f)>);
+      static_assert(!is_nothrow_invocable<decltype(f)>);
+      static_assert(same_as<template_invoke_result<decltype(f)>::type, int>);
+      static_assert(same_as<invoke_result<decltype(f)>, int>);
       assert(invoke_r<float>(f) == 1);
       assert(invoke_r<xt>(f) == 2);
-      static_assert(is_invocable_r_v<float, decltype(f)>);
-      static_assert(is_invocable_r_v<xt, decltype(f)>);
-      static_assert(!is_nothrow_invocable_r_v<float, decltype(f)>);
-      static_assert(!is_nothrow_invocable_r_v<xt, decltype(f)>);
+      static_assert(is_invocable_r<float, decltype(f)>);
+      static_assert(is_invocable_r<xt, decltype(f)>);
+      static_assert(!is_nothrow_invocable_r<float, decltype(f)>);
+      static_assert(!is_nothrow_invocable_r<xt, decltype(f)>);
 
       const auto ff = []() noexcept {return 1;};
       assert(ff() == 1);
       assert(invoke(ff) == 1);
-      static_assert(is_invocable_v<decltype(ff)>);
-      static_assert(is_nothrow_invocable_v<decltype(ff)>);
-      static_assert(same_as<invoke_result_t<decltype(ff)>, int>);
+      static_assert(is_invocable<decltype(ff)>);
+      static_assert(is_nothrow_invocable<decltype(ff)>);
+      static_assert(same_as<invoke_result<decltype(ff)>, int>);
       assert(invoke_r<float>(ff) == 1);
       assert(invoke_r<xt>(ff) == 2);
-      static_assert(is_invocable_r_v<float, decltype(ff)>);
-      static_assert(is_invocable_r_v<xt, decltype(ff)>);
-      static_assert(is_nothrow_invocable_r_v<float, decltype(ff)>);
-      static_assert(!is_nothrow_invocable_r_v<xt, decltype(ff)>);
+      static_assert(is_invocable_r<float, decltype(ff)>);
+      static_assert(is_invocable_r<xt, decltype(ff)>);
+      static_assert(is_nothrow_invocable_r<float, decltype(ff)>);
+      static_assert(!is_nothrow_invocable_r<xt, decltype(ff)>);
 
       const auto fff = []() constexpr {return 1;};
       static_assert(invoke(fff) == 1);
 
       const auto ffff = []<class...S>(S &&...) {
-        return is_same_v
+        return is_same
           <type_pack<S &&...>, type_pack<int &, int &&, const int &>>;
       };
       int x{};
@@ -6431,68 +6476,68 @@ void test_reference_wrapper_and_invoke() {
       assert(invoke(&t::f, y, 3, 2, 1) == 4321);
       assert(invoke(&t::f, ref(y), 3, 2, 1) == 4321);
       assert(invoke(&t::f, addressof(y), 3, 2, 1) == 4321);
-      static_assert(is_same_v<invoke_result_t
-                              <decltype(&t::f), t &, int &&, int &&, int &&>,
-                              int>);
-      static_assert(is_same_v<invoke_result_t
-                              <decltype(&t::f), reference_wrapper<t>,
-                               int &&, int &&, int &&>,
-                              int>);
-      static_assert(is_same_v<invoke_result_t
-                              <decltype(&t::f), t *, int &&, int &&, int &&>,
-                              int>);
-      static_assert(!is_invocable_v<decltype(&t::f), t &, int &, int &, int &>);
-      static_assert(!is_invocable_v<decltype(&t::f), t &,
-                                    const int &, const int &, const int &>);
-      static_assert(is_invocable_v<decltype(&t::f), t &,
-                                   int &&, int &&, int &&>);
-      static_assert(!is_invocable_v<decltype(&t::f), reference_wrapper<t>,
-                                    int &, int &, int &>);
-      static_assert(!is_invocable_v<decltype(&t::f), t *, int &, int &, int &>);
-      static_assert(!is_nothrow_invocable_v<decltype(&t::f),
-                                            t &, int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_v
+      static_assert(is_same<invoke_result
+                            <decltype(&t::f), t &, int &&, int &&, int &&>,
+                            int>);
+      static_assert(is_same<invoke_result
+                            <decltype(&t::f), reference_wrapper<t>,
+                             int &&, int &&, int &&>,
+                            int>);
+      static_assert(is_same<invoke_result
+                            <decltype(&t::f), t *, int &&, int &&, int &&>,
+                            int>);
+      static_assert(!is_invocable<decltype(&t::f), t &, int &, int &, int &>);
+      static_assert(!is_invocable<decltype(&t::f), t &,
+                                  const int &, const int &, const int &>);
+      static_assert(is_invocable<decltype(&t::f), t &,
+                                 int &&, int &&, int &&>);
+      static_assert(!is_invocable<decltype(&t::f), reference_wrapper<t>,
+                                  int &, int &, int &>);
+      static_assert(!is_invocable<decltype(&t::f), t *, int &, int &, int &>);
+      static_assert(!is_nothrow_invocable<decltype(&t::f),
+                                          t &, int &&, int &&, int &&>);
+      static_assert(!is_nothrow_invocable
                     <decltype(&t::f), reference_wrapper<t>,
                      int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_v<decltype(&t::f), t *,
-                                            int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_v<decltype(&t::f), t *,
-                                            int &, int &, int &>);
-      static_assert(is_nothrow_invocable_v<decltype(&t::ff),
-                                           t &, int &&, int &&, int &&>);
-      static_assert(is_nothrow_invocable_v
+      static_assert(!is_nothrow_invocable<decltype(&t::f), t *,
+                                          int &&, int &&, int &&>);
+      static_assert(!is_nothrow_invocable<decltype(&t::f), t *,
+                                          int &, int &, int &>);
+      static_assert(is_nothrow_invocable<decltype(&t::ff),
+                                         t &, int &&, int &&, int &&>);
+      static_assert(is_nothrow_invocable
                     <decltype(&t::ff), reference_wrapper<t>,
                      int &&, int &&, int &&>);
-      static_assert(is_nothrow_invocable_v<decltype(&t::ff), t *,
+      static_assert(is_nothrow_invocable<decltype(&t::ff), t *,
+                                         int &&, int &&, int &&>);
+      static_assert(!is_nothrow_invocable<decltype(&t::ff), t *,
+                                          int &, int &, int &>);
+
+      static_assert(!is_invocable_r<void, decltype(&t::f), t &,
+                                    const int &, const int &, const int &>);
+      static_assert(!is_invocable_r<xt, decltype(&t::f), t &,
+                                    const int &, const int &, const int &>);
+      static_assert(!is_invocable_r<void *, decltype(&t::f), t &,
+                                    const int &, const int &, const int &>);
+      static_assert(is_invocable_r<void, decltype(&t::f), t &,
+                                   int &&, int &&, int &&>);
+      static_assert(is_invocable_r<xt, decltype(&t::f), t &,
+                                   int &&, int &&, int &&>);
+      static_assert(!is_invocable_r<void *, decltype(&t::f), t &,
+                                    int &&, int &&, int &&>);
+
+      static_assert(!is_nothrow_invocable_r<void, decltype(&t::f), t &,
+                                            int &&, int &&, int &&>);
+      static_assert(is_nothrow_invocable_r<void, decltype(&t::ff), t &,
                                            int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_v<decltype(&t::ff), t *,
+      static_assert(!is_nothrow_invocable_r<void, decltype(&t::ff), t &,
                                             int &, int &, int &>);
-
-      static_assert(!is_invocable_r_v<void, decltype(&t::f), t &,
-                                      const int &, const int &, const int &>);
-      static_assert(!is_invocable_r_v<xt, decltype(&t::f), t &,
-                                      const int &, const int &, const int &>);
-      static_assert(!is_invocable_r_v<void *, decltype(&t::f), t &,
-                                      const int &, const int &, const int &>);
-      static_assert(is_invocable_r_v<void, decltype(&t::f), t &,
-                                     int &&, int &&, int &&>);
-      static_assert(is_invocable_r_v<xt, decltype(&t::f), t &,
-                                     int &&, int &&, int &&>);
-      static_assert(!is_invocable_r_v<void *, decltype(&t::f), t &,
-                                      int &&, int &&, int &&>);
-
-      static_assert(!is_nothrow_invocable_r_v<void, decltype(&t::f), t &,
-                                              int &&, int &&, int &&>);
-      static_assert(is_nothrow_invocable_r_v<void, decltype(&t::ff), t &,
-                                             int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_r_v<void, decltype(&t::ff), t &,
-                                              int &, int &, int &>);
-      static_assert(!is_nothrow_invocable_r_v<void *, decltype(&t::f), t &,
-                                              int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_r_v<void *, decltype(&t::ff), t &,
-                                              int &&, int &&, int &&>);
-      static_assert(!is_nothrow_invocable_r_v<void *, decltype(&t::ff), t &,
-                                              int &, int &, int &>);
+      static_assert(!is_nothrow_invocable_r<void *, decltype(&t::f), t &,
+                                            int &&, int &&, int &&>);
+      static_assert(!is_nothrow_invocable_r<void *, decltype(&t::ff), t &,
+                                            int &&, int &&, int &&>);
+      static_assert(!is_nothrow_invocable_r<void *, decltype(&t::ff), t &,
+                                            int &, int &, int &>);
     }
   }
 }
@@ -6581,7 +6626,8 @@ void test_language_related_concepts() {
 
   // common_reference_with
   {
-    static_assert(!has_member_type_type_v<common_reference<int, char *>>);
+    static_assert(!has_member_type_type
+                  <template_common_reference<int, char *>>);
     static_assert(!common_reference_with<int, char *>);
     struct t {};
     struct tt : t {};
@@ -6828,19 +6874,19 @@ void test_language_related_concepts() {
 }
 
 void test_concept_constrained_comparisons() {
-  static_assert(is_trivial_empty_v<ranges::equal_to>);
-  static_assert(is_trivial_empty_v<ranges::not_equal_to>);
-  static_assert(is_trivial_empty_v<ranges::less>);
-  static_assert(is_trivial_empty_v<ranges::greater>);
-  static_assert(is_trivial_empty_v<ranges::less_equal>);
-  static_assert(is_trivial_empty_v<ranges::greater_equal>);
+  static_assert(is_empty<ranges::equal_to>);
+  static_assert(is_empty<ranges::not_equal_to>);
+  static_assert(is_empty<ranges::less>);
+  static_assert(is_empty<ranges::greater>);
+  static_assert(is_empty<ranges::less_equal>);
+  static_assert(is_empty<ranges::greater_equal>);
 
-  static_assert(is_transparent_function_v<ranges::equal_to>);
-  static_assert(is_transparent_function_v<ranges::not_equal_to>);
-  static_assert(is_transparent_function_v<ranges::less>);
-  static_assert(is_transparent_function_v<ranges::greater>);
-  static_assert(is_transparent_function_v<ranges::less_equal>);
-  static_assert(is_transparent_function_v<ranges::greater_equal>);
+  static_assert(is_transparent_function<ranges::equal_to>);
+  static_assert(is_transparent_function<ranges::not_equal_to>);
+  static_assert(is_transparent_function<ranges::less>);
+  static_assert(is_transparent_function<ranges::greater>);
+  static_assert(is_transparent_function<ranges::less_equal>);
+  static_assert(is_transparent_function<ranges::greater_equal>);
 
   assert(ranges::equal_to{}(1, 1));
   assert(ranges::not_equal_to{}(1, 2));
@@ -6853,51 +6899,51 @@ void test_concept_constrained_comparisons() {
 }
 
 void test_integral_traits() {
-  static_assert(is_trivial_empty_v<integral_traits<bool>>);
-  static_assert(is_trivial_empty_v<integral_traits<char>>);
-  static_assert(is_trivial_empty_v<integral_traits<unsigned char>>);
-  static_assert(is_trivial_empty_v<integral_traits<signed char>>);
-  static_assert(is_trivial_empty_v<integral_traits<char8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<char16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<char32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<wchar_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<short>>);
-  static_assert(is_trivial_empty_v<integral_traits<unsigned short>>);
-  static_assert(is_trivial_empty_v<integral_traits<int>>);
-  static_assert(is_trivial_empty_v<integral_traits<unsigned>>);
-  static_assert(is_trivial_empty_v<integral_traits<long>>);
-  static_assert(is_trivial_empty_v<integral_traits<unsigned long>>);
-  static_assert(is_trivial_empty_v<integral_traits<long long>>);
-  static_assert(is_trivial_empty_v<integral_traits<unsigned long long>>);
-  static_assert(is_trivial_empty_v<integral_traits<size_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<ptrdiff_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_least8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_least16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_least32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_least64_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_least8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_least16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_least32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_least64_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_fast8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_fast16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_fast32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int_fast64_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_fast8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_fast16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_fast32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint_fast64_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<int64_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint8_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint16_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint32_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uint64_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<intmax_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<uintmax_t>>);
-  static_assert(is_trivial_empty_v<integral_traits<void>>);
+  static_assert(is_empty<integral_traits<bool>>);
+  static_assert(is_empty<integral_traits<char>>);
+  static_assert(is_empty<integral_traits<unsigned char>>);
+  static_assert(is_empty<integral_traits<signed char>>);
+  static_assert(is_empty<integral_traits<char8_t>>);
+  static_assert(is_empty<integral_traits<char16_t>>);
+  static_assert(is_empty<integral_traits<char32_t>>);
+  static_assert(is_empty<integral_traits<wchar_t>>);
+  static_assert(is_empty<integral_traits<short>>);
+  static_assert(is_empty<integral_traits<unsigned short>>);
+  static_assert(is_empty<integral_traits<int>>);
+  static_assert(is_empty<integral_traits<unsigned>>);
+  static_assert(is_empty<integral_traits<long>>);
+  static_assert(is_empty<integral_traits<unsigned long>>);
+  static_assert(is_empty<integral_traits<long long>>);
+  static_assert(is_empty<integral_traits<unsigned long long>>);
+  static_assert(is_empty<integral_traits<size_t>>);
+  static_assert(is_empty<integral_traits<ptrdiff_t>>);
+  static_assert(is_empty<integral_traits<int_least8_t>>);
+  static_assert(is_empty<integral_traits<int_least16_t>>);
+  static_assert(is_empty<integral_traits<int_least32_t>>);
+  static_assert(is_empty<integral_traits<int_least64_t>>);
+  static_assert(is_empty<integral_traits<uint_least8_t>>);
+  static_assert(is_empty<integral_traits<uint_least16_t>>);
+  static_assert(is_empty<integral_traits<uint_least32_t>>);
+  static_assert(is_empty<integral_traits<uint_least64_t>>);
+  static_assert(is_empty<integral_traits<int_fast8_t>>);
+  static_assert(is_empty<integral_traits<int_fast16_t>>);
+  static_assert(is_empty<integral_traits<int_fast32_t>>);
+  static_assert(is_empty<integral_traits<int_fast64_t>>);
+  static_assert(is_empty<integral_traits<uint_fast8_t>>);
+  static_assert(is_empty<integral_traits<uint_fast16_t>>);
+  static_assert(is_empty<integral_traits<uint_fast32_t>>);
+  static_assert(is_empty<integral_traits<uint_fast64_t>>);
+  static_assert(is_empty<integral_traits<int8_t>>);
+  static_assert(is_empty<integral_traits<int16_t>>);
+  static_assert(is_empty<integral_traits<int32_t>>);
+  static_assert(is_empty<integral_traits<int64_t>>);
+  static_assert(is_empty<integral_traits<uint8_t>>);
+  static_assert(is_empty<integral_traits<uint16_t>>);
+  static_assert(is_empty<integral_traits<uint32_t>>);
+  static_assert(is_empty<integral_traits<uint64_t>>);
+  static_assert(is_empty<integral_traits<intmax_t>>);
+  static_assert(is_empty<integral_traits<uintmax_t>>);
+  static_assert(is_empty<integral_traits<void>>);
 
   static_assert(integral_traits<bool>::is_specialized);
   static_assert(integral_traits<char>::is_specialized);
@@ -7091,109 +7137,109 @@ void test_integral_traits() {
   static_assert(integral_traits<uint64_t>::max() == UINT64_MAX);
   static_assert(integral_traits<uint64_t>::min() == 0);
 
-  static_assert(is_same_v<integral_traits<bool>::change_signedness, bool>);
-  static_assert(is_same_v
+  static_assert(is_same<integral_traits<bool>::change_signedness, bool>);
+  static_assert(is_same
                 <integral_traits<char>::change_signedness, signed char>
-                || is_same_v
+                || is_same
                 <integral_traits<char>::change_signedness, unsigned char>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<unsigned char>::change_signedness,
                  signed char>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<signed char>::change_signedness,
                  unsigned char>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<char8_t>::change_signedness,
                  signed char>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<char16_t>::change_signedness,
                  int_least16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<char32_t>::change_signedness,
                  int_least32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<short>::change_signedness, unsigned short>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<unsigned short>::change_signedness, short>);
-  static_assert(is_same_v<integral_traits<int>::change_signedness, unsigned>);
-  static_assert(is_same_v<integral_traits<unsigned>::change_signedness, int>);
-  static_assert(is_same_v
+  static_assert(is_same<integral_traits<int>::change_signedness, unsigned>);
+  static_assert(is_same<integral_traits<unsigned>::change_signedness, int>);
+  static_assert(is_same
                 <integral_traits<long>::change_signedness, unsigned long>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<unsigned long>::change_signedness, long>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<long long>::change_signedness,
                  unsigned long long>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<unsigned long long>::change_signedness,
                  long long>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_least8_t>::change_signedness,
                  uint_least8_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_least8_t>::change_signedness,
                  int_least8_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_least16_t>::change_signedness,
                  uint_least16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_least16_t>::change_signedness,
                  int_least16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_least32_t>::change_signedness,
                  uint_least32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_least32_t>::change_signedness,
                  int_least32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_least64_t>::change_signedness,
                  uint_least64_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_least64_t>::change_signedness,
                  int_least64_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_fast8_t>::change_signedness,
                  uint_fast8_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_fast8_t>::change_signedness,
                  int_fast8_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_fast16_t>::change_signedness,
                  uint_fast16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_fast16_t>::change_signedness,
                  int_fast16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_fast32_t>::change_signedness,
                  uint_fast32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_fast32_t>::change_signedness,
                  int_fast32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int_fast64_t>::change_signedness,
                  uint_fast64_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint_fast64_t>::change_signedness,
                  int_fast64_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uintmax_t>::change_signedness, intmax_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<intmax_t>::change_signedness, uintmax_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int8_t>::change_signedness, uint8_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint8_t>::change_signedness, int8_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int16_t>::change_signedness, uint16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint16_t>::change_signedness, int16_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int32_t>::change_signedness, uint32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint32_t>::change_signedness, int32_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<int64_t>::change_signedness, uint64_t>);
-  static_assert(is_same_v
+  static_assert(is_same
                 <integral_traits<uint64_t>::change_signedness, int64_t>);
 
   static_assert(integral_traits
@@ -7419,12 +7465,12 @@ void test_three_way_comparison() {
 
   // is_eq/neq/lt/gt/lteq/gteq
   {
-    static_assert(is_trivial_empty_v<decltype(is_eq)>);
-    static_assert(is_trivial_empty_v<decltype(is_neq)>);
-    static_assert(is_trivial_empty_v<decltype(is_lt)>);
-    static_assert(is_trivial_empty_v<decltype(is_gt)>);
-    static_assert(is_trivial_empty_v<decltype(is_lteq)>);
-    static_assert(is_trivial_empty_v<decltype(is_gteq)>);
+    static_assert(is_empty<decltype(is_eq)>);
+    static_assert(is_empty<decltype(is_neq)>);
+    static_assert(is_empty<decltype(is_lt)>);
+    static_assert(is_empty<decltype(is_gt)>);
+    static_assert(is_empty<decltype(is_lteq)>);
+    static_assert(is_empty<decltype(is_gteq)>);
 
     static_assert(is_eq(1 <=> 1));
     static_assert(is_neq(0 <=> 1));
@@ -7442,20 +7488,21 @@ void test_three_way_comparison() {
     using t1 = partial_ordering;
     using t2 = weak_ordering;
     using t3 = strong_ordering;
-    static_assert(is_same_v<common_comparison_category_t<>, t3>);
-    static_assert(is_same_v<common_comparison_category_t<t3>, t3>);
-    static_assert(is_same_v<common_comparison_category_t<t2>, t2>);
-    static_assert(is_same_v<common_comparison_category_t<t1>, t1>);
-    static_assert(is_same_v<common_comparison_category_t<t0>, t0>);
-    static_assert(is_same_v<common_comparison_category_t<int>, void>);
-    static_assert(is_same_v<common_comparison_category_t<t0, t1, t2, t3>, t0>);
-    static_assert(is_same_v<common_comparison_category_t<t3, t2, t1, t0>, t0>);
-    static_assert(is_same_v
-                  <common_comparison_category_t<t3, volatile t2, t1, t0>, t0>);
-    static_assert(is_same_v<common_comparison_category_t<t1, t3, t2>, t1>);
-    static_assert(is_same_v<common_comparison_category_t<t3, t2, t3>, t2>);
-    static_assert(is_same_v<common_comparison_category_t<t3, t3, t3>, t3>);
-    static_assert(is_void_v<common_comparison_category_t<t3, t3, t3, int>>);
+    static_assert(is_same<template_common_comparison_category<t1>::type, t1>);
+    static_assert(is_same<common_comparison_category<>, t3>);
+    static_assert(is_same<common_comparison_category<t3>, t3>);
+    static_assert(is_same<common_comparison_category<t2>, t2>);
+    static_assert(is_same<common_comparison_category<t1>, t1>);
+    static_assert(is_same<common_comparison_category<t0>, t0>);
+    static_assert(is_same<common_comparison_category<int>, void>);
+    static_assert(is_same<common_comparison_category<t0, t1, t2, t3>, t0>);
+    static_assert(is_same<common_comparison_category<t3, t2, t1, t0>, t0>);
+    static_assert(is_same
+                  <common_comparison_category<t3, volatile t2, t1, t0>, t0>);
+    static_assert(is_same<common_comparison_category<t1, t3, t2>, t1>);
+    static_assert(is_same<common_comparison_category<t3, t2, t3>, t2>);
+    static_assert(is_same<common_comparison_category<t3, t3, t3>, t3>);
+    static_assert(is_void<common_comparison_category<t3, t3, t3, int>>);
   }
 
   // inner::compares_as
@@ -7478,19 +7525,19 @@ void test_three_way_comparison() {
   // compare_three_way
   // can_apply_compare_three_way
   {
-    static_assert(is_trivial_empty_v<compare_three_way_result<int, int>>);
-    static_assert(is_trivial_empty_v<compare_three_way>);
+    static_assert(is_empty<template_compare_three_way_result<int, int>>);
+    static_assert(is_empty<compare_three_way>);
 
-    static_assert(!has_member_type_type_v
-                  <compare_three_way_result<void *, int>>);
-    static_assert(is_same_v
-                  <compare_three_way_result_t<int, int>, strong_ordering>);
-    static_assert(is_same_v
-                  <compare_three_way_result_t<float, float>, partial_ordering>);
-    static_assert(is_same_v
-                  <compare_three_way_result_t<int, float>, partial_ordering>);
+    static_assert(!has_member_type_type
+                  <template_compare_three_way_result<void *, int>>);
+    static_assert(is_same
+                  <compare_three_way_result<int, int>, strong_ordering>);
+    static_assert(is_same
+                  <compare_three_way_result<float, float>, partial_ordering>);
+    static_assert(is_same
+                  <compare_three_way_result<int, float>, partial_ordering>);
 
-    static_assert(is_transparent_function_v<compare_three_way>);
+    static_assert(is_transparent_function<compare_three_way>);
     assert(compare_three_way{}(0, 0.0) == 0);
 
     struct t {
@@ -7546,6 +7593,12 @@ void test_type_index() {
 
 void test_basic_function_objects() {
   // is_transparent_function
+  //
+  // pre_increment
+  // pre_decrement
+  // post_increment
+  // post_decrement
+  //
   // plus
   // minus
   // multiplies
@@ -7566,83 +7619,96 @@ void test_basic_function_objects() {
   // bit_xor
   // bit_not
   {
-    static_assert(is_trivial_empty_v<plus<>>);
-    static_assert(is_trivial_empty_v<plus<int>>);
-    static_assert(is_trivial_empty_v<minus<>>);
-    static_assert(is_trivial_empty_v<minus<int>>);
-    static_assert(is_trivial_empty_v<multiplies<>>);
-    static_assert(is_trivial_empty_v<multiplies<int>>);
-    static_assert(is_trivial_empty_v<divides<>>);
-    static_assert(is_trivial_empty_v<divides<int>>);
-    static_assert(is_trivial_empty_v<modulus<>>);
-    static_assert(is_trivial_empty_v<modulus<int>>);
-    static_assert(is_trivial_empty_v<negate<>>);
-    static_assert(is_trivial_empty_v<negate<int>>);
-    static_assert(is_trivial_empty_v<equal_to<>>);
-    static_assert(is_trivial_empty_v<equal_to<int>>);
-    static_assert(is_trivial_empty_v<not_equal_to<>>);
-    static_assert(is_trivial_empty_v<not_equal_to<int>>);
-    static_assert(is_trivial_empty_v<greater<>>);
-    static_assert(is_trivial_empty_v<greater<int>>);
-    static_assert(is_trivial_empty_v<less<>>);
-    static_assert(is_trivial_empty_v<less<int>>);
-    static_assert(is_trivial_empty_v<greater_equal<>>);
-    static_assert(is_trivial_empty_v<greater_equal<int>>);
-    static_assert(is_trivial_empty_v<less_equal<>>);
-    static_assert(is_trivial_empty_v<less_equal<int>>);
-    static_assert(is_trivial_empty_v<logical_and<>>);
-    static_assert(is_trivial_empty_v<logical_and<int>>);
-    static_assert(is_trivial_empty_v<logical_or<>>);
-    static_assert(is_trivial_empty_v<logical_or<int>>);
-    static_assert(is_trivial_empty_v<logical_not<>>);
-    static_assert(is_trivial_empty_v<logical_not<int>>);
-    static_assert(is_trivial_empty_v<bit_and<>>);
-    static_assert(is_trivial_empty_v<bit_and<int>>);
-    static_assert(is_trivial_empty_v<bit_or<>>);
-    static_assert(is_trivial_empty_v<bit_or<int>>);
-    static_assert(is_trivial_empty_v<bit_xor<>>);
-    static_assert(is_trivial_empty_v<bit_xor<int>>);
-    static_assert(is_trivial_empty_v<bit_not<>>);
-    static_assert(is_trivial_empty_v<bit_not<int>>);
+    static_assert(is_empty<pre_increment>);
+    static_assert(is_empty<pre_decrement>);
+    static_assert(is_empty<post_increment>);
+    static_assert(is_empty<post_decrement>);
+    static_assert(is_empty<plus<>>);
+    static_assert(is_empty<plus<int>>);
+    static_assert(is_empty<minus<>>);
+    static_assert(is_empty<minus<int>>);
+    static_assert(is_empty<multiplies<>>);
+    static_assert(is_empty<multiplies<int>>);
+    static_assert(is_empty<divides<>>);
+    static_assert(is_empty<divides<int>>);
+    static_assert(is_empty<modulus<>>);
+    static_assert(is_empty<modulus<int>>);
+    static_assert(is_empty<negate<>>);
+    static_assert(is_empty<negate<int>>);
+    static_assert(is_empty<equal_to<>>);
+    static_assert(is_empty<equal_to<int>>);
+    static_assert(is_empty<not_equal_to<>>);
+    static_assert(is_empty<not_equal_to<int>>);
+    static_assert(is_empty<greater<>>);
+    static_assert(is_empty<greater<int>>);
+    static_assert(is_empty<less<>>);
+    static_assert(is_empty<less<int>>);
+    static_assert(is_empty<greater_equal<>>);
+    static_assert(is_empty<greater_equal<int>>);
+    static_assert(is_empty<less_equal<>>);
+    static_assert(is_empty<less_equal<int>>);
+    static_assert(is_empty<logical_and<>>);
+    static_assert(is_empty<logical_and<int>>);
+    static_assert(is_empty<logical_or<>>);
+    static_assert(is_empty<logical_or<int>>);
+    static_assert(is_empty<logical_not<>>);
+    static_assert(is_empty<logical_not<int>>);
+    static_assert(is_empty<bit_and<>>);
+    static_assert(is_empty<bit_and<int>>);
+    static_assert(is_empty<bit_or<>>);
+    static_assert(is_empty<bit_or<int>>);
+    static_assert(is_empty<bit_xor<>>);
+    static_assert(is_empty<bit_xor<int>>);
+    static_assert(is_empty<bit_not<>>);
+    static_assert(is_empty<bit_not<int>>);
 
-    static_assert(is_transparent_function_v<plus<>>);
-    static_assert(!is_transparent_function_v<plus<int>>);
-    static_assert(is_transparent_function_v<minus<>>);
-    static_assert(!is_transparent_function_v<minus<int>>);
-    static_assert(is_transparent_function_v<multiplies<>>);
-    static_assert(!is_transparent_function_v<multiplies<int>>);
-    static_assert(is_transparent_function_v<divides<>>);
-    static_assert(!is_transparent_function_v<divides<int>>);
-    static_assert(is_transparent_function_v<modulus<>>);
-    static_assert(!is_transparent_function_v<modulus<int>>);
-    static_assert(is_transparent_function_v<negate<>>);
-    static_assert(!is_transparent_function_v<negate<int>>);
-    static_assert(is_transparent_function_v<equal_to<>>);
-    static_assert(!is_transparent_function_v<equal_to<int>>);
-    static_assert(is_transparent_function_v<not_equal_to<>>);
-    static_assert(!is_transparent_function_v<not_equal_to<int>>);
-    static_assert(is_transparent_function_v<greater<>>);
-    static_assert(!is_transparent_function_v<greater<int>>);
-    static_assert(is_transparent_function_v<less<>>);
-    static_assert(!is_transparent_function_v<less<int>>);
-    static_assert(is_transparent_function_v<greater_equal<>>);
-    static_assert(!is_transparent_function_v<greater_equal<int>>);
-    static_assert(is_transparent_function_v<less_equal<>>);
-    static_assert(!is_transparent_function_v<less_equal<int>>);
-    static_assert(is_transparent_function_v<logical_and<>>);
-    static_assert(!is_transparent_function_v<logical_and<int>>);
-    static_assert(is_transparent_function_v<logical_or<>>);
-    static_assert(!is_transparent_function_v<logical_or<int>>);
-    static_assert(is_transparent_function_v<logical_not<>>);
-    static_assert(!is_transparent_function_v<logical_not<int>>);
-    static_assert(is_transparent_function_v<bit_and<>>);
-    static_assert(!is_transparent_function_v<bit_and<int>>);
-    static_assert(is_transparent_function_v<bit_or<>>);
-    static_assert(!is_transparent_function_v<bit_or<int>>);
-    static_assert(is_transparent_function_v<bit_xor<>>);
-    static_assert(!is_transparent_function_v<bit_xor<int>>);
-    static_assert(is_transparent_function_v<bit_not<>>);
-    static_assert(!is_transparent_function_v<bit_not<int>>);
+    static_assert(is_transparent_function<pre_increment>);
+    static_assert(is_transparent_function<post_increment>);
+    static_assert(is_transparent_function<pre_decrement>);
+    static_assert(is_transparent_function<post_decrement>);
+    static_assert(is_transparent_function<plus<>>);
+    static_assert(!is_transparent_function<plus<int>>);
+    static_assert(is_transparent_function<minus<>>);
+    static_assert(!is_transparent_function<minus<int>>);
+    static_assert(is_transparent_function<multiplies<>>);
+    static_assert(!is_transparent_function<multiplies<int>>);
+    static_assert(is_transparent_function<divides<>>);
+    static_assert(!is_transparent_function<divides<int>>);
+    static_assert(is_transparent_function<modulus<>>);
+    static_assert(!is_transparent_function<modulus<int>>);
+    static_assert(is_transparent_function<negate<>>);
+    static_assert(!is_transparent_function<negate<int>>);
+    static_assert(is_transparent_function<equal_to<>>);
+    static_assert(!is_transparent_function<equal_to<int>>);
+    static_assert(is_transparent_function<not_equal_to<>>);
+    static_assert(!is_transparent_function<not_equal_to<int>>);
+    static_assert(is_transparent_function<greater<>>);
+    static_assert(!is_transparent_function<greater<int>>);
+    static_assert(is_transparent_function<less<>>);
+    static_assert(!is_transparent_function<less<int>>);
+    static_assert(is_transparent_function<greater_equal<>>);
+    static_assert(!is_transparent_function<greater_equal<int>>);
+    static_assert(is_transparent_function<less_equal<>>);
+    static_assert(!is_transparent_function<less_equal<int>>);
+    static_assert(is_transparent_function<logical_and<>>);
+    static_assert(!is_transparent_function<logical_and<int>>);
+    static_assert(is_transparent_function<logical_or<>>);
+    static_assert(!is_transparent_function<logical_or<int>>);
+    static_assert(is_transparent_function<logical_not<>>);
+    static_assert(!is_transparent_function<logical_not<int>>);
+    static_assert(is_transparent_function<bit_and<>>);
+    static_assert(!is_transparent_function<bit_and<int>>);
+    static_assert(is_transparent_function<bit_or<>>);
+    static_assert(!is_transparent_function<bit_or<int>>);
+    static_assert(is_transparent_function<bit_xor<>>);
+    static_assert(!is_transparent_function<bit_xor<int>>);
+    static_assert(is_transparent_function<bit_not<>>);
+    static_assert(!is_transparent_function<bit_not<int>>);
+
+    static_assert(!noexcept(pre_increment{}(declval<int &>())));
+    static_assert(!noexcept(pre_decrement{}(declval<int &>())));
+    static_assert(!noexcept(post_increment{}(declval<int &>())));
+    static_assert(!noexcept(post_decrement{}(declval<int &>())));
 
     static_assert(!noexcept(plus<>()(1, 2.0)));
     static_assert(!noexcept(plus<int>()(1, 2)));
@@ -7714,6 +7780,18 @@ void test_basic_function_objects() {
     static_assert(!noexcept(bit_not<>()(0b0u)));
     static_assert(!noexcept(bit_not<uint8_t>()(0b10101010u)));
     static_assert(!noexcept(bit_not<uint8_t>()(0b0u)));
+
+    int x = 1;
+    static_assert(is_same<decltype(pre_increment{}(x)), int &>);
+    assert(pre_increment{}(x) == 2);
+    static_assert(is_same<decltype(post_increment{}(x)), int>);
+    assert(post_increment{}(x) == 2);
+    assert(x == 3);
+    static_assert(is_same<decltype(pre_decrement{}(x)), int &>);
+    assert(pre_decrement{}(x) == 2);
+    static_assert(is_same<decltype(post_decrement{}(x)), int>);
+    assert(post_decrement{}(x) == 2);
+    assert(x == 1);
 
     static_assert(plus<>()(1, 2.0) == 3.0);
     static_assert(plus<int>()(1, 2) == 3);
@@ -7999,8 +8077,8 @@ void test_basic_function_objects() {
 
   // identity
   {
-    static_assert(is_trivial_empty_v<identity>);
-    static_assert(is_transparent_function_v<identity>);
+    static_assert(is_empty<identity>);
+    static_assert(is_transparent_function<identity>);
     static_assert(noexcept(identity()(2)));
     static_assert(identity()(2) == 2);
     static_assert(identity()(identity()(3.5)) == 3.5);
@@ -8014,17 +8092,17 @@ void test_basic_function_objects() {
     const auto f2 = not_fn([](int, int) constexpr {return true;});
     static_assert(!f2(1, 1));
     static_assert(!default_initializable<decltype(f)>);
-    static_assert(is_move_constructible_v<decltype(f)>);
-    static_assert(is_copy_constructible_v<decltype(f)>);
-    static_assert(!is_move_assignable_v<decltype(f)>);
-    static_assert(!is_copy_assignable_v<decltype(f)>);
-    static_assert(!is_swappable_v<decltype(f)>);
+    static_assert(is_move_constructible<decltype(f)>);
+    static_assert(is_copy_constructible<decltype(f)>);
+    static_assert(!is_move_assignable<decltype(f)>);
+    static_assert(!is_copy_assignable<decltype(f)>);
+    static_assert(!is_swappable<decltype(f)>);
     static_assert(default_initializable<decltype(f2)>);
-    static_assert(is_move_constructible_v<decltype(f2)>);
-    static_assert(is_copy_constructible_v<decltype(f2)>);
-    static_assert(!is_move_assignable_v<decltype(f2)>);
-    static_assert(!is_copy_assignable_v<decltype(f2)>);
-    static_assert(!is_swappable_v<decltype(f2)>);
+    static_assert(is_move_constructible<decltype(f2)>);
+    static_assert(is_copy_constructible<decltype(f2)>);
+    static_assert(!is_move_assignable<decltype(f2)>);
+    static_assert(!is_copy_assignable<decltype(f2)>);
+    static_assert(!is_swappable<decltype(f2)>);
 
     struct t {
       int x;
@@ -8032,13 +8110,13 @@ void test_basic_function_objects() {
       int operator ()(int) & {return x;}
       int operator ()(int) const & {return !x;}
     };
-    static_assert(is_nothrow_constructible_v<t>);
-    static_assert(is_nothrow_destructible_v<t>);
-    static_assert(is_nothrow_copy_constructible_v<t>);
-    static_assert(is_nothrow_copy_assignable_v<t>);
-    static_assert(is_nothrow_move_constructible_v<t>);
-    static_assert(is_nothrow_move_assignable_v<t>);
-    static_assert(is_nothrow_swappable_v<t>);
+    static_assert(is_nothrow_constructible<t>);
+    static_assert(is_nothrow_destructible<t>);
+    static_assert(is_nothrow_copy_constructible<t>);
+    static_assert(is_nothrow_copy_assignable<t>);
+    static_assert(is_nothrow_move_constructible<t>);
+    static_assert(is_nothrow_move_assignable<t>);
+    static_assert(is_nothrow_swappable<t>);
     t t1{1}, t2{0};
     auto nf1 = not_fn(t1);
     auto nf2 = not_fn(t2);
@@ -8059,13 +8137,13 @@ void test_basic_function_objects() {
       int operator ()(int) && noexcept {return x;}
       int operator ()(int) const && noexcept {return !x;}
     };
-    static_assert(is_nothrow_constructible_v<tt>);
-    static_assert(is_nothrow_destructible_v<tt>);
-    static_assert(is_nothrow_copy_constructible_v<tt>);
-    static_assert(is_nothrow_copy_assignable_v<tt>);
-    static_assert(is_nothrow_move_constructible_v<tt>);
-    static_assert(is_nothrow_move_assignable_v<tt>);
-    static_assert(is_nothrow_swappable_v<tt>);
+    static_assert(is_nothrow_constructible<tt>);
+    static_assert(is_nothrow_destructible<tt>);
+    static_assert(is_nothrow_copy_constructible<tt>);
+    static_assert(is_nothrow_copy_assignable<tt>);
+    static_assert(is_nothrow_move_constructible<tt>);
+    static_assert(is_nothrow_move_assignable<tt>);
+    static_assert(is_nothrow_swappable<tt>);
     tt t3{1}, t4{0};
     auto nf3 = not_fn(t3);
     auto nf4 = not_fn(t4);
@@ -8095,8 +8173,8 @@ void test_basic_function_objects() {
     A a;
 
     const auto f1 = mem_fn(&A::value);
-    static_assert(semiregular<remove_const_t<decltype(f1)>>);
-    static_assert(is_trivially_copyable_v<remove_const_t<decltype(f1)>>);
+    static_assert(semiregular<remove_const<decltype(f1)>>);
+    static_assert(is_trivially_copyable<remove_const<decltype(f1)>>);
     assert(f1(a) == 0);
 
     int (A::*const fp)() = &A::f;
@@ -8140,11 +8218,11 @@ void test_test_t() {
   {
     using t = test_t<0, true, 0>;
     static_assert(regular<t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(!is_convertible_v<int, t>);
-    static_assert(!is_constructible_v<t, long>);
-    static_assert(!is_constructible_v<t, allocator_arg_t, int, int>);
-    static_assert(!is_constructible_v<t, int, int>);
+    static_assert(is_constructible<t, int>);
+    static_assert(!is_convertible<int, t>);
+    static_assert(!is_constructible<t, long>);
+    static_assert(!is_constructible<t, allocator_arg_t, int, int>);
+    static_assert(!is_constructible<t, int, int>);
     t x;
     assert(x.value == 0);
     t y{3};
@@ -8153,51 +8231,51 @@ void test_test_t() {
   {
     using t = test_t<0, true, 1>;
     static_assert(regular<t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(!is_convertible_v<int, t>);
-    static_assert(!is_constructible_v<t, long>);
-    static_assert(is_constructible_v<t, allocator_arg_t, int, int>);
-    static_assert(!is_constructible_v<t, int, int>);
+    static_assert(is_constructible<t, int>);
+    static_assert(!is_convertible<int, t>);
+    static_assert(!is_constructible<t, long>);
+    static_assert(is_constructible<t, allocator_arg_t, int, int>);
+    static_assert(!is_constructible<t, int, int>);
     t x(allocator_arg, 4, 3);
     assert(x.value == 43);
   }
   {
     using t = test_t<0, true, 2>;
     static_assert(regular<t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(!is_convertible_v<int, t>);
-    static_assert(!is_constructible_v<t, long>);
-    static_assert(!is_constructible_v<t, allocator_arg_t, int, int>);
-    static_assert(is_constructible_v<t, int, int>);
+    static_assert(is_constructible<t, int>);
+    static_assert(!is_convertible<int, t>);
+    static_assert(!is_constructible<t, long>);
+    static_assert(!is_constructible<t, allocator_arg_t, int, int>);
+    static_assert(is_constructible<t, int, int>);
     t x(3, 4);
     assert(x.value == 43);
   }
   {
     using t = test_t<0, false, 0>;
     static_assert(regular<t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(is_convertible_v<int, t>);
-    static_assert(!is_constructible_v<t, long>);
-    static_assert(!is_constructible_v<t, allocator_arg_t, int, int>);
-    static_assert(!is_constructible_v<t, int, int>);
+    static_assert(is_constructible<t, int>);
+    static_assert(is_convertible<int, t>);
+    static_assert(!is_constructible<t, long>);
+    static_assert(!is_constructible<t, allocator_arg_t, int, int>);
+    static_assert(!is_constructible<t, int, int>);
   }
   {
     using t = test_t<0, false, 1>;
     static_assert(regular<t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(is_convertible_v<int, t>);
-    static_assert(!is_constructible_v<t, long>);
-    static_assert(is_constructible_v<t, allocator_arg_t, int, int>);
-    static_assert(!is_constructible_v<t, int, int>);
+    static_assert(is_constructible<t, int>);
+    static_assert(is_convertible<int, t>);
+    static_assert(!is_constructible<t, long>);
+    static_assert(is_constructible<t, allocator_arg_t, int, int>);
+    static_assert(!is_constructible<t, int, int>);
   }
   {
     using t = test_t<0, false, 2>;
     static_assert(regular<t>);
-    static_assert(is_constructible_v<t, int>);
-    static_assert(is_convertible_v<int, t>);
-    static_assert(!is_constructible_v<t, long>);
-    static_assert(!is_constructible_v<t, allocator_arg_t, int, int>);
-    static_assert(is_constructible_v<t, int, int>);
+    static_assert(is_constructible<t, int>);
+    static_assert(is_convertible<int, t>);
+    static_assert(!is_constructible<t, long>);
+    static_assert(!is_constructible<t, allocator_arg_t, int, int>);
+    static_assert(is_constructible<t, int, int>);
     t x(3, 4);
     assert(x.value == 43);
   }
@@ -8334,10 +8412,10 @@ void test_tuple() {
     assert(t == make_tuple(1, 2, 3));
     assert(p == make_pair(1, 2));
 
-    static_assert(is_same_v<decltype(t0), tuple<int>>);
-    static_assert(is_same_v<decltype(t), tuple<int, int, int>>);
-    static_assert(is_same_v<decltype(p), tuple<int, int>>);
-    static_assert(is_same_v<decltype(p), pair<int, int>>);
+    static_assert(is_same<decltype(t0), tuple<int>>);
+    static_assert(is_same<decltype(t), tuple<int, int, int>>);
+    static_assert(is_same<decltype(p), tuple<int, int>>);
+    static_assert(is_same<decltype(p), pair<int, int>>);
 
     tuple t00(allocator_arg, 0, 0);
     tuple tt(allocator_arg, 0, 1, 2, 3);
@@ -8348,21 +8426,21 @@ void test_tuple() {
 
     tuple x{};
     tuple y(allocator_arg, 0);
-    static_assert(is_same_v<decltype(x), tuple<>>);
-    static_assert(is_same_v<decltype(y), tuple<>>);
+    static_assert(is_same<decltype(x), tuple<>>);
+    static_assert(is_same<decltype(y), tuple<>>);
   }
 
   // piecwise_construct
   // ignore
   // allocator_arg
   {
-    static_assert(is_trivial_empty_v<piecewise_construct_t>);
-    static_assert(is_same_v
+    static_assert(is_empty<piecewise_construct_t>);
+    static_assert(is_same
                   <decltype(piecewise_construct), const piecewise_construct_t>);
-    static_assert(is_trivial_empty_v<allocator_arg_t>);
-    static_assert(is_same_v<decltype(allocator_arg), const allocator_arg_t>);
-    static_assert(is_trivial_empty_v<inner::ignore_t>);
-    static_assert(is_same_v<decltype(ignore), const inner::ignore_t>);
+    static_assert(is_empty<allocator_arg_t>);
+    static_assert(is_same<decltype(allocator_arg), const allocator_arg_t>);
+    static_assert(is_empty<inner::ignore_t>);
+    static_assert(is_same<decltype(ignore), const inner::ignore_t>);
   }
 
   // tuple_size
@@ -8374,40 +8452,39 @@ void test_tuple() {
     using t3 = tuple<char, int, float>;
     using t4 = tuple<char, int, float, double>;
 
-    static_assert(!has_member_static_value_v<tuple_size<void>>);
-    static_assert(!has_member_type_type_v<tuple_element<0, void>>);
+    static_assert(!has_member_static_value<template_tuple_size<void>>);
+    static_assert(!has_member_type_type<template_tuple_element<0, void>>);
 
-    static_assert(tuple_size<t0>::value == 0);
-    static_assert(tuple_size<t1>::value == 1);
-    static_assert(tuple_size<t2>::value == 2);
-    static_assert(tuple_size<t3>::value == 3);
-    static_assert(tuple_size<t4>::value == 4);
+    static_assert(template_tuple_size<t0>::value == 0);
+    static_assert(template_tuple_size<t1>::value == 1);
+    static_assert(template_tuple_size<t2>::value == 2);
+    static_assert(template_tuple_size<t3>::value == 3);
+    static_assert(template_tuple_size<t4>::value == 4);
 
-    static_assert(is_same_v<tuple_element_t<0, t0>, void>);
+    static_assert(is_same<tuple_element<0, t0>, void>);
 
-    static_assert(is_same_v<tuple_element_t<0, t1>, int>);
-    static_assert(is_same_v<const tuple_element_t<0, t1>, const int>);
-    static_assert(is_same_v<volatile tuple_element_t<0, t1>, volatile int>);
-    static_assert(is_same_v
-                  <const volatile tuple_element_t<0, t1>, const volatile int>);
-    static_assert(is_same_v<tuple_element_t<1, t1>, void>);
-    static_assert(is_same_v<tuple_element_t<100, t1>, void>);
+    static_assert(is_same<tuple_element<0, t1>, int>);
+    static_assert(is_same<const tuple_element<0, t1>, const int>);
+    static_assert(is_same<volatile tuple_element<0, t1>, volatile int>);
+    static_assert(is_same
+                  <const volatile tuple_element<0, t1>, const volatile int>);
+    static_assert(is_same<tuple_element<1, t1>, void>);
+    static_assert(is_same<tuple_element<100, t1>, void>);
 
-    static_assert(is_same_v<tuple_element_t<0, t2>, char>);
-    static_assert(is_same_v<tuple_element_t<1, t2>, int>);
+    static_assert(is_same<tuple_element<0, t2>, char>);
+    static_assert(is_same<tuple_element<1, t2>, int>);
 
-    static_assert(is_same_v<tuple_element_t<0, t3>, char>);
-    static_assert(is_same_v<tuple_element_t<1, t3>, int>);
-    static_assert(is_same_v<tuple_element_t<2, t3>, float>);
+    static_assert(is_same<tuple_element<0, t3>, char>);
+    static_assert(is_same<tuple_element<1, t3>, int>);
+    static_assert(is_same<tuple_element<2, t3>, float>);
 
-    static_assert(is_same_v<tuple_element_t<0, t4>, char>);
-    static_assert(is_same_v<tuple_element_t<1, t4>, int>);
-    static_assert(is_same_v<tuple_element_t<2, t4>, float>);
-    static_assert(is_same_v<tuple_element_t<3, t4>, double>);
+    static_assert(is_same<tuple_element<0, t4>, char>);
+    static_assert(is_same<tuple_element<1, t4>, int>);
+    static_assert(is_same<tuple_element<2, t4>, float>);
+    static_assert(is_same<tuple_element<3, t4>, double>);
 
-    static_assert(is_same_v
-                  <tuple_element_t<3, const volatile t4>,
-                  const volatile double>);
+    static_assert(is_same
+                  <tuple_element<3, const volatile t4>, const volatile double>);
   }
 
   // common_reference<CVREF tuple, CVREF tuple>
@@ -8416,56 +8493,56 @@ void test_tuple() {
     struct tt : t {};
 
     static_assert(same_as
-                  <common_reference_t<tuple<int &>, tuple<long>>, tuple<long>>);
+                  <common_reference<tuple<int &>, tuple<long>>, tuple<long>>);
     static_assert(same_as
-                  <common_reference_t<tuple<int>, tuple<long>>, tuple<long>>);
+                  <common_reference<tuple<int>, tuple<long>>, tuple<long>>);
     static_assert(same_as
-                  <common_reference_t<tuple<int>, tuple<const long &>>,
+                  <common_reference<tuple<int>, tuple<const long &>>,
                   tuple<long>>);
     static_assert(same_as
-                  <common_reference_t<tuple<t>, tuple<tt>>, tuple<t>>);
+                  <common_reference<tuple<t>, tuple<tt>>, tuple<t>>);
     static_assert(same_as
-                  <common_reference_t<const tuple<t> &, tuple<tt> &&>,
+                  <common_reference<const tuple<t> &, tuple<tt> &&>,
                   tuple<const t &>>);
     static_assert(same_as
-                  <common_reference_t<tuple<const t &>, tuple<tt &&>>,
+                  <common_reference<tuple<const t &>, tuple<tt &&>>,
                   tuple<const t &>>);
 
-    static_assert(is_same_v
-                  <typename common_reference
-                  <tuple<int &, t &>, tuple<long long, tt &>>::type,
-                  tuple<long long, t &>>);
-    static_assert(is_same_v
-                  <typename common_reference
-                  <tuple<int &, t &>, const tuple<long long, tt> &>::type,
-                  tuple<long long, const t &>>);
-    static_assert(is_same_v<common_reference_t<int &, long long &>, long long>);
-    static_assert(is_same_v<common_reference_t<t &, const tt &>, const t &>);
+    static_assert(is_same
+                  <typename template_common_reference
+                   <tuple<int &, t &>, tuple<long long, tt &>>::type,
+                   tuple<long long, t &>>);
+    static_assert(is_same
+                  <typename template_common_reference
+                   <tuple<int &, t &>, const tuple<long long, tt> &>::type,
+                   tuple<long long, const t &>>);
+    static_assert(is_same<common_reference<int &, long long &>, long long>);
+    static_assert(is_same<common_reference<t &, const tt &>, const t &>);
 
-    static_assert(is_same_v
-                  <common_reference_t<tuple<>, tuple<> &>, tuple<>>);
-    static_assert(is_same_v
-                  <common_reference_t<tuple<> &, tuple<> &>, tuple<> &>);
+    static_assert(is_same
+                  <common_reference<tuple<>, tuple<> &>, tuple<>>);
+    static_assert(is_same
+                  <common_reference<tuple<> &, tuple<> &>, tuple<> &>);
 
     static_assert(same_as
-                  <common_reference_t<tuple<int &>, tuple<long>>, tuple<long>>);
+                  <common_reference<tuple<int &>, tuple<long>>, tuple<long>>);
     static_assert(same_as
-                  <common_reference_t<tuple<int>, tuple<long>>, tuple<long>>);
+                  <common_reference<tuple<int>, tuple<long>>, tuple<long>>);
     static_assert(same_as
-                  <common_reference_t<tuple<int>, tuple<const long &>>,
+                  <common_reference<tuple<int>, tuple<const long &>>,
                   tuple<long>>);
     static_assert(same_as
-                  <common_reference_t<tuple<t>, tuple<tt>>, tuple<t>>);
+                  <common_reference<tuple<t>, tuple<tt>>, tuple<t>>);
     static_assert(same_as
-                  <common_reference_t<const tuple<t> &, tuple<tt> &&>,
+                  <common_reference<const tuple<t> &, tuple<tt> &&>,
                   tuple<const t &>>);
     static_assert(same_as
-                  <common_reference_t
+                  <common_reference
                   <tuple<const t &, int, int>,
                   tuple<tt &&, long, long long &>>,
                   tuple<const t &, long, long long>>);
     static_assert(same_as
-                  <common_reference_t
+                  <common_reference
                   <tuple<int, int, const t &>, tuple<long, long long, tt &&>>,
                   tuple<long, long long, const t &>>);
   }
@@ -8474,17 +8551,17 @@ void test_tuple() {
   {
     struct t {};
     struct tt : t {};
-    static_assert(is_same_v
-                  <common_type_t<tuple<int, t *>, tuple<long long, tt *>>,
+    static_assert(is_same
+                  <common_type<tuple<int, t *>, tuple<long long, tt *>>,
                   tuple<long long, t *>>);
 
-    static_assert(is_same_v
-                  <common_type_t<tuple<>, tuple<> &>, tuple<>>);
-    static_assert(is_same_v
-                  <common_type_t<tuple<> &, tuple<> &>, tuple<>>);
+    static_assert(is_same
+                  <common_type<tuple<>, tuple<> &>, tuple<>>);
+    static_assert(is_same
+                  <common_type<tuple<> &, tuple<> &>, tuple<>>);
 
     static_assert(same_as
-                  <common_type_t<tuple<tt, t, tt>, tuple<t, tt, t>>,
+                  <common_type<tuple<tt, t, tt>, tuple<t, tt, t>>,
                   tuple<t, t, t>>); 
   }
 
@@ -8492,18 +8569,18 @@ void test_tuple() {
   // at
   // as
   {
-    static_assert(is_trivial_empty_v<decltype(as<int>)>);
-    static_assert(is_trivial_empty_v<decltype(at<0>)>);
+    static_assert(is_empty<decltype(as<int>)>);
+    static_assert(is_empty<decltype(at<0>)>);
 
     const auto f1 = []<class T, class F, class I>(T &t, F f, I i) {
       assert(f(t) == i);
       assert(f((const T &)t) == i);
       assert(f((T &&)t) == i);
       assert(f((const T &&)t) == i);
-      static_assert(is_same_v<decltype(f(t)), I &>);
-      static_assert(is_same_v<decltype(f((const T &)t)), const I &>);
-      static_assert(is_same_v<decltype(f((T &&)t)), I &&>);
-      static_assert(is_same_v<decltype(f((const T &&)t)), const I &&>);
+      static_assert(is_same<decltype(f(t)), I &>);
+      static_assert(is_same<decltype(f((const T &)t)), const I &>);
+      static_assert(is_same<decltype(f((T &&)t)), I &&>);
+      static_assert(is_same<decltype(f((const T &&)t)), const I &&>);
 
       auto &x = f(t);
       x = 0;
@@ -8529,12 +8606,12 @@ void test_tuple() {
          return forward<T>(x).template as<int>();
        },
        1);
-    static_assert(is_invocable_v<decltype(at<0>), t1 &>);
-    static_assert(!is_invocable_v<decltype(at<1>), t1 &>);
-    static_assert(!is_invocable_v<decltype(at<100>), t1 &>);
-    static_assert(is_invocable_v<decltype(as<int>), t1 &>);
-    static_assert(!is_invocable_v<decltype(as<int &>), t1 &>);
-    static_assert(!is_invocable_v<decltype(as<float>), t1 &>);
+    static_assert(is_invocable<decltype(at<0>), t1 &>);
+    static_assert(!is_invocable<decltype(at<1>), t1 &>);
+    static_assert(!is_invocable<decltype(at<100>), t1 &>);
+    static_assert(is_invocable<decltype(as<int>), t1 &>);
+    static_assert(!is_invocable<decltype(as<int &>), t1 &>);
+    static_assert(!is_invocable<decltype(as<float>), t1 &>);
     {
       constexpr t1 x(1);
       static_assert(x.as<int>() == 1);
@@ -8584,12 +8661,12 @@ void test_tuple() {
          return forward<T>(x).template as<short>();
        },
        (short)2);
-    static_assert(is_invocable_v<decltype(at<0>), t2 &>);
-    static_assert(is_invocable_v<decltype(at<1>), t2 &>);
-    static_assert(!is_invocable_v<decltype(at<2>), t2 &>);
-    static_assert(is_invocable_v<decltype(as<int>), t2 &>);
-    static_assert(is_invocable_v<decltype(as<short>), t2 &>);
-    static_assert(!is_invocable_v<decltype(as<float>), t2 &>);
+    static_assert(is_invocable<decltype(at<0>), t2 &>);
+    static_assert(is_invocable<decltype(at<1>), t2 &>);
+    static_assert(!is_invocable<decltype(at<2>), t2 &>);
+    static_assert(is_invocable<decltype(as<int>), t2 &>);
+    static_assert(is_invocable<decltype(as<short>), t2 &>);
+    static_assert(!is_invocable<decltype(as<float>), t2 &>);
     {
       constexpr t2 x(1, 2);
       static_assert(x.as<int>() == 1);
@@ -8852,7 +8929,7 @@ void test_tuple() {
 
   // forward_as_tuple
   {
-    static_assert(is_trivial_empty_v<decltype(forward_as_tuple)>);
+    static_assert(is_empty<decltype(forward_as_tuple)>);
 
     {
       static_assert(noexcept(forward_as_tuple()));
@@ -9014,8 +9091,8 @@ void test_tuple() {
   // make_tuple
   // make_pair
   {
-    static_assert(is_trivial_empty_v<decltype(make_tuple)>);
-    static_assert(is_trivial_empty_v<decltype(make_pair)>);
+    static_assert(is_empty<decltype(make_tuple)>);
+    static_assert(is_empty<decltype(make_pair)>);
 
     static_assert(!noexcept(make_tuple()));
     static_assert(!noexcept(make_tuple(1, 2, 3, 4, 5)));
@@ -9026,24 +9103,24 @@ void test_tuple() {
     const auto t2 = make_pair(1, ref(i));
     assert(t == make_tuple(1, 2, 3));
     assert(t2 == make_tuple(1, 0));
-    static_assert(is_same_v<decltype(t), const tuple<int, int, int>>);
-    static_assert(is_same_v<decltype(t2), const tuple<int, const int &>>);
+    static_assert(is_same<decltype(t), const tuple<int, int, int>>);
+    static_assert(is_same<decltype(t2), const tuple<int, const int &>>);
 
     const auto t3 = make_tuple(allocator_arg, 1);
-    assert(tuple_size_v<decltype(t3)> == 2);
+    assert(tuple_size<decltype(t3)> == 2);
     assert(t3.at<1>() == 1);
-    static_assert(is_same_v<decltype(t3), const tuple<allocator_arg_t, int>>);
+    static_assert(is_same<decltype(t3), const tuple<allocator_arg_t, int>>);
 
     const auto t4 = make_tuple();
-    assert(tuple_size_v<decltype(t4)> == 0);
-    static_assert(is_same_v<decltype(t4), const tuple<>>);
+    assert(tuple_size<decltype(t4)> == 0);
+    static_assert(is_same<decltype(t4), const tuple<>>);
 
     int x = 1;
     const int y = 2;
     int z = 3;
     const auto t5 = make_tuple(ref(x), ref(y), cref(z));
     assert(t5 == make_tuple(1, 2, 3));
-    static_assert(is_same_v
+    static_assert(is_same
                   <decltype(t5), const tuple<int &, const int &, const int &>>);
 
     {
@@ -9062,7 +9139,7 @@ void test_tuple() {
   {
     {
       int i, j;
-      static_assert(is_trivial_empty_v<decltype(tie)>);
+      static_assert(is_empty<decltype(tie)>);
       static_assert(noexcept(tie(i, j)));
       tie(i, j) = make_tuple(1, 2);
       assert(i == 1 && j == 2);
@@ -9125,7 +9202,7 @@ void test_tuple() {
 
   // tuple_cat
   {
-    static_assert(is_trivial_empty_v<decltype(tuple_cat)>);
+    static_assert(is_empty<decltype(tuple_cat)>);
     static_assert(!noexcept(tuple_cat(tuple(1, 2), tuple(3, 4))));
 
     static_assert(same_as
@@ -9160,7 +9237,7 @@ void test_tuple() {
       const tuple<int, int> x{1, 2};
       const tuple<int, int, int> y{3, 4, 5};
       auto z = tuple_cat(x, y);
-      static_assert(is_same_v<decltype(z), tuple<int, int, int, int, int>>);
+      static_assert(is_same<decltype(z), tuple<int, int, int, int, int>>);
       assert(z == make_tuple(1, 2, 3, 4, 5));
     }
 
@@ -9211,7 +9288,7 @@ void test_tuple() {
 
   // apply
   {
-    static_assert(is_trivial_empty_v<decltype(apply)>);
+    static_assert(is_empty<decltype(apply)>);
     static_assert(!noexcept(apply([]() noexcept {}, tuple{})));
 
     assert(apply([]() {return 1;}, tuple<>{}) == 1);
@@ -9280,7 +9357,7 @@ void test_tuple() {
 
   // make_from_tuple
   {
-    static_assert(is_trivial_empty_v<decltype(make_from_tuple<int>)>);
+    static_assert(is_empty<decltype(make_from_tuple<int>)>);
     static_assert(!noexcept(make_from_tuple<int>(tuple{})));
 
     struct t0 {
@@ -9343,151 +9420,151 @@ void test_tuple() {
   {
     {
       static_assert(regular<tuple<>>);
-      static_assert(is_nothrow_constructible_v<tuple<>>);
-      static_assert(is_nothrow_destructible_v<tuple<>>);
-      static_assert(is_nothrow_copy_constructible_v<tuple<>>);
-      static_assert(is_nothrow_copy_assignable_v<tuple<>>);
-      static_assert(is_nothrow_move_constructible_v<tuple<>>);
-      static_assert(is_nothrow_move_assignable_v<tuple<>>);
-      static_assert(is_nothrow_swappable_v<tuple<>>);
-      static_assert(is_nothrow_swappable_v<const tuple<>>);
-      static_assert(is_trivially_constructible_v<tuple<>>);
-      static_assert(is_trivially_destructible_v<tuple<>>);
-      static_assert(is_trivially_copy_constructible_v<tuple<>>);
-      static_assert(is_trivially_copy_assignable_v<tuple<>>);
-      static_assert(is_trivially_move_constructible_v<tuple<>>);
-      static_assert(is_trivially_move_assignable_v<tuple<>>);
+      static_assert(is_nothrow_constructible<tuple<>>);
+      static_assert(is_nothrow_destructible<tuple<>>);
+      static_assert(is_nothrow_copy_constructible<tuple<>>);
+      static_assert(is_nothrow_copy_assignable<tuple<>>);
+      static_assert(is_nothrow_move_constructible<tuple<>>);
+      static_assert(is_nothrow_move_assignable<tuple<>>);
+      static_assert(is_nothrow_swappable<tuple<>>);
+      static_assert(is_nothrow_swappable<const tuple<>>);
+      static_assert(is_trivially_constructible<tuple<>>);
+      static_assert(is_trivially_destructible<tuple<>>);
+      static_assert(is_trivially_copy_constructible<tuple<>>);
+      static_assert(is_trivially_copy_assignable<tuple<>>);
+      static_assert(is_trivially_move_constructible<tuple<>>);
+      static_assert(is_trivially_move_assignable<tuple<>>);
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_default_constructible, const int, true>());
+                    <template_is_default_constructible, const int, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_default_constructible, const int &, false>());
+                    <template_is_default_constructible, const int &, false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_default_constructible, int &&, false>());
+                    <template_is_default_constructible, int &&, false>());
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_destructible, int, true>());
+                    <template_is_nothrow_destructible, int, true>());
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_default_constructible, char,
+                    <template_is_trivially_default_constructible, char,
                     false, false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_default_constructible, tuple<int>,
+                    <template_is_trivially_default_constructible, tuple<int>,
                     false, false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_implicitly_default_constructible, char,
+                    <template_is_implicitly_default_constructible, char,
                     true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_implicitly_default_constructible, long,
+                    <template_is_implicitly_default_constructible, long,
                     true>());
       struct t {explicit t() {}};
       inner::test::help_tuple::test_conditional_smf
-          <is_implicitly_default_constructible, t, false>();
+          <template_is_implicitly_default_constructible, t, false>();
       inner::test::help_tuple::test_conditional_smf
-          <is_nothrow_default_constructible, char, true>();
+          <template_is_nothrow_default_constructible, char, true>();
       inner::test::help_tuple::test_conditional_smf
-          <is_nothrow_default_constructible, t, false>();
+          <template_is_nothrow_default_constructible, t, false>();
       inner::test::help_tuple::test_conditional_smf
-          <is_default_constructible, reference_wrapper<int>, false>();
+          <template_is_default_constructible, reference_wrapper<int>, false>();
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_copy_constructible, char, true>());
+                    <template_is_trivially_copy_constructible, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_copy_constructible,
+                    <template_is_trivially_copy_constructible,
                     owner_pointer<int>,
                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_copy_constructible, char, true>());
+                    <template_is_nothrow_copy_constructible, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_copy_constructible,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_nothrow_copy_constructible,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_copy_constructible,
-                    inner::test::help_tuple::only_moveable_t,
-                    false>());
+                    <template_is_copy_constructible,
+                     inner::test::help_tuple::only_moveable_t,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_copy_constructible,
-                    inner::test::help_tuple::unmoveable_t,
-                    false>());
+                    <template_is_copy_constructible,
+                     inner::test::help_tuple::unmoveable_t,
+                     false>());
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_copy_assignable, char, true>());
+                    <template_is_trivially_copy_assignable, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_copy_assignable,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_trivially_copy_assignable,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_copy_assignable, char, true>());
+                    <template_is_nothrow_copy_assignable, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_copy_assignable,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_nothrow_copy_assignable,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_copy_assignable,
-                    inner::test::help_tuple::only_moveable_t,
-                    false>());
+                    <template_is_copy_assignable,
+                     inner::test::help_tuple::only_moveable_t,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_copy_assignable,
-                    inner::test::help_tuple::unmoveable_t,
-                    false>());
+                    <template_is_copy_assignable,
+                     inner::test::help_tuple::unmoveable_t,
+                     false>());
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_move_constructible, char, true>());
+                    <template_is_trivially_move_constructible, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_move_constructible,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_trivially_move_constructible,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_move_constructible, char, true>());
+                    <template_is_nothrow_move_constructible, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_move_constructible,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_nothrow_move_constructible,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_move_constructible,
-                    inner::test::help_tuple::only_moveable_t,
-                    true>());
+                    <template_is_move_constructible,
+                     inner::test::help_tuple::only_moveable_t,
+                     true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_move_constructible,
-                    inner::test::help_tuple::unmoveable_t,
-                    false>());
+                    <template_is_move_constructible,
+                     inner::test::help_tuple::unmoveable_t,
+                     false>());
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_move_assignable, char, true>());
+                    <template_is_trivially_move_assignable, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_trivially_move_assignable,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_trivially_move_assignable,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_move_assignable, char, true>());
+                    <template_is_nothrow_move_assignable, char, true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_move_assignable,
-                    owner_pointer<int>,
-                    false>());
+                    <template_is_nothrow_move_assignable,
+                     owner_pointer<int>,
+                     false>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_move_assignable,
-                    inner::test::help_tuple::only_moveable_t,
-                    true>());
+                    <template_is_move_assignable,
+                     inner::test::help_tuple::only_moveable_t,
+                     true>());
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_move_assignable,
-                    inner::test::help_tuple::unmoveable_t,
-                    false>());
+                    <template_is_move_assignable,
+                     inner::test::help_tuple::unmoveable_t,
+                     false>());
 
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_swappable, char, true>());
+                    <template_is_nothrow_swappable, char, true>());
       struct tt {
         tt(tt &&) {}
         tt &operator =(tt &&) {return *this;}
       };
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_swappable, tt, false>());
+                    <template_is_nothrow_swappable, tt, false>());
       struct ttt {
         ttt(ttt &&) = delete;
         ttt &operator =(ttt &&) = delete;
       };
       static_assert(inner::test::help_tuple::test_conditional_smf
-                    <is_nothrow_swappable, ttt, false>());
+                    <template_is_nothrow_swappable, ttt, false>());
 
       {
         constexpr auto f = []() {tuple<> t{}; return true;};
@@ -9509,7 +9586,7 @@ void test_tuple() {
 
     {
       using t = tuple<int, owner_pointer<int>, int>;
-      static_assert(!is_nothrow_default_constructible_v<t>);
+      static_assert(!is_nothrow_default_constructible<t>);
       t a[500]{};
       for (size_t i = 0; i != 500; ++i) {
         assert(at<0>(a[i]) == 0);
@@ -9852,19 +9929,19 @@ void test_tuple() {
     struct type {
       explicit type(int) {}
     };
-    static_assert(is_convertible_v<int, tuple<type0>>);
-    static_assert(!is_convertible_v<int, tuple<type>>);
-    static_assert(is_convertible_v<const int &, tuple<type0>>);
-    static_assert(!is_convertible_v<const int &, tuple<type>>);
-    static_assert(is_implicitly_constructible_v<tuple<type0, type0>, int, int>);
-    static_assert(!is_implicitly_constructible_v<tuple<int, type>, int, int>);
-    static_assert(!is_implicitly_constructible_v<tuple<type, type>, int, int>);
+    static_assert(is_convertible<int, tuple<type0>>);
+    static_assert(!is_convertible<int, tuple<type>>);
+    static_assert(is_convertible<const int &, tuple<type0>>);
+    static_assert(!is_convertible<const int &, tuple<type>>);
+    static_assert(is_implicitly_constructible<tuple<type0, type0>, int, int>);
+    static_assert(!is_implicitly_constructible<tuple<int, type>, int, int>);
+    static_assert(!is_implicitly_constructible<tuple<type, type>, int, int>);
 
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<type0, type0, type0>, int, int, int>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<int, type, int>, int, int, int>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<type, type, type>, int, int, int>);
 
     {
@@ -9915,37 +9992,37 @@ void test_tuple() {
     struct t {
       explicit t(int) {}
     };
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<int>, const tuple<short> &>);
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<int>, tuple<short> &&>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<t>, const tuple<int> &>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<t>, tuple<int> &&>);
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<int, int>, const tuple<short, short> &>);
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<int, int>, tuple<short, short> &&>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<t, t>, const tuple<int, int> &>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<t, t>, tuple<int, int> &&>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<long, t>, const tuple<int, int> &>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<long, t>, tuple<int, int> &&>);
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<int, int, int>, const tuple<short, short, short> &>);
-    static_assert(is_implicitly_constructible_v
+    static_assert(is_implicitly_constructible
                   <tuple<int, int, int>, tuple<short, short, short> &&>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<t, t, t>, const tuple<int, int, int> &>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<t, t, t>, tuple<int, int, int> &&>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<long, t, long>, const tuple<int, int, int> &>);
-    static_assert(!is_implicitly_constructible_v
+    static_assert(!is_implicitly_constructible
                   <tuple<long, t, long>, tuple<int, int, int> &&>);
 
     {
@@ -10085,45 +10162,45 @@ void test_tuple() {
       struct t {
         explicit t(int) {}
       };
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int>, allocator_arg_t, int, const tuple<short> &>);
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int>, allocator_arg_t, int, tuple<short> &&>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t>, allocator_arg_t, int, const tuple<int> &>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t>, allocator_arg_t, int, tuple<int> &&>);
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int, int>,
                      allocator_arg_t, int, const tuple<short, short> &>);
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int, int>,
                      allocator_arg_t, int, tuple<short, short> &&>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t, int>,
                      allocator_arg_t, int, const tuple<int, int> &>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t, int>,
                      allocator_arg_t, int, tuple<int, int> &&>);
 
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int>, allocator_arg_t, int, const int &>);
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int>, allocator_arg_t, int, short>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t>, allocator_arg_t, int, const int &>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t>, allocator_arg_t, int, short>);
 
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int, int>,
                      allocator_arg_t, int, const int &, const int &>);
-      static_assert(is_implicitly_constructible_v
+      static_assert(is_implicitly_constructible
                     <tuple<int, int>, allocator_arg_t, int, short, short>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t, int>,
                      allocator_arg_t, int, const int &, const int &>);
-      static_assert(!is_implicitly_constructible_v
+      static_assert(!is_implicitly_constructible
                     <tuple<t, int>,
                      allocator_arg_t, int, short, short>);
      }
@@ -10164,12 +10241,12 @@ void test_tuple() {
 
       t(const int &i, const allocator_type &) : x(i * 10) {}
     };
-    static_assert(uses_allocator_v<t, const int &>);
-    static_assert(uses_allocator_v<t, int &&>);
-    static_assert(uses_allocator_v<t, int>);
-    static_assert(!uses_allocator_v<t, const nullptr_t &>);
-    static_assert(!uses_allocator_v<t, nullptr_t &&>);
-    static_assert(!uses_allocator_v<t, nullptr_t>);
+    static_assert(uses_allocator<t, const int &>);
+    static_assert(uses_allocator<t, int &&>);
+    static_assert(uses_allocator<t, int>);
+    static_assert(!uses_allocator<t, const nullptr_t &>);
+    static_assert(!uses_allocator<t, nullptr_t &&>);
+    static_assert(!uses_allocator<t, nullptr_t>);
 
     struct tt {
       int x;
@@ -10188,12 +10265,12 @@ void test_tuple() {
       tt(const int &i, const allocator_type &) : x(i * 10) {}
       tt(allocator_arg_t, const allocator_type &, const int &i) : x(i * 100) {}
     };
-    static_assert(uses_allocator_v<tt, const int &>);
-    static_assert(uses_allocator_v<tt, int &&>);
-    static_assert(uses_allocator_v<tt, int>);
-    static_assert(!uses_allocator_v<tt, const nullptr_t &>);
-    static_assert(!uses_allocator_v<tt, nullptr_t &&>);
-    static_assert(!uses_allocator_v<tt, nullptr_t>);
+    static_assert(uses_allocator<tt, const int &>);
+    static_assert(uses_allocator<tt, int &&>);
+    static_assert(uses_allocator<tt, int>);
+    static_assert(!uses_allocator<tt, const nullptr_t &>);
+    static_assert(!uses_allocator<tt, nullptr_t &&>);
+    static_assert(!uses_allocator<tt, nullptr_t>);
 
     // tuple::tuple(allocator_arg_t, alloc, const tuple &)
     // tuple::tuple(allocator_arg_t, alloc, tuple &&)
@@ -11002,21 +11079,19 @@ void test_tuple() {
   // min_pair
   // min_tuple
   {
-    static_assert(is_trivial_v<min_pair<int, float>>);
     static_assert(semiregular<min_pair<int, float>>);
-    static_assert(!is_default_constructible_v<min_pair<int, float &>>);
-    static_assert(is_move_constructible_v<min_pair<int, float &>>);
-    static_assert(is_copy_constructible_v<min_pair<int, float &>>);
-    static_assert(!is_move_assignable_v<min_pair<int, float &>>);
-    static_assert(!is_copy_assignable_v<min_pair<int, float &>>);
+    static_assert(!is_default_constructible<min_pair<int, float &>>);
+    static_assert(is_move_constructible<min_pair<int, float &>>);
+    static_assert(is_copy_constructible<min_pair<int, float &>>);
+    static_assert(!is_move_assignable<min_pair<int, float &>>);
+    static_assert(!is_copy_assignable<min_pair<int, float &>>);
 
     static_assert(semiregular<min_tuple<int, float, double>>);
-    static_assert(is_trivial_v<min_tuple<int, float, double>>);
-    static_assert(!is_default_constructible_v<min_tuple<int, float &, double>>);
-    static_assert(is_move_constructible_v<min_tuple<int, float &, double>>);
-    static_assert(is_copy_constructible_v<min_tuple<int, float &, double>>);
-    static_assert(!is_move_assignable_v<min_tuple<int, float &, double>>);
-    static_assert(!is_copy_assignable_v<min_tuple<int, float &, double>>);
+    static_assert(!is_default_constructible<min_tuple<int, float &, double>>);
+    static_assert(is_move_constructible<min_tuple<int, float &, double>>);
+    static_assert(is_copy_constructible<min_tuple<int, float &, double>>);
+    static_assert(!is_move_assignable<min_tuple<int, float &, double>>);
+    static_assert(!is_copy_assignable<min_tuple<int, float &, double>>);
   }
 
   // pair
@@ -11302,14 +11377,14 @@ void test() {
       constexpr auto ff = bind_r<long>(minus<>{},
                                        bind(multiplies<>{}, _1, _2),
                                        bind(multiplies<>{}, _3, _4));
-      static_assert(semiregular<decay_t<decltype(ff)>>);
-      static_assert(!is_copy_assignable_v<decltype(ff)>);
-      static_assert(is_trivially_copyable_v<decay_t<decltype(ff)>>);
-      static_assert(is_nothrow_copy_constructible_v<decay_t<decltype(ff)>>);
-      static_assert(is_nothrow_move_constructible_v<decay_t<decltype(ff)>>);
-      static_assert(is_nothrow_copy_assignable_v<decay_t<decltype(ff)>>);
-      static_assert(is_nothrow_move_assignable_v<decay_t<decltype(ff)>>);
-      static_assert(is_nothrow_swappable_v<decay_t<decltype(ff)>>);
+      static_assert(semiregular<decay<decltype(ff)>>);
+      static_assert(!is_copy_assignable<decltype(ff)>);
+      static_assert(is_trivially_copyable<decay<decltype(ff)>>);
+      static_assert(is_nothrow_copy_constructible<decay<decltype(ff)>>);
+      static_assert(is_nothrow_move_constructible<decay<decltype(ff)>>);
+      static_assert(is_nothrow_copy_assignable<decay<decltype(ff)>>);
+      static_assert(is_nothrow_move_assignable<decay<decltype(ff)>>);
+      static_assert(is_nothrow_swappable<decay<decltype(ff)>>);
       static_assert(ff(2, 3, 4, 5) == -14);
       static_assert(!noexcept(ff(2, 3, 4, 5)));
       static_assert(same_as<decltype(ff(2, 3, 4, 5)), long>);
@@ -11325,22 +11400,23 @@ void test_bind() {
   // is_bind_expression
   // is_placeholder
   {
-    static_assert(is_bind_expression<inner::be<plus<>, tuple<>>>::value);
-    static_assert(is_bind_expression_v<inner::be<plus<>, tuple<>>>);
-    static_assert(is_bind_expression_v<const inner::be<plus<>, tuple<>>>);
-    static_assert(is_bind_expression_v<volatile inner::be<plus<>, tuple<>>>);
-    static_assert(is_bind_expression_v
+    static_assert(template_is_bind_expression
+                  <inner::be<plus<>, tuple<>>>::value);
+    static_assert(is_bind_expression<inner::be<plus<>, tuple<>>>);
+    static_assert(is_bind_expression<const inner::be<plus<>, tuple<>>>);
+    static_assert(is_bind_expression<volatile inner::be<plus<>, tuple<>>>);
+    static_assert(is_bind_expression
                   <const volatile inner::be<plus<>, tuple<>>>);
-    static_assert(!is_bind_expression_v<int>);
+    static_assert(!is_bind_expression<int>);
 
-    static_assert(is_placeholder<decltype(_1)>::value);
-    static_assert(is_placeholder<inner::bpos<0>>::value);
-    static_assert(is_placeholder_v<inner::bpos<0>>);
-    static_assert(is_placeholder_v<inner::bpos<0>>);
-    static_assert(is_placeholder_v<const inner::bpos<0>>);
-    static_assert(is_placeholder_v<volatile inner::bpos<0>>);
-    static_assert(is_placeholder_v<const volatile inner::bpos<0>>);
-    static_assert(!is_placeholder_v<int>);
+    static_assert(template_is_placeholder<decltype(_1)>::value);
+    static_assert(template_is_placeholder<inner::bpos<0>>::value);
+    static_assert(is_placeholder<inner::bpos<0>>);
+    static_assert(is_placeholder<inner::bpos<0>>);
+    static_assert(is_placeholder<const inner::bpos<0>>);
+    static_assert(is_placeholder<volatile inner::bpos<0>>);
+    static_assert(is_placeholder<const volatile inner::bpos<0>>);
+    static_assert(!is_placeholder<int>);
   }
 
   // bind
@@ -11381,7 +11457,7 @@ void test_bind() {
       }
     };
     auto fffff = bind_front(ffff, move(a), b);
-    static_assert(semiregular<decay_t<decltype(fffff)>>);
+    static_assert(semiregular<decay<decltype(fffff)>>);
     assert(a == nullptr && b != nullptr && *b == 2);
     assert(fffff(c) == 123);
     assert(a == nullptr && b != nullptr && *b == 2);
@@ -11393,13 +11469,13 @@ void test_bind() {
     int val{};
     const auto f0 = [&val]() {return 1;};
     const auto f00 = bind_front(f0);
-    static_assert(is_copy_constructible_v<decay_t<decltype(f00)>>);
-    static_assert(is_move_constructible_v<decay_t<decltype(f00)>>);
-    static_assert(!is_copy_assignable_v<decay_t<decltype(f00)>>);
-    static_assert(!is_move_assignable_v<decay_t<decltype(f00)>>);
-    static_assert(!copyable<decay_t<decltype(f00)>>);
-    static_assert(!movable<decay_t<decltype(f00)>>);
-    static_assert(!swappable<decay_t<decltype(f00)>>);
+    static_assert(is_copy_constructible<decay<decltype(f00)>>);
+    static_assert(is_move_constructible<decay<decltype(f00)>>);
+    static_assert(!is_copy_assignable<decay<decltype(f00)>>);
+    static_assert(!is_move_assignable<decay<decltype(f00)>>);
+    static_assert(!copyable<decay<decltype(f00)>>);
+    static_assert(!movable<decay<decltype(f00)>>);
+    static_assert(!swappable<decay<decltype(f00)>>);
     assert(f00() == 1);
 
     struct t {
@@ -11450,7 +11526,7 @@ void test_bind() {
       }
     };
     auto fffff = bind_back(ffff, move(b), c);
-    static_assert(semiregular<decay_t<decltype(fffff)>>);
+    static_assert(semiregular<decay<decltype(fffff)>>);
     assert(b == nullptr && c != nullptr && *c == 3);
     assert(a != nullptr && *a == 1);
     assert(fffff(a) == 123);
@@ -11463,13 +11539,13 @@ void test_bind() {
     int val{};
     const auto f0 = [&val]() {return 1;};
     const auto f00 = bind_back(f0);
-    static_assert(is_copy_constructible_v<decay_t<decltype(f00)>>);
-    static_assert(is_move_constructible_v<decay_t<decltype(f00)>>);
-    static_assert(!is_copy_assignable_v<decay_t<decltype(f00)>>);
-    static_assert(!is_move_assignable_v<decay_t<decltype(f00)>>);
-    static_assert(!copyable<decay_t<decltype(f00)>>);
-    static_assert(!movable<decay_t<decltype(f00)>>);
-    static_assert(!swappable<decay_t<decltype(f00)>>);
+    static_assert(is_copy_constructible<decay<decltype(f00)>>);
+    static_assert(is_move_constructible<decay<decltype(f00)>>);
+    static_assert(!is_copy_assignable<decay<decltype(f00)>>);
+    static_assert(!is_move_assignable<decay<decltype(f00)>>);
+    static_assert(!copyable<decay<decltype(f00)>>);
+    static_assert(!movable<decay<decltype(f00)>>);
+    static_assert(!swappable<decay<decltype(f00)>>);
     assert(f00() == 1);
 
     struct t {
@@ -11625,12 +11701,12 @@ void test_iterator_tags() {
   // random_access_iterator_tag
   // contiguous_iterator_tag
   {
-    static_assert(is_trivial_empty_v<output_iterator_tag>);
-    static_assert(is_trivial_empty_v<input_iterator_tag>);
-    static_assert(is_trivial_empty_v<forward_iterator_tag>);
-    static_assert(is_trivial_empty_v<bidirectional_iterator_tag>);
-    static_assert(is_trivial_empty_v<random_access_iterator_tag>);
-    static_assert(is_trivial_empty_v<contiguous_iterator_tag>);
+    static_assert(is_empty<output_iterator_tag>);
+    static_assert(is_empty<input_iterator_tag>);
+    static_assert(is_empty<forward_iterator_tag>);
+    static_assert(is_empty<bidirectional_iterator_tag>);
+    static_assert(is_empty<random_access_iterator_tag>);
+    static_assert(is_empty<contiguous_iterator_tag>);
   }
 }
 
@@ -11679,28 +11755,29 @@ void test_optional() {
 
   // in_place(_t)
   // in_place_type(_t)
-  // is_in_place_type(_v)
+  // is_in_place_type
   // nullopt
   {
-    static_assert(is_empty_v<decltype(in_place)>);
-    static_assert(is_empty_v<decltype(in_place_type<int>)>);
-    static_assert(is_empty_v<decltype(nullopt)>);
+    static_assert(is_empty<decltype(in_place)>);
+    static_assert(is_empty<decltype(in_place_type<int>)>);
+    static_assert(is_empty<decltype(nullopt)>);
 
-    static_assert(is_in_place_type_v<in_place_type_t<int>>);
-    static_assert(is_in_place_type_v<const in_place_type_t<int>>);
-    static_assert(is_in_place_type_v<volatile in_place_type_t<int>>);
-    static_assert(is_in_place_type_v<const volatile in_place_type_t<int>>);
-    static_assert(!is_in_place_type_v<in_place_type_t<int> &>);
-    static_assert(!is_in_place_type_v<int>);
+    static_assert(template_is_in_place_type<in_place_type_t<int>>::value);
+    static_assert(is_in_place_type<in_place_type_t<int>>);
+    static_assert(is_in_place_type<const in_place_type_t<int>>);
+    static_assert(is_in_place_type<volatile in_place_type_t<int>>);
+    static_assert(is_in_place_type<const volatile in_place_type_t<int>>);
+    static_assert(!is_in_place_type<in_place_type_t<int> &>);
+    static_assert(!is_in_place_type<int>);
   }
   // smf - triviality
   {
-    static_assert(!is_trivially_constructible_v<optional<int>>);
-    static_assert(is_trivially_destructible_v<optional<int>>);
-    static_assert(is_trivially_copy_constructible_v<optional<int>>);
-    static_assert(is_trivially_copy_assignable_v<optional<int>>);
-    static_assert(is_trivially_move_constructible_v<optional<int>>);
-    static_assert(is_trivially_move_assignable_v<optional<int>>);
+    static_assert(!is_trivially_constructible<optional<int>>);
+    static_assert(is_trivially_destructible<optional<int>>);
+    static_assert(is_trivially_copy_constructible<optional<int>>);
+    static_assert(is_trivially_copy_assignable<optional<int>>);
+    static_assert(is_trivially_move_constructible<optional<int>>);
+    static_assert(is_trivially_move_assignable<optional<int>>);
     {
       struct t {
         t() {}
@@ -11710,11 +11787,11 @@ void test_optional() {
         t(t &&) {}
         t &operator =(t &&) {return *this;}
       };
-      static_assert(!is_trivially_destructible_v<optional<t>>);
-      static_assert(!is_trivially_copy_constructible_v<optional<t>>);
-      static_assert(!is_trivially_copy_assignable_v<optional<t>>);
-      static_assert(!is_trivially_move_constructible_v<optional<t>>);
-      static_assert(!is_trivially_move_assignable_v<optional<t>>);
+      static_assert(!is_trivially_destructible<optional<t>>);
+      static_assert(!is_trivially_copy_constructible<optional<t>>);
+      static_assert(!is_trivially_copy_assignable<optional<t>>);
+      static_assert(!is_trivially_move_constructible<optional<t>>);
+      static_assert(!is_trivially_move_assignable<optional<t>>);
     }
   }
   // smf - optional noexcept
@@ -11723,15 +11800,15 @@ void test_optional() {
       t(const t &) {}
       t &operator =(const t &) {return *this;}
     };
-    static_assert(!is_nothrow_copy_constructible_v<optional<t>>);
-    static_assert(!is_nothrow_copy_assignable_v<optional<t>>);
+    static_assert(!is_nothrow_copy_constructible<optional<t>>);
+    static_assert(!is_nothrow_copy_assignable<optional<t>>);
 
-    static_assert(is_nothrow_constructible_v<optional<int>>);
-    static_assert(is_nothrow_copy_constructible_v<optional<int>>);
-    static_assert(is_nothrow_copy_assignable_v<optional<int>>);
-    static_assert(is_nothrow_move_constructible_v<optional<int>>);
-    static_assert(is_nothrow_move_assignable_v<optional<int>>);
-    static_assert(is_nothrow_swappable_v<optional<int>>);
+    static_assert(is_nothrow_constructible<optional<int>>);
+    static_assert(is_nothrow_copy_constructible<optional<int>>);
+    static_assert(is_nothrow_copy_assignable<optional<int>>);
+    static_assert(is_nothrow_move_constructible<optional<int>>);
+    static_assert(is_nothrow_move_assignable<optional<int>>);
+    static_assert(is_nothrow_swappable<optional<int>>);
   }
   // smf - optional delete
   {
@@ -11739,27 +11816,27 @@ void test_optional() {
       struct t {
         t(const t &) = delete;
       };
-      static_assert(!is_copy_constructible_v<optional<t>>);
+      static_assert(!is_copy_constructible<optional<t>>);
     }
     {
       struct t {
         t &operator =(const t &) = delete;
       };
-      static_assert(!is_copy_assignable_v<optional<t>>);
+      static_assert(!is_copy_assignable<optional<t>>);
     }
     {
       struct t {
         t(t &&) = delete;
       };
-      static_assert(!is_move_constructible_v<optional<t>>);
-      static_assert(!is_swappable_v<optional<t>>);
+      static_assert(!is_move_constructible<optional<t>>);
+      static_assert(!is_swappable<optional<t>>);
     }
     {
       struct t {
         t &operator =(t &&) = delete;
       };
-      static_assert(!is_move_assignable_v<optional<t>>);
-      static_assert(!is_swappable_v<optional<t>>);
+      static_assert(!is_move_assignable<optional<t>>);
+      static_assert(!is_swappable<optional<t>>);
     }
   }
   // smf - default constructor and destructor
@@ -12507,7 +12584,7 @@ void test_semiregular_function() {
       using fw_t = copyable_wrapper<decltype(f)>;
       static_assert(!default_initializable<fw_t>);
       static_assert(copyable<fw_t>);
-      static_assert(is_swappable_v<fw_t>);
+      static_assert(is_swappable<fw_t>);
       fw_t fw(f);
       assert((*fw)() == 0);
       assert((*to_address(fw))() == 0);
@@ -12518,12 +12595,12 @@ void test_semiregular_function() {
         int operator ()() const {return x;}
       };
       static_assert(semiregular<ft>);
-      static_assert(is_nothrow_default_constructible_v<ft>);
-      static_assert(is_nothrow_copy_constructible_v<ft>);
-      static_assert(is_nothrow_move_constructible_v<ft>);
-      static_assert(is_nothrow_copy_assignable_v<ft>);
-      static_assert(is_nothrow_move_assignable_v<ft>);
-      static_assert(is_nothrow_swappable_v<ft>);
+      static_assert(is_nothrow_default_constructible<ft>);
+      static_assert(is_nothrow_copy_constructible<ft>);
+      static_assert(is_nothrow_move_constructible<ft>);
+      static_assert(is_nothrow_copy_assignable<ft>);
+      static_assert(is_nothrow_move_assignable<ft>);
+      static_assert(is_nothrow_swappable<ft>);
       copyable_wrapper<ft> f1, f2;
       (*f1).x = 1;
       (*f2).x = 2;
@@ -12560,12 +12637,12 @@ void test_semiregular_function() {
         ft &operator =(ft &&) = delete;
       };
       using fw = copyable_wrapper<ft>;
-      static_assert(is_nothrow_default_constructible_v<fw>);
-      static_assert(is_nothrow_copy_constructible_v<fw>);
-      static_assert(is_nothrow_move_constructible_v<fw>);
-      static_assert(is_nothrow_copy_assignable_v<fw>);
-      static_assert(is_nothrow_move_assignable_v<fw>);
-      static_assert(is_nothrow_swappable_v<fw>);
+      static_assert(is_nothrow_default_constructible<fw>);
+      static_assert(is_nothrow_copy_constructible<fw>);
+      static_assert(is_nothrow_move_constructible<fw>);
+      static_assert(is_nothrow_copy_assignable<fw>);
+      static_assert(is_nothrow_move_assignable<fw>);
+      static_assert(is_nothrow_swappable<fw>);
       fw x, y;
       x->x = 1;
       y->x = 2;
@@ -12593,13 +12670,13 @@ void test_semiregular_function() {
         ft &operator =(ft &&) = delete;
       };
       using fw = copyable_wrapper<ft>;
-      static_assert(is_swappable_v<fw>);
-      static_assert(is_nothrow_default_constructible_v<fw>);
-      static_assert(is_nothrow_copy_constructible_v<fw>);
-      static_assert(!is_nothrow_move_constructible_v<fw>);
-      static_assert(is_nothrow_copy_assignable_v<fw>);
-      static_assert(!is_nothrow_move_assignable_v<fw>);
-      static_assert(!is_nothrow_swappable_v<fw>);
+      static_assert(is_swappable<fw>);
+      static_assert(is_nothrow_default_constructible<fw>);
+      static_assert(is_nothrow_copy_constructible<fw>);
+      static_assert(!is_nothrow_move_constructible<fw>);
+      static_assert(is_nothrow_copy_assignable<fw>);
+      static_assert(!is_nothrow_move_assignable<fw>);
+      static_assert(!is_nothrow_swappable<fw>);
       fw x, y;
       x->x = 1;
       y->x = 2;
@@ -12668,10 +12745,10 @@ void test_semiregular_function() {
       };
       static_assert(semiregular<semiregular_function<decltype(f5)>>);
       semiregular_function<decltype(f5)> ff5(f5);
-      static_assert(is_invocable_v<decltype(ff5) &, int &, const int &, int &&>);
-      static_assert(!is_invocable_v
+      static_assert(is_invocable<decltype(ff5) &, int &, const int &, int &&>);
+      static_assert(!is_invocable
                     <decltype(ff5) &, int &&, const int &, int &&>);
-      static_assert(!is_invocable_v<decltype(ff5) &, int &, const int &, int &>);
+      static_assert(!is_invocable<decltype(ff5) &, int &, const int &, int &>);
     }
     {
       auto f1 = []() {return 1;};
@@ -12720,8 +12797,8 @@ void test_miscl() {
   // min_value
   // max_value
   {
-    static_assert(is_trivial_empty_v<decltype(min_value)>);
-    static_assert(is_trivial_empty_v<decltype(max_value)>);
+    static_assert(is_empty<decltype(min_value)>);
+    static_assert(is_empty<decltype(max_value)>);
 
     assert(min_value(1, 1) == 1);
     assert(max_value(1, 1) == 1);
@@ -12760,17 +12837,17 @@ void test_miscl() {
         constexpr bool y3 = decltype(y3_)::type::value;
         constexpr bool y4 = decltype(y4_)::type::value;
         using X = conditionally_enable_copy_and_move<y1, y2, y3, y4>;
-        static_assert(is_copy_constructible_v<X> == y1);
-        static_assert(is_copy_assignable_v<X> == y2);
-        static_assert(is_move_constructible_v<X> == y3);
-        static_assert(is_move_assignable_v<X> == y4);
+        static_assert(is_copy_constructible<X> == y1);
+        static_assert(is_copy_assignable<X> == y2);
+        static_assert(is_move_constructible<X> == y3);
+        static_assert(is_move_assignable<X> == y4);
       });
   }
 
   // empty_function
   {
-    static_assert(is_trivially_copyable_v<empty_function>);
-    static_assert(is_trivially_constructible_v<empty_function>);
+    static_assert(is_trivially_copyable<empty_function>);
+    static_assert(is_trivially_constructible<empty_function>);
     constexpr empty_function f{};
     f(1, 2, 3, 4, 5);
   }
@@ -12782,11 +12859,11 @@ void test_miscl() {
       const auto f = [&i]() {i = 1;};
       auto guard = exit_fn(f);
       using guard_t = decltype(guard);
-      static_assert(!is_swappable_v<guard_t>);
-      static_assert(!is_copy_constructible_v<guard_t>);
-      static_assert(!is_copy_assignable_v<guard_t>);
-      static_assert(is_move_constructible_v<guard_t>);
-      static_assert(!is_move_assignable_v<guard_t>);
+      static_assert(!is_swappable<guard_t>);
+      static_assert(!is_copy_constructible<guard_t>);
+      static_assert(!is_copy_assignable<guard_t>);
+      static_assert(is_move_constructible<guard_t>);
+      static_assert(!is_move_assignable<guard_t>);
     }
     assert(i == 1);
 
@@ -12912,8 +12989,9 @@ void test_miscl() {
   {
     struct t {using allocator_type = void;};
     struct tt {};
-    static_assert(is_allocator_aware_v<t>);
-    static_assert(!is_allocator_aware_v<tt>);
+    static_assert(template_is_allocator_aware<t>::value);
+    static_assert(is_allocator_aware<t>);
+    static_assert(!is_allocator_aware<tt>);
   }
 
   // ccast
@@ -13141,8 +13219,8 @@ void test_miscl() {
 
   // simple_wrapper
   {
-    static_assert(is_default_constructible_v<simple_wrapper<int>>);
-    static_assert(is_trivially_copyable_v<simple_wrapper<int>>);
+    static_assert(is_default_constructible<simple_wrapper<int>>);
+    static_assert(is_trivially_copyable<simple_wrapper<int>>);
     simple_wrapper<int> x;
     assert(*x == 0);
     assert(*as_const(x) == 0);
@@ -13314,17 +13392,20 @@ void test_floating_point_traits() {
   // float_traits
   {
     using t = float_traits;
-    static_assert(is_same_v<t::float_t, float>);
-    static_assert(is_same_v<t::uint_t, uint32_t>);
-    static_assert(is_same_v<t::int_t, int32_t>);
+    static_assert(is_same<t::float_t, float>);
+    static_assert(is_same<t::uint_t, uint32_t>);
+    static_assert(is_same<t::int_t, int32_t>);
     static_assert(t::n == 8u);
     static_assert(t::k == 23u);
     static_assert(t::bias == 127u);
 
-    assert(!t::is_positive(-1.0f));
-    assert(t::is_positive(+1.0f));
-    assert(t::is_negative(-1.0f));
-    assert(!t::is_negative(+1.0f));
+    t::info_t info = t::info(0.0f);
+    assert(info.sign && info.e == 0u && info.f == 0u);
+
+    assert(!t::sign(-1.0f));
+    assert(t::sign(+1.0f));
+    assert(!t::sign(-1.0f));
+    assert(t::sign(+1.0f));
 
     static_assert(t::e_max == 255u);
     static_assert(1 - to_signed(t::bias) == -126);
@@ -13349,40 +13430,43 @@ void test_floating_point_traits() {
     assert(t::max() > 0.0f);
 
     assert(t::is_infinity(t::positive_inf()));
-    assert(t::is_positive(t::positive_inf()));
+    assert(t::sign(t::positive_inf()));
     assert(t::f(t::positive_inf()) == 0);
     assert(t::e(t::positive_inf()) == t::e_max);
     assert(t::is_infinity(numeric_limits<float>::infinity()));
-    assert(t::is_positive(numeric_limits<float>::infinity()));
+    assert(t::sign(numeric_limits<float>::infinity()));
     assert(t::f(numeric_limits<float>::infinity()) == 0);
     assert(t::e(numeric_limits<float>::infinity()) == t::e_max);
 
     assert(t::is_infinity(t::negative_inf()));
-    assert(t::is_negative(t::negative_inf()));
+    assert(!t::sign(t::negative_inf()));
     assert(t::f(t::negative_inf()) == 0);
     assert(t::e(t::negative_inf()) == t::e_max);
 
     assert(t::is_nan(t::positive_nan()));
     assert(t::e(t::positive_nan()) == t::e_max);
-    assert(t::is_positive(t::positive_nan()));
+    assert(t::sign(t::positive_nan()));
     assert(t::is_nan(numeric_limits<float>::nan()));
     assert(t::e(numeric_limits<float>::nan()) == t::e_max);
-    assert(t::is_positive(numeric_limits<float>::nan()));
+    assert(t::sign(numeric_limits<float>::nan()));
   }
   // double_traits
   {
     using t = double_traits;
-    static_assert(is_same_v<t::float_t, double>);
-    static_assert(is_same_v<t::uint_t, uint64_t>);
-    static_assert(is_same_v<t::int_t, int64_t>);
+    static_assert(is_same<t::float_t, double>);
+    static_assert(is_same<t::uint_t, uint64_t>);
+    static_assert(is_same<t::int_t, int64_t>);
     static_assert(t::n == 11u);
     static_assert(t::k == 52u);
     static_assert(t::bias == 1023u);
 
-    assert(!t::is_positive(-1.0));
-    assert(t::is_positive(+1.0));
-    assert(t::is_negative(-1.0));
-    assert(!t::is_negative(+1.0));
+    t::info_t info = t::info(0.0);
+    assert(info.sign && info.e == 0u && info.f == 0u);
+
+    assert(!t::sign(-1.0));
+    assert(t::sign(+1.0));
+    assert(!t::sign(-1.0));
+    assert(t::sign(+1.0));
 
     static_assert(t::e_max == 2047u);
     assert(1 - to_signed(t::bias) == -1022);
@@ -13407,25 +13491,56 @@ void test_floating_point_traits() {
     assert(t::max() > 0.0);
 
     assert(t::is_infinity(t::positive_inf()));
-    assert(t::is_positive(t::positive_inf()));
+    assert(t::sign(t::positive_inf()));
     assert(t::f(t::positive_inf()) == 0);
     assert(t::e(t::positive_inf()) == t::e_max);
     assert(t::is_infinity(numeric_limits<double>::infinity()));
-    assert(t::is_positive(numeric_limits<double>::infinity()));
+    assert(t::sign(numeric_limits<double>::infinity()));
     assert(t::f(numeric_limits<double>::infinity()) == 0);
     assert(t::e(numeric_limits<double>::infinity()) == t::e_max);
 
     assert(t::is_infinity(t::negative_inf()));
-    assert(t::is_negative(t::negative_inf()));
+    assert(!t::sign(t::negative_inf()));
     assert(t::f(t::negative_inf()) == 0);
     assert(t::e(t::negative_inf()) == t::e_max);
 
     assert(t::is_nan(t::positive_nan()));
     assert(t::e(t::positive_nan()) == t::e_max);
-    assert(t::is_positive(t::positive_nan()));
+    assert(t::sign(t::positive_nan()));
     assert(t::is_nan(numeric_limits<double>::nan()));
     assert(t::e(numeric_limits<double>::nan()) == t::e_max);
-    assert(t::is_positive(numeric_limits<double>::nan()));
+    assert(t::sign(numeric_limits<double>::nan()));
+  }
+
+  // floating_point_traits<F>::make
+  {
+    const auto test_fts_info = []<class F>(type_tag<F>) {
+      using float_t = F;
+      using ts = floating_point_traits<float_t>;
+      using uint_t = ts::uint_t;
+      float_t a[] = {
+        numeric_limits<float_t>::nan(),
+        -numeric_limits<float_t>::nan(),
+        numeric_limits<float_t>::lowest(),
+        numeric_limits<float_t>::max(),
+        numeric_limits<float_t>::denorm_min(),
+        -numeric_limits<float_t>::denorm_min(),
+        numeric_limits<float_t>::min(),
+        -numeric_limits<float_t>::min(),
+        numeric_limits<float_t>::infinity(),
+        -numeric_limits<float_t>::infinity()
+      };
+      for (float_t *p = a; p != a + (sizeof(a) / sizeof(float_t)); ++ p) {
+        float_t f = *p;
+        assert(bit_cast<uint_t>(f)
+               == bit_cast<uint_t>(ts::make(ts::info(f))));
+        const auto x = ts::info(f);
+        assert(bit_cast<uint_t>(f)
+               == bit_cast<uint_t>(ts::make(x.sign, x.e, x.f)));
+      }
+    };
+    test_fts_info(type_tag<float>{});
+    test_fts_info(type_tag<double>{});
   }
 
   // hash
@@ -13512,28 +13627,28 @@ void test_std_fpfns() {
 void test_base() {
   printf("base: ");
 
-  inner::test::test_std_fpfns();
-  inner::test::test_basic_tmp_tools();
-  inner::test::test_swap();
-  inner::test::test_type_traits();
-  inner::test::test_utility_functions();
-  inner::test::test_reference_wrapper_and_invoke();
-  inner::test::test_language_related_concepts();
-  inner::test::test_concept_constrained_comparisons();
-  inner::test::test_integral_traits();
-  inner::test::test_numeric_limits();
-  inner::test::test_three_way_comparison();
-  inner::test::test_type_index();
-  inner::test::test_basic_function_objects();
-  inner::test::test_tuple();
-  inner::test::test_bind();
-  inner::test::test_ratio();
-  inner::test::test_iterator_tags();
-  inner::test::test_optional();
-  inner::test::test_semiregular_function();
-  inner::test::test_miscl();
-  inner::test::test_floating_point_traits();
-  inner::test::test_std_fpfns();
+  test_std_fpfns();
+  test_basic_tmp_tools();
+  test_swap();
+  test_type_traits();
+  test_utility_functions();
+  test_reference_wrapper_and_invoke();
+  test_language_related_concepts();
+  test_concept_constrained_comparisons();
+  test_integral_traits();
+  test_numeric_limits();
+  test_three_way_comparison();
+  test_type_index();
+  test_basic_function_objects();
+  test_tuple();
+  test_bind();
+  test_ratio();
+  test_iterator_tags();
+  test_optional();
+  test_semiregular_function();
+  test_miscl();
+  test_floating_point_traits();
+  test_std_fpfns();
 
   printf("ok\n");
 }
