@@ -2,6 +2,10 @@
 
 arithmetic parser
 
+replace the stupid z<...>/z_t<...> with template_z<...>/z<...>
+
+replace the stupid z<...>/z_v<...> with template_z<...>/z<...>
+
 fixed 3 bugs
 
 minor changes
