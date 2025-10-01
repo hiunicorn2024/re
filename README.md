@@ -1,3 +1,11 @@
+25/10/1
+
+arithmetic parser
+
+fixed 3 bugs
+
+minor changes
+
 25/6/7
 
 minor changes
