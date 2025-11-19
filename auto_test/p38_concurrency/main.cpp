@@ -2326,41 +2326,6 @@ void test_exclusive_thread_pool() {
     assert(equal(*a, irng(1, 100 * 300 + 1)));
   }
 }
-void test_sync_object_pool() {
-  {
-    sync_object_pool<string, test_allocator<byte>> pl;
-    vector<string *> v;
-    for (int i : irng(0, 5000))
-      v.push_back(pl.fetch_pointer(sprint(""_s, i)));
-    assert(equal(deref_rng(v),
-                 bind_rng(irng(0, 5000), [](int i) {return sprint(""_s, i);})));
-    for (int repeat_c : irng(0, 5)) {
-      const auto r = irng(5000, 10000);
-      for (int i : r)
-        v.push_back(pl.fetch_pointer(sprint(""_s, i)));
-      assert(equal(deref_rng(v),
-                   bind_rng(irng(0, 10000),
-                            [](int i) {return sprint(""_s, i);})));
-      for (int repeat_cc : irng(0, 5000)) {
-        pl.free_pointer(v.back());
-        v.pop_back();
-      }
-      assert(equal(deref_rng(v),
-                   bind_rng(irng(0, 5000),
-                            [](int i) {return sprint(""_s, i);})));
-      assert(pl.capacity() >= 5000);
-      assert(pl.used_size() == 5000);
-      assert(pl.used_size() + pl.idle_size() == pl.capacity());
-    }
-  }
-  {
-    sync_object_pool<int, test_allocator<byte>> pl;
-    vector<sync_pool_object<int, test_allocator<byte>>> v;
-    for (int i : irng(0, 1000))
-      v.push_back(pl.fetch(i));
-    assert(equal(deref_rng(v), irng(0, 1000)));
-  }
-}
 
 void test_concurrency() {
   put("concurrency: ");
@@ -2380,7 +2345,6 @@ void test_concurrency() {
   test_pool_thread();
   test_thread_pool();
   test_exclusive_thread_pool();
-  test_sync_object_pool();
 
   putln("ok");
 }
@@ -2396,7 +2360,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

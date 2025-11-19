@@ -807,57 +807,57 @@ void test_tree_front_insert_erase() {
     assert(x == t(1));
   }
 }
-void test_tree_first_last_nth_order() {
+void test_tree_pre_post_in_order() {
   using t = linked_tree<int, test_allocator<int>>;
-  // first order
+  // pre-order
   {
     t x;
     assert(inner::good(x));
-    assert(empty(deref_rng(x.root().first_order())));
+    assert(empty(deref_rng(x.root().pre_order())));
     {
-      empty(x.root().nth_order(0));
+      empty(x.root().in_order(0));
     }
     x = t(1);
     assert(inner::good(x));
-    auto r = deref_rng(x.root()->end().first_order());
+    auto r = deref_rng(x.root()->end().pre_order());
     static_assert(bidirectional_iterator<rng_itr<decltype(r)>>);
     test_bitr(r, empty_rng<int>());
     {
-      auto r2 = deref_rng(x.root()->end().nth_order(0));
+      auto r2 = deref_rng(x.root()->end().in_order(0));
       static_assert(bidirectional_iterator<rng_itr<decltype(r2)>>);
       test_bitr(r2, empty_rng<int>());
     }
-    r = deref_rng(x.root().first_order());
+    r = deref_rng(x.root().pre_order());
     test_bitr(r, seq(1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     x = t(0, t(0), t(1), t(0));
     assert(inner::good(x));
-    r = deref_rng(nth(*x.root(), 1).first_order());
+    r = deref_rng(nth(*x.root(), 1).pre_order());
     test_bitr(r, seq(1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(nth(*x.root(), 1).nth_order(0));
+      auto r2 = deref_rng(nth(*x.root(), 1).in_order(0));
       test_bitr(r2, seq(1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
 
     x = t(1, t(2), t(3));
     assert(inner::good(x));
-    r = deref_rng(x.root().first_order());
+    r = deref_rng(x.root().pre_order());
     test_bitr(r, seq(1, 2, 3));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(x.root().nth_order(0));
+      auto r2 = deref_rng(x.root().in_order(0));
       test_bitr(r2, seq(1, 2, 3));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
     x = t(0, t(0), t(1, t(2), t(3)), t(0));
     assert(inner::good(x));
-    r = deref_rng(nth(*x.root(), 1).first_order());
+    r = deref_rng(nth(*x.root(), 1).pre_order());
     test_bitr(r, seq(1, 2, 3));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(nth(*x.root(), 1).nth_order(0));
+      auto r2 = deref_rng(nth(*x.root(), 1).in_order(0));
       test_bitr(r2, seq(1, 2, 3));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
@@ -868,11 +868,11 @@ void test_tree_first_last_nth_order() {
             t(6),
             t(7, t(8), t(9, t(10), t(11)))));
     assert(inner::good(x));
-    r = deref_rng(x.root().first_order());
+    r = deref_rng(x.root().pre_order());
     test_bitr(r, irng(1, 12));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(x.root().nth_order(0));
+      auto r2 = deref_rng(x.root().in_order(0));
       test_bitr(r2, irng(1, 12));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
@@ -882,11 +882,11 @@ void test_tree_first_last_nth_order() {
                        t(6),
                        t(7, t(8), t(9, t(10), t(11))))), t(0));
     assert(inner::good(x));
-    r = deref_rng(nth(*x.root(), 1).first_order());
+    r = deref_rng(nth(*x.root(), 1).pre_order());
     test_bitr(r, irng(1, 12));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(nth(*x.root(), 1).nth_order(0));
+      auto r2 = deref_rng(nth(*x.root(), 1).in_order(0));
       test_bitr(r2, irng(1, 12));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
@@ -895,7 +895,7 @@ void test_tree_first_last_nth_order() {
           t(2, t(3), t(4), t(5)),
           t(6, t(7, t(0), t(0)), t(8), t(9)),
           t(10, t(11), t(12, t(0, t(0, t(0)))), t(13)));
-    auto rr = x.root().first_order();
+    auto rr = x.root().pre_order();
     assert(prev(rr.begin()) == rr.end() && next(rr.end()) == rr.begin());
     for (auto it = rr.begin(); it != rr.end();) {
       if (!it->empty() && all_of_equal(deref_rng(*it), 0)) {
@@ -915,7 +915,7 @@ void test_tree_first_last_nth_order() {
     x = t(1, t(2, t(3), t(4)), t(5));
     {
       ez_vector<pair<int, int>> v;
-      const auto rrr = x.root().first_order();
+      const auto rrr = x.root().pre_order();
       ptrdiff_t depth = 0;
       auto it = rrr.begin();
       while (it != rrr.end()) {
@@ -928,58 +928,58 @@ void test_tree_first_last_nth_order() {
       assert(it.advance() == 1);
     }
   }
-  // last order
+  // post-order
   {
     t x;
     assert(inner::good(x));
-    assert(empty(deref_rng(x.root().last_order())));
+    assert(empty(deref_rng(x.root().post_order())));
     x = t(1);
     assert(inner::good(x));
-    auto r = deref_rng(x.root()->end().last_order());
+    auto r = deref_rng(x.root()->end().post_order());
     static_assert(bidirectional_iterator<rng_itr<decltype(r)>>);
     test_bitr(r, empty_rng<int>());
     {
-      auto r2 = deref_rng(x.root()->end().nth_order(100));
+      auto r2 = deref_rng(x.root()->end().in_order(100));
       static_assert(bidirectional_iterator<rng_itr<decltype(r2)>>);
       test_bitr(r2, empty_rng<int>());
     }
-    r = deref_rng(x.root().last_order());
+    r = deref_rng(x.root().post_order());
     test_bitr(r, seq(1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(x.root().nth_order(100));
+      auto r2 = deref_rng(x.root().in_order(100));
       test_bitr(r2, seq(1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
 
     x = t(0, t(0), t(1), t(0));
     assert(inner::good(x));
-    r = deref_rng(nth(*x.root(), 1).last_order());
+    r = deref_rng(nth(*x.root(), 1).post_order());
     test_bitr(r, seq(1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(nth(*x.root(), 1).nth_order(100));
+      auto r2 = deref_rng(nth(*x.root(), 1).in_order(100));
       test_bitr(r2, seq(1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
 
     x = t(1, t(2), t(3));
     assert(inner::good(x));
-    r = deref_rng(x.root().last_order());
+    r = deref_rng(x.root().post_order());
     test_bitr(r, seq(2, 3, 1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(x.root().nth_order(100));
+      auto r2 = deref_rng(x.root().in_order(100));
       test_bitr(r2, seq(2, 3, 1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
     x = t(0, t(0), t(1, t(2), t(3)), t(0));
     assert(inner::good(x));
-    r = deref_rng(nth(*x.root(), 1).last_order());
+    r = deref_rng(nth(*x.root(), 1).post_order());
     test_bitr(r, seq(2, 3, 1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(nth(*x.root(), 1).nth_order(100));
+      auto r2 = deref_rng(nth(*x.root(), 1).in_order(100));
       test_bitr(r2, seq(2, 3, 1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
@@ -990,11 +990,11 @@ void test_tree_first_last_nth_order() {
             t(6),
             t(7, t(8), t(9, t(10), t(11)))));
     assert(inner::good(x));
-    r = deref_rng(x.root().last_order());
+    r = deref_rng(x.root().post_order());
     test_bitr(r, seq(4, 5, 3, 6, 8, 10, 11, 9, 7, 2, 1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(x.root().nth_order(100));
+      auto r2 = deref_rng(x.root().in_order(100));
       test_bitr(r2, seq(4, 5, 3, 6, 8, 10, 11, 9, 7, 2, 1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
@@ -1004,11 +1004,11 @@ void test_tree_first_last_nth_order() {
                        t(6),
                        t(7, t(8), t(9, t(10), t(11))))), t(0));
     assert(inner::good(x));
-    r = deref_rng(nth(*x.root(), 1).last_order());
+    r = deref_rng(nth(*x.root(), 1).post_order());
     test_bitr(r, seq(4, 5, 3, 6, 8, 10, 11, 9, 7, 2, 1));
     assert(prev(r.begin()) == r.end() && next(r.end()) == r.begin());
     {
-      auto r2 = deref_rng(nth(*x.root(), 1).nth_order(100));
+      auto r2 = deref_rng(nth(*x.root(), 1).in_order(100));
       test_bitr(r2, seq(4, 5, 3, 6, 8, 10, 11, 9, 7, 2, 1));
       assert(prev(r2.begin()) == r2.end() && next(r2.end()) == r2.begin());
     }
@@ -1018,18 +1018,18 @@ void test_tree_first_last_nth_order() {
           t(6, t(7, t(0), t(0)), t(8), t(9)),
           t(10, t(11), t(12, t(0, t(0, t(0)))), t(13)));
     assert(inner::good(x));
-    const auto rr = x.root().last_order();
+    const auto rr = x.root().post_order();
     assert(prev(rr.begin()) == rr.end() && next(rr.end()) == rr.begin());
     test_bitr(deref_rng(rr),
               seq(3, 4, 5, 2, 0, 0, 7, 8, 9, 6, 11, 0, 0, 0, 12, 13, 10, 1));
     {
-      const auto rr2 = x.root().nth_order(100);
+      const auto rr2 = x.root().in_order(100);
       assert(prev(rr2.begin()) == rr2.end() && next(rr2.end()) == rr2.begin());
       test_bitr(deref_rng(rr2),
                 seq(3, 4, 5, 2, 0, 0, 7, 8, 9, 6, 11, 0, 0, 0, 12, 13, 10, 1));
     }
   }
-  // nth order
+  // in-order
   {
     t x = t(1,
             t(2,
@@ -1042,15 +1042,15 @@ void test_tree_first_last_nth_order() {
                 t(14), t(15), t(16)),
               t(17,
                 t(18), t(19))));
-    const auto r = x.root().nth_order(1);
+    const auto r = x.root().in_order(1);
     static_assert(bidirectional_iterator<rng_itr<decltype(r)>>);
     test_bitr(deref_rng(r), seq(5, 3, 6, 7, 2, 9, 8, 10, 11,
                                 1, 14, 13, 15, 16, 12, 18, 17, 19));
     assert(next(r.end()) == r.begin() && prev(r.begin()) == r.end());
-    const auto r2 = x.root()->begin().nth_order(1);
+    const auto r2 = x.root()->begin().in_order(1);
     test_bitr(deref_rng(r2), seq(5, 3, 6, 7, 2, 9, 8, 10, 11));
     assert(next(r2.end()) == r2.begin() && prev(r2.begin()) == r2.end());
-    const auto r3 = x.root()->end().nth_order(1);
+    const auto r3 = x.root()->end().in_order(1);
     test_bitr(deref_rng(r3), empty_rng<int>());
   }
 }
@@ -1058,7 +1058,7 @@ void test_tree_mscl_for_sequence_container() {
   using t = linked_tree<int, test_allocator<int>>;
 
   // resize(i, n, x = ...)
-  // first_order_resize(i, n, x = ...)
+  // pre_order_resize(i, n, x = ...)
   {
     t x = t(1, t(2), t(3));
     x.resize(x.root(), 1);
@@ -1067,31 +1067,31 @@ void test_tree_mscl_for_sequence_container() {
     assert(inner::good(x) && x == t(1, t(2), t(0), t(0), t(0), t(0)));
 
     x = t(1, t(2, t(3), t(4)), t(5));
-    x.first_order_resize(x.root(), 1);
+    x.pre_order_resize(x.root(), 1);
     assert(inner::good(x) && x == t(1, t(2, t(3))));
-    x.first_order_resize(x.root(), 2, 0);
+    x.pre_order_resize(x.root(), 2, 0);
     assert(inner::good(x) && x == t(1, t(2, t(3), t(0)), t(0)));
   }
 
   // remove_if(i, eq)
-  // first_order_remove_if(i, eq)
+  // pre_order_remove_if(i, eq)
   {
     t x = t(1, t(2, t(0), t(3), t(4)), t(0, t(6)), t(5));
-    x.first_order_remove_if(x.root(), [](auto &x) {return *x == 0;});
+    x.pre_order_remove_if(x.root(), [](auto &x) {return *x == 0;});
     assert(x == t(1, t(2, t(3), t(4)), t(5)));
-    x.first_order_remove_if(x.root(), [](auto &x) {return *x == 3;});
+    x.pre_order_remove_if(x.root(), [](auto &x) {return *x == 3;});
     assert(x == t(1, t(2, t(4)), t(5)));
   }
 
   // unique(i, eq)
-  // first_order_unique(i, eq)
+  // pre_order_unique(i, eq)
   {
     t x = t(1, t(2), t(2), t(3));
     const auto eqf = [](auto &x, auto &y) {return *x == *y;};
     x.unique(x.root(), eqf);
     assert(inner::good(x) && x == t(1, t(2), t(3)));
     x = t(1, t(2), t(2, t(4), t(4)), t(3, t(5), t(5)));
-    x.first_order_unique(x.root(), eqf);
+    x.pre_order_unique(x.root(), eqf);
     assert(inner::good(x) && x == t(1, t(2), t(3, t(5))));
   }
 
@@ -1106,14 +1106,14 @@ void test_tree_mscl_for_sequence_container() {
   }
 
   // sort(i, less)
-  // first_order_sort(i, less)
+  // pre_order_sort(i, less)
   {
     t x = t(0, t(0), t(2), t(3), t(1), t(4));
     const auto cmp_f = [](auto &x, auto &y) {return *x < *y;};
     x.sort(x.root(), cmp_f);
     assert(inner::good(x) && x == t(0, t(0), t(1), t(2), t(3), t(4)));
     x = t(1, t(3), t(1, t(5), t(4)), t(2));
-    x.first_order_sort(x.root(), cmp_f);
+    x.pre_order_sort(x.root(), cmp_f);
     assert(inner::good(x) && x == t(1, t(1, t(4), t(5)), t(2), t(3)));
   }
 }
@@ -1959,7 +1959,7 @@ void test_tree_vector_mscl_for_sequence_container() {
 
   // resize(n, x = ...)
   // resize(i, n, x = ...)
-  // first_order_resize(i, n, x = ...)
+  // pre_order_resize(i, n, x = ...)
   {
     vec_t v;
     v.resize(2);
@@ -1970,14 +1970,14 @@ void test_tree_vector_mscl_for_sequence_container() {
     assert(v == vec_t({0}));
 
     vec_t vv(t(1, t(2), t(3)));
-    vv.first_order_resize(4);
+    vv.pre_order_resize(4);
     assert(vv == vec_t(t(1, t(2), t(3), t(0), t(0)), t(0), t(0), t(0)));
   }
 
   // remove_if(eq)
   // remove_if(i, eq)
-  // first_order_remove_if(eq)
-  // first_order_remove_if(i, eq)
+  // pre_order_remove_if(eq)
+  // pre_order_remove_if(i, eq)
   {
     const auto eq = [](auto &x) {return *x == 0;};
     {
@@ -1991,15 +1991,15 @@ void test_tree_vector_mscl_for_sequence_container() {
     }
     {
       vec_t v(t(1), t(0), t(2, t(0, t(3)), t(4), t(0)), t(3, t(4)));
-      v.first_order_remove_if(eq);
+      v.pre_order_remove_if(eq);
       assert(inner::good(v) && v == vec_t(t(1), t(2, t(4)), t(3, t(4))));
     }
   }
 
   // unique(eq)
   // unique(i, eq)
-  // first_order_unique(eq)
-  // first_order_unique(i, eq)
+  // pre_order_unique(eq)
+  // pre_order_unique(i, eq)
   {
     vec_t v = {1, 2, 2, 3, 3, 3, 4};
     const auto eqf = [](auto &x, auto &y) {return *x == *y;};
@@ -2010,7 +2010,7 @@ void test_tree_vector_mscl_for_sequence_container() {
     assert(inner::good(v) && v == vec_t(t(0, t(1), t(2), t(3))));
 
     v = vec_t(t(1), t(2, t(4), t(4), t(5)), t(2, t(6)), t(3));
-    v.first_order_unique(eqf);
+    v.pre_order_unique(eqf);
     assert(inner::good(v) && v == vec_t(t(1), t(2, t(4), t(5)), t(3)));
   }
 
@@ -2049,8 +2049,8 @@ void test_tree_vector_mscl_for_sequence_container() {
 
   // sort(less)
   // sort(i, less)
-  // first_order_sort(less)
-  // first_order_sort(i, less)
+  // pre_order_sort(less)
+  // pre_order_sort(i, less)
   {
     const auto compf = [](auto &x, auto &y) {return *x < *y;};
     {
@@ -2060,7 +2060,7 @@ void test_tree_vector_mscl_for_sequence_container() {
     }
     {
       vec_t v(t(2), t(1, t(0, t(2), t(1), t(3))), t(3));
-      v.first_order_sort(compf);
+      v.pre_order_sort(compf);
       assert(inner::good(v)
              && v == vec_t(t(1, t(0, t(1), t(2), t(3))), t(2), t(3)));
     }
@@ -2078,7 +2078,7 @@ void test_linked_tree() {
   inner::test::test_tree_insert_erase();
   inner::test::test_tree_back_insert_erase();
   inner::test::test_tree_front_insert_erase();
-  inner::test::test_tree_first_last_nth_order();
+  inner::test::test_tree_pre_post_in_order();
   inner::test::test_tree_mscl_for_sequence_container();
 
   inner::test::test_tree_vector_base();
@@ -2102,7 +2102,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

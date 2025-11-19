@@ -663,6 +663,10 @@ void test_sscan() {
     assert(sscan_single(sv0, c) && c == 'b');
     assert(sscan_single(sv0, c) && c == 'c');
     assert(!sscan_single(sv0, c) && c == 'c');
+    sv0 = "ab";
+    assert(sscan_single(sv0) == 'a');
+    assert(sscan_single(sv0) == 'b');
+    assert(sscan_single(sv0) == nullopt);
 
     u32string s = U"abcd";
     u32sview sv(s);
@@ -777,6 +781,16 @@ void test_sscan() {
   }
 }
 void test_sprint() {
+  // inner::sprint_s_arg<T>
+  {
+    static_assert(inner::sprint_s_arg<string>);
+    static_assert(inner::sprint_s_arg<string &>);
+    static_assert(inner::sprint_s_arg<string &&>);
+    static_assert(!inner::sprint_s_arg<int>);
+    static_assert(!inner::sprint_s_arg<int &>);
+    static_assert(!inner::sprint_s_arg<int &&>);
+  }
+  
   // for string
   {
     string s;
@@ -809,6 +823,33 @@ void test_sprint() {
     s.clear();
     sprint(s, "abc", setw(1));
     assert(s == "abc");
+
+    // no string argument
+    assert(sprint("abc") == "abc");
+    assert(sprint("abc", setw(6)) == "   abc");
+    assert(sprint("abc", setw(6), right) == "abc   ");
+    assert(sprint("abc", print_args{}.setw(6)) == "   abc");
+
+    // sprint for u32string arg
+    u32string s2;
+    sprint(s2, U"abc");
+    assert(s2 == U"abc");
+    sprint(s2, U"abc", setw(6));
+    assert(s2 == U"abc   abc");
+    sprint(s2, U"abc", print_args{}.setw(6).right());
+    assert(s2 == U"abc   abcabc   ");
+    // sprint_u32 for u32string arg
+    s2.clear();
+    sprint_u32(s2, U"abc");
+    assert(s2 == U"abc");
+    sprint_u32(s2, U"abc", setw(6));
+    assert(s2 == U"abc   abc");
+    sprint_u32(s2, U"abc", print_args{}.setw(6).right());
+    assert(s2 == U"abc   abcabc   ");
+    // return u32string by sprint_u32
+    assert(sprint_u32(U"abc") == U"abc");
+    assert(sprint_u32(U"abc", setw(6)) == U"   abc");
+    assert(sprint_u32(U"abc", setw(6), right) == U"abc   ");
   }
   // for int
   {
@@ -956,6 +997,25 @@ void test_sprint() {
       sprint(s, -1234567, setseparator(7u));
       assert(s == "-1234567");
       s.clear();
+    }
+    // for u32string
+    {
+      u32string s;
+      sprint(s, 12345);
+      assert(s == U"12345");
+      s.clear();
+      sprint(s, 12345, int_print_args{}.showpos());
+      assert(s == U"+12345");
+      s.clear();
+      sprint(s, 6789, showpos);
+      assert(s == U"+6789");
+    }
+    // return string or u32string
+    {
+      assert(sprint(12345) == "12345");
+      assert(sprint_u32(12345) == U"12345");
+      assert(sprint(6789, showpos) == "+6789");
+      assert(sprint_u32(6789, showpos) == U"+6789");
     }
   }
 }
@@ -3146,7 +3206,7 @@ void test_file_ralated_fns() {
       assert((*t.root())->time.count() != 0);
       assert((*t.root())->is_dir);
 
-      t.first_order_sort(t.root(), [](const auto &x, const auto &y) {
+      t.pre_order_sort(t.root(), [](const auto &x, const auto &y) {
         return x->name < y->name;
       });
       const auto get_name = [](auto &x)->const auto & {return x->name;};
@@ -3186,7 +3246,7 @@ void test_file_ralated_fns() {
                    seq(1u)));
 
       int c = 0;
-      for (auto &x : t.root().first_order()) {
+      for (auto &x : t.root().pre_order()) {
         ++c;
         assert(path_last_name(x->path) == x->name);
         assert(x->time.count() != 0);
@@ -3238,7 +3298,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }
