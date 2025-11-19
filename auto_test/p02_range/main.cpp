@@ -2043,6 +2043,7 @@ void test_range_main_components() {
       n_value<int> nv2(2, 3);
       adl_swap(nv, nv2);
       assert(size(nv) == 2);
+      assert(cref(nv, 0) == 3);
       assert(ref(nv, 0) == 3);
       assert(ref(nv, 1) == 3);
       assert(size(nv2) == 1);
@@ -4765,7 +4766,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

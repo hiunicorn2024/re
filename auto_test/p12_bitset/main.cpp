@@ -63,8 +63,7 @@ void test_bitset_impl() {
     x[3] = true;
     copy(bind_rng(x, [](bool y)->char {return '0' + y;}), back_inserter(s));
     assert(s == "10010");
-    s.clear();
-    x.print(back_inserter(s));
+    s = x.sprint();
     assert(s == "10010");
     s = x.to<string>();
     assert(s == "01001");
@@ -206,7 +205,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

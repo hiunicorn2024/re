@@ -5618,6 +5618,19 @@ void test_utility_functions() {
       }
     }
   }
+
+  // is_sufficiently_aligned
+  {
+    int *p = nullptr;
+    assert(is_sufficiently_aligned<64>(p));
+    char c{};
+    int16_t i{};
+    assert(is_sufficiently_aligned<1>(&c));
+    assert(is_sufficiently_aligned<2>(&i));
+    struct alignas(128) t {};
+    t x;
+    assert(is_sufficiently_aligned<128>(&x));
+  }
 }
 
 void test_pointer_traits() {
@@ -11076,22 +11089,22 @@ void test_tuple() {
     }
   }
 
-  // min_pair
-  // min_tuple
+  // simple_pair
+  // simple_tuple
   {
-    static_assert(semiregular<min_pair<int, float>>);
-    static_assert(!is_default_constructible<min_pair<int, float &>>);
-    static_assert(is_move_constructible<min_pair<int, float &>>);
-    static_assert(is_copy_constructible<min_pair<int, float &>>);
-    static_assert(!is_move_assignable<min_pair<int, float &>>);
-    static_assert(!is_copy_assignable<min_pair<int, float &>>);
+    static_assert(semiregular<simple_pair<int, float>>);
+    static_assert(!is_default_constructible<simple_pair<int, float &>>);
+    static_assert(is_move_constructible<simple_pair<int, float &>>);
+    static_assert(is_copy_constructible<simple_pair<int, float &>>);
+    static_assert(!is_move_assignable<simple_pair<int, float &>>);
+    static_assert(!is_copy_assignable<simple_pair<int, float &>>);
 
-    static_assert(semiregular<min_tuple<int, float, double>>);
-    static_assert(!is_default_constructible<min_tuple<int, float &, double>>);
-    static_assert(is_move_constructible<min_tuple<int, float &, double>>);
-    static_assert(is_copy_constructible<min_tuple<int, float &, double>>);
-    static_assert(!is_move_assignable<min_tuple<int, float &, double>>);
-    static_assert(!is_copy_assignable<min_tuple<int, float &, double>>);
+    static_assert(semiregular<simple_tuple<int, float, double>>);
+    static_assert(!is_default_constructible<simple_tuple<int, float &, double>>);
+    static_assert(is_move_constructible<simple_tuple<int, float &, double>>);
+    static_assert(is_copy_constructible<simple_tuple<int, float &, double>>);
+    static_assert(!is_move_assignable<simple_tuple<int, float &, double>>);
+    static_assert(!is_copy_assignable<simple_tuple<int, float &, double>>);
   }
 
   // pair
@@ -13664,7 +13677,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

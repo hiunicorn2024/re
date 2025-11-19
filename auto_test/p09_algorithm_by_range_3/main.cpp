@@ -1242,7 +1242,7 @@ void test_exclusive_rotate() {
     assert(exclusive_rotate(a, nth(a, 2), begin(b)) == end(b));
     assert(equal(b, seq(1, 2)));
     assert(exclusive_rotate(a, end(a), begin(b)) == end(b));
-    assert(equal(b, seq(1, 2)));
+    assert(equal(b, seq(2, 3)));
   }
 }
 void test_exclusive_rotate_iterator() {
@@ -1436,7 +1436,7 @@ void test_exclusive_rotate_range() {
     {
       ez_vector<int> a = {1, 2, 3, 4};
       auto r = exclusive_rotate_rng(a, end(a));
-      test_ritr(r, seq(1, 2, 3));
+      test_ritr(r, seq(2, 3, 4));
     }
     {
       ez_vector<int> a = {1, 2, 3, 4};
@@ -2167,7 +2167,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

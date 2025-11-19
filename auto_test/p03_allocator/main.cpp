@@ -3170,6 +3170,43 @@ void test_object_pool() {
     test_rng(deref_rng(v), irng(0, 1000));
   }
 }
+void test_sync_object_pool() {
+  {
+    using vec_t = ez_vector<int>;
+    sync_object_pool<vec_t, test_allocator<byte>> pl;
+    const auto make_vec = [](int i)->vec_t {
+      vec_t ret;
+      for (int &j : iters(0, i))
+        ret.insert(ret.end(), j);
+      return ret;
+    };
+    ez_vector<vec_t *> v;
+    for (int i : irng(0, 5000))
+      v.insert(v.end(), pl.fetch_pointer(make_vec(i)));
+    test_rng(deref_rng(v), bind_rng(irng(0, 5000), make_vec));
+    for (int repeat_c : irng(0, 5)) {
+      const auto r = irng(5000, 10000);
+      for (int i : r)
+        v.insert(v.end(), pl.fetch_pointer(make_vec(i)));
+      test_rng(deref_rng(v), bind_rng(irng(0, 10000), make_vec));
+      for (int repeat_cc : irng(0, 5000)) {
+        pl.free_pointer(back(v));
+        v.erase(before_end(v));
+      }
+      test_rng(deref_rng(v), bind_rng(irng(0, 5000), make_vec));
+      assert(pl.capacity() >= 5000);
+      assert(pl.used_size() == 5000);
+      assert(pl.used_size() + pl.idle_size() == pl.capacity());
+    }
+  }
+  {
+    sync_object_pool<int, test_allocator<byte>> pl;
+    ez_list<sync_pool_object<int, test_allocator<byte>>> l;
+    for (int i : irng(0, 1000))
+      l.insert(l.end(), pl.fetch(i));
+    test_rng(deref_rng(l), irng(0, 1000));
+  }
+}
 namespace help_memory_pool {
 
 constexpr auto to_vec = [](int i) {
@@ -3308,19 +3345,20 @@ void test_memory_pool() {
 void test_allocator() {
   printf("allocator: ");
 
-  inner::test::test_allocator_traits();
-  inner::test::test_uninitialized_sequence();
-  inner::test::test_default_allocator();
-  inner::test::test_allocator_wrapper();
-  inner::test::test_unique_ptr();
-  inner::test::test_unique_array();
-  inner::test::test_copyable_ptr();
-  inner::test::test_copyable_array();
-  inner::test::test_buffer();
-  inner::test::test_scoped_allocator_adaptor();
-  inner::test::test_object_pool();
-  inner::test::test_raw_object_pool();
-  inner::test::test_memory_pool();
+  test_allocator_traits();
+  test_uninitialized_sequence();
+  test_default_allocator();
+  test_allocator_wrapper();
+  test_unique_ptr();
+  test_unique_array();
+  test_copyable_ptr();
+  test_copyable_array();
+  test_buffer();
+  test_scoped_allocator_adaptor();
+  test_object_pool();
+  test_sync_object_pool();
+  test_raw_object_pool();
+  test_memory_pool();
 
   printf("ok\n");
 }
@@ -3336,7 +3374,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }
