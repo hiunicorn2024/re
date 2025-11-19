@@ -1975,7 +1975,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }

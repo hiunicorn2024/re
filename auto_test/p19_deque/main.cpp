@@ -446,6 +446,49 @@ void test_deque_briefly() {
     auto z = s.replace(nth(s, 1), nth(s, 3), seq(0, 0, 0));
     assert(equal(s, seq(1, 0, 0, 0, 4)));
   }
+
+  // extra: use big alignment to test headed_buffer
+  {
+    struct alignas(16) t00 {
+      int64_t a[1] = {};
+      int64_t value = 0;
+      t00() = default;
+      explicit t00(int x) : value(x) {}
+      const int64_t &operator *() const {return value;}
+      const int64_t *operator ->() const {return addressof(value);}
+    };
+    struct alignas(32) t0 {
+      int64_t a[3] = {};
+      int64_t value = 0;
+      t0() = default;
+      explicit t0(int x) : value(x) {}
+      const int64_t &operator *() const {return value;}
+      const int64_t *operator ->() const {return addressof(value);}
+    };
+    struct alignas(64) t1 {
+      int64_t a[7] = {};
+      int64_t value = 0;
+      t1() = default;
+      explicit t1(int x) : value(x) {}
+      const int64_t &operator *() const {return value;}
+      const int64_t *operator ->() const {return addressof(value);}
+    };
+    struct alignas(128) t2 {
+      int64_t a[15] = {};
+      int64_t value = 0;
+      t2() = default;
+      explicit t2(int x) : value(x) {}
+      const int64_t &operator *() const {return value;}
+      const int64_t *operator ->() const {return addressof(value);}
+    };
+    type_pack_for_each<type_pack<t00, t0, t1, t2>>
+      ([]<class T>(type_tag<T>) {
+        for (int i : irng(1, 10000)) {
+          deque<T, test_allocator<T>> v(irng(0, i));
+          assert(equal(bind_rng(v, deref), irng(0, i)));
+        }
+      });
+  }
 }
 void test_deque_carefully() {
   using v_t = deque<int, stateful_test_allocator<int>>;
@@ -1336,7 +1379,7 @@ int main() {
 #ifndef RE_NOEXCEPT
   }
   catch (const exception &e) {
-    print_then_terminate(e.what());
+    print_and_terminate(e.what());
   }
 #endif
 }
