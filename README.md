@@ -1,3 +1,9 @@
+25/11/19
+
+full document
+
+minor changes
+
 25/10/1
 
 arithmetic parser
