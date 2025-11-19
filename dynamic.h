@@ -211,8 +211,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl::re_dynamic_auto_copy_to(bufp): "
-                           "no copy constructor\n");
+      print_and_terminate("re::dynamic_impl::re_dynamic_auto_copy_to(bufp): "
+                          "no copy constructor\n");
       return nullptr;
     }
   }
@@ -229,8 +229,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl::re_dynamic_auto_move_to(bufp): "
-                           "no move constructor\n");
+      print_and_terminate("re::dynamic_impl::re_dynamic_auto_move_to(bufp): "
+                          "no move constructor\n");
       return nullptr;
     }
   }
@@ -263,8 +263,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl::re_dynamic_copy_to_uniform(): "
-                           "no copy constructor\n");
+      print_and_terminate("re::dynamic_impl::re_dynamic_copy_to_uniform(): "
+                          "no copy constructor\n");
       return nullptr;
     }
   }
@@ -289,8 +289,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl::re_dynamic_move_to_uniform(): "
-                           "no move constructor\n");
+      print_and_terminate("re::dynamic_impl::re_dynamic_move_to_uniform(): "
+                          "no move constructor\n");
       return nullptr;
     }
   }
@@ -372,8 +372,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl2::re_dynamic_auto_copy_to(bufp): "
-                           "no copy constructor\n");
+      print_and_terminate("re::dynamic_impl2::re_dynamic_auto_copy_to(bufp): "
+                          "no copy constructor\n");
       return nullptr;
     }
   }
@@ -391,8 +391,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl2::re_dynamic_auto_move_to(bufp): "
-                           "no move constructor\n");
+      print_and_terminate("re::dynamic_impl2::re_dynamic_auto_move_to(bufp): "
+                          "no move constructor\n");
       return nullptr;
     }
   }
@@ -418,7 +418,7 @@ public:
       }
     }
     else {
-      print_then_terminate
+      print_and_terminate
         ("re::dynamic_impl2::re_dynamic_auto_copy_to(p, sz, algn):"
          "  no copy constructor\n");
       return nullptr;
@@ -446,7 +446,7 @@ public:
       }
     }
     else {
-      print_then_terminate
+      print_and_terminate
         ("re::dynamic_impl::re_dynamic_auto_move_to(p, sz, algn):"
          "  no move constructor\n");
       return nullptr;
@@ -468,8 +468,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl2::re_dynamic_copy_to_uniform(): "
-                           "no copy constructor\n");
+      print_and_terminate("re::dynamic_impl2::re_dynamic_copy_to_uniform(): "
+                          "no copy constructor\n");
       return nullptr;
     }
   }
@@ -491,8 +491,8 @@ public:
       }
     }
     else {
-      print_then_terminate("re::dynamic_impl2::re_dynamic_move_to_uniform(): "
-                           "no move constructor\n");
+      print_and_terminate("re::dynamic_impl2::re_dynamic_move_to_uniform(): "
+                          "no move constructor\n");
       return nullptr;
     }
   }
@@ -531,7 +531,7 @@ dynamic_impl<BASE, T, BUFSZ, BUFALIGN>
     }
   }
   else {
-    print_then_terminate
+    print_and_terminate
       ("re::dynamic_impl::re_dynamic_auto_copy_to(p, sz, algn):"
        "  no copy constructor\n");
     return nullptr;
@@ -557,7 +557,7 @@ dynamic_impl<BASE, T, BUFSZ, BUFALIGN>
     }
   }
   else {
-    print_then_terminate
+    print_and_terminate
       ("re::dynamic_impl::re_dynamic_auto_move_to(p, sz, algn):"
        "  no move constructor\n");
     return nullptr;
@@ -1849,6 +1849,8 @@ class unique_function<R (S...), BUFSZ, ALIGN> {
                     <inner::unique_fn_caller_base<R (S...)>>>;
 
 public:
+  using result_type = R;
+
   unique_function() noexcept = default;
   ~unique_function() = default;
   unique_function(const this_t &) = delete;

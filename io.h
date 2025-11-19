@@ -305,10 +305,13 @@ struct fo_setw {
 inline constexpr fo_setw setw{};
 
 struct print_tag_fill {
-  char value = U' ';
+  char32_t value = U' ';
 };
 struct fo_setfill {
   print_tag_fill operator ()(char c) const noexcept {
+    return print_tag_fill{to_unsigned(c)};
+  }
+  print_tag_fill operator ()(char32_t c) const noexcept {
     return print_tag_fill{c};
   }
 };
@@ -713,6 +716,16 @@ struct fo_sscan_single {
       return true;
     }
   }
+  template <class T>
+  optional<T> operator ()(string_reference<const T> &v) const {
+    if (v.empty())
+      return nullopt;
+    else {
+      optional<int> ret = *v.begin();
+      v = {v.begin() + 1, v.end()};
+      return ret;
+    }
+  }
 };
 inline constexpr fo_sscan_single sscan_single{};
 
@@ -722,11 +735,9 @@ struct fo_sscan_while {
   operator ()(string_reference<const T> &v, F f) const {
     const auto op = v.begin();
     const auto ed = v.end();
-
     auto it = v.begin();
     for (; it != ed && f(*it); ++it)
       ;
-
     v = {it, ed};
     return string_reference<const T>(op, it);
   }
@@ -858,12 +869,28 @@ inline constexpr char from_0_to_F[]
   = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
      'A', 'B', 'C', 'D', 'E', 'F'};
 
+template <class T>
+concept sprint_s_arg = requires (T &v) {
+  v.push_back(declval<rng_vt<T>>());
+};
+
+}
+namespace inner::fns {
+
+template <class T>
+T padding_char_to(char32_t c) {
+  if constexpr (is_unsigned<T>)
+    return static_cast<T>(c);
+  else
+    return static_cast<make_unsigned<T>>(c);
+}
+
 }
 
 struct print_args {
   size_t min_width = 0;
   bool left_padding = true;
-  char padding_char = ' ';
+  char32_t padding_char = U' ';
 
   print_args() = default;
   ~print_args() = default;
@@ -885,6 +912,10 @@ struct print_args {
     return *this;
   }
   print_args &setfill(char c) {
+    padding_char = c;
+    return *this;
+  }
+  print_args &setfill(char32_t c) {
     padding_char = c;
     return *this;
   }
@@ -1045,12 +1076,16 @@ private:
       s.push_back(sv);
     else {
       if (pa.left_padding) {
-        s.append_range(rng(pa.min_width - sz, to_unsigned(pa.padding_char)));
+        s.append_range(rng(pa.min_width - sz,
+                           inner::fns::padding_char_to<rng_vt<S>>
+                           (pa.padding_char)));
         s.push_back(sv);
       }
       else {
         s.push_back(sv);
-        s.append_range(rng(pa.min_width - sz, to_unsigned(pa.padding_char)));
+        s.append_range(rng(pa.min_width - sz,
+                           inner::fns::padding_char_to<rng_vt<S>>
+                           (pa.padding_char)));
       }
     }
     return s;
@@ -1085,15 +1120,19 @@ private:
   }
 public:
   template <class S>
-  S &operator ()(S &&s, string_reference<const rng_vt<S>> sv,
-                 print_args pa = {}) const {
+  S &operator ()(S &&s,
+                 string_reference<const rng_vt<S>> sv,
+                 print_args pa = {}) const
+    requires inner::sprint_s_arg<S> {
     return impl_for_string(s, sv, pa);
   }
   template <class S, class...SS>
-  S &operator ()(S &&s, string_reference<const rng_vt<S>> sv,
+  S &operator ()(S &&s,
+                 string_reference<const rng_vt<S>> sv,
                  SS &&...ss) const
-    requires (!(sizeof...(SS) == 1u
-                && is_convertible<nth_type<0, SS &&...>, print_args>)) {
+    requires (inner::sprint_s_arg<S>
+              && !(sizeof...(SS) == 1u
+                   && is_convertible<nth_type<0, SS &&...>, print_args>)) {
     print_args pa{};
     return impl_for_string(s, sv, pa, forward<SS>(ss)...);
   }
@@ -1165,7 +1204,7 @@ private:
     if (s.size() - n < pa.min_width)
       s.insert(pa.left_padding ? (s.begin() + n) : s.end(),
                rng(pa.min_width - (s.size() - n),
-                   to_unsigned(pa.padding_char)));
+                   inner::fns::padding_char_to<rng_vt<S>>(pa.padding_char)));
     guard.unset();
     return s;
   }
@@ -1250,24 +1289,26 @@ private:
 
 public:
   template <class I, class S>
-  enable_if<is_same<bool, decay<I>>, S &>
+  enable_if<inner::sprint_s_arg<S> && is_same<bool, decay<I>>, S &>
   operator ()(S &&s, I y, int_print_args pa = {}) const {
     return impl_for_int(s, (int)y, pa);
   }
   template <class I, class S, class...SS>
-  enable_if<is_same<bool, decay<I>>, S &>
+  enable_if<inner::sprint_s_arg<S> && is_same<bool, decay<I>>, S &>
   operator ()(S &&s, I y, SS &&...ss) const {
     int_print_args pa{};
     return impl_for_int(s, (int)y, pa, forward<SS>(ss)...);
   }
 
   template <class I, class S>
-  enable_if<!is_same<bool, decay<I>> && is_integral<I>, S &>
+  enable_if<inner::sprint_s_arg<S>
+            && !is_same<bool, decay<I>> && is_integral<I>, S &>
   operator ()(S &&s, I i, int_print_args pa = {}) const {
     return impl_for_int(s, i, pa);
   }
   template <class I, class S, class...SS>
-  enable_if<(!is_same<bool, decay<I>> && is_integral<I>
+  enable_if<(inner::sprint_s_arg<S>
+             && !is_same<bool, decay<I>> && is_integral<I>
              && !(sizeof...(SS) == 1u
                   && is_convertible
                   <nth_type<0, SS &&...>, int_print_args>)),
@@ -1279,121 +1320,153 @@ public:
 
 private:
   template <class F, class S>
-  static S &impl_for_float(S &&, F, const float_print_args &);
+  static S &impl_for_float(S &&, F, const float_print_args &)
+    requires inner::sprint_s_arg<S>;
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_left, SS &&...ss) {
+                           print_tag_left, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.left();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_right, SS &&...ss) {
+                           print_tag_right, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.right();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_min_width u, SS &&...ss) {
+                           print_tag_min_width u, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.setw(u.value);
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_fill f, SS &&...ss) {
+                           print_tag_fill f, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.setfill(f.value);
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_showpos, SS &&...ss) {
+                           print_tag_showpos, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.showpos();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_noshowpos, SS &&...ss) {
+                           print_tag_noshowpos, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.noshowpos();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_separator u, SS &&...ss) {
+                           print_tag_separator u, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.setseparator(u.value);
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_uppercase, SS &&...ss) {
+                           print_tag_uppercase, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.uppercase();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_nouppercase, SS &&...ss) {
+                           print_tag_nouppercase, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.nouppercase();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_fixed, SS &&...ss) {
+                           print_tag_fixed, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.fixed();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_scientific, SS &&...ss) {
+                           print_tag_scientific, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.scientific();
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_precision u, SS &&...ss) {
+                           print_tag_precision u, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.setprecision(u.value);
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
   template <class F, class S, class...SS>
   static S &impl_for_float(S &&s, F x, float_print_args &pa,
-                           print_tag_precision_fold0 u, SS &&...ss) {
+                           print_tag_precision_fold0 u, SS &&...ss)
+    requires inner::sprint_s_arg<S> {
     pa.setprecision_fold0(u.value);
     return impl_for_float<F>(s, x, pa, forward<SS>(ss)...);
   }
 public:
   template <class S>
-  inline S &operator ()(S &&s, float x, float_print_args pa = {}) const {
+  inline S &operator ()(S &&s, float x, float_print_args pa = {}) const
+    requires inner::sprint_s_arg<S> {
     return impl_for_float<float>(s, x, pa);
   }
   template <class S>
-  inline S &operator ()(S &&s, double x, float_print_args pa = {}) const {
+  inline S &operator ()(S &&s, double x, float_print_args pa = {}) const
+    requires inner::sprint_s_arg<S> {
     return impl_for_float<double>(s, x, pa);
   }
   template <class S, class...SS>
   S &operator ()(S &&s, float x, SS &&...ss) const
-    requires (!(sizeof...(SS) == 1u
-                && is_convertible
-                <nth_type<0, SS &&...>, float_print_args>)) {
+    requires (inner::sprint_s_arg<S>
+              && !(sizeof...(SS) == 1u
+                   && is_convertible
+                   <nth_type<0, SS &&...>, float_print_args>)) {
     float_print_args pa{};
     return impl_for_float<float>(s, x, pa, forward<SS>(ss)...);
   }
   template <class S, class...SS>
   S &operator ()(S &&s, double x, SS &&...ss) const
-    requires (!(sizeof...(SS) == 1u
-                && is_convertible
-                <nth_type<0, SS &&...>, float_print_args>)) {
+    requires (inner::sprint_s_arg<S>
+              && !(sizeof...(SS) == 1u
+                   && is_convertible
+                   <nth_type<0, SS &&...>, float_print_args>)) {
     float_print_args pa{};
     return impl_for_float<double>(s, x, pa, forward<SS>(ss)...);
   }
-};
-inline constexpr fo_sprint sprint{};
-struct fo_to_string {
-  template <class...S>
-  string operator ()(S &&...s) const {
+
+  template <class X, class...S>
+  string operator ()(X &&x, S &&...s) const
+    requires (!inner::sprint_s_arg<X>) {
     string ret;
-    sprint(ret, forward<S>(s)...);
+    operator ()(ret, forward<X>(x), forward<S>(s)...);
     return ret;
   }
 };
-inline constexpr fo_to_string to_string{};
+inline constexpr fo_sprint sprint{};
+struct fo_sprint_u32 {
+  template <class X, class...S>
+  u32string operator ()(X &&x, S &&...s) const
+    requires (!inner::sprint_s_arg<X>) {
+    u32string ret;
+    sprint(ret, forward<X>(x), forward<S>(s)...);
+    return ret;
+  }
+  template <class X, class...S>
+  X &operator ()(X &&x, S &&...s) const
+    requires inner::sprint_s_arg<X> && is_same<rng_vt<X>, char32_t> {
+    return sprint(x, forward<S>(s)...);
+  }
+};
+inline constexpr fo_sprint_u32 sprint_u32{};
 
 struct fo_put {
   template <class...S>
@@ -2912,7 +2985,8 @@ F sscan_float_final_step(int32_t e2, FN take_n_bits, bool non_neg) {
 
 }
 template <class F, class S>
-S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
+S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa)
+  requires inner::sprint_s_arg<S> {
   typename decay<S>::size_type old_sz = s.size();
   auto guard = exit_fn([&]() {s.resize(old_sz);}, true);
 
@@ -2925,7 +2999,8 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
       ss.append_range(v);
     else {
       const auto padding_r = rng(pa.min_width - sz,
-                                 to_unsigned(pa.padding_char));
+                                 inner::fns::padding_char_to<rng_vt<S>>
+                                 (pa.padding_char));
       if (pa.left_padding) {
         ss.append_range(padding_r);
         ss.append_range(v);
@@ -3024,7 +3099,8 @@ S &fo_sprint::impl_for_float(S &&s, F x, const float_print_args &pa) {
     const auto new_sz = s.size() - old_sz;
     if (new_sz < pa.min_width) {
       const auto tmp_r = rng(pa.min_width - new_sz,
-                             to_unsigned(pa.padding_char));
+                             inner::fns::padding_char_to<rng_vt<S>>
+                             (pa.padding_char));
       if (pa.left_padding)
         s.insert_range(nth(s, to_signed(old_sz)), tmp_r);
       else
@@ -3834,7 +3910,7 @@ class arithmetic_parser {
             for (;;) {
               ++it;
               if (it == seq.end())
-                print_then_terminate
+                print_and_terminate
                   ("re::arithmetic_parser::impl(): "
                    "operator with no operand\n");
               if (view_t(*it).empty())
@@ -3891,7 +3967,7 @@ class arithmetic_parser {
             continue;
           auto it = next(seq.begin());
           if (it == seq.end())
-            print_then_terminate
+            print_and_terminate
               ("re::arithmetic_parser::impl(): "
                "operator must contain at least one string label\n");
 
@@ -4030,7 +4106,7 @@ class arithmetic_parser {
     } while (!s.empty());
 
     if (opd_s.size() != 1u)
-      print_then_terminate
+      print_and_terminate
         ("re::arithmetic_parser::impl(): the size of stack is not 1\n");
     auto ret = move(opd_s.back());
     opd_s.clear();
@@ -4073,7 +4149,7 @@ public:
     return impl<false>(v, nullptr);
   }
 
-  void shrink() {
+  void clear_buffer() {
     s.shrink_to_fit();
     if constexpr (inner::can_shrink_to_fit<typename G::stack_type>) {
       opd_s.shrink_to_fit();
@@ -5065,7 +5141,7 @@ tree<file_info<S>> view_directory_impl(V v) {
     }
   };
   wstring tmp_ws;
-  for (tree_vt &x : t.root().first_order()) {
+  for (tree_vt &x : t.root().pre_order()) {
     if ((*x).is_dir) {
       const auto it = x.iter();
       if (tmp_ws.try_assign_unicode((*x).path) == false)
@@ -5092,7 +5168,7 @@ tree<file_info<S>> view_directory_impl(V v) {
     }
   }
 
-  for (tree_vt &x : t.root().last_order()) {
+  for (tree_vt &x : t.root().post_order()) {
     if ((*x).is_dir)
       for (tree_vt &u : x)
         (*x).size += (*u).size;

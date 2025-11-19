@@ -2679,6 +2679,7 @@ public:
   template <class...S>
   explicit(sizeof...(S) == 0) maybe_owner_ptr(in_place_t, S &&...s)
     : p(::new T(forward<S>(s)...)), owns_y(true) {}
+  explicit maybe_owner_ptr(T *pp) : p(pp), owns_y(false) {}
 
   T *operator ->() const noexcept {
     return p;
@@ -3465,14 +3466,14 @@ private:
       return 16u;
     else {
       if (max_n < 2u)
-        print_then_terminate("re::object_pool::start_n(): too big object\n");
+        print_and_terminate("re::object_pool::start_n(): too big object\n");
       return 2u;
     }
   }
   size_type next_n(size_type n) {
     const size_type nn = n / 2u;
     if (numeric_limits<size_type>::max() - n < nn)
-      print_then_terminate("re::object_pool::next_n(n): size overflow\n");
+      print_and_terminate("re::object_pool::next_n(n): size overflow\n");
     return n + nn;
   }
 
@@ -3644,6 +3645,133 @@ public:
   const T &value() const {
     if (p == nullptr)
       throw_or_terminate<logic_error>("re::pool_object::value(): no value\n");
+    return *p;
+  }
+
+  T *operator ->() noexcept {
+    return p;
+  }
+  T &operator *() noexcept {
+    return *p;
+  }
+  const T *operator ->() const noexcept {
+    return p;
+  }
+  const T &operator *() const noexcept {
+    return *p;
+  }
+};
+
+}
+
+// sync_object_pool
+namespace re {
+
+template <class T, class AL = default_allocator<byte>>
+class sync_pool_object;
+template <class T, class AL = default_allocator<byte>>
+class sync_object_pool {
+  object_pool<T, AL> pl;
+  simple_mutex mtx;
+
+public:
+  using size_type = typename object_pool<T, AL>::size_type;
+
+  sync_object_pool() : sync_object_pool(AL{}) {}
+  ~sync_object_pool() = default;
+  sync_object_pool(const sync_object_pool &) = delete;
+  sync_object_pool &operator =(const sync_object_pool &) = delete;
+  sync_object_pool(sync_object_pool &&) = delete;
+  sync_object_pool &operator =(sync_object_pool &&) = delete;
+
+  explicit sync_object_pool(const AL &a) : pl(a) {}
+
+  size_type capacity() noexcept {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    return pl.capacity();
+  }
+  size_type used_size() noexcept {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    return pl.used_size();
+  }
+  size_type idle_size() noexcept {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    return pl.idle_size();
+  }
+  void reserve_more(size_type n) {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    pl.reserve_more(n);
+  }
+  template <class...S>
+  T *fetch_pointer(S &&...s) {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    return pl.fetch_pointer(forward<S>(s)...);
+  }
+  void free_pointer(T *p) noexcept {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    pl.free_pointer(p);
+  }
+
+  template <class...S>
+  sync_pool_object<T, AL> fetch(S &&...s) {
+    mtx.lock();
+    const auto g = exit_fn([&]() {mtx.unlock();});
+    sync_pool_object<T, AL> ret;
+    T *p = fetch_pointer(forward<S>(s)...);
+    ret.p = p;
+    ret.pl = this;
+    return ret;
+  }
+};
+template <class T, class AL>
+class sync_pool_object {
+  template <class, class>
+  friend class sync_object_pool;
+
+  T *p;
+  sync_object_pool<T, AL> *pl;
+
+public:
+  sync_pool_object() : p{}, pl{} {}
+  ~sync_pool_object() {
+    if (p != nullptr)
+      pl->free_pointer(p);
+  }
+  sync_pool_object(const sync_pool_object &) = delete;
+  sync_pool_object &operator =(const sync_pool_object &) = delete;
+  sync_pool_object(sync_pool_object &&x) noexcept : p(x.p), pl(x.pl) {
+    x.p = nullptr;
+    x.pl = nullptr;
+  }
+  sync_pool_object &operator =(sync_pool_object &&x) noexcept {
+    sync_pool_object tmp(move(x));
+    adl_swap(*this, tmp);
+    return *this;
+  }
+  friend void swap(sync_pool_object &a, sync_pool_object &b) noexcept {
+    adl_swap(a.p, b.p);
+    adl_swap(a.pl, b.pl);
+  }
+
+  bool empty() const noexcept {
+    return p == nullptr;
+  }
+  T &value() {
+    if (p == nullptr)
+      throw_or_terminate<logic_error>
+        ("re::sync_pool_object::value(): no value\n");
+    return *p;
+  }
+  const T &value() const {
+    if (p == nullptr)
+      throw_or_terminate<logic_error>
+        ("re::sync_pool_object::value(): no value\n");
     return *p;
   }
 
@@ -3894,14 +4022,14 @@ public:
                        1066, 1599, 2398, 3597, 5395, 8092);
 
     if (numeric_limits<size_type>::max() / r.front() < algn2)
-      print_then_terminate
-          ("re::memory_pool::memory_pool(algn, a): size overflow\n");
+      print_and_terminate
+        ("re::memory_pool::memory_pool(algn, a): size overflow\n");
     auto &pl0 = v.emplace_back(r.front() * algn2, algn2, a);
     algn = pl0.object_align();
 
     for (size_type i : rng(next(r.begin()), r.end())) {
       if (numeric_limits<size_type>::max() / i < algn)
-        print_then_terminate
+        print_and_terminate
           ("re::memory_pool::memory_pool(algn, a): size overflow\n");
       auto &pl = v.emplace_back(i * algn, algn, a);
       if (prev(v.end(), 2)->object_size() >= pl.object_size())
@@ -3915,7 +4043,7 @@ public:
     requires is_frng<FR> && is_constructible<size_type, rng_ref<FR>>
     : alw_t(a), v(size(r)), algn{}, max_sz{} {
     if (empty(r))
-      print_then_terminate
+      print_and_terminate
         ("re::memory_pool::memory_pool(r, algn, al): empty r\n");
 
     auto &pl0 = v.emplace_back(size_type(*r.begin()), algn2, a);
@@ -3958,7 +4086,7 @@ public:
   template <class T>
   T *allocate(size_type n) {
     if (numeric_limits<size_type>::max() / n < sizeof(T))
-      print_then_terminate("re::memory_pool::allocate(n): size overflow\n");
+      print_and_terminate("re::memory_pool::allocate(n): size overflow\n");
     const size_type sz = n * sizeof(T);
     if (sz > max_sz || alignof(T) > algn)
       return to_address(alw_t::template rebind<T>().allocate(n));
@@ -4038,10 +4166,10 @@ public:
     return pl == x.pl;
   }
 
-  T *allocate(size_t n) {
+  T *allocate(size_type n) {
     return pl->template allocate<T>(n);
   }
-  void deallocate(T *p, size_t n) noexcept {
+  void deallocate(T *p, size_type n) noexcept {
     pl->deallocate(p, n);
   }
 };

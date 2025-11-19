@@ -51,9 +51,11 @@ inline const int mingw_no_assertion_failure_popup
 
 // dependence of windows api
 //   base.h
+//     re::simple_mutex
+//     re::inner::fns::update_error_file // use re::simple_mutex
+//     re::set_error_file // use re::simple_mutex
 //   test.h
-//     re::ez_mutex
-//     re::test_allocator // use re::ez_mutex
+//     re::test_allocator // use re::simple_mutex
 //   time.h
 //     re::inner::fns::win32_get_system_time_precise_as_file_time
 //     re::inner::fns::win32_query_performance_counter
@@ -65,9 +67,6 @@ inline const int mingw_no_assertion_failure_popup
 //     re::file
 //   concurrency.h
 //     ...
-//   graphics.h
-//     re::inner::fns::win32_enable_wstring_console_for_command_line_program
-//     re::inner::fns::win32_enable_utf8_console_for_window_program
 
 #include <cstdio>
 #include <cstddef>
@@ -896,9 +895,9 @@ struct fo_puti {
 };
 inline constexpr fo_puti puti{};
 
-static inline bool is_little_endian_v
+static inline bool is_little_endian
   = (std::endian::native == std::endian::little);
-static inline bool is_big_endian_v = !is_little_endian_v;
+static inline bool is_big_endian = !is_little_endian;
 
 struct fo_putb {
   template <class T>
@@ -908,7 +907,7 @@ struct fo_putb {
     const unsigned char *p
       = &reinterpret_cast<const unsigned char &>(x);
     const unsigned char *pp = p + sizeof(T);
-    if (is_little_endian_v) {
+    if (is_little_endian) {
       while (p != pp) {
         --pp;
         unsigned char a = 0b10000000;
@@ -936,24 +935,87 @@ inline constexpr fo_putb putb{};
 
 }
 
-// print_then_terminate
+// simple_mutex
+// print_and_terminate
 // throw_or_terminate
 namespace re {
 
-struct fo_print_then_terminate {
+class simple_mutex {
+  CRITICAL_SECTION v;
+
+  template <class T>
+  static T *addressof_impl(T &x) noexcept {
+    return reinterpret_cast<T *>
+      (&const_cast<char &>(reinterpret_cast<const volatile char &>(x)));
+  }
+
+public:
+  simple_mutex() noexcept {
+    InitializeCriticalSection(addressof_impl(v));
+  }
+  ~simple_mutex() {
+    DeleteCriticalSection(addressof_impl(v));
+  }
+  simple_mutex(const simple_mutex &) = delete;
+  simple_mutex &operator=(const simple_mutex &) = delete;
+  simple_mutex(simple_mutex &&) = delete;
+  simple_mutex &operator=(simple_mutex &&) = delete;
+
+  void lock() {
+    EnterCriticalSection(addressof_impl(v));
+  }
+  void unlock() {
+    LeaveCriticalSection(addressof_impl(v));
+  }
+};
+
+namespace inner {
+
+inline simple_mutex error_file_mtx;
+inline FILE *error_file_ptr{};
+
+}
+namespace inner::fns {
+
+template <class F>
+void update_error_file(F f) {
+  inner::error_file_mtx.lock();
+  if (error_file_ptr == nullptr)
+    error_file_ptr = stderr;
+  f(inner::error_file_ptr);
+  inner::error_file_mtx.unlock();
+}
+
+}
+struct fo_set_error_file {
+  void operator ()(FILE *fp) const {
+    inner::error_file_mtx.lock();
+    inner::error_file_ptr = fp;
+    inner::error_file_mtx.unlock();
+  }
+};
+inline constexpr fo_set_error_file set_error_file{};
+
+struct fo_print_and_terminate {
   void operator ()(const char *s) const {
-    fputs(s, stderr);
-    fflush(stderr);
+    inner::fns::update_error_file([s](FILE *fp) {
+      fputs(s, fp);
+      fflush(fp);
+    });
     terminate();
   }
   template <class...S>
   void operator ()(const char *s, S &&...ss) const
     requires (sizeof...(S) != 0) {
-    fputs(s, stderr);
-    operator ()(static_cast<S &&>(ss)...);
+    inner::fns::update_error_file([&](FILE *fp) {
+      fputs(s, fp);
+      (fputs(ss, fp) , ...);
+      fflush(fp);
+    });
+    terminate();
   }
 };
-inline constexpr fo_print_then_terminate print_then_terminate{};
+inline constexpr fo_print_and_terminate print_and_terminate{};
 
 template <class E>
 struct fo_throw_or_terminate {
@@ -967,9 +1029,7 @@ struct fo_throw_or_terminate {
   template <class T>
   void operator ()(T &&s) const {
 #ifdef RE_NOEXCEPT
-    fputs(s, stderr);
-    fflush(stderr);
-    terminate();
+    print_and_terminate(s);
 #else
     throw E(static_cast<T &&>(s));
 #endif
@@ -3805,6 +3865,15 @@ struct fo_align {
 };
 inline constexpr fo_align align{};
 
+template <size_t N>
+struct fo_is_sufficiently_aligned {
+  template <class T>
+  inline bool operator ()(T *p) const;
+    // defined just after integral_traits is finished
+};
+template <size_t N>
+inline constexpr fo_is_sufficiently_aligned<N> is_sufficiently_aligned{};
+
 }
 
 // pointer_traits
@@ -4283,12 +4352,15 @@ struct fo_cref {
 
   template <class T>
   void operator ()(const T &&) const = delete;
+
+  template <class R>
+  constexpr decltype(auto)
+  operator ()(const R &, typename range_traits<R>::difference_type) const;
 };
 inline constexpr fo_cref cref{};
 
 }
 
-//todo review
 // language-related concepts
 namespace re {
 
@@ -5411,6 +5483,15 @@ template <>
 struct integral_traits<char16_t> : integral_traits<uint_least16_t> {};
 template <>
 struct integral_traits<char32_t> : integral_traits<uint_least32_t> {};
+
+template <size_t N>
+template <class T>
+inline bool fo_is_sufficiently_aligned<N>::operator ()(T *p) const {
+  const auto dif = (reinterpret_cast<const byte *>(p)
+                    - (const byte *)nullptr);
+  return static_cast<make_unsigned<remove_const<decltype(dif)>>>(dif) % N
+    == 0u;
+}
 
 }
 
@@ -7334,20 +7415,20 @@ template <class T>
 inline constexpr fo_make_from_tuple<T> make_from_tuple{};
 
 template <class T1, class T2>
-struct min_pair {
+struct simple_pair {
   T1 first;
   T2 second;
 };
 template <class...S>
-struct min_tuple {};
+struct simple_tuple {};
 template <class T>
-struct min_tuple<T> {
+struct simple_tuple<T> {
   T value;
 };
 template <class T, class...S>
-struct min_tuple<T, S...> {
+struct simple_tuple<T, S...> {
   T value;
-  min_tuple<S...> following;
+  simple_tuple<S...> following;
 };
 
 template <class T1, class T2>
@@ -7370,14 +7451,14 @@ public:
   constexpr tuple &operator =(const tuple &)
     requires (is_copy_assignable<T1>
               && is_copy_assignable<T2>
-              && is_copy_assignable<min_pair<T1, T2>>)
+              && is_copy_assignable<simple_pair<T1, T2>>)
     = default;
   constexpr tuple &operator =(const tuple &x)
     noexcept (is_nothrow_copy_assignable<T1>
               && is_nothrow_copy_assignable<T2>)
     requires (is_copy_assignable<T1>
               && is_copy_assignable<T2>
-              && !is_copy_assignable<min_pair<T1, T2>>) {
+              && !is_copy_assignable<simple_pair<T1, T2>>) {
     first = x.first;
     second = x.second;
     return *this;
@@ -7386,14 +7467,14 @@ public:
   constexpr tuple &operator =(tuple &&)
     requires (is_move_assignable<T1>
               && is_move_assignable<T2>
-              && is_move_assignable<min_pair<T1, T2>>)
+              && is_move_assignable<simple_pair<T1, T2>>)
     = default;
   constexpr tuple &operator =(tuple &&x)
     noexcept (is_nothrow_move_assignable<T1>
               && is_nothrow_move_assignable<T2>)
     requires (is_move_assignable<T1>
               && is_move_assignable<T2>
-              && !is_move_assignable<min_pair<T1, T2>>) {
+              && !is_move_assignable<simple_pair<T1, T2>>) {
     first = forward<T1>(x.first);
     second = forward<T2>(x.second);
     return *this;
@@ -9914,7 +9995,7 @@ inline constexpr fo_div_round div_round{};
 template <class T>
 struct fo_integral_cast {
   template <class U>
-  constexpr T operator ()(U u) const requires integral<U> && integral<T> {
+  constexpr T operator ()(U u) const requires integral<U> {
     if constexpr (is_unsigned<U>) {
       if (u > numeric_limits<T>::max())
         throw_or_terminate<length_error>
@@ -9970,7 +10051,6 @@ public:
   ~non_propagating_cache() = default;
   constexpr non_propagating_cache(const this_t &) noexcept {}
   constexpr this_t &operator =(const this_t &x) noexcept {
-    // if (addressof(x) != this)
     clear();
     return *this;
   }

@@ -1849,6 +1849,20 @@ struct fo_nth {
 };
 inline constexpr fo_nth nth{};
 
+struct fo_cnth {
+  template <class R>
+  constexpr decltype(auto) operator ()(const R &r,
+                                       rng_dft<const R> n) const {
+    return next(begin(r), n);
+  }
+  template <class R>
+  constexpr decltype(auto) operator ()(const R &r, rng_dft<const R> n) const
+    requires inner::has_mfn_nth<const R> {
+    return r.nth(n);
+  }
+};
+inline constexpr fo_cnth cnth{};
+
 template <class R>
 constexpr decltype(auto)
 fo_ref::operator ()(R &r,
@@ -1859,6 +1873,13 @@ template <class R>
 constexpr decltype(auto)
 fo_ref::operator ()(const R &r,
                     typename range_traits<R>::difference_type n) const {
+  return *nth(r, n);
+}
+
+template <class R>
+constexpr decltype(auto)
+fo_cref::operator ()(const R &r,
+                     typename range_traits<R>::difference_type n) const {
   return *nth(r, n);
 }
 
@@ -3613,7 +3634,7 @@ inline constexpr fo_to_array to_array{};
 
 struct fo_seq {
   template <class X, class...S>
-  constexpr array<decay<X &&>, 1 + sizeof...(S)>
+  constexpr array<decay<X &&>, 1u + sizeof...(S)>
   operator ()(X &&x, S &&...s) const {
     using t = decay<X &&>;
     return {t(forward<X>(x)), t(forward<S>(s))...};
@@ -5519,9 +5540,9 @@ public:
   }
 };
 struct fo_iters {
-  template <class T>
-  constexpr auto operator ()(T &&v) const {
-    return for_iter_range<T>(forward<T>(v));
+  template <class R>
+  constexpr auto operator ()(R &&r) const {
+    return for_iter_range<rng_forward_t<R>>(forward<R>(r));
   }
   template <class A, class B>
   constexpr auto operator ()(A a, B b) const {

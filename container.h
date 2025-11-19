@@ -2487,13 +2487,13 @@ public:
   string_reference(string_reference &&) = default;
   string_reference &operator =(string_reference &&) = default;
 
-  string_reference(nullptr_t) : p(nullptr), n(0) {}
-  string_reference &operator =(nullptr_t) {
+  constexpr string_reference(nullptr_t) : p(nullptr), n(0) {}
+  constexpr string_reference &operator =(nullptr_t) {
     p = nullptr;
     n = 0;
     return *this;
   }
-  void clear() {
+  constexpr void clear() {
     *this = nullptr;
   }
 
@@ -2501,7 +2501,7 @@ public:
             class = enable_if
             <(is_same<TT, T>
               || (is_const<T> && is_same<TT, remove_const<T>>))>>
-  string_reference(TT &x) : p(addressof(x)), n(1) {}
+  constexpr string_reference(TT &x) : p(addressof(x)), n(1) {}
   template <class RANGE,
             class = enable_if
             <(!is_same<decay<RANGE>, string_reference>
@@ -2510,7 +2510,8 @@ public:
               && is_citr<rng_itr<RANGE>>
               && is_convertible<rng_ref<RANGE>, T>
               && is_convertible<rng_ptr<RANGE>, T *>)>>
-  string_reference(RANGE &&r) : string_reference(begin(r), end(r)) {}
+  constexpr string_reference(RANGE &&r)
+    : string_reference(begin(r), end(r)) {}
   template <class RANGE,
             class = enable_if
             <(!is_same<decay<RANGE>, string_reference>
@@ -2518,7 +2519,7 @@ public:
               && extent<remove_reference<RANGE>> != 0u
               && is_convertible<rng_ptr<RANGE>, T *>)>,
             class = void>
-  string_reference(RANGE &&r) noexcept
+  constexpr string_reference(RANGE &&r) noexcept
     : string_reference(begin(r), *(end(r) - 1) != 0 ? end(r) : end(r) - 1) {}
 
   template <class X,
@@ -2526,7 +2527,7 @@ public:
             <(is_same<itr_vt<X>, value_type> && is_citr<X>
               && is_convertible<itr_ref<X>, T>
               && is_convertible<itr_ptr<X>, T *>)>>
-  string_reference(X x, X y) : p(to_address(x)), n(y - x) {}
+  constexpr string_reference(X x, X y) : p(to_address(x)), n(y - x) {}
   template <class X, class Y,
             class = enable_if
             <(is_same<itr_vt<X>, value_type> && is_citr<X>
@@ -2534,16 +2535,18 @@ public:
               && is_convertible<itr_ptr<X>, T *>
               && is_integral<Y>)>,
             class = void>
-  string_reference(X x, Y y) : p(to_address(x)), n(y) {}
+  constexpr string_reference(X x, Y y) : p(to_address(x)), n(y) {}
   template <class X, class Y, class Z,
             class = enable_if
             <(is_rng<X> && is_same<rng_vt<X>, value_type>
               && is_convertible<rng_ref<X>, T>
               && is_convertible<rng_ptr<X>, T *>
               && is_integral<Y> && is_integral<Z>)>>
-  string_reference(X &&x, Y y, Z z) : p(to_address(begin(x) + y)), n(z) {}
+  constexpr string_reference(X &&x, Y y, Z z)
+    : p(to_address(begin(x) + y)), n(z) {}
 
   template <class TT = T, class = enable_if<is_const<TT>>>
+  constexpr
   string_reference(const string_reference<remove_const<T>> &x) noexcept {
     p = x.p;
     n = x.n;
@@ -2555,92 +2558,87 @@ public:
               || (is_const<TT>
                   && is_same<remove_reference<X>, remove_const<TT> *>))>,
             bool = 0>
-  string_reference(X &&s) noexcept {
-    if constexpr (is_same<remove_const<T>, char>
-                  || is_same<remove_const<T>, unsigned char>) {
-      p = s;
-      n = strlen(p);
-    }
-    else {
-      p = s;
-      for (; *s != 0; ++s)
-        ;
-      n = s - p;
-    }
+  constexpr string_reference(X &&s) noexcept {
+    const remove_const<T> zero_c = 0;
+    p = s;
+    auto p2 = s;
+    for (; *p2 != zero_c; ++p2)
+      ;
+    n = p2 - p;
   }
 
-  T *begin() const noexcept {
+  constexpr T *begin() const noexcept {
     return p;
   }
-  T *end() const noexcept {
+  constexpr T *end() const noexcept {
     return p + n;
   }
-  size_t size() const noexcept {
+  constexpr size_t size() const noexcept {
     return n;
   }
-  bool empty() const noexcept {
+  constexpr bool empty() const noexcept {
     return n == 0;
   }
 
-  T *data() const noexcept {
+  constexpr T *data() const noexcept {
     return p;
   }
 
-  const T *cbegin() const noexcept {
+  constexpr T *cbegin() const noexcept {
     return begin();
   }
-  const T *cend() const noexcept {
+  constexpr T *cend() const noexcept {
     return end();
   }
 
-  reference operator [](size_type nn) noexcept {
+  constexpr reference operator [](size_type nn) noexcept {
     return p[nn];
   }
-  const_reference operator [](size_type nn) const noexcept {
+  constexpr const_reference operator [](size_type nn) const noexcept {
     return p[nn];
   }
-  reference at(size_type nn) {
+  constexpr reference at(size_type nn) {
     if (nn >= size())
       throw_or_terminate<out_of_range>("re::string_reference: at(n) failed\n");
     return p[nn];
   }
-  const_reference at(size_type nn) const {
+  constexpr const_reference at(size_type nn) const {
     if (nn >= size())
       throw_or_terminate<out_of_range>("re::string_reference: at(n) failed\n");
     return p[nn];
   }
-  reference front() {
+  constexpr reference front() {
     return *p;
   }
-  reference back() {
+  constexpr reference back() {
     return *(p + n - 1);
   }
-  const_reference front() const {
+  constexpr const_reference front() const {
     return *p;
   }
-  const_reference back() const {
+  constexpr const_reference back() const {
     return *(p + n - 1);
   }
 
   using reverse_iterator = re::reverse_iterator<iterator>;
   using const_reverse_iterator = re::reverse_iterator<const_iterator>;
 
-  reverse_iterator rbegin() noexcept {
+  constexpr reverse_iterator rbegin() noexcept {
     return reverse_iterator(end());
   }
-  reverse_iterator rend() noexcept {
+  constexpr reverse_iterator rend() noexcept {
     return reverse_iterator(begin());
   }
-  const_reverse_iterator rbegin() const noexcept {
+  constexpr const_reverse_iterator rbegin() const noexcept {
     return const_reverse_iterator(end());
   }
-  const_reverse_iterator rend() const noexcept {
+  constexpr const_reverse_iterator rend() const noexcept {
     return const_reverse_iterator(begin());
   }
-  const_reverse_iterator crbegin() const noexcept {
+  constexpr const_reverse_iterator crbegin() const noexcept {
     return rbegin();
   }
-  const_reverse_iterator crend() const noexcept {
+  constexpr const_reverse_iterator crend() const noexcept {
     return rend();
   }
 };
@@ -2768,16 +2766,16 @@ inline u32string operator ""_s(const char32_t *s, size_t n) {
   return u32string(u32sview(s, n));
 }
 
-inline sview operator ""_sv(const char *s, size_t n) {
+inline constexpr sview operator ""_sv(const char *s, size_t n) {
   return sview(s, n);
 }
-inline wsview operator ""_sv(const wchar_t *s, size_t n) {
+inline constexpr wsview operator ""_sv(const wchar_t *s, size_t n) {
   return wsview(s, n);
 }
-inline u16sview operator ""_sv(const char16_t *s, size_t n) {
+inline constexpr u16sview operator ""_sv(const char16_t *s, size_t n) {
   return u16sview(s, n);
 }
-inline u32sview operator ""_sv(const char32_t *s, size_t n) {
+inline constexpr u32sview operator ""_sv(const char32_t *s, size_t n) {
   return u32sview(s, n);
 }
 
@@ -2789,15 +2787,15 @@ struct less<basic_string<T, AL>> {
                    const basic_string<T, AL> &y) const noexcept {
     return x < y;
   }
-  bool operator ()(string_reference<const T> x,
-                   string_reference<const T> y) const noexcept {
+  constexpr bool operator ()(string_reference<const T> x,
+                             string_reference<const T> y) const noexcept {
     return x < y;
   }
   template <class R1, class R2>
   enable_if<(is_array<remove_reference<R1>>
              || is_array<remove_reference<R2>>),
             bool>
-  operator ()(R1 &&x, R2 &&y) const noexcept {
+  constexpr operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) < string_reference<const T>(y);
   }
 };
@@ -2809,14 +2807,14 @@ struct less<sso_string<T, N, AL>> {
                    const sso_string<T, N, AL> &y) const noexcept {
     return x < y;
   }
-  bool operator ()(string_reference<const T> x,
-                   string_reference<const T> y) const noexcept {
+  constexpr bool operator ()(string_reference<const T> x,
+                             string_reference<const T> y) const noexcept {
     return x < y;
   }
   template <class R1, class R2>
-  enable_if<(is_array<remove_reference<R1>>
-             || is_array<remove_reference<R2>>),
-            bool>
+  constexpr enable_if<(is_array<remove_reference<R1>>
+                       || is_array<remove_reference<R2>>),
+                      bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) < string_reference<const T>(y);
   }
@@ -2830,14 +2828,14 @@ struct equal_to<basic_string<T, AL>> {
                    const basic_string<T, AL> &y) const noexcept {
     return x == y;
   }
-  bool operator ()(string_reference<const T> x,
-                   string_reference<const T> y) const noexcept {
+  constexpr bool operator ()(string_reference<const T> x,
+                             string_reference<const T> y) const noexcept {
     return x == y;
   }
   template <class R1, class R2>
-  enable_if<(is_array<remove_reference<R1>>
-             || is_array<remove_reference<R2>>),
-            bool>
+  constexpr enable_if<(is_array<remove_reference<R1>>
+                       || is_array<remove_reference<R2>>),
+                      bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) == string_reference<const T>(y);
   }
@@ -2850,14 +2848,14 @@ struct equal_to<sso_string<T, N, AL>> {
                    const sso_string<T, N, AL> &y) const noexcept {
     return x == y;
   }
-  bool operator ()(string_reference<const T> x,
-                   string_reference<const T> y) const noexcept {
+  constexpr bool operator ()(string_reference<const T> x,
+                             string_reference<const T> y) const noexcept {
     return x == y;
   }
   template <class R1, class R2>
-  enable_if<(is_array<remove_reference<R1>>
-             || is_array<remove_reference<R2>>),
-            bool>
+  constexpr enable_if<(is_array<remove_reference<R1>>
+                       || is_array<remove_reference<R2>>),
+                      bool>
   operator ()(R1 &&x, R2 &&y) const noexcept {
     return string_reference<const T>(x) == string_reference<const T>(y);
   }
@@ -2868,7 +2866,7 @@ struct hash<basic_string<T, AL>> {
   using is_transparent = inner::transparent_tag;
   using argument_type = basic_string<T, AL>;
   using result_type = size_t;
-  size_t operator ()(string_reference<const T> x) const noexcept {
+  constexpr size_t operator ()(string_reference<const T> x) const noexcept {
     return inner::fns::byte_array_hash(static_cast<const void *>(x.data()),
                                        x.size() * sizeof(T));
   }
@@ -2878,7 +2876,7 @@ struct hash<sso_string<T, N, AL>> {
   using is_transparent = inner::transparent_tag;
   using argument_type = sso_string<T, N, AL>;
   using result_type = size_t;
-  size_t operator ()(string_reference<const T> x) const noexcept {
+  constexpr size_t operator ()(string_reference<const T> x) const noexcept {
     return inner::fns::byte_array_hash(static_cast<const void *>(x.data()),
                                        x.size() * sizeof(T));
   }
@@ -2888,8 +2886,8 @@ template <class T>
 struct less<string_reference<T>> {
   using is_transparent = inner::transparent_tag;
 
-  bool operator ()(const string_reference<T> &x,
-                   const string_reference<T> &y) const noexcept {
+  constexpr bool operator ()(const string_reference<T> &x,
+                             const string_reference<T> &y) const noexcept {
     return x < y;
   }
 };
@@ -2897,8 +2895,8 @@ template <class T>
 struct equal_to<string_reference<T>> {
   using is_transparent = inner::transparent_tag;
 
-  bool operator ()(const string_reference<T> &x,
-                   const string_reference<T> &y) const noexcept {
+  constexpr bool operator ()(const string_reference<T> &x,
+                             const string_reference<T> &y) const noexcept {
     return x == y;
   }
 };
@@ -2907,7 +2905,7 @@ struct hash<string_reference<T>> {
   using is_transparent = inner::transparent_tag;
   using argument_type = string_reference<T>;
   using result_type = size_t;
-  size_t operator ()(string_reference<T> x) const noexcept {
+  constexpr size_t operator ()(string_reference<T> x) const noexcept {
     return inner::fns::byte_array_hash(static_cast<const void *>(x.data()),
                                        x.size() * sizeof(T));
   }
@@ -3123,8 +3121,8 @@ public:
   constexpr auto to_string(char zero = '0', char one = '1') const {
     return to<string>(zero, one);
   }
-  template <class OITR>
-  void print(OITR o, char zero = '0', char one = '1') const {
+  string sprint(char zero = '0', char one = '1') const {
+    string ret;
     size_t c = 0;
     const size_t cc = sizeof(uint) * 8;
     const uint *p = v;
@@ -3134,13 +3132,10 @@ public:
         c = 0;
         x = *++p;
       }
-      *o = (bool)((uint)(x >> (uint)c) & (uint)1) ? '1' : '0';
-      ++o;
+      ret.push_back((bool)((uint)(x >> (uint)c) & (uint)1) ? '1' : '0');
       ++c;
     }
-  }
-  void print() const {
-    print(output_itr([](int c) {putchar(c);}));
+    return ret;
   }
 
   using pointer = bitset_reference<uint> *;
@@ -7337,7 +7332,7 @@ public:
     securely_initialize(base(), [&](auto p) {*p = new_node();},
                         [&](auto p) {delete_node(*p);});
   }
-  explicit pointer_vector(size_type n, const alloc_t &a)
+  pointer_vector(size_type n, const alloc_t &a)
     requires has_allocator_type<base_t> : vec(n, base_alloc_t(a)) {
     securely_initialize(base(), [&](auto p) {*p = new_node();},
                         [&](auto p) {delete_node(*p);});
@@ -10973,7 +10968,7 @@ public:
     adl_swap(x.p, y.p);
   }
 
-  explicit node_handle(node_pointer pp, const alloc_t &al) noexcept
+  node_handle(node_pointer pp, const alloc_t &al) noexcept
     : p(pp) {
     ::new(alloc_ptr()) alloc_t(al);
   }
@@ -11025,8 +11020,8 @@ public:
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
-  explicit forward_list_node_handle(typename base_t::node_pointer p,
-                                    const typename base_t::alloc_t &al)
+  forward_list_node_handle(typename base_t::node_pointer p,
+                           const typename base_t::alloc_t &al)
     : base_t(p, al) {}
 
   using base_t::get_allocator;
@@ -11361,6 +11356,9 @@ public:
     return iterator(TRAITS::new_node(static_cast<alloc_t &>(*this),
                                      forward<S>(s)...));
   }
+  void delete_node(const_iterator it) noexcept {
+    TRAITS::delete_node(static_cast<alloc_t &>(*this), it.node());
+  }
   iterator exchange_node_after(const_iterator prev,
                                const_iterator node) noexcept {
     const auto ret = prev.next();
@@ -11368,9 +11366,6 @@ public:
     prev.next(node);
     node.next(next);
     return ret.to_mutable();
-  }
-  void delete_node(const_iterator it) noexcept {
-    TRAITS::delete_node(static_cast<alloc_t &>(*this), it.node());
   }
 
   iterator link_after(const_iterator prev, const_iterator node) noexcept {
@@ -12230,8 +12225,8 @@ public:
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
-  explicit list_node_handle(typename base_t::node_pointer p,
-                            const typename base_t::alloc_t &al)
+  list_node_handle(typename base_t::node_pointer p,
+                   const typename base_t::alloc_t &al)
     : base_t(p, al) {}
 
   using base_t::get_allocator;
@@ -17281,8 +17276,8 @@ public:
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
-  explicit set_node_handle(typename base_t::node_pointer p,
-                           const typename base_t::alloc_t &al)
+  set_node_handle(typename base_t::node_pointer p,
+                  const typename base_t::alloc_t &al)
     : base_t(p, al) {}
 
   using base_t::get_allocator;
@@ -17315,8 +17310,8 @@ public:
     adl_swap(static_cast<base_t &>(x), static_cast<base_t &>(y));
   }
 
-  explicit map_node_handle(typename base_t::node_pointer p,
-                           const typename base_t::alloc_t &al)
+  map_node_handle(typename base_t::node_pointer p,
+                  const typename base_t::alloc_t &al)
     : base_t(p, al) {}
 
   using base_t::get_allocator;
@@ -26198,8 +26193,7 @@ private:
   void delete_data() noexcept {
     index_array_alw().delete_array(index_array);
   }
-  void delete_data() noexcept
-    requires traits::store_node_allocator::value {
+  void delete_data() noexcept requires traits::store_node_allocator::value {
     index_array_alw().delete_array(index_array);
     for_each_node(*this, next, [&](iterator it) {delete_node(it);});
   }
@@ -30204,8 +30198,8 @@ public:
 template <class TABLE, class HASH, class EQ>
 bool operator ==(const unordered_multimap_adaptor<TABLE, HASH, EQ> &x,
                  const unordered_multimap_adaptor<TABLE, HASH, EQ> &y) {
-  return x.base().equal_equal(x.get_key(), x.hash(), x.eq(), y.hash(), y.eq(),
-                              y);
+  return x.base()
+    .equal_equal(x.get_key(), x.hash(), x.eq(), y.hash(), y.eq(), y);
 }
 
 }
@@ -35551,11 +35545,11 @@ template <class T>
 using get_tree_traits_from_iter_t = typename get_tree_traits_from_iter<T>::type;
 
 template <class IT>
-class tree_first_order_iterator {
+class tree_pre_order_iterator {
   template <class>
-  friend class tree_first_order_iterator;
+  friend class tree_pre_order_iterator;
 
-  using this_t = tree_first_order_iterator;
+  using this_t = tree_pre_order_iterator;
 
   IT root_it{};
   IT it{};
@@ -35567,18 +35561,18 @@ public:
   using difference_type = itr_dft<IT>;
   using iterator_category = bidirectional_iterator_tag;
 
-  tree_first_order_iterator() = default;
-  ~tree_first_order_iterator() = default;
-  tree_first_order_iterator(const this_t &) = default;
+  tree_pre_order_iterator() = default;
+  ~tree_pre_order_iterator() = default;
+  tree_pre_order_iterator(const this_t &) = default;
   this_t &operator =(const this_t &) = default;
-  tree_first_order_iterator(this_t &&) = default;
+  tree_pre_order_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend void swap(this_t &x, this_t &y) noexcept {
     adl_swap(x.root_it, y.root_it);
     adl_swap(x.it, y.it);
   }
 
-  explicit tree_first_order_iterator(IT i1, IT i2) : root_it(i1), it(i2) {}
+  explicit tree_pre_order_iterator(IT i1, IT i2) : root_it(i1), it(i2) {}
   IT root() const {
     return root_it;
   }
@@ -35587,7 +35581,7 @@ public:
   }
 
   template <class IT2>
-  tree_first_order_iterator(const tree_first_order_iterator<IT2> x)
+  tree_pre_order_iterator(const tree_pre_order_iterator<IT2> x)
     requires is_convertible<IT, const IT2 &> : root_it(x.root_it), it(x.it) {}
 
   bool operator ==(nullptr_t) const {
@@ -35601,7 +35595,7 @@ public:
     return static_cast<pointer>(it.operator ->());
   }
   template <class IT2>
-  bool operator ==(const tree_first_order_iterator<IT2> &x) const
+  bool operator ==(const tree_pre_order_iterator<IT2> &x) const
     requires can_apply_equal_to<const IT &, const IT2 &> {
     return it == x.it;
   }
@@ -35710,11 +35704,11 @@ public:
   }
 };
 template <class IT>
-class tree_last_order_iterator {
+class tree_post_order_iterator {
   template <class>
-  friend class tree_last_order_iterator;
+  friend class tree_post_order_iterator;
 
-  using this_t = tree_last_order_iterator;
+  using this_t = tree_post_order_iterator;
 
   IT root_it{};
   IT it{};
@@ -35726,18 +35720,18 @@ public:
   using difference_type = itr_dft<IT>;
   using iterator_category = bidirectional_iterator_tag;
 
-  tree_last_order_iterator() = default;
-  ~tree_last_order_iterator() = default;
-  tree_last_order_iterator(const this_t &) = default;
+  tree_post_order_iterator() = default;
+  ~tree_post_order_iterator() = default;
+  tree_post_order_iterator(const this_t &) = default;
   this_t &operator =(const this_t &) = default;
-  tree_last_order_iterator(this_t &&) = default;
+  tree_post_order_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend void swap(this_t &x, this_t &y) noexcept {
     adl_swap(x.root_it, y.root_it);
     adl_swap(x.it, y.it);
   }
 
-  explicit tree_last_order_iterator(IT i1, IT i2) : root_it(i1), it(i2) {}
+  explicit tree_post_order_iterator(IT i1, IT i2) : root_it(i1), it(i2) {}
   IT root() const {
     return root_it;
   }
@@ -35746,7 +35740,7 @@ public:
   }
 
   template <class IT2>
-  tree_last_order_iterator(const tree_last_order_iterator<IT2> x)
+  tree_post_order_iterator(const tree_post_order_iterator<IT2> x)
     requires is_convertible<IT, const IT2 &> : root_it(x.root_it), it(x.it) {}
 
   bool operator ==(nullptr_t) const {
@@ -35760,7 +35754,7 @@ public:
     return static_cast<pointer>(it.operator ->());
   }
   template <class IT2>
-  bool operator ==(const tree_last_order_iterator<IT2> &x) const
+  bool operator ==(const tree_post_order_iterator<IT2> &x) const
     requires can_apply_equal_to<const IT &, const IT2 &> {
     return it == x.it;
   }
@@ -35820,11 +35814,11 @@ public:
   }
 };
 template <class IT>
-class tree_nth_order_iterator {
+class tree_in_order_iterator {
   template <class>
-  friend class tree_nth_order_iterator;
+  friend class tree_in_order_iterator;
 
-  using this_t = tree_nth_order_iterator;
+  using this_t = tree_in_order_iterator;
 
   IT root_it{};
   IT it{};
@@ -35837,18 +35831,18 @@ public:
   using difference_type = itr_dft<IT>;
   using iterator_category = bidirectional_iterator_tag;
 
-  tree_nth_order_iterator() = default;
-  ~tree_nth_order_iterator() = default;
-  tree_nth_order_iterator(const this_t &) = default;
+  tree_in_order_iterator() = default;
+  ~tree_in_order_iterator() = default;
+  tree_in_order_iterator(const this_t &) = default;
   this_t &operator =(const this_t &) = default;
-  tree_nth_order_iterator(this_t &&) = default;
+  tree_in_order_iterator(this_t &&) = default;
   this_t &operator =(this_t &&) = default;
   friend void swap(this_t &x, this_t &y) noexcept {
     adl_swap(x.root_it, y.root_it);
     adl_swap(x.it, y.it);
   }
 
-  explicit tree_nth_order_iterator(IT it, IT it2, itr_dft<IT> dd)
+  explicit tree_in_order_iterator(IT it, IT it2, itr_dft<IT> dd)
     : root_it(it), it(it2), d(dd) {}
   IT root() const {
     return root_it;
@@ -35861,7 +35855,7 @@ public:
   }
 
   template <class IT2>
-  tree_nth_order_iterator(const tree_nth_order_iterator<IT2> x)
+  tree_in_order_iterator(const tree_in_order_iterator<IT2> x)
     requires is_convertible<IT, const IT2 &>
     : root_it(x.root_it), it(x.it), d(x.dd) {}
 
@@ -36143,59 +36137,59 @@ public:
   friend auto operator -(const tree_iterator<I1> &x,
                          const tree_iterator<I2> &y)->decltype(x.i - y.i);
 
-  using first_order_iterator = inner::tree_first_order_iterator<this_t>;
-  using last_order_iterator = inner::tree_last_order_iterator<this_t>;
-  using nth_order_iterator = inner::tree_nth_order_iterator<this_t>;
+  using pre_order_iterator = inner::tree_pre_order_iterator<this_t>;
+  using post_order_iterator = inner::tree_post_order_iterator<this_t>;
+  using in_order_iterator = inner::tree_in_order_iterator<this_t>;
 
-  first_order_iterator first_order_begin() const {
+  pre_order_iterator pre_order_begin() const {
     const this_t p = (*this == nullptr) ? this_t{} : parent();
-    return first_order_iterator
+    return pre_order_iterator
       (*this, (p != nullptr && p.children().end() == *this) ? this_t{} : *this);
   }
-  first_order_iterator first_order_end() const {
-    return first_order_iterator(*this, this_t{});
+  pre_order_iterator pre_order_end() const {
+    return pre_order_iterator(*this, this_t{});
   }
-  iter_pair<first_order_iterator> first_order() const {
-    return rng(first_order_begin(), first_order_end());
+  iter_pair<pre_order_iterator> pre_order() const {
+    return rng(pre_order_begin(), pre_order_end());
   }
 
-  last_order_iterator last_order_begin() const {
+  post_order_iterator post_order_begin() const {
     if (const this_t p = (*this == nullptr) ? this_t{} : parent();
         p != nullptr && p.children().end() == *this)
-      return last_order_iterator(*this, this_t{});
+      return post_order_iterator(*this, this_t{});
     this_t it = *this;
     if (it != nullptr)
       while (!it.children().empty())
         it = it.children().begin();
-    return last_order_iterator(*this, it);
+    return post_order_iterator(*this, it);
   }
-  last_order_iterator last_order_end() const {
-    return last_order_iterator(*this, this_t{});
+  post_order_iterator post_order_end() const {
+    return post_order_iterator(*this, this_t{});
   }
-  iter_pair<last_order_iterator> last_order() const {
-    return rng(last_order_begin(), last_order_end());
+  iter_pair<post_order_iterator> post_order() const {
+    return rng(post_order_begin(), post_order_end());
   }
 
-  nth_order_iterator nth_order_begin(difference_type d) const {
+  in_order_iterator in_order_begin(difference_type d) const {
     if (const this_t p = (*this == nullptr) ? this_t{} : parent();
         p != nullptr && p.children().end() == *this)
-      return nth_order_iterator(*this, this_t{}, d);
+      return in_order_iterator(*this, this_t{}, d);
     if (d == 0)
-      return nth_order_iterator(*this, *this, d);
+      return in_order_iterator(*this, *this, d);
     else {
       this_t j = *this;
       if (j != nullptr)
         while (!j.children().empty())
           j = j.children().begin();
-      return nth_order_iterator(*this, j, d);
+      return in_order_iterator(*this, j, d);
     }
   }
-  nth_order_iterator nth_order_end(difference_type d) const {
+  in_order_iterator in_order_end(difference_type d) const {
     this_t it = *this;
-    return nth_order_iterator(*this, this_t{}, d);
+    return in_order_iterator(*this, this_t{}, d);
   }
-  iter_pair<nth_order_iterator> nth_order(difference_type d) const {
-    return rng(nth_order_begin(d), nth_order_end(d));
+  iter_pair<in_order_iterator> in_order(difference_type d) const {
+    return rng(in_order_begin(d), in_order_end(d));
   }
 };
 template <class I1, class I2>
@@ -37851,16 +37845,16 @@ public:
   void reserve(const_iterator i, size_type n) {
     i.to_mutable().children().v.reserve(n);
   }
-  void first_order_reserve(const_iterator i, size_type n) {
-    for (auto &it : iters(i.to_mutable().first_order()))
+  void pre_order_reserve(const_iterator i, size_type n) {
+    for (auto &it : iters(i.to_mutable().pre_order()))
       it.base().children().v.reserve(n);
   }
 
   void reserve_more(const_iterator i, size_type n) {
     i.to_mutable().children().v.reserve_more(n);
   }
-  void first_order_reserve_more(const_iterator i, size_type n) {
-    for (auto &it : iters(i.to_mutable().first_order()))
+  void pre_order_reserve_more(const_iterator i, size_type n) {
+    for (auto &it : iters(i.to_mutable().pre_order()))
       it.base().children().v.reserve_more(n);
   }
 
@@ -37882,15 +37876,15 @@ public:
       for (auto c : irng(0u, n - it.children().size()))
         emplace_back(it, k);
   }
-  void first_order_resize(const_iterator i, size_type n) {
-    for (auto &it : iters(i.to_mutable().first_order())) {
+  void pre_order_resize(const_iterator i, size_type n) {
+    for (auto &it : iters(i.to_mutable().pre_order())) {
       if (it.base().children().size() != 0u)
         resize(it.base(), n);
     }
   }
-  void first_order_resize(const_iterator i, size_type n,
+  void pre_order_resize(const_iterator i, size_type n,
                           const key_type &k) {
-    for (auto &it : iters(i.first_order())) {
+    for (auto &it : iters(i.pre_order())) {
       if (it.base().children().size() != 0u)
         resize(it.base(), n, k);
     }
@@ -37899,8 +37893,8 @@ public:
   void shrink_to_fit(const_iterator i) {
     i.to_mutable().children().v.shrink_to_fit();
   }
-  void first_order_shrink_to_fit(const_iterator i) {
-    for (auto &it : iters(i.first_order()))
+  void pre_order_shrink_to_fit(const_iterator i) {
+    for (auto &it : iters(i.pre_order()))
       shrink_to_fit(it.base());
   }
 
@@ -37910,8 +37904,8 @@ public:
       .remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
-  void first_order_remove_if(const_iterator p, UPRED eq) {
-    for (auto &it : iters(p.first_order()))
+  void pre_order_remove_if(const_iterator p, UPRED eq) {
+    for (auto &it : iters(p.pre_order()))
       remove_if(it.base(), eq);
   }
 
@@ -37922,8 +37916,8 @@ public:
       .unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
-  void first_order_unique(const_iterator parent, BPRED eq) {
-    for (auto &it : iters(parent.first_order()))
+  void pre_order_unique(const_iterator parent, BPRED eq) {
+    for (auto &it : iters(parent.pre_order()))
       unique(it.base(), eq);
   }
 
@@ -38013,8 +38007,8 @@ public:
       .sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
-  void first_order_sort(const_iterator parent, BPRED less) {
-    for (auto &it : iters(parent.to_mutable().first_order()))
+  void pre_order_sort(const_iterator parent, BPRED less) {
+    for (auto &it : iters(parent.to_mutable().pre_order()))
       sort(it.base(), less);
   }
 
@@ -39118,14 +39112,14 @@ public:
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve(n);
   }
-  void first_order_reserve(size_type n) {
-    first_order_reserve(const_iterator{}, n);
+  void pre_order_reserve(size_type n) {
+    pre_order_reserve(const_iterator{}, n);
   }
-  void first_order_reserve(const_iterator i, size_type n) {
+  void pre_order_reserve(const_iterator i, size_type n) {
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve(n);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order()))
+      for (auto &it2 : iters(iterator(it).pre_order()))
         it2.base().children().v.reserve(n);
   }
 
@@ -39136,14 +39130,14 @@ public:
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve_more(n);
   }
-  void first_order_reserve_more(size_type n) {
-    first_order_reserve_more(const_iterator{}, n);
+  void pre_order_reserve_more(size_type n) {
+    pre_order_reserve_more(const_iterator{}, n);
   }
-  void first_order_reserve_more(const_iterator i, size_type n) {
+  void pre_order_reserve_more(const_iterator i, size_type n) {
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.reserve_more(n);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order()))
+      for (auto &it2 : iters(iterator(it).pre_order()))
         it2.base().children().v.reserve_more(n);
   }
 
@@ -39173,27 +39167,27 @@ public:
         emplace_back(i, k);
       }
   }
-  void first_order_resize(size_type n) {
-    first_order_resize(const_iterator{}, n);
+  void pre_order_resize(size_type n) {
+    pre_order_resize(const_iterator{}, n);
   }
-  void first_order_resize(size_type n, const key_type &k) {
-    first_order_resize(const_iterator{}, n, k);
+  void pre_order_resize(size_type n, const key_type &k) {
+    pre_order_resize(const_iterator{}, n, k);
   }
-  void first_order_resize(const_iterator i, size_type n) {
+  void pre_order_resize(const_iterator i, size_type n) {
     resize(i, n);
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order())) {
+      for (auto &it2 : iters(iterator(it).pre_order())) {
         if (it2.base().children().size() != 0u)
           resize(it2.base(), n);
       }
   }
-  void first_order_resize(const_iterator i, size_type n,
+  void pre_order_resize(const_iterator i, size_type n,
                           const key_type &k) {
     resize(i, n, k);
     vec_t &&vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(it.first_order()))
+      for (auto &it2 : iters(it.pre_order()))
         resize(it2.base(), n, k);
   }
 
@@ -39204,14 +39198,14 @@ public:
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     vv.shrink_to_fit();
   }
-  void first_order_shrink_to_fit() {
-    first_order_shrink_to_fit(const_iterator{});
+  void pre_order_shrink_to_fit() {
+    pre_order_shrink_to_fit(const_iterator{});
   }
-  void first_order_shrink_to_fit(const_iterator i) {
+  void pre_order_shrink_to_fit(const_iterator i) {
     shrink_to_fit(i);
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order()))
+      for (auto &it2 : iters(iterator(it).pre_order()))
         shrink_to_fit(it2.base());
   }
 
@@ -39225,15 +39219,15 @@ public:
     return vv.remove_if([=](reference x) {return eq(x);});
   }
   template <class UPRED>
-  void first_order_remove_if(UPRED eq) {
-    first_order_remove_if(const_iterator{}, eq);
+  void pre_order_remove_if(UPRED eq) {
+    pre_order_remove_if(const_iterator{}, eq);
   }
   template <class UPRED>
-  void first_order_remove_if(const_iterator i, UPRED eq) {
+  void pre_order_remove_if(const_iterator i, UPRED eq) {
     remove_if(i, eq);
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order()))
+      for (auto &it2 : iters(iterator(it).pre_order()))
         remove_if(it2.base(), eq);
   }
 
@@ -39247,15 +39241,15 @@ public:
     vv.unique([=](reference x, reference y) {return eq(x, y);});
   }
   template <class BPRED>
-  void first_order_unique(BPRED eq) {
-    first_order_unique(const_iterator{}, eq);
+  void pre_order_unique(BPRED eq) {
+    pre_order_unique(const_iterator{}, eq);
   }
   template <class BPRED>
-  void first_order_unique(const_iterator i, BPRED eq) {
+  void pre_order_unique(const_iterator i, BPRED eq) {
     unique(i, eq);
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order()))
+      for (auto &it2 : iters(iterator(it).pre_order()))
         unique(it2.base(), eq);
   }
 
@@ -39370,16 +39364,16 @@ public:
     vv.sort([=](reference x, reference y) {return less(x, y);});
   }
   template <class BPRED>
-  void first_order_sort(const_iterator i, BPRED less) {
+  void pre_order_sort(const_iterator i, BPRED less) {
     sort(i, less);
     vec_t &vv = ((i == iterator{}) ? v : i.to_mutable().children().v);
     for (auto &it : iters(vv))
-      for (auto &it2 : iters(iterator(it).first_order()))
+      for (auto &it2 : iters(iterator(it).pre_order()))
         sort(it2.base(), less);
   }
   template <class BPRED>
-  void first_order_sort(BPRED less) {
-    first_order_sort(const_iterator{}, less);
+  void pre_order_sort(BPRED less) {
+    pre_order_sort(const_iterator{}, less);
   }
 
 private:
@@ -39400,7 +39394,7 @@ private:
       const iterator it(i.to_mutable());
       if (it.parent() != iterator{})
         return false;
-      for (auto &it2 : iters(it.first_order())) {
+      for (auto &it2 : iters(it.pre_order())) {
         auto &x = it2.base().tree_node();
         if (!good(x.v))
           return false;

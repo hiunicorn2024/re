@@ -923,11 +923,11 @@ struct fo_starts_with {
 inline constexpr fo_starts_with starts_with{};
 
 struct fo_ends_with {
-  template <class IR, class IR2, class BF = equal_to<>>
-  constexpr bool operator ()(IR &&r, IR2 &&r2, BF eq = {}) const
-    requires ((is_frng<IR> || rng_is_sized<IR>)
-              && (is_frng<IR2> || rng_is_sized<IR2>)) {
-    if constexpr (is_brng<IR> && is_brng<IR2>) {
+  template <class FR, class FR2, class BF = equal_to<>>
+  constexpr bool operator ()(FR &&r, FR2 &&r2, BF eq = {}) const
+    requires ((is_frng<FR> || rng_is_sized<FR>)
+              && (is_frng<FR2> || rng_is_sized<FR2>)) {
+    if constexpr (is_brng<FR> && is_brng<FR2>) {
       const auto op = begin(r);
       const auto op2 = begin(r2);
       auto it = end(r);
@@ -3890,9 +3890,9 @@ struct fo_midpoint {
       const T sum = x1 + x2;
       if (ts::is_infinity(sum)) {
         if (x1_abs > x2_abs)
-          return x1 / 2 + x2;
+          return x1 / 2;
         else
-          return x1 + x2 / 2;
+          return x2 / 2;
       }
       else if (abs(sum) >= min_for_div)
         return sum / 2;
@@ -3907,7 +3907,7 @@ struct fo_midpoint {
         //   4 * min                       100.00
         //   2 * min (min_for_div)          10.000
         //   min                             1.0000
-        //   denorm_value                    0.XXXXX
+        //   denorm_value                    0.XXXX
         //
         //   if the_bigger_abs >= min_for_div * 2,
         //     try image the other number,
@@ -4921,8 +4921,7 @@ public:
     adl_swap(x.d, y.d);
   }
 
-  constexpr take_range(R rr, rng_dft<R> dd)
-    : r(forward<R>(rr)), d(dd) {}
+  constexpr take_range(R rr, rng_dft<R> dd) : r(forward<R>(rr)), d(dd) {}
 
   constexpr auto begin() {
     if constexpr (is_rrng<R>) {
@@ -5222,7 +5221,7 @@ constexpr bool operator ==(const take_while_iterator<I1, FF> &x,
   else {
     if (y.i == x.ed)
       return !x.f(*x.i);
-    else if (x.i == x.ed)
+    else if (x.i == x.ed) // x.ed == y.ed always
       return !x.f(*y.i);
     else
       return false;
@@ -5662,7 +5661,7 @@ public:
   constexpr explicit join_range(R rr) : r(forward<R>(rr)) {
     init();
   }
-    
+
   constexpr auto begin() {
     delayed_init();
     return join_iterator<iter_t>(c->first, c->second, end(r));
@@ -6898,8 +6897,8 @@ public:
     adl_swap(x.ii, y.ii);
   }
 
-  constexpr explicit slide_iterator(FI x, FI y) : i(x), ii(y) {}
-  constexpr explicit slide_iterator(FI x, itr_dft<FI> y)
+  constexpr slide_iterator(FI x, FI y) : i(x), ii(y) {}
+  constexpr slide_iterator(FI x, itr_dft<FI> y)
     : i(x), ii(next(x, y - 1)) {}
   constexpr auto base() const {
     return pair(i, ii);
@@ -7402,8 +7401,7 @@ public:
     adl_swap(x.missing, y.missing);
   }
 
-  constexpr explicit stride_iterator(I ii, I ed2, itr_dft<I> ss,
-                                     itr_dft<I> m = 0)
+  constexpr stride_iterator(I ii, I ed2, itr_dft<I> ss, itr_dft<I> m = 0)
     : i(ii), ed(ed2), s(ss), missing(m) {}
 
   template <class I2>
@@ -7813,7 +7811,7 @@ public:
     adl_swap(x.d, y.d);
   }
 
-  constexpr explicit aligned_chunk_range(FR rr, rng_dft<FR> dd)
+  constexpr aligned_chunk_range(FR rr, rng_dft<FR> dd)
     : r(forward<FR>(rr)) , d(dd) {}
 
   constexpr auto begin() {
@@ -9704,7 +9702,8 @@ public:
   }
 
   constexpr explicit zip_iterator(const data_t &x) : t(x) {}
-  constexpr explicit(sizeof...(S) == 1) zip_iterator(I i, S...s) : t(i, s...) {}
+  constexpr explicit(sizeof...(S) == 0u) zip_iterator(I i, S...s)
+    : t(i, s...) {}
   constexpr data_t base() const {
     return t;
   }
@@ -9736,22 +9735,6 @@ public:
   value_type *operator ++(int);
   constexpr auto operator ++(int) requires is_fitr_ctg<iterator_category> {
     return iter_post_increment(*this);
-  }
-
-  constexpr zip_iterator &operator --()
-    requires is_bitr_ctg<iterator_category> {
-    auto ret = *this;
-    type_pack_for_each<make_index_sequence<tuple_size<data_t>>>
-      ([&](auto tag) {
-        constexpr size_t i = decltype(tag)::type::value;
-        --inner::fns::zip_node_ref(at<i>(ret.t));
-      });
-    *this = ret;
-    return *this;
-  }
-  constexpr zip_iterator operator --(int)
-    requires is_bitr_ctg<iterator_category> {
-    return iter_post_decrement(*this);
   }
 
   template <class I1, class I2, class...S1, class...S2>
@@ -9886,7 +9869,8 @@ public:
     adl_swap(x.t, y.t);
   }
 
-  constexpr zip_range(X x, S...s) : t(forward<X>(x), forward<S>(s)...) {}
+  constexpr explicit(sizeof...(S) == 0u) zip_range(X x, S...s)
+    : t(forward<X>(x), forward<S>(s)...) {}
 
   constexpr auto begin() {
     return zip_itr_from_tuple(bind_tuple(t, [](auto &&x) {
@@ -10583,7 +10567,7 @@ struct fo_exclusive_rotate {
       const auto op = begin(r);
       const auto ed = end(r);
       if (i == ed)
-        i = before_end(rng(op, ed));
+        i = op;
       auto i2 = i;
       for (;;) {
         ++i2;
@@ -10800,7 +10784,7 @@ class exclusive_rotate_range : range_fns {
     if (f != l) {
       rng_itr<FR> y = i;
       if (y == l)
-        y = before_end(rng(f, l));
+        y = f;
       rng_itr<FR> wall = y;
       ++wall;
       if (wall == l)

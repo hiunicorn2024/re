@@ -1,0 +1,34 @@
+THEOREM (CRITICAL FACTORIZATION THEOREM)
+  see the png file
+
+LEMMA 2.1.
+  Let l be a critical position of a nonempty word x.
+  Let r be a local period at the positionl, such that r <= max(l, |x| - l).
+  Then r is a mutiple of p(x)
+
+PROPOSITION 2.2.
+  On input words x and t,
+  the function "positions" computes the set P(x, t)
+  of positions of the pattern x inside the text t.
+
+PROPOSITION 2.3.
+  The computation of the set of positions
+  of a word x in a text t of length m by the function "POSITIONS"
+  uses less than 2m letter comparisons.
+
+COROLLARY 2.4.
+  According to the RAM model,
+  the maximum time complexity of function "positions"
+  is O(m) on an input text of length m.
+  The function requires seven extra integer memory locations
+  in addition to the arrays x and t
+
+3. The Critical Factorization Theorem
+  For each word x, there exists at least one factorization (u, v) of x such that
+  r(u, v) = p(x)
+  Such a factorization (u, v) is called a critical factorization of x
+  e.g. x = abaabaa has three critical factorizations, namely
+    (ab, aabaa), (abaa, baa), (abaab, aa)
+  (note: same as r(x, l))
+
+...

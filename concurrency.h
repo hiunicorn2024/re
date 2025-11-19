@@ -611,6 +611,7 @@ public:
 
 }
 
+// weak_ptr
 // shared_ptr
 namespace re {
 
@@ -1921,6 +1922,8 @@ inline constexpr fo_get_deleter<D> get_deleter{};
 
 template <class T>
 struct hash<shared_ptr<T>> {
+  using argument_type = shared_ptr<T>;
+  using result_type = size_t;
   size_t operator ()(const shared_ptr<T> &p) const {
     return hash<typename shared_ptr<T>::element_type *>{}(p.get());
   }
@@ -2030,7 +2033,7 @@ public:
   }
   thread &operator =(thread &&x) noexcept {
     if (joinable())
-      print_then_terminate
+      print_and_terminate
         ("re::thread::=(re::thread &&): only null thread can be assigned to\n");
     h = exchange(x.h, INVALID_HANDLE_VALUE);
     id_num = exchange(x.id_num, id{});
@@ -2446,7 +2449,7 @@ public:
                                  lock.mutex()->native_handle(),
                                  INFINITE)
         == 0)
-      print_then_terminate("re::condition_variable::wait(lock): failed");
+      print_and_terminate("re::condition_variable::wait(lock): failed");
   }
   template <class F>
   void wait(unique_lock<mutex> &lock, F pred) {
@@ -2468,7 +2471,7 @@ public:
     else {
       if (GetLastError() == ERROR_TIMEOUT)
         return cv_status::timeout;
-      print_then_terminate
+      print_and_terminate
         ("re::condition_variable::wait_until(lock, t): failed()");
       return cv_status::timeout;
     }
@@ -2594,7 +2597,7 @@ public:
                                    m.native_handle(),
                                    INFINITE)
           == 0)
-        print_then_terminate
+        print_and_terminate
           ("re::mutex_area::leave_until(eq, condvar_ref): "
            "SleepConditionVariableCS() failed");
     }
@@ -3124,7 +3127,7 @@ public:
   pool_thread &operator =(pool_thread &&x) noexcept {
     if (this != addressof(x)) {
       if (it != handle_t{})
-        print_then_terminate
+        print_and_terminate
           ("re::pool_thread::=(re::pool_thread &&): "
            "only null thread can be assigned to\n");
       it = exchange(x.it, handle_t{});
@@ -3350,126 +3353,6 @@ public:
         x->thrd = thread(thread_function(before_end(a->sleeping_threads)));
       }
     });
-  }
-};
-
-}
-
-// sync_object_pool
-namespace re {
-
-template <class T, class AL = default_allocator<byte>>
-class sync_pool_object;
-template <class T, class AL = default_allocator<byte>>
-class sync_object_pool {
-  object_pool<T, AL> pl;
-  mutex mtx;
-
-public:
-  using size_type = typename object_pool<T, AL>::size_type;
-
-  sync_object_pool() : sync_object_pool(AL{}) {}
-  ~sync_object_pool() = default;
-  sync_object_pool(const sync_object_pool &) = delete;
-  sync_object_pool &operator =(const sync_object_pool &) = delete;
-  sync_object_pool(sync_object_pool &&) = delete;
-  sync_object_pool &operator =(sync_object_pool &&) = delete;
-
-  explicit sync_object_pool(const AL &a) : pl(a) {}
-
-  size_type capacity() noexcept {
-    lock_guard g(mtx);
-    return pl.capacity();
-  }
-  size_type used_size() noexcept {
-    lock_guard g(mtx);
-    return pl.used_size();
-  }
-  size_type idle_size() noexcept {
-    lock_guard g(mtx);
-    return pl.idle_size();
-  }
-  void reserve_more(size_type n) {
-    lock_guard g(mtx);
-    pl.reserve_more(n);
-  }
-  template <class...S>
-  T *fetch_pointer(S &&...s) {
-    lock_guard g(mtx);
-    return pl.fetch_pointer(forward<S>(s)...);
-  }
-  void free_pointer(T *p) noexcept {
-    lock_guard g(mtx);
-    pl.free_pointer(p);
-  }
-
-  template <class...S>
-  sync_pool_object<T, AL> fetch(S &&...s) {
-    lock_guard g(mtx);
-    sync_pool_object<T, AL> ret;
-    T *p = fetch_pointer(forward<S>(s)...);
-    ret.p = p;
-    ret.pl = this;
-    return ret;
-  }
-};
-template <class T, class AL>
-class sync_pool_object {
-  template <class, class>
-  friend class sync_object_pool;
-
-  T *p;
-  sync_object_pool<T, AL> *pl;
-
-public:
-  sync_pool_object() : p{}, pl{} {}
-  ~sync_pool_object() {
-    if (p != nullptr)
-      pl->free_pointer(p);
-  }
-  sync_pool_object(const sync_pool_object &) = delete;
-  sync_pool_object &operator =(const sync_pool_object &) = delete;
-  sync_pool_object(sync_pool_object &&x) noexcept : p(x.p), pl(x.pl) {
-    x.p = nullptr;
-    x.pl = nullptr;
-  }
-  sync_pool_object &operator =(sync_pool_object &&x) noexcept {
-    sync_pool_object tmp(move(x));
-    adl_swap(*this, tmp);
-    return *this;
-  }
-  friend void swap(sync_pool_object &a, sync_pool_object &b) noexcept {
-    adl_swap(a.p, b.p);
-    adl_swap(a.pl, b.pl);
-  }
-
-  bool empty() const noexcept {
-    return p == nullptr;
-  }
-  T &value() {
-    if (p == nullptr)
-      throw_or_terminate<logic_error>
-        ("re::sync_pool_object::value(): no value\n");
-    return *p;
-  }
-  const T &value() const {
-    if (p == nullptr)
-      throw_or_terminate<logic_error>
-        ("re::sync_pool_object::value(): no value\n");
-    return *p;
-  }
-
-  T *operator ->() noexcept {
-    return p;
-  }
-  T &operator *() noexcept {
-    return *p;
-  }
-  const T *operator ->() const noexcept {
-    return p;
-  }
-  const T &operator *() const noexcept {
-    return *p;
   }
 };
 
