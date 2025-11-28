@@ -12531,7 +12531,7 @@ void doc_mutex_area() {
   //   data()->value_type &
   //   enter(f) // lock the mutex and call f()
   //   try_enter(f)->bool
-  //   enter_until(f, eq)
+  //   wait_enter(f, eq)
   //     // repeatedly lock and check until eq(), then call f() and return
   //   enter_notify_one(f, condvar_ref)
   //     // enter(f) and condvar.notify_one()
