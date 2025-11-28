@@ -2563,7 +2563,7 @@ public:
     f();
   }
   template <class F, class F2>
-  void enter_until(F f, F2 eq) {
+  void wait_enter(F f, F2 eq) {
     for (;;) {
       const lock_guard l(m);
       if (eq()) {
